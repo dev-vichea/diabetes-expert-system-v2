@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Local env
+.env
+.env.*
+!.env.example
+
+# Local databases
+*.db
+
+# Virtual environments
+.venv/
+backend/.venv/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Editor/OS
+.DS_Store
+.vscode/
