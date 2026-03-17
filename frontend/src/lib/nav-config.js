@@ -16,6 +16,7 @@ export const NAV_ITEMS = [
   { to: '/review', label: 'Patient Review', icon: ClipboardList, section: 'workspace', permissions: ['diagnosis.review_any'] },
   { to: '/my-results', label: 'My Results', icon: ActivitySquare, section: 'workspace', permissions: ['diagnosis.view_own'] },
   { to: '/users', label: 'Users', icon: ShieldCheck, section: 'system', permissions: ['user.view', 'permission.view'] },
+  { to: '/roles-permissions', label: 'Roles', icon: ShieldCheck, section: 'system', permissions: ['permission.view'] },
 ]
 
 export const PAGE_TITLE_BY_PATH = [
@@ -28,6 +29,7 @@ export const PAGE_TITLE_BY_PATH = [
   { pattern: '/review', title: 'Clinical Review', subtitle: 'Annotate and triage diagnosis outcomes' },
   { pattern: '/my-results', title: 'My Diagnosis Results', subtitle: 'Track your diagnosis history and feedback' },
   { pattern: '/users', title: 'Users', subtitle: 'Manage user access, roles, and account status' },
+  { pattern: '/roles-permissions', title: 'Roles & Permissions', subtitle: 'Create role profiles and choose granted permissions' },
   { pattern: '/', title: 'Dashboard', subtitle: 'Operational overview by role' },
 ]
 

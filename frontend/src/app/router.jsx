@@ -15,6 +15,7 @@ import { ReviewPage } from '../pages/ReviewPage'
 import { DiagnosisHistoryPage } from '../pages/DiagnosisHistoryPage'
 import { AdminPage } from '../pages/AdminPage'
 import { AdminUserEditPage } from '../pages/AdminUserEditPage'
+import { RolePermissionsPage } from '../pages/RolePermissionsPage'
 import { UnauthorizedPage } from '../pages/public/UnauthorizedPage'
 import { NotFoundPage } from '../pages/public/NotFoundPage'
 
@@ -114,6 +115,15 @@ function AuthenticatedRoutes({ user, logout }) {
           element={(
             <RoleGuard user={user} permissions={['user.view', 'permission.view', 'user.manage', 'permission.manage']}>
               <AdminUserEditPage user={user} />
+            </RoleGuard>
+          )}
+        />
+
+        <Route
+          path="/roles-permissions"
+          element={(
+            <RoleGuard user={user} permissions={['permission.view']}>
+              <RolePermissionsPage user={user} />
             </RoleGuard>
           )}
         />

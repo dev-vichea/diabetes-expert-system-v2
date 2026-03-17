@@ -1,5 +1,5 @@
 import { CalendarDays, Mail, Shield, UserRound } from 'lucide-react'
-import { StatusBadge } from '@/components/ui'
+import { Avatar, AvatarBadge, AvatarFallback } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
 function getInitials(name) {
@@ -31,18 +31,16 @@ export function AdminUserSidebar({ user, permissions = [], className }) {
     <aside className={cn('surface h-fit overflow-hidden p-0 xl:sticky xl:top-24', className)}>
       <div className="border-b border-slate-200 px-5 py-5 dark:border-slate-800">
         <div className="flex items-center gap-4">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-violet-100/80 text-3xl font-semibold text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
-            {getInitials(user?.name)}
-          </div>
+          <Avatar className="h-16 w-16">
+            <AvatarFallback className="text-2xl">{getInitials(user?.name)}</AvatarFallback>
+            <AvatarBadge className={user?.is_active ? 'bg-emerald-500' : 'bg-slate-400 dark:bg-slate-500'} />
+          </Avatar>
           <div className="min-w-0">
             <h2 className="truncate text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-50">{user?.name || 'User'}</h2>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${roleBadgeClass(primaryRole)}`}>
                 {primaryRole}
               </span>
-              <StatusBadge tone={user?.is_active ? 'success' : 'neutral'}>
-                {user?.is_active ? 'Active' : 'Inactive'}
-              </StatusBadge>
             </div>
           </div>
         </div>
