@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
 import { ArrowLeft, Save, Shield, Users } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { AdminHeroCard } from '@/components/admin'
@@ -134,7 +135,8 @@ function RoleCombobox({ value, options, disabled, onValueChange }) {
   )
 }
 
-export function AdminUserEditPage({ user: currentUser }) {
+export function AdminUserEditPage() {
+  const { user: currentUser } = useAuth()
   const { userId } = useParams()
   const navigate = useNavigate()
   const [user, setUser] = useState(null)

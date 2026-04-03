@@ -142,6 +142,8 @@ npm install
 npm run dev
 ```
 
+`frontend/.env.example` points to the backend API on `http://127.0.0.1:5001/api`, which matches the backend default in `backend/.env`.
+
 ### UI Foundation (Tailwind + shadcn/ui)
 - Tailwind is configured in `frontend/tailwind.config.js`.
 - shadcn/ui is initialized via `frontend/components.json`.

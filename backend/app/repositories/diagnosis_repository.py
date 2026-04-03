@@ -1,9 +1,11 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from sqlalchemy import func
 
 from app.extensions import db
 from app.models import DiagnosisResult
+from app.models.entities import utc_now
+from app.utils.datetime import serialize_datetime
 
 
 class DiagnosisRepository:
@@ -18,7 +20,7 @@ class DiagnosisRepository:
 
     def count_recent_results(self, *, days: int = 7) -> int:
         safe_days = max(1, min(int(days or 7), 90))
-        since = datetime.utcnow() - timedelta(days=safe_days)
+        since = utc_now() - timedelta(days=safe_days)
         return db.session.query(func.count(DiagnosisResult.id)).filter(DiagnosisResult.created_at >= since).scalar() or 0
 
     def create_result(
@@ -114,9 +116,9 @@ class DiagnosisRepository:
                 "id": session.id,
                 "mode": session.mode,
                 "status": session.status,
-                "started_at": session.started_at.isoformat() if session.started_at else None,
-                "submitted_at": session.submitted_at.isoformat() if session.submitted_at else None,
-                "completed_at": session.completed_at.isoformat() if session.completed_at else None,
+                "started_at": serialize_datetime(session.started_at),
+                "submitted_at": serialize_datetime(session.submitted_at),
+                "completed_at": serialize_datetime(session.completed_at),
             }
             if session
             else None,
@@ -134,8 +136,8 @@ class DiagnosisRepository:
             "triggered_rules": row.triggered_rules_json,
             "explanation_trace": row.explanation_trace_json,
             "review_note": row.review_note,
-            "reviewed_at": row.reviewed_at.isoformat() if row.reviewed_at else None,
+            "reviewed_at": serialize_datetime(row.reviewed_at),
             "is_urgent": bool(row.is_urgent),
             "urgent_reason": row.urgent_reason,
-            "created_at": row.created_at.isoformat() if row.created_at else None,
+            "created_at": serialize_datetime(row.created_at),
         }

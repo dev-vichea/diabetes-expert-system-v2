@@ -4,8 +4,12 @@ import { Sidebar } from './Sidebar'
 import { MobileSidebarDrawer } from './MobileSidebarDrawer'
 import { Topbar } from './Topbar'
 import { getBreadcrumbs, getPageInfo, getVisibleNavItems } from '../../lib/nav-config'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { useAuth } from '@/contexts/AuthContext'
 
-export function AppLayout({ user, onLogout }) {
+export function AppLayout() {
+  const { user, logout } = useAuth()
+  const { language } = useLanguage()
   const location = useLocation()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [theme, setTheme] = useState(() => {
@@ -32,14 +36,13 @@ export function AppLayout({ user, onLogout }) {
     window.localStorage.setItem('theme', theme)
   }, [theme])
 
-  const navItems = useMemo(() => getVisibleNavItems(user), [user])
-  const page = getPageInfo(location.pathname)
-  const breadcrumbs = useMemo(() => getBreadcrumbs(location.pathname, navItems), [location.pathname, navItems])
+  const navItems = useMemo(() => getVisibleNavItems(user, language), [language, user])
+  const page = getPageInfo(location.pathname, language)
+  const breadcrumbs = useMemo(() => getBreadcrumbs(location.pathname, navItems, language), [language, location.pathname, navItems])
   const activeRole = user?.roles?.[0] || user?.role || 'user'
   const sidebarWidth = desktopSidebarCollapsed ? 'lg:grid-cols-[5rem_1fr]' : 'lg:grid-cols-[15rem_1fr]'
 
   return (
-    // <div className={`h-screen overflow-hidden bg-slate-50 dark:bg-[#030309] lg:grid ${sidebarWidth}`}>
     <div className={`h-screen overflow-hidden bg-white dark:bg-[#030309] lg:grid ${sidebarWidth}`}>
       <aside className="hidden h-screen min-h-0 overflow-hidden border-r border-slate-200 bg-white dark:border-[#161b31] dark:bg-[#030309] lg:static lg:block lg:w-auto">
         <Sidebar
@@ -48,7 +51,7 @@ export function AppLayout({ user, onLogout }) {
           userEmail={user?.email}
           activeRole={activeRole}
           collapsed={desktopSidebarCollapsed}
-          onLogout={onLogout}
+          onLogout={logout}
         />
       </aside>
 
@@ -56,7 +59,7 @@ export function AppLayout({ user, onLogout }) {
         open={mobileNavOpen}
         navItems={navItems}
         user={user}
-        onLogout={onLogout}
+        onLogout={logout}
         onClose={() => setMobileNavOpen(false)}
       />
 
@@ -69,7 +72,7 @@ export function AppLayout({ user, onLogout }) {
           isSidebarCollapsed={desktopSidebarCollapsed}
           onToggleDesktopSidebar={() => setDesktopSidebarCollapsed((prev) => !prev)}
           onToggleTheme={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
-          onLogout={onLogout}
+          onLogout={logout}
           onOpenMobileNav={() => setMobileNavOpen(true)}
         />
 

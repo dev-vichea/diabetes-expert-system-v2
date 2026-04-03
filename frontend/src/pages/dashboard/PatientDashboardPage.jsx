@@ -4,8 +4,12 @@ import { ErrorAlert } from '@/components/ui'
 import { PatientCarePanel } from '@/components/dashboard/patient/PatientCarePanel'
 import { PatientDashboardHero } from '@/components/dashboard/patient/PatientDashboardHero'
 import { PatientRecentAssessments } from '@/components/dashboard/patient/PatientRecentAssessments'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { useAuth } from '@/contexts/AuthContext'
 
-export function PatientDashboardPage({ user }) {
+export function PatientDashboardPage() {
+  const { user } = useAuth()
+  const { t } = useLanguage()
   const [patientResults, setPatientResults] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -23,7 +27,7 @@ export function PatientDashboardPage({ user }) {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(getApiErrorMessage(err, 'Failed to load your dashboard data'))
+          setError(getApiErrorMessage(err, t('patientDashboard.errors.loadFailed')))
         }
       } finally {
         if (!cancelled) {
@@ -36,7 +40,7 @@ export function PatientDashboardPage({ user }) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [t])
 
   const latestResult = patientResults[0]
   const urgentCount = useMemo(() => patientResults.filter((item) => item.is_urgent).length, [patientResults])

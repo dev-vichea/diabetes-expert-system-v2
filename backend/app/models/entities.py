@@ -1,6 +1,12 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.extensions import db
+
+
+def utc_now() -> datetime:
+    # The current schema stores naive timestamps, so keep UTC values naive
+    # while avoiding the deprecated datetime.utcnow() API.
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 user_roles = db.Table(
@@ -22,7 +28,7 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False, index=True)
     description = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
 
     permissions = db.relationship("Permission", secondary=role_permissions, back_populates="roles")
     users = db.relationship("User", secondary=user_roles, back_populates="roles")
@@ -34,7 +40,7 @@ class Permission(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     code = db.Column(db.String(80), unique=True, nullable=False, index=True)
     description = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
 
     roles = db.relationship("Role", secondary=role_permissions, back_populates="permissions")
 
@@ -47,8 +53,8 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     name = db.Column(db.String(120), nullable=False)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utc_now, onupdate=utc_now)
 
     roles = db.relationship("Role", secondary=user_roles, back_populates="users")
     diagnoses_made = db.relationship(
@@ -79,8 +85,8 @@ class Patient(db.Model):
     date_of_birth = db.Column(db.Date, nullable=True)
     phone = db.Column(db.String(40), nullable=True)
     notes = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utc_now, onupdate=utc_now)
 
     user = db.relationship("User", back_populates="patient_profile")
     symptoms = db.relationship("Symptom", back_populates="patient", cascade="all, delete-orphan")
@@ -100,8 +106,8 @@ class AssessmentSession(db.Model):
     started_at = db.Column(db.DateTime, nullable=True)
     submitted_at = db.Column(db.DateTime, nullable=True)
     completed_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utc_now, onupdate=utc_now)
 
     patient = db.relationship("Patient", back_populates="assessment_sessions")
     submitted_by_user = db.relationship("User", back_populates="assessment_sessions_submitted", foreign_keys=[submitted_by_user_id])
@@ -117,7 +123,7 @@ class AssessmentAnswer(db.Model):
     question_code = db.Column(db.String(120), nullable=False, index=True)
     answer_value = db.Column(db.Text, nullable=True)
     answer_type = db.Column(db.String(20), nullable=False, default="text")
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
 
     session = db.relationship("AssessmentSession", back_populates="answers")
 
@@ -131,7 +137,7 @@ class Symptom(db.Model):
     symptom_name = db.Column(db.String(255), nullable=False)
     severity = db.Column(db.Integer, nullable=True)
     present = db.Column(db.Boolean, nullable=False, default=True)
-    recorded_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    recorded_at = db.Column(db.DateTime, nullable=False, default=utc_now)
     notes = db.Column(db.Text, nullable=True)
 
     patient = db.relationship("Patient", back_populates="symptoms")
@@ -146,7 +152,7 @@ class LabResult(db.Model):
     test_value = db.Column(db.Float, nullable=False)
     unit = db.Column(db.String(40), nullable=True)
     reference_range = db.Column(db.String(120), nullable=True)
-    measured_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    measured_at = db.Column(db.DateTime, nullable=False, default=utc_now)
     notes = db.Column(db.Text, nullable=True)
 
     patient = db.relationship("Patient", back_populates="lab_results")
@@ -168,8 +174,8 @@ class Rule(db.Model):
     status = db.Column(db.String(20), nullable=False, default="active")
     version = db.Column(db.Integer, nullable=False, default=1)
     created_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utc_now, onupdate=utc_now)
 
     category_ref = db.relationship("RuleCategory", back_populates="rules")
     conditions = db.relationship("RuleCondition", back_populates="rule", cascade="all, delete-orphan")
@@ -185,8 +191,8 @@ class RuleCategory(db.Model):
     name = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utc_now, onupdate=utc_now)
 
     rules = db.relationship("Rule", back_populates="category_ref")
 
@@ -204,7 +210,7 @@ class RuleCondition(db.Model):
     group_key = db.Column(db.String(50), nullable=True, default="default")
     order_index = db.Column(db.Integer, nullable=False, default=1)
     logical_operator = db.Column(db.String(10), nullable=False, default="and")
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
 
     rule = db.relationship("Rule", back_populates="conditions")
 
@@ -218,7 +224,7 @@ class RuleAction(db.Model):
     action_value = db.Column(db.String(255), nullable=False)
     recommendation = db.Column(db.Text, nullable=True)
     metadata_json = db.Column(db.JSON, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
 
     rule = db.relationship("Rule", back_populates="actions")
 
@@ -232,7 +238,7 @@ class RuleVersion(db.Model):
     change_type = db.Column(db.String(30), nullable=False)
     changed_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     snapshot_json = db.Column(db.JSON, nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
 
     rule = db.relationship("Rule", back_populates="versions")
     changed_by_user = db.relationship("User", foreign_keys=[changed_by_user_id])
@@ -257,7 +263,7 @@ class DiagnosisResult(db.Model):
     reviewed_at = db.Column(db.DateTime, nullable=True)
     is_urgent = db.Column(db.Boolean, nullable=False, default=False)
     urgent_reason = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
 
     assessment_session = db.relationship("AssessmentSession", back_populates="diagnosis_results")
     patient = db.relationship("Patient", back_populates="diagnosis_results")
@@ -274,7 +280,7 @@ class AuditLog(db.Model):
     entity_type = db.Column(db.String(120), nullable=False, index=True)
     entity_id = db.Column(db.String(120), nullable=True)
     metadata_json = db.Column(db.JSON, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
 
 
 class RevokedToken(db.Model):
@@ -285,4 +291,4 @@ class RevokedToken(db.Model):
     token_type = db.Column(db.String(20), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     expires_at = db.Column(db.DateTime, nullable=False, index=True)
-    revoked_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    revoked_at = db.Column(db.DateTime, nullable=False, default=utc_now)

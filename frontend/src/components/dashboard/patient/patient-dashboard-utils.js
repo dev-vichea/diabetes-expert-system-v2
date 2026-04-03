@@ -1,6 +1,7 @@
-export function formatDateTime(value) {
-  if (!value) return 'N/A'
-  return new Date(value).toLocaleString()
+import { formatDateTime as formatDateTimeInCambodia } from '@/lib/datetime'
+
+export function formatDateTime(value, language, fallback) {
+  return formatDateTimeInCambodia(value, fallback, language)
 }
 
 export function toPercent(certainty) {
@@ -14,32 +15,32 @@ export function getUrgencyTone(result) {
   return result.is_urgent ? 'danger' : 'success'
 }
 
-export function getUrgencyLabel(result) {
-  if (!result) return 'No result yet'
-  return result.is_urgent ? 'Needs attention' : 'Stable'
+export function getUrgencyLabel(result, t) {
+  if (!result) return t('patientDashboard.status.noResultYet')
+  return result.is_urgent ? t('patientDashboard.status.needsAttention') : t('patientDashboard.status.stable')
 }
 
-export function buildCareChecklist(latestResult) {
+export function buildCareChecklist(latestResult, t) {
   if (!latestResult) {
     return [
-      'Complete your first assessment to generate a diagnosis summary.',
-      'Keep recent lab values nearby before you start the questionnaire.',
-      'Return to the dashboard to track future result changes.',
+      t('patientDashboard.checklist.firstAssessment1'),
+      t('patientDashboard.checklist.firstAssessment2'),
+      t('patientDashboard.checklist.firstAssessment3'),
     ]
   }
 
   const items = [
     latestResult.is_urgent
-      ? 'Follow the urgent advice from your latest result as soon as possible.'
-      : 'Follow the latest recommendation from your most recent result.',
-    'Use your result history to compare changes in confidence and diagnosis over time.',
+      ? t('patientDashboard.checklist.urgentRecommendation')
+      : t('patientDashboard.checklist.routineRecommendation'),
+    t('patientDashboard.checklist.compareHistory'),
   ]
 
   const recommendation = String(latestResult.recommendation || '').toLowerCase()
   if (recommendation.includes('hba1c') || recommendation.includes('fasting glucose') || recommendation.includes('laboratory')) {
-    items.push('Prepare missing lab tests before your next assessment to improve certainty.')
+    items.push(t('patientDashboard.checklist.prepareLabs'))
   } else {
-    items.push('Start a new assessment whenever symptoms, labs, or medication status changes.')
+    items.push(t('patientDashboard.checklist.startWhenChanged'))
   }
 
   return items

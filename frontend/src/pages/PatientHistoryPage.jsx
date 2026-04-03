@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
+import { formatDateTime } from '@/lib/datetime'
 import { AppSelect } from '@/components/ui'
 
 const EMPTY_SYMPTOM_FORM = {
@@ -17,11 +18,6 @@ const EMPTY_LAB_FORM = {
   unit: '',
   reference_range: '',
   notes: '',
-}
-
-function formatDateTime(value) {
-  if (!value) return 'N/A'
-  return new Date(value).toLocaleString()
 }
 
 export function PatientHistoryPage() {

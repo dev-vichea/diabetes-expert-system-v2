@@ -1,8 +1,8 @@
 import json
-from datetime import datetime
 
 from app.errors import NotFoundError, ValidationError
 from app.expert_system.inference_engine import run_inference
+from app.models.entities import utc_now
 
 
 class DiagnosisService:
@@ -136,7 +136,7 @@ class DiagnosisService:
             review_note=review_note,
             is_urgent=is_urgent,
             urgent_reason=urgent_reason,
-            reviewed_at=datetime.now(),
+            reviewed_at=utc_now(),
         )
 
         if self.audit_log_repository:

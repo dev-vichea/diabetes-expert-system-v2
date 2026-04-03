@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
-
 from app.extensions import db
 from app.models import AssessmentAnswer, AssessmentSession
+from app.models.entities import utc_now
+from app.utils.datetime import serialize_datetime
 
 
 class AssessmentRepository:
@@ -26,7 +26,7 @@ class AssessmentRepository:
         if normalized_status not in self.ALLOWED_STATUSES:
             normalized_status = "submitted"
 
-        now = datetime.utcnow()
+        now = utc_now()
         session = AssessmentSession(
             patient_id=patient_id,
             submitted_by_user_id=submitted_by_user_id,
@@ -62,7 +62,7 @@ class AssessmentRepository:
 
     def mark_completed(self, session: AssessmentSession) -> AssessmentSession:
         session.status = "completed"
-        session.completed_at = datetime.utcnow()
+        session.completed_at = utc_now()
         db.session.commit()
         return session
 
@@ -78,10 +78,10 @@ class AssessmentRepository:
             "submitted_by_user_id": session.submitted_by_user_id,
             "mode": session.mode,
             "status": session.status,
-            "started_at": session.started_at.isoformat() if session.started_at else None,
-            "submitted_at": session.submitted_at.isoformat() if session.submitted_at else None,
-            "completed_at": session.completed_at.isoformat() if session.completed_at else None,
-            "created_at": session.created_at.isoformat() if session.created_at else None,
-            "updated_at": session.updated_at.isoformat() if session.updated_at else None,
+            "started_at": serialize_datetime(session.started_at),
+            "submitted_at": serialize_datetime(session.submitted_at),
+            "completed_at": serialize_datetime(session.completed_at),
+            "created_at": serialize_datetime(session.created_at),
+            "updated_at": serialize_datetime(session.updated_at),
             "answer_count": len(session.answers),
         }

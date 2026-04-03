@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
+import { formatDateTime } from '@/lib/datetime'
 import { DataTable, EmptyState, ErrorAlert, FormSection, SectionCard, StatusBadge } from '@/components/ui'
-
-function formatDateTime(value) {
-  if (!value) return 'N/A'
-  return new Date(value).toLocaleString()
-}
 
 export function ReviewPage() {
   const [results, setResults] = useState([])

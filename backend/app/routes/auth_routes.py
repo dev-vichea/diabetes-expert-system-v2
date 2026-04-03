@@ -1,6 +1,7 @@
 from flask import Blueprint, g, request
 
 from app.dependencies import get_auth_service
+from app.extensions import limiter
 from app.utils.api_response import success_response
 from app.utils.auth import require_auth
 
@@ -8,6 +9,7 @@ auth_bp = Blueprint("auth", __name__)
 
 
 @auth_bp.post("/login")
+@limiter.limit("10 per minute")
 def login():
     payload = request.get_json(silent=True) or {}
     result = get_auth_service().login(
@@ -18,6 +20,7 @@ def login():
 
 
 @auth_bp.post("/register")
+@limiter.limit("5 per minute")
 def register():
     payload = request.get_json(silent=True) or {}
     result = get_auth_service().register(payload)
@@ -25,6 +28,7 @@ def register():
 
 
 @auth_bp.post("/refresh")
+@limiter.limit("20 per minute")
 def refresh():
     payload = request.get_json(silent=True) or {}
     result = get_auth_service().refresh(str(payload.get("refresh_token", "")).strip())

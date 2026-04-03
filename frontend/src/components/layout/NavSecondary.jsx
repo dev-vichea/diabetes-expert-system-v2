@@ -1,4 +1,5 @@
-import { HelpCircle, Search, Settings } from 'lucide-react'
+import { HelpCircle, Settings } from 'lucide-react'
+import { useLanguage } from '@/contexts/LanguageContext'
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -8,15 +9,15 @@ import {
 } from '@/components/ui/sidebar'
 
 export function NavSecondary({ collapsed = false }) {
+  const { t } = useLanguage()
   const items = [
-    { title: 'Settings', icon: Settings },
-    { title: 'Get Help', icon: HelpCircle },
-    { title: 'Search', icon: Search },
+    { title: t('common.settings'), icon: Settings },
+    { title: t('common.getHelp'), icon: HelpCircle },
   ]
 
   return (
     <SidebarGroup className="mt-auto">
-      {!collapsed ? <SidebarGroupLabel>Tools</SidebarGroupLabel> : null}
+      {!collapsed ? <SidebarGroupLabel>{t('nav.tools')}</SidebarGroupLabel> : null}
       <SidebarMenu>
         {items.map((item) => {
           const Icon = item.icon

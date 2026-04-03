@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
+import { formatDateTime } from '@/lib/datetime'
 import {
   AppSelect,
   Combobox,
@@ -667,7 +668,7 @@ export function RulesPage() {
                     <td>{version.version_number}</td>
                     <td>{version.change_type}</td>
                     <td>{version.changed_by_name || version.changed_by_user_id || 'N/A'}</td>
-                    <td>{version.created_at ? new Date(version.created_at).toLocaleString() : 'N/A'}</td>
+                    <td>{formatDateTime(version.created_at)}</td>
                   </tr>
                 ))}
                 {!versions.length && selectedRule ? (
@@ -698,7 +699,7 @@ export function RulesPage() {
                   <tr key={log.id}>
                     <td>{log.action}</td>
                     <td>{log.actor_user_id || 'N/A'}</td>
-                    <td>{log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A'}</td>
+                    <td>{formatDateTime(log.created_at)}</td>
                   </tr>
                 ))}
                 {!auditLogs.length && selectedRule ? (

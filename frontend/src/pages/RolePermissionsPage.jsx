@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Plus, Save, ShieldCheck } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { AdminHeroCard } from '@/components/admin'
 import { Checkbox, EmptyState, ErrorAlert, SectionCard } from '@/components/ui'
@@ -60,7 +61,8 @@ function roleBadgeClass(roleName) {
   return 'bg-primary-50 text-primary-700 ring-1 ring-primary-100 dark:bg-primary-950/40 dark:text-primary-300 dark:ring-primary-900/40'
 }
 
-export function RolePermissionsPage({ user }) {
+export function RolePermissionsPage() {
+  const { user } = useAuth()
   const [roles, setRoles] = useState([])
   const [permissions, setPermissions] = useState([])
   const [selectedRoleId, setSelectedRoleId] = useState('new')

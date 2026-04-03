@@ -1,9 +1,11 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from sqlalchemy import func
 
 from app.extensions import db
 from app.models import AuditLog, User
+from app.models.entities import utc_now
+from app.utils.datetime import serialize_datetime
 
 
 class AuditLogRepository:
@@ -55,13 +57,13 @@ class AuditLogRepository:
         return self._serialize_many(rows)
 
     def count_recent_events(self, *, hours: int = 24) -> int:
-        since = datetime.utcnow() - timedelta(hours=max(1, int(hours or 24)))
+        since = utc_now() - timedelta(hours=max(1, int(hours or 24)))
         return AuditLog.query.filter(AuditLog.created_at >= since).count()
 
     def get_activity_summary(self, *, days: int = 7, top_limit: int = 10) -> dict:
         safe_days = max(1, min(int(days or 7), 90))
         safe_limit = max(1, min(int(top_limit or 10), 50))
-        since = datetime.utcnow() - timedelta(days=safe_days)
+        since = utc_now() - timedelta(days=safe_days)
 
         events_total = AuditLog.query.filter(AuditLog.created_at >= since).count()
 
@@ -119,5 +121,5 @@ class AuditLogRepository:
             "entity_type": log.entity_type,
             "entity_id": log.entity_id,
             "metadata": log.metadata_json or {},
-            "created_at": log.created_at.isoformat() if log.created_at else None,
+            "created_at": serialize_datetime(log.created_at),
         }

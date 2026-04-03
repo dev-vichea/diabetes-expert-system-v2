@@ -4,7 +4,7 @@ export const ACCESS_TOKEN_KEY = 'access_token'
 export const REFRESH_TOKEN_KEY = 'refresh_token'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5001/api',
   timeout: 10000,
 })
 
@@ -111,6 +111,12 @@ export function getApiErrorMessage(error, fallbackMessage = 'Request failed') {
   const legacyMessage = error?.response?.data?.error
   if (serverMessage) return serverMessage
   if (legacyMessage) return legacyMessage
+  if (error?.code === 'ECONNABORTED') {
+    return 'Request timed out. Check that the backend server is running.'
+  }
+  if (error?.request && !error?.response) {
+    return `Cannot connect to the backend at ${api.defaults.baseURL}. Start the backend server and try again.`
+  }
   return fallbackMessage
 }
 

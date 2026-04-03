@@ -4,6 +4,8 @@ from logging.config import fileConfig
 from flask import current_app
 
 from alembic import context
+from alembic.script import ScriptDirectory
+from sqlalchemy import inspect, text
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -72,6 +74,45 @@ def run_migrations_offline():
         context.run_migrations()
 
 
+def _bootstrap_fallback_alembic_version(connection):
+    if connection.dialect.name != "sqlite":
+        return
+
+    if not current_app.config.get("DB_FALLBACK_ACTIVE", False):
+        return
+
+    inspector = inspect(connection)
+    table_names = set(inspector.get_table_names())
+    user_tables = table_names - {"alembic_version"}
+    if not user_tables:
+        return
+
+    head_revision = ScriptDirectory.from_config(config).get_current_head()
+    if not head_revision:
+        return
+
+    if "alembic_version" not in table_names:
+        connection.execute(text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL PRIMARY KEY)"))
+        connection.execute(text("INSERT INTO alembic_version (version_num) VALUES (:version_num)"), {"version_num": head_revision})
+        connection.commit()
+        logger.warning(
+            "Detected fallback SQLite schema without Alembic version table. Stamped schema at revision %s.",
+            head_revision,
+        )
+        return
+
+    version_row = connection.execute(text("SELECT version_num FROM alembic_version LIMIT 1")).scalar()
+    if version_row:
+        return
+
+    connection.execute(text("INSERT INTO alembic_version (version_num) VALUES (:version_num)"), {"version_num": head_revision})
+    connection.commit()
+    logger.warning(
+        "Detected fallback SQLite schema with empty Alembic version table. Stamped schema at revision %s.",
+        head_revision,
+    )
+
+
 def run_migrations_online():
     """Run migrations in 'online' mode.
 
@@ -97,6 +138,8 @@ def run_migrations_online():
     connectable = get_engine()
 
     with connectable.connect() as connection:
+        _bootstrap_fallback_alembic_version(connection)
+
         context.configure(
             connection=connection,
             target_metadata=get_metadata(),

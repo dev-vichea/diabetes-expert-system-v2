@@ -7,35 +7,42 @@ import {
   ShieldCheck,
   Users,
 } from 'lucide-react'
+import { translate } from '@/lib/i18n'
 
 export const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, section: 'workspace' },
-  { to: '/diagnosis', label: 'Assessment', icon: Microscope, section: 'workspace', permissions: ['diagnosis.run'] },
-  { to: '/patients', label: 'Patients', icon: Users, section: 'workspace', permissions: ['patient.view'] },
-  { to: '/rules', label: 'Knowledge Base', icon: BookMarked, section: 'workspace', permissions: ['rule.view'] },
-  { to: '/review', label: 'Patient Review', icon: ClipboardList, section: 'workspace', permissions: ['diagnosis.review_any'] },
-  { to: '/my-results', label: 'My Results', icon: ActivitySquare, section: 'workspace', permissions: ['diagnosis.view_own'] },
-  { to: '/users', label: 'Users', icon: ShieldCheck, section: 'system', permissions: ['user.view', 'permission.view'] },
-  { to: '/roles-permissions', label: 'Roles', icon: ShieldCheck, section: 'system', permissions: ['permission.view'] },
+  { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, section: 'workspace' },
+  { to: '/diagnosis', labelKey: 'nav.assessment', icon: Microscope, section: 'workspace', permissions: ['diagnosis.run'] },
+  { to: '/patients', labelKey: 'nav.patients', icon: Users, section: 'workspace', permissions: ['patient.view'] },
+  { to: '/rules', labelKey: 'nav.knowledgeBase', icon: BookMarked, section: 'workspace', permissions: ['rule.view'] },
+  { to: '/review', labelKey: 'nav.patientReview', icon: ClipboardList, section: 'workspace', permissions: ['diagnosis.review_any'] },
+  { to: '/my-results', labelKey: 'nav.myResults', icon: ActivitySquare, section: 'workspace', permissions: ['diagnosis.view_own'] },
+  { to: '/users', labelKey: 'nav.users', icon: ShieldCheck, section: 'system', permissions: ['user.view', 'permission.view'] },
+  { to: '/roles-permissions', labelKey: 'nav.roles', icon: ShieldCheck, section: 'system', permissions: ['permission.view'] },
 ]
 
 export const PAGE_TITLE_BY_PATH = [
-  { pattern: '/unauthorized', title: 'Unauthorized', subtitle: 'You do not have access to this resource' },
-  { pattern: '/not-found', title: 'Not Found', subtitle: 'The requested page could not be found' },
-  { pattern: '/diagnosis/result', title: 'Assessment Result', subtitle: 'Readable clinical summary from your assessment output' },
-  { pattern: '/diagnosis', title: 'Assessment Workspace', subtitle: 'Collect patient facts and run expert inference' },
-  { pattern: '/patients', title: 'Patient Management', subtitle: 'Profiles, symptoms, labs, and diagnosis timelines' },
-  { pattern: '/rules', title: 'Knowledge Base', subtitle: 'Rule authoring, history, and governance' },
-  { pattern: '/review', title: 'Clinical Review', subtitle: 'Annotate and triage diagnosis outcomes' },
-  { pattern: '/my-results', title: 'My Diagnosis Results', subtitle: 'Track your diagnosis history and feedback' },
-  { pattern: '/users', title: 'Users', subtitle: 'Manage user access, roles, and account status' },
-  { pattern: '/roles-permissions', title: 'Roles & Permissions', subtitle: 'Create role profiles and choose granted permissions' },
-  { pattern: '/', title: 'Dashboard', subtitle: 'Operational overview by role' },
+  { pattern: '/unauthorized', titleKey: 'page.unauthorized.title', subtitleKey: 'page.unauthorized.subtitle' },
+  { pattern: '/not-found', titleKey: 'page.notFound.title', subtitleKey: 'page.notFound.subtitle' },
+  { pattern: '/diagnosis/result', titleKey: 'page.assessmentResult.title', subtitleKey: 'page.assessmentResult.subtitle' },
+  { pattern: '/diagnosis', titleKey: 'page.assessmentWorkspace.title', subtitleKey: 'page.assessmentWorkspace.subtitle' },
+  { pattern: '/patients', titleKey: 'page.patientManagement.title', subtitleKey: 'page.patientManagement.subtitle' },
+  { pattern: '/rules', titleKey: 'page.knowledgeBase.title', subtitleKey: 'page.knowledgeBase.subtitle' },
+  { pattern: '/review', titleKey: 'page.clinicalReview.title', subtitleKey: 'page.clinicalReview.subtitle' },
+  { pattern: '/my-results', titleKey: 'page.myDiagnosisResults.title', subtitleKey: 'page.myDiagnosisResults.subtitle' },
+  { pattern: '/users', titleKey: 'page.users.title', subtitleKey: 'page.users.subtitle' },
+  { pattern: '/roles-permissions', titleKey: 'page.rolesPermissions.title', subtitleKey: 'page.rolesPermissions.subtitle' },
+  { pattern: '/', titleKey: 'page.dashboard.title', subtitleKey: 'page.dashboard.subtitle' },
 ]
 
-export function getPageInfo(pathname) {
+export function getPageInfo(pathname, language = 'en') {
   const matched = PAGE_TITLE_BY_PATH.find((item) => pathname === item.pattern || pathname.startsWith(`${item.pattern}/`))
-  return matched || PAGE_TITLE_BY_PATH[PAGE_TITLE_BY_PATH.length - 1]
+  const page = matched || PAGE_TITLE_BY_PATH[PAGE_TITLE_BY_PATH.length - 1]
+
+  return {
+    ...page,
+    title: translate(language, page.titleKey),
+    subtitle: translate(language, page.subtitleKey),
+  }
 }
 
 function hasAccess(user, item) {
@@ -53,8 +60,13 @@ function hasAccess(user, item) {
   return true
 }
 
-export function getVisibleNavItems(user) {
-  return NAV_ITEMS.filter((item) => hasAccess(user, item))
+export function getVisibleNavItems(user, language = 'en') {
+  return NAV_ITEMS
+    .filter((item) => hasAccess(user, item))
+    .map((item) => ({
+      ...item,
+      label: translate(language, item.labelKey),
+    }))
 }
 
 function toTitleCase(value) {
@@ -63,21 +75,21 @@ function toTitleCase(value) {
     .replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
-function getDynamicCrumbLabel(segment, parentPath) {
-  if (parentPath === '/patients') return 'Patient History'
-  if (parentPath === '/rules') return 'Rule Details'
-  if (parentPath === '/review') return 'Review Details'
+function getDynamicCrumbLabel(segment, parentPath, language) {
+  if (parentPath === '/patients') return translate(language, 'breadcrumbs.patientHistory')
+  if (parentPath === '/rules') return translate(language, 'breadcrumbs.ruleDetails')
+  if (parentPath === '/review') return translate(language, 'breadcrumbs.reviewDetails')
   if (/^\d+$/.test(segment)) return `#${segment}`
-  if (/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(segment)) return 'Details'
+  if (/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(segment)) return translate(language, 'breadcrumbs.details')
   return toTitleCase(segment)
 }
 
-export function getBreadcrumbs(pathname, navItems = NAV_ITEMS) {
+export function getBreadcrumbs(pathname, navItems = NAV_ITEMS, language = 'en') {
   const pathOnly = pathname.split('?')[0]
   const segments = pathOnly.split('/').filter(Boolean)
-  const navLabelMap = new Map(navItems.map((item) => [item.to, item.label]))
+  const navLabelMap = new Map(navItems.map((item) => [item.to, item.label || translate(language, item.labelKey)]))
 
-  const breadcrumbs = [{ label: 'Dashboard', to: segments.length ? '/' : null }]
+  const breadcrumbs = [{ label: translate(language, 'breadcrumbs.dashboard'), to: segments.length ? '/' : null }]
   if (!segments.length) return breadcrumbs
 
   let parentPath = ''
@@ -85,7 +97,7 @@ export function getBreadcrumbs(pathname, navItems = NAV_ITEMS) {
   segments.forEach((segment, index) => {
     parentPath = `${parentPath}/${segment}`
     const isLast = index === segments.length - 1
-    const label = navLabelMap.get(parentPath) || getDynamicCrumbLabel(segment, parentPath.slice(0, parentPath.lastIndexOf('/')) || '/')
+    const label = navLabelMap.get(parentPath) || getDynamicCrumbLabel(segment, parentPath.slice(0, parentPath.lastIndexOf('/')) || '/', language)
 
     breadcrumbs.push({
       label,

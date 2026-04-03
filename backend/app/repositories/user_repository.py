@@ -2,6 +2,7 @@ from sqlalchemy import func
 
 from app.extensions import db
 from app.models import Permission, Role, User, user_roles
+from app.utils.datetime import serialize_datetime
 
 
 class UserRepository:
@@ -166,7 +167,7 @@ class UserRepository:
             "description": role.description,
             "permissions": sorted(permission.code for permission in role.permissions),
             "user_count": len(role.users),
-            "created_at": role.created_at.isoformat() if role.created_at else None,
+            "created_at": serialize_datetime(role.created_at),
         }
 
     @staticmethod
@@ -175,7 +176,7 @@ class UserRepository:
             "id": permission.id,
             "code": permission.code,
             "description": permission.description,
-            "created_at": permission.created_at.isoformat() if permission.created_at else None,
+            "created_at": serialize_datetime(permission.created_at),
         }
 
     def to_public_dict(self, user: User) -> dict:
@@ -191,6 +192,6 @@ class UserRepository:
             "role": role_names[0] if role_names else "patient",
             "permissions": permissions,
             "patient_id": user.patient_profile.id if user.patient_profile else None,
-            "created_at": user.created_at.isoformat(),
-            "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+            "created_at": serialize_datetime(user.created_at),
+            "updated_at": serialize_datetime(user.updated_at),
         }

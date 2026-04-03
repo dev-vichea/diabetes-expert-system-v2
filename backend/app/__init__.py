@@ -1,3 +1,6 @@
+import logging
+import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from flask import Flask
@@ -9,7 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from .config import Config
 from .dependencies import init_dependencies
 from .errors import register_error_handlers
-from .extensions import db, migrate
+from .extensions import db, limiter, migrate
 from .routes.admin_routes import admin_bp
 from .routes.auth_routes import auth_bp
 from .routes.diagnosis_routes import diagnosis_bp
@@ -19,15 +22,72 @@ from .utils.api_response import success_response
 from .utils.seed import seed_demo_data
 
 
+def _configure_logging(app: Flask):
+    """Configure structured logging for the application."""
+    log_level = logging.DEBUG if app.config["DEBUG"] else logging.INFO
+    formatter = logging.Formatter(
+        fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(formatter)
+    stream_handler.setLevel(log_level)
+
+    app.logger.handlers.clear()
+    app.logger.addHandler(stream_handler)
+    app.logger.setLevel(log_level)
+
+    # Quiet noisy loggers
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+    logging.getLogger("werkzeug").setLevel(logging.INFO)
+
+
+def _add_security_headers(app: Flask):
+    """Add security response headers to every response."""
+
+    @app.after_request
+    def set_security_headers(response):
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        if not app.config["DEBUG"]:
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains"
+            )
+        return response
+
+
+def _register_cli_commands(app: Flask):
+    """Register custom CLI commands for maintenance tasks."""
+
+    @app.cli.command("cleanup-tokens")
+    def cleanup_tokens():
+        """Remove expired revoked tokens from the database."""
+        from .models.entities import RevokedToken
+
+        cutoff = datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=1)
+        deleted = RevokedToken.query.filter(
+            RevokedToken.expires_at < cutoff
+        ).delete()
+        db.session.commit()
+        app.logger.info("Cleaned up %d expired revoked tokens.", deleted)
+
+
 def create_app(config_object=Config):
     app = Flask(__name__)
     app.config.from_object(config_object)
     _resolve_startup_database(app)
 
+    # Core setup
+    _configure_logging(app)
     CORS(app, resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}})
+    _add_security_headers(app)
 
     db.init_app(app)
     migrate.init_app(app, db)
+    limiter.init_app(app)
 
     # Ensure models are imported before migration autogeneration.
     from . import models  # noqa: F401
@@ -64,6 +124,7 @@ def create_app(config_object=Config):
 
     register_error_handlers(app)
     init_dependencies(app)
+    _register_cli_commands(app)
     return app
 
 
@@ -85,6 +146,9 @@ def _resolve_startup_database(app: Flask):
         app.config["DB_FALLBACK_ACTIVE"] = True
         app.config["DB_AUTO_CREATE"] = bool(app.config.get("DB_FALLBACK_AUTO_CREATE", True))
         app.config["SEED_DEMO_DATA"] = bool(app.config.get("DB_FALLBACK_SEED", True))
+
+        # SQLite does not support connection pooling
+        app.config.pop("SQLALCHEMY_ENGINE_OPTIONS", None)
 
         app.logger.warning(
             "Primary database unavailable. Falling back to SQLite. "

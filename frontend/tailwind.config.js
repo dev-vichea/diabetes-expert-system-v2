@@ -39,7 +39,7 @@ export default {
         soft: '0 10px 25px -15px rgba(13, 42, 74, 0.35)',
       },
       fontFamily: {
-        sans: ['Manrope', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['var(--app-font-sans)', 'Manrope', 'Noto Sans Khmer', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
     },
   },

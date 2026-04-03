@@ -8,6 +8,7 @@ from sqlalchemy import func
 
 from app.extensions import db
 from app.models import Rule, RuleAction, RuleCategory, RuleCondition, RuleVersion
+from app.utils.datetime import serialize_datetime
 
 
 DEFAULT_RULE_CATEGORIES = {
@@ -42,8 +43,8 @@ class RuleRepository:
                 "name": row.name,
                 "description": row.description,
                 "is_active": bool(row.is_active),
-                "created_at": row.created_at.isoformat() if row.created_at else None,
-                "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+                "created_at": serialize_datetime(row.created_at),
+                "updated_at": serialize_datetime(row.updated_at),
             }
             for row in rows
         ]
@@ -342,8 +343,8 @@ class RuleRepository:
             "status": rule.status,
             "version": int(rule.version or 1),
             "created_by_user_id": rule.created_by_user_id,
-            "created_at": rule.created_at.isoformat() if rule.created_at else None,
-            "updated_at": rule.updated_at.isoformat() if rule.updated_at else None,
+            "created_at": serialize_datetime(rule.created_at),
+            "updated_at": serialize_datetime(rule.updated_at),
         }
 
     @staticmethod
@@ -356,7 +357,7 @@ class RuleRepository:
             "changed_by_user_id": version.changed_by_user_id,
             "changed_by_name": version.changed_by_user.name if version.changed_by_user else None,
             "snapshot": version.snapshot_json,
-            "created_at": version.created_at.isoformat() if version.created_at else None,
+            "created_at": serialize_datetime(version.created_at),
         }
 
     @staticmethod

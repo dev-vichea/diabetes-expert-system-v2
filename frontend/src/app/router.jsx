@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { useAuthUser } from '../hooks/useAuthUser'
+import { useAuth } from '../contexts/AuthContext'
 import { ProtectedRoute } from '../components/guards/ProtectedRoute'
 import { RoleGuard } from '../components/guards/RoleGuard'
 import { AppLayout } from '../components/layout/AppLayout'
@@ -19,7 +19,9 @@ import { RolePermissionsPage } from '../pages/RolePermissionsPage'
 import { UnauthorizedPage } from '../pages/public/UnauthorizedPage'
 import { NotFoundPage } from '../pages/public/NotFoundPage'
 
-function AuthenticatedRoutes({ user, logout }) {
+function AuthenticatedRoutes() {
+  const { user, logout } = useAuth()
+
   return (
     <Routes>
       <Route path="/login" element={<Navigate to="/" replace />} />
@@ -30,17 +32,17 @@ function AuthenticatedRoutes({ user, logout }) {
       <Route
         element={(
           <ProtectedRoute user={user}>
-            <AppLayout user={user} onLogout={logout} />
+            <AppLayout />
           </ProtectedRoute>
         )}
       >
-        <Route path="/" element={<DashboardPage user={user} />} />
+        <Route path="/" element={<DashboardPage />} />
 
         <Route
           path="/diagnosis"
           element={(
             <RoleGuard user={user} permissions={['diagnosis.run']}>
-              <DiagnosisPage user={user} />
+              <DiagnosisPage />
             </RoleGuard>
           )}
         />
@@ -49,7 +51,7 @@ function AuthenticatedRoutes({ user, logout }) {
           path="/diagnosis/result"
           element={(
             <RoleGuard user={user} permissions={['diagnosis.run']}>
-              <DiagnosisResultPage user={user} />
+              <DiagnosisResultPage />
             </RoleGuard>
           )}
         />
@@ -67,7 +69,7 @@ function AuthenticatedRoutes({ user, logout }) {
           path="/patients/:patientId"
           element={(
             <RoleGuard user={user} permissions={['patient.view']}>
-              <PatientHistoryPage user={user} />
+              <PatientHistoryPage />
             </RoleGuard>
           )}
         />
@@ -105,7 +107,7 @@ function AuthenticatedRoutes({ user, logout }) {
           path="/users"
           element={(
             <RoleGuard user={user} permissions={['user.view', 'permission.view']}>
-              <AdminPage user={user} />
+              <AdminPage />
             </RoleGuard>
           )}
         />
@@ -114,7 +116,7 @@ function AuthenticatedRoutes({ user, logout }) {
           path="/users/:userId/edit"
           element={(
             <RoleGuard user={user} permissions={['user.view', 'permission.view', 'user.manage', 'permission.manage']}>
-              <AdminUserEditPage user={user} />
+              <AdminUserEditPage />
             </RoleGuard>
           )}
         />
@@ -123,7 +125,7 @@ function AuthenticatedRoutes({ user, logout }) {
           path="/roles-permissions"
           element={(
             <RoleGuard user={user} permissions={['permission.view']}>
-              <RolePermissionsPage user={user} />
+              <RolePermissionsPage />
             </RoleGuard>
           )}
         />
@@ -136,11 +138,11 @@ function AuthenticatedRoutes({ user, logout }) {
   )
 }
 
-function PublicRoutes({ setUser }) {
+function PublicRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage setUser={setUser} />} />
-      <Route path="/sign-up" element={<SignUpPage setUser={setUser} />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/sign-up" element={<SignUpPage />} />
       <Route path="/auth/sign-in" element={<Navigate to="/login" replace />} />
       <Route path="/auth/sign-up" element={<Navigate to="/sign-up" replace />} />
       <Route path="/unauthorized" element={<UnauthorizedPage isAuthenticated={false} />} />
@@ -151,11 +153,11 @@ function PublicRoutes({ setUser }) {
 }
 
 export function AppRouter() {
-  const { user, setUser, logout } = useAuthUser()
+  const { user } = useAuth()
 
   if (user) {
-    return <AuthenticatedRoutes user={user} logout={logout} />
+    return <AuthenticatedRoutes />
   }
 
-  return <PublicRoutes setUser={setUser} />
+  return <PublicRoutes />
 }

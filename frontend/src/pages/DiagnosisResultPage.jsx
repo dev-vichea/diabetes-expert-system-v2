@@ -14,8 +14,10 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
+import { formatDateTime } from '@/lib/datetime'
 import { EmptyState, StatusBadge, ConfirmDialog } from '@/components/ui'
 import { readDiagnosisResultSnapshot, saveDiagnosisResultSnapshot } from '@/lib/diagnosis-result-storage'
+import { useAuth } from '@/contexts/AuthContext'
 
 function toCertaintyPercent(certainty) {
   const numeric = Number(certainty)
@@ -31,11 +33,6 @@ function toReadableLabel(value) {
     .replaceAll('_', ' ')
     .replace(/\s+/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase())
-}
-
-function formatDateTime(value) {
-  if (!value) return 'N/A'
-  return new Date(value).toLocaleString()
 }
 
 function normalizeSnapshot(payload) {
@@ -311,7 +308,8 @@ function SurfaceSection({ title, children, icon: Icon }) {
   )
 }
 
-export function DiagnosisResultPage({ user }) {
+export function DiagnosisResultPage() {
+  const { user } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [showRestartConfirm, setShowRestartConfirm] = useState(false)

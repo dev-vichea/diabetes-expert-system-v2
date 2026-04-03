@@ -1,6 +1,9 @@
 import { Sidebar } from './Sidebar'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export function MobileSidebarDrawer({ open, navItems, user, onLogout, onClose }) {
+  const { t } = useLanguage()
+
   return (
     <>
       <aside
@@ -20,7 +23,7 @@ export function MobileSidebarDrawer({ open, navItems, user, onLogout, onClose })
       {open ? (
         <button
           type="button"
-          aria-label="Close menu"
+          aria-label={t('common.closeMenu')}
           onClick={onClose}
           className="fixed inset-0 z-30 bg-slate-900/50 lg:hidden"
         />

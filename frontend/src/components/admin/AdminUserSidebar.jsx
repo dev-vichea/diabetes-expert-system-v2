@@ -1,4 +1,5 @@
 import { CalendarDays, Mail, Shield, UserRound } from 'lucide-react'
+import { formatDateTime } from '@/lib/datetime'
 import { Avatar, AvatarBadge, AvatarFallback } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
@@ -9,11 +10,6 @@ function getInitials(name) {
     .slice(0, 2)
   if (!parts.length) return 'U'
   return parts.map((part) => part[0].toUpperCase()).join('')
-}
-
-function formatDateTime(value) {
-  if (!value) return 'Unknown'
-  return new Date(value).toLocaleString()
 }
 
 function roleBadgeClass(role) {

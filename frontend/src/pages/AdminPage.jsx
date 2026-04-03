@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useAuth } from '@/contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from 'recharts'
 import {
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { AdminHeroCard, AdminInsightPanel, AdminMetricCard } from '@/components/admin'
+import { formatDateTime, getDateTimeTimestamp } from '@/lib/datetime'
 import { notify } from '@/lib/toast'
 import {
   AppSelect,
@@ -63,7 +65,8 @@ const PAGE_SIZE_OPTIONS = [10, 20, 50]
 function formatRelativeTime(value) {
   if (!value) return 'No activity yet'
 
-  const time = new Date(value).getTime()
+  const time = getDateTimeTimestamp(value)
+  if (Number.isNaN(time)) return 'No activity yet'
   const now = Date.now()
   const diffMinutes = Math.max(0, Math.round((now - time) / 60000))
 
@@ -72,11 +75,6 @@ function formatRelativeTime(value) {
   if (diffMinutes < 1440) return `${Math.round(diffMinutes / 60)} hour${diffMinutes >= 120 ? 's' : ''} ago`
   const days = Math.round(diffMinutes / 1440)
   return `${days} day${days > 1 ? 's' : ''} ago`
-}
-
-function formatDateTime(value) {
-  if (!value) return 'Unknown'
-  return new Date(value).toLocaleString()
 }
 
 function getInitials(name) {
@@ -258,7 +256,8 @@ function UserEditorDialog({
   )
 }
 
-export function AdminPage({ user: currentUser }) {
+export function AdminPage() {
+  const { user: currentUser } = useAuth()
   const navigate = useNavigate()
   const [stats, setStats] = useState(null)
   const [activityOverview, setActivityOverview] = useState({ summary: null, recent_events: [] })

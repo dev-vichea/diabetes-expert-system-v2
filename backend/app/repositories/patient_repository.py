@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.errors import ValidationError
 from app.extensions import db
 from app.models import DiagnosisResult, LabResult, Patient, Symptom
+from app.utils.datetime import serialize_datetime
 
 
 class PatientRepository:
@@ -159,14 +160,14 @@ class PatientRepository:
             "date_of_birth": patient.date_of_birth.isoformat() if patient.date_of_birth else None,
             "phone": patient.phone,
             "notes": patient.notes,
-            "created_at": patient.created_at.isoformat() if patient.created_at else None,
-            "updated_at": patient.updated_at.isoformat() if patient.updated_at else None,
+            "created_at": serialize_datetime(patient.created_at),
+            "updated_at": serialize_datetime(patient.updated_at),
             "symptom_count": len(patient.symptoms),
             "lab_result_count": len(patient.lab_results),
             "diagnosis_count": len(patient.diagnosis_results),
             "latest_diagnosis_result_id": latest_diagnosis.id if latest_diagnosis else None,
             "latest_diagnosis": latest_diagnosis.diagnosis if latest_diagnosis else None,
-            "latest_diagnosis_created_at": latest_diagnosis.created_at.isoformat() if latest_diagnosis and latest_diagnosis.created_at else None,
+            "latest_diagnosis_created_at": serialize_datetime(latest_diagnosis.created_at) if latest_diagnosis else None,
         }
 
     @staticmethod
@@ -179,7 +180,7 @@ class PatientRepository:
             "severity": symptom.severity,
             "present": symptom.present,
             "notes": symptom.notes,
-            "recorded_at": symptom.recorded_at.isoformat() if symptom.recorded_at else None,
+            "recorded_at": serialize_datetime(symptom.recorded_at),
         }
 
     @staticmethod
@@ -192,7 +193,7 @@ class PatientRepository:
             "unit": result.unit,
             "reference_range": result.reference_range,
             "notes": result.notes,
-            "measured_at": result.measured_at.isoformat() if result.measured_at else None,
+            "measured_at": serialize_datetime(result.measured_at),
         }
 
     @staticmethod
@@ -214,6 +215,6 @@ class PatientRepository:
             "review_note": diagnosis.review_note,
             "is_urgent": bool(diagnosis.is_urgent),
             "urgent_reason": diagnosis.urgent_reason,
-            "reviewed_at": diagnosis.reviewed_at.isoformat() if diagnosis.reviewed_at else None,
-            "created_at": diagnosis.created_at.isoformat() if diagnosis.created_at else None,
+            "reviewed_at": serialize_datetime(diagnosis.reviewed_at),
+            "created_at": serialize_datetime(diagnosis.created_at),
         }
