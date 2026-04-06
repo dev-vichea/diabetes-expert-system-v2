@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Search, BookOpen } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
+import { RuleSimulator } from '@/components/knowledge-base/RuleSimulator'
+import { KnowledgeBaseDashboard } from '@/components/knowledge-base/KnowledgeBaseDashboard'
+import { VisualLogicMap } from '@/components/knowledge-base/VisualLogicMap'
 import {
   AppSelect,
   Combobox,
@@ -15,6 +19,7 @@ import {
   FilterBar,
   SectionCard,
   StatusBadge,
+  Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@/components/ui'
 
 const DEFAULT_FACT_KEYS = [
@@ -199,6 +204,7 @@ export function RulesPage() {
   const [unarchiving, setUnarchiving] = useState(false)
   const [showArchiveDialog, setShowArchiveDialog] = useState(false)
   const [error, setError] = useState('')
+  const [ruleSearch, setRuleSearch] = useState('')
 
   const selectedRule = useMemo(() => rules.find((rule) => rule.id === selectedRuleId) || null, [rules, selectedRuleId])
   const categoryOptions = useMemo(
@@ -216,6 +222,16 @@ export function RulesPage() {
     }
     return Array.from(discovered).sort().map((value) => ({ value, label: value }))
   }, [rules])
+
+  const filteredRules = useMemo(() => {
+    if (!ruleSearch.trim()) return rules
+    const q = ruleSearch.toLowerCase()
+    return rules.filter((r) =>
+      (r.name || '').toLowerCase().includes(q) ||
+      (r.category || '').toLowerCase().includes(q) ||
+      (r.conclusion || '').toLowerCase().includes(q)
+    )
+  }, [rules, ruleSearch])
 
   useEffect(() => {
     loadRuleCategories()
@@ -435,15 +451,69 @@ export function RulesPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-        <SectionCard
-          title="Knowledge Base Rules"
-          description="Filter and select a rule to review versions and edit conditions."
-          className="h-[calc(100vh-18rem)] min-h-[26rem] max-h-[44rem]"
-          bodyClassName="flex flex-1 min-h-0 flex-col"
-        >
-          <FilterBar className="mt-4 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_auto]">
+    <Tabs defaultValue="dashboard" className="w-full space-y-5">
+      <div className="flex items-center justify-between pb-1">
+        <TabsList>
+          <TabsTrigger value="dashboard">Overview</TabsTrigger>
+          <TabsTrigger value="editor">Rule Editor</TabsTrigger>
+          <TabsTrigger value="visual">Visual Graph</TabsTrigger>
+          <TabsTrigger value="simulator">Sandbox</TabsTrigger>
+        </TabsList>
+      </div>
+
+      <TabsContent value="dashboard" className="mt-0">
+        <KnowledgeBaseDashboard />
+      </TabsContent>
+
+      <TabsContent value="visual" className="mt-0 h-[600px]">
+        <SectionCard bodyClassName="flex flex-1 min-h-0 flex-col p-0 h-full overflow-hidden">
+          <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-[#0c1024]">
+            <div>
+              <h2 className="section-title">Visual Logic Graph</h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Visualizing rule: <span className="font-semibold text-cyan-600">{form.name || 'Unnamed Rule'}</span>
+              </p>
+            </div>
+            {selectedRule && selectedRule.status !== 'archived' ? (
+              <button type="button" className="btn-primary py-1.5 px-3 text-xs" onClick={saveRule} disabled={saving}>
+                 {saving ? 'Saving...' : 'Save Rule'}
+              </button>
+            ) : null}
+          </div>
+          <div className="flex-1 w-full relative min-h-0 bg-slate-50 dark:bg-slate-900/20">
+            <VisualLogicMap form={form} />
+          </div>
+        </SectionCard>
+      </TabsContent>
+
+      <TabsContent value="editor" className="mt-0 space-y-5">
+      <SectionCard
+        title={
+          <span className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-cyan-600" />
+            Knowledge Base Rules
+            <span className="ml-1 inline-flex items-center rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-semibold text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400">
+              {filteredRules.length}
+            </span>
+          </span>
+        }
+        description="Filter and select a rule to review versions and edit conditions."
+        className="max-h-[30rem]"
+        bodyClassName="flex flex-1 min-h-0 flex-col"
+      >
+          {/* Search Bar */}
+          <div className="mt-4 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search rules by name, category, or conclusion..."
+              value={ruleSearch}
+              onChange={(e) => setRuleSearch(e.target.value)}
+              className="input-base w-full pl-9 py-2 text-sm"
+            />
+          </div>
+
+          <FilterBar className="mt-3 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_auto]">
             <AppSelect
               value={filters.category}
               onValueChange={(value) => setFilters({ ...filters, category: value })}
@@ -464,8 +534,8 @@ export function RulesPage() {
               ]}
             />
 
-            <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-              <input type="checkbox" checked={filters.include_archived} onChange={(event) => setFilters({ ...filters, include_archived: event.target.checked })} />
+            <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
+              <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500" checked={filters.include_archived} onChange={(event) => setFilters({ ...filters, include_archived: event.target.checked })} />
               Include archived
             </label>
 
@@ -482,29 +552,33 @@ export function RulesPage() {
               { key: 'version', label: 'Version' },
             ]}
             loading={loading}
-            isEmpty={!rules.length}
+            isEmpty={!filteredRules.length}
             loadingMessage="Loading rules..."
-            emptyTitle="No rules found."
+            emptyTitle={ruleSearch ? 'No rules match your search.' : 'No rules found.'}
           >
-            {rules.map((rule) => (
+            {filteredRules.map((rule) => (
               <tr
                 key={rule.id}
                 onClick={() => selectRule(rule.id)}
                 className={`table-row-hover ${selectedRuleId === rule.id ? 'table-row-selected' : ''}`}
               >
-                <td className="font-semibold text-slate-900">{rule.name}</td>
-                <td>{rule.category}</td>
+                <td className="font-semibold text-slate-900 dark:text-slate-100">{rule.name}</td>
+                <td>
+                  <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                    {rule.category}
+                  </span>
+                </td>
                 <td><StatusBadge tone={statusTone(rule.status)}>{rule.status}</StatusBadge></td>
                 <td><StatusBadge tone={priorityTone(rule.priority)}>{rule.priority}</StatusBadge></td>
-                <td>{rule.version}</td>
+                <td className="text-center font-mono text-sm text-slate-500">{rule.version}</td>
               </tr>
             ))}
           </DataTable>
         </SectionCard>
 
-        <SectionCard className="h-[calc(100vh-18rem)] min-h-[26rem] max-h-[44rem]" bodyClassName="flex flex-1 min-h-0 flex-col">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <div>
+      <SectionCard bodyClassName="flex flex-1 min-h-0 flex-col">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
               <h2 className="section-title">{selectedRule ? 'Edit Rule' : 'Create Rule'}</h2>
               <p className="section-subtitle mt-1">
                 Write simple clinical logic for doctors. Example: if fasting glucose is 126 or higher, set diabetes possible.
@@ -545,15 +619,20 @@ export function RulesPage() {
               </label>
             </div>
 
-            <div className="rounded-xl border border-slate-200 p-3">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/30 p-3 dark:border-slate-700 dark:bg-slate-900/20">
               <div className="mb-3 flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-900">Conditions</p>
-                <button type="button" className="btn-secondary px-3 py-1.5 text-xs" onClick={addCondition}>Add Condition</button>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  Conditions
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-cyan-100 text-[10px] font-bold text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-400">
+                    {form.conditions.length}
+                  </span>
+                </p>
+                <button type="button" className="btn-secondary px-3 py-1.5 text-xs" onClick={addCondition}>+ Add Condition</button>
               </div>
 
               <div className="space-y-2">
                 {form.conditions.map((condition, index) => (
-                  <div key={`condition-${index}`} className="grid gap-2 sm:grid-cols-[90px_1.2fr_0.7fr_1fr_auto]">
+                  <div key={`condition-${index}`} className="grid gap-2 rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-800/50 sm:grid-cols-[90px_1.2fr_0.7fr_1fr_auto]">
                     {index > 0 ? (
                       <AppSelect
                         value={condition.logical_operator}
@@ -561,12 +640,12 @@ export function RulesPage() {
                         showIcon={false}
                         className="justify-center text-center [&>span]:w-full [&>span]:text-center"
                         options={[
-                          { value: 'and', label: 'and' },
-                          { value: 'or', label: 'or' },
+                          { value: 'and', label: 'AND' },
+                          { value: 'or', label: 'OR' },
                         ]}
                       />
                     ) : (
-                      <div className="input-base flex items-center justify-center bg-slate-50 text-xs font-semibold uppercase text-slate-500">if</div>
+                      <div className="input-base flex items-center justify-center bg-cyan-50 text-xs font-bold uppercase text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400">IF</div>
                     )}
                     <FactKeyCombobox
                       value={condition.fact_key || ''}
@@ -577,16 +656,16 @@ export function RulesPage() {
                       value={condition.operator || '=='}
                       onValueChange={(value) => updateCondition(index, 'operator', value)}
                       showIcon={false}
-                      className="justify-center text-center [&>span]:w-full [&>span]:text-center"
+                      className="justify-center text-center font-mono [&>span]:w-full [&>span]:text-center"
                       options={OPERATOR_OPTIONS}
                     />
                     <input
-                      className="input-base"
+                      className="input-base font-mono text-sm"
                       value={condition.expected_value ?? ''}
                       onChange={(event) => updateCondition(index, 'expected_value', event.target.value)}
                       placeholder="Expected value"
                     />
-                    <button type="button" className="btn-secondary" onClick={() => removeCondition(index)}>Remove</button>
+                    <button type="button" className="btn-secondary text-xs hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 dark:hover:bg-rose-900/20 dark:hover:text-rose-400" onClick={() => removeCondition(index)}>Remove</button>
                   </div>
                 ))}
               </div>
@@ -645,11 +724,17 @@ export function RulesPage() {
           </button>
           </form>
         </SectionCard>
-      </div>
 
       <div className="grid gap-5 xl:grid-cols-2">
         <section className="surface p-5 sm:p-6">
-          <h2 className="section-title">Rule Versions</h2>
+          <h2 className="section-title flex items-center gap-2">
+            Rule Versions
+            {selectedRule && versions.length > 0 && (
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                {versions.length}
+              </span>
+            )}
+          </h2>
           {!selectedRule ? <p className="state-box mt-4">Select a rule to view versions.</p> : null}
 
           <div className="mt-4 table-wrap">
@@ -665,10 +750,18 @@ export function RulesPage() {
               <tbody>
                 {versions.map((version) => (
                   <tr key={version.id}>
-                    <td>{version.version_number}</td>
-                    <td>{version.change_type}</td>
+                    <td>
+                      <span className="inline-flex items-center justify-center rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-bold text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400">
+                        v{version.version_number}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                        {version.change_type}
+                      </span>
+                    </td>
                     <td>{version.changed_by_name || version.changed_by_user_id || 'N/A'}</td>
-                    <td>{formatDateTime(version.created_at)}</td>
+                    <td className="text-xs text-slate-500">{formatDateTime(version.created_at)}</td>
                   </tr>
                 ))}
                 {!versions.length && selectedRule ? (
@@ -682,7 +775,14 @@ export function RulesPage() {
         </section>
 
         <section className="surface p-5 sm:p-6">
-          <h2 className="section-title">Audit Trail</h2>
+          <h2 className="section-title flex items-center gap-2">
+            Audit Trail
+            {selectedRule && auditLogs.length > 0 && (
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                {auditLogs.length}
+              </span>
+            )}
+          </h2>
           {!selectedRule ? <p className="state-box mt-4">Select a rule to view audit logs.</p> : null}
 
           <div className="mt-4 table-wrap">
@@ -697,9 +797,13 @@ export function RulesPage() {
               <tbody>
                 {auditLogs.map((log) => (
                   <tr key={log.id}>
-                    <td>{log.action}</td>
+                    <td>
+                      <span className="inline-flex rounded-md bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
+                        {log.action}
+                      </span>
+                    </td>
                     <td>{log.actor_user_id || 'N/A'}</td>
-                    <td>{formatDateTime(log.created_at)}</td>
+                    <td className="text-xs text-slate-500">{formatDateTime(log.created_at)}</td>
                   </tr>
                 ))}
                 {!auditLogs.length && selectedRule ? (
@@ -725,6 +829,11 @@ export function RulesPage() {
         onCancel={() => setShowArchiveDialog(false)}
         onConfirm={archiveSelectedRule}
       />
-    </div>
+      </TabsContent>
+
+      <TabsContent value="simulator" className="mt-0">
+        <RuleSimulator rules={rules} />
+      </TabsContent>
+    </Tabs>
   )
 }

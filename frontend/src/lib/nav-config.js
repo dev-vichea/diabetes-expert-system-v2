@@ -16,7 +16,7 @@ export const NAV_ITEMS = [
   { to: '/rules', labelKey: 'nav.knowledgeBase', icon: BookMarked, section: 'workspace', permissions: ['rule.view'] },
   { to: '/review', labelKey: 'nav.patientReview', icon: ClipboardList, section: 'workspace', permissions: ['diagnosis.review_any'] },
   { to: '/my-results', labelKey: 'nav.myResults', icon: ActivitySquare, section: 'workspace', permissions: ['diagnosis.view_own'] },
-  { to: '/users', labelKey: 'nav.users', icon: ShieldCheck, section: 'system', permissions: ['user.view', 'permission.view'] },
+  { to: '/users', labelKey: 'nav.users', icon: ShieldCheck, section: 'system', permissions: ['user.view', 'permission.view'], permissionMode: 'any' },
   { to: '/roles-permissions', labelKey: 'nav.roles', icon: ShieldCheck, section: 'system', permissions: ['permission.view'] },
 ]
 
@@ -53,8 +53,18 @@ function hasAccess(user, item) {
     return false
   }
 
-  if (item.permissions?.length && item.permissions.some((permission) => !userPermissions.has(permission))) {
-    return false
+  if (item.permissions?.length) {
+    if (item.permissionMode === 'any') {
+      // OR logic: user needs at least one
+      if (item.permissions.every((permission) => !userPermissions.has(permission))) {
+        return false
+      }
+    } else {
+      // AND logic (default): user needs all
+      if (item.permissions.some((permission) => !userPermissions.has(permission))) {
+        return false
+      }
+    }
   }
 
   return true

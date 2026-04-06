@@ -12,6 +12,9 @@ import {
   Heart,
   Zap,
   RotateCcw,
+  Printer,
+  FileText,
+  Stethoscope,
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
@@ -186,32 +189,29 @@ function getScalePercent(labKey, rawValue) {
   return 66.6666 + zone * 33.3334
 }
 
-function CertaintyRing({ percent }) {
+function CertaintyRing({ percent, size = 140, stroke = 12 }) {
   const safePercent = Math.max(0, Math.min(100, Number(percent) || 0))
-  const radius = 26
-  const stroke = 6
+  const radius = (size - stroke * 2) / 2
+  const center = size / 2
   const circumference = 2 * Math.PI * radius
   const offset = circumference * (1 - safePercent / 100)
+  
+  const colorClass = safePercent >= 85 ? 'text-red-500' : safePercent >= 70 ? 'text-orange-500' : safePercent >= 45 ? 'text-amber-500' : 'text-emerald-500'
 
   return (
-    <div className="relative h-20 w-20 shrink-0">
-      <svg viewBox="0 0 60 60" className="-rotate-90">
-        <circle cx="30" cy="30" r={radius} strokeWidth={stroke} className="fill-none stroke-slate-200 dark:stroke-slate-700" />
-        <circle
-          cx="30"
-          cy="30"
-          r={radius}
-          strokeWidth={stroke}
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          className="fill-none stroke-amber-600 transition-all duration-500 dark:stroke-amber-400"
-        />
-      </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-sm font-extrabold leading-none text-slate-900 dark:text-slate-100">
-        {safePercent}%
-      </span>
-    </div>
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+      <circle cx={center} cy={center} r={radius} strokeWidth={stroke} className="fill-none stroke-slate-200 dark:stroke-slate-800" />
+      <circle
+        cx={center}
+        cy={center}
+        r={radius}
+        strokeWidth={stroke}
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        className={`fill-none stroke-current ${colorClass} transition-all duration-1000 ease-out`}
+      />
+    </svg>
   )
 }
 
@@ -296,14 +296,14 @@ function LabIndicatorCard({ title, valueLabel, status, subtitle, pointerPercent,
 
 function SurfaceSection({ title, children, icon: Icon }) {
   return (
-    <section className="overflow-hidden rounded-xl bg-white dark:bg-[#050912]">
-      <header className="bg-slate-100 px-4 py-2.5 dark:bg-slate-900/40">
-        <div className="flex items-center gap-2">
-          {Icon && <Icon className="h-5 w-5 text-slate-700 dark:text-slate-300" />}
-          <p className="text-sm font-extrabold uppercase tracking-[0.08em] text-slate-900 dark:text-slate-100">{title}</p>
+    <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100 dark:bg-[#070b15] dark:ring-slate-800/60">
+      <header className="border-b border-slate-100 bg-slate-50/50 px-5 py-3.5 dark:border-slate-800 dark:bg-[#0a0f1c]/50">
+        <div className="flex items-center gap-2.5">
+          {Icon && <Icon className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />}
+          <p className="text-sm font-extrabold uppercase tracking-[0.1em] text-slate-900 dark:text-slate-100">{title}</p>
         </div>
       </header>
-      <div className="p-3 sm:p-4">{children}</div>
+      <div className="p-4 sm:p-5">{children}</div>
     </section>
   )
 }
@@ -429,16 +429,29 @@ export function DiagnosisResultPage() {
   const handleRestartConfirm = () => {
     localStorage.removeItem('diagnosisResultSnapshot')
     setShowRestartConfirm(false)
-    navigate('/diagnosis')
+    navigate('/diagnosis', { state: { keepData: true } })
   }
 
   return (
-    <div className="space-y-4 pb-4">
+    <div className="pb-10 max-w-6xl mx-auto space-y-6">
 
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-lg font-extrabold text-slate-900 dark:text-slate-100">
-          Assessment Result Overview
-        </p>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+            Medical Assessment Report
+          </h1>
+          <p className="mt-1.5 flex items-center gap-2 text-sm font-medium text-slate-500">
+            <span>Patient: <strong className="text-slate-700 dark:text-slate-300 uppercase tracking-wide">{patientName}</strong></span>
+            <span className="text-slate-300 dark:text-slate-700">&bull;</span>
+            <span>Generated on: {formatDateTime(reportTime)}</span>
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => window.print()} className="btn-secondary gap-2 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 shadow-sm border-slate-200 dark:border-slate-700 h-10 px-4 transition-all">
+            <Printer className="h-4 w-4 text-slate-500" />
+            <span className="font-semibold">Print PDF</span>
+          </button>
+        </div>
       </div>
 
       <ConfirmDialog
@@ -452,42 +465,49 @@ export function DiagnosisResultPage() {
         onConfirm={handleRestartConfirm}
       />
 
-      <div className="overflow-hidden rounded-lg bg-white dark:bg-[#070b15]">
-        <div className="grid md:grid-cols-2">
-          <article className={`relative overflow-hidden ${getRiskGradient(certaintyPercent)} px-5 py-4 text-white dark:md:border-0 md:border-b-0 md:border-r-0`}>
-            <img 
-              src="/images/disease.png" 
-              alt="Disease illustration" 
-              className="absolute right-0 top-0 h-full w-auto opacity-30 object-cover" 
-            />
-            <h2 className="text-3xl font-extrabold uppercase leading-tight relative z-10">{primaryHeadline}</h2>
-            <div className="mt-3 flex items-start justify-between gap-4 relative z-10">
-              <p className="max-w-sm text-md leading-snug text-white/90">
-                Based on comprehensive clinical data, the system indicates a <span className="font-bold">high probability</span> of a diabetes diagnosis.
+      <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-100 dark:bg-[#070b15] dark:ring-slate-800/60">
+        <div className="grid lg:grid-cols-5">
+          <article className={`relative lg:col-span-3 overflow-hidden ${getRiskGradient(certaintyPercent)} px-8 py-10 md:py-14 text-white`}>
+            <div className="absolute inset-0 bg-black/10 mix-blend-overlay"></div>
+            <img src="/images/disease.png" alt="Disease illustration" className="absolute -right-10 top-0 h-full w-auto opacity-[0.15] object-cover mix-blend-luminosity" />
+            
+            <div className="relative z-10 flex h-full flex-col justify-center">
+              <span className="mb-4 flex items-center gap-1.5 w-fit rounded-full bg-white/20 px-3 py-1 text-xs font-black uppercase tracking-widest text-white backdrop-blur-md shadow-sm border border-white/10">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Diagnostic Output
+              </span>
+              <h2 className="text-4xl md:text-5xl font-black uppercase leading-tight drop-shadow-sm">{primaryHeadline}</h2>
+              <p className="mt-4 max-w-md text-lg leading-relaxed text-white/95 font-medium drop-shadow-sm">
+                Based on comprehensive clinical data, the inference engine calculates a <strong className="font-extrabold text-white">{certaintyPercent >= 85 ? 'very high probability' : certaintyPercent >= 70 ? 'high probability' : certaintyPercent >= 45 ? 'moderate probability' : 'low probability'}</strong> of this diagnosis.
               </p>
-              <p className="self-start whitespace-nowrap text-2xl font-bold mt-4">Score: {certaintyPercent} / 100</p>
             </div>
           </article>
 
-          <article className="bg-white px-5 py-4 dark:bg-[#070b15]">
-            <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Certainty</p>
-            <div className="mt-3 flex items-center justify-between gap-4">
-              <p className="max-w-sm text-md font-semibold leading-snug text-slate-900 dark:text-slate-100">
-                The suggestion has a <span className="font-extrabold">{certaintyPercent}% {confidenceMeta.title.toUpperCase()}</span>{' '}
-                level based on established medical rules.
-              </p>
-              <div className="flex items-center gap-3 shrink-0">
-                <CertaintyRing percent={certaintyPercent} />
-                <p className="whitespace-nowrap text-md font-bold uppercase leading-tight text-slate-900 dark:text-slate-100">
-                  {confidenceMeta.title}
-                </p>
+          <article className="lg:col-span-2 bg-slate-50 dark:bg-[#0a0f1c] px-8 py-10 flex flex-col items-center justify-center relative">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-black/5 to-transparent dark:via-white/5"></div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-8 mt-2">Overall Score</p>
+            
+            <div className="relative flex items-center justify-center">
+              <CertaintyRing percent={certaintyPercent} size={180} stroke={14} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center drop-shadow-md">
+                 <span className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white leading-none">{certaintyPercent}</span>
+                 <span className="text-[10px] font-black text-slate-400 uppercase mt-1 tracking-widest">/ 100</span>
               </div>
+            </div>
+            
+            <div className="mt-8 text-center bg-white dark:bg-slate-900/50 rounded-2xl py-3 px-6 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-slate-800 max-w-[240px]">
+              <p className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-slate-200">
+                {confidenceMeta.title}
+              </p>
             </div>
           </article>
         </div>
       </div>
 
-      <p className="text-lg font-extrabold text-slate-900 dark:text-slate-100">Clinical Evidence Overview</p>
+      <div className="flex items-center gap-3 pt-6 pb-2">
+        <Stethoscope className="h-6 w-6 text-slate-400" />
+        <h3 className="text-xl font-black tracking-tight text-slate-800 dark:text-slate-100">Clinical Evidence</h3>
+      </div>
 
       <div className="mt-3 grid gap-3 xl:grid-cols-12">
         <article className="xl:col-span-6">
@@ -615,32 +635,40 @@ export function DiagnosisResultPage() {
 
       <SurfaceSection title="Actionable Recommendations" icon={ClipboardList}>
         {recommendations.length ? (
-          <ol className="space-y-2">
+          <div className="space-y-3">
             {recommendations.map((item, index) => (
-              <li
+              <div
                 key={`${item.text}-${index}`}
-                className="rounded-lg  px-3 py-2.5"
+                className="group flex flex-col sm:flex-row items-start gap-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-[#0a0f1c]"
               >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <p className="text-[1.05rem] font-semibold text-slate-900 dark:text-slate-100">
-                    {index + 1}. {item.text}
-                  </p>
-                  <StatusBadge tone={getUrgencyTone(item.urgency)} size="sm">
-                    {toReadableLabel(item.urgency || 'routine')}
-                  </StatusBadge>
+                <div className="shrink-0 rounded-full bg-slate-50 p-3 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+                  <Activity className="h-5 w-5 text-cyan-600 dark:text-cyan-500 flex-shrink-0" />
                 </div>
-                {item.source ? (
-                  <p className="mt-1 text-xs uppercase tracking-wide text-slate-500">
-                    Source: {String(item.source).replace(/^rule:/, '')}
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-1.5">
+                    <StatusBadge tone={getUrgencyTone(item.urgency)} size="sm">
+                      {toReadableLabel(item.urgency || 'routine')} Priority
+                    </StatusBadge>
+                    {item.source ? (
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        Rule: {String(item.source).replace(/^rule:/, '')}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="text-base font-medium leading-relaxed text-slate-800 dark:text-slate-200">
+                    {item.text}
                   </p>
-                ) : null}
-              </li>
+                </div>
+              </div>
             ))}
-          </ol>
+          </div>
         ) : (
-          <p className="text-base text-slate-700 dark:text-slate-300">
-            {result.recommendation || 'No recommendation is available yet. Please discuss next steps with your clinician.'}
-          </p>
+          <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+            <ClipboardList className="h-10 w-10 text-slate-300 dark:text-slate-700 mb-3" />
+            <p className="text-base font-medium text-slate-600 dark:text-slate-400">
+              {result.recommendation || 'No specific recommendations were generated. Please consult with a physician.'}
+            </p>
+          </div>
         )}
       </SurfaceSection>
 

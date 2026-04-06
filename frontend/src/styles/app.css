@@ -181,6 +181,94 @@
     @apply ring-1 ring-amber-100 dark:ring-amber-900/40;
   }
 
+  /* ── Toggle Pill Cards ─────────────────────────────── */
+  .toggle-pill {
+    @apply relative flex cursor-pointer select-none items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200;
+  }
+  .toggle-pill:hover {
+    @apply border-slate-300 shadow-md -translate-y-px;
+  }
+  .toggle-pill.active {
+    @apply border-cyan-400 bg-gradient-to-br from-cyan-50 to-sky-50 text-cyan-800 shadow-md ring-2 ring-cyan-200/60;
+  }
+  .toggle-pill .pill-emoji {
+    @apply text-xl leading-none;
+  }
+  .toggle-pill .pill-check {
+    @apply ml-auto flex h-5 w-5 items-center justify-center rounded-full border-2 border-slate-300 transition-all duration-200;
+  }
+  .toggle-pill.active .pill-check {
+    @apply border-cyan-500 bg-cyan-500 text-white;
+  }
+  html.dark .toggle-pill {
+    border-color: var(--dark-border);
+    background-color: var(--dark-surface);
+    color: rgb(203 213 225);
+  }
+  html.dark .toggle-pill:hover { border-color: var(--dark-border-hover); }
+  html.dark .toggle-pill.active {
+    border-color: rgb(8 145 178);
+    background: linear-gradient(135deg, rgba(8,145,178,0.12) 0%, rgba(14,116,144,0.08) 100%);
+    color: rgb(165 243 252);
+    --tw-ring-color: rgba(8,145,178,0.25);
+  }
+
+  /* ── Segment Selector ──────────────────────────────── */
+  .segment-group {
+    @apply flex flex-wrap gap-2;
+  }
+  .segment-btn {
+    @apply relative flex-1 cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-3 text-center text-sm font-semibold text-slate-600 shadow-sm transition-all duration-200;
+    min-width: 5.5rem;
+  }
+  .segment-btn:hover {
+    @apply border-slate-300 bg-slate-50 -translate-y-px shadow-md;
+  }
+  .segment-btn.active {
+    @apply border-cyan-400 bg-gradient-to-b from-cyan-500 to-cyan-600 text-white shadow-lg;
+  }
+  html.dark .segment-btn {
+    border-color: var(--dark-border);
+    background-color: var(--dark-surface);
+    color: rgb(203 213 225);
+  }
+  html.dark .segment-btn.active {
+    border-color: rgb(8 145 178);
+    background: linear-gradient(to bottom, rgb(8 145 178), rgb(14 116 144));
+    color: #fff;
+  }
+
+  /* ── Question Section Card ─────────────────────────── */
+  .q-section {
+    @apply rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm;
+  }
+  html.dark .q-section {
+    border-color: var(--dark-border);
+    background-color: var(--dark-surface);
+  }
+  .q-section-title {
+    @apply flex items-center gap-2.5 text-base font-bold text-slate-800;
+  }
+  html.dark .q-section-title { @apply text-slate-100; }
+  .q-section-sub {
+    @apply mt-1 text-xs text-slate-500;
+  }
+  html.dark .q-section-sub { @apply text-slate-400; }
+
+  /* ── Floating Progress Ring ────────────────────────── */
+  @keyframes progressPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(14,116,144,0.18); }
+    50% { box-shadow: 0 0 0 8px rgba(14,116,144,0); }
+  }
+  .progress-ring-wrap {
+    @apply fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-xl border border-slate-200;
+    animation: progressPulse 2.5s ease-in-out infinite;
+  }
+  html.dark .progress-ring-wrap {
+    background-color: var(--dark-elevated);
+    border-color: var(--dark-border);
+  }
+
   .surface {
     @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
   }
@@ -1040,3 +1128,4 @@
     }
   }
 }
+@media print { body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } nav, header, aside, .sidebar, .topbar { display: none !important; } main { width: 100% !important; margin: 0 !important; padding: 0 !important; } }

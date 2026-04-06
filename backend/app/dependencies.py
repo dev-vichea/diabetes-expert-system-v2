@@ -14,6 +14,7 @@ from app.services.auth_service import AuthService
 from app.services.diagnosis_service import DiagnosisService
 from app.services.patient_service import PatientService
 from app.services.rule_service import RuleService
+from app.services.dashboard_service import DashboardService
 
 SERVICE_KEYS = {
     "auth": "auth_service",
@@ -21,6 +22,7 @@ SERVICE_KEYS = {
     "diagnosis": "diagnosis_service",
     "admin": "admin_service",
     "patient": "patient_service",
+    "dashboard": "dashboard_service",
 }
 
 
@@ -66,6 +68,7 @@ def init_dependencies(app):
             patient_repository=patient_repository,
             audit_log_repository=audit_log_repository,
         ),
+        SERVICE_KEYS["dashboard"]: DashboardService(),
     }
 
     app.extensions["services"] = services
@@ -94,3 +97,6 @@ def get_admin_service() -> AdminService:
 
 def get_patient_service() -> PatientService:
     return _get_service(SERVICE_KEYS["patient"])
+
+def get_dashboard_service() -> DashboardService:
+    return _get_service(SERVICE_KEYS["dashboard"])

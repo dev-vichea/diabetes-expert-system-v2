@@ -229,6 +229,8 @@ class DiagnosisService:
             "no_lab_values_available",
             "no_labs_available",
             "crisis",
+            "sedentary_lifestyle",
+            "slow_healing",
         }:
             if key in payload and payload.get(key) not in (None, ""):
                 normalized[key] = self._as_bool(payload.get(key))

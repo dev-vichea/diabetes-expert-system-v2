@@ -18,6 +18,7 @@ from .routes.auth_routes import auth_bp
 from .routes.diagnosis_routes import diagnosis_bp
 from .routes.patient_routes import patient_bp
 from .routes.rule_routes import rule_bp
+from .routes.dashboard_routes import dashboard_bp
 from .utils.api_response import success_response
 from .utils.seed import seed_demo_data
 
@@ -121,6 +122,7 @@ def create_app(config_object=Config):
     app.register_blueprint(rule_bp, url_prefix="/api/rules")
     app.register_blueprint(patient_bp, url_prefix="/api/patients")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
+    app.register_blueprint(dashboard_bp, url_prefix="/api/dashboard")
 
     register_error_handlers(app)
     init_dependencies(app)

@@ -50,6 +50,16 @@ BOOLEAN_FACT_KEYS = {
     "only_symptoms_available",
     "no_lab_values_available",
     "no_labs_available",
+    "sedentary_lifestyle",
+    "slow_healing",
+    "tingling_hands_feet",
+    "frequent_infections",
+    "acanthosis_nigricans",
+    "gestational_history",
+    "smoking",
+    "high_cholesterol",
+    "pcos_history",
+    "ethnicity_high_risk",
 }
 
 LAB_FACT_ALIASES = {
@@ -83,6 +93,10 @@ MIRRORED_FACTS = {
     "polydipsia": ("excessive_thirst",),
     "no_labs_available": ("no_lab_values_available",),
     "no_lab_values_available": ("no_labs_available",),
+    "family_history_diabetes": ("family_history", "risk_family_history_diabetes"),
+    "family_history": ("family_history_diabetes", "risk_family_history_diabetes"),
+    "physical_activity_low": ("sedentary_lifestyle", "risk_physical_activity_low"),
+    "sedentary_lifestyle": ("physical_activity_low", "risk_physical_activity_low"),
 }
 
 
@@ -122,11 +136,13 @@ def normalize_input_facts(payload: dict, set_fact: SetFactCallback) -> None:
 
 
 def derive_facts(facts: dict, set_fact: SetFactCallback) -> None:
+    _derive_unified_glucose(facts, set_fact)
     _derive_bmi_and_obesity(facts, set_fact)
     _derive_classic_hyperglycemia_symptoms(facts, set_fact)
     _derive_hyperglycemia_presence(facts, set_fact)
     _derive_hypoglycemia_presence(facts, set_fact)
     _derive_type2_risk_pattern(facts, set_fact)
+    _derive_lab_availability(facts, set_fact)
 
 
 def coerce_optional_float(value: Any) -> float | None:
@@ -357,6 +373,30 @@ def _derive_hypoglycemia_presence(facts: dict, set_fact: SetFactCallback) -> Non
     if glucose is not None and glucose < 70:
         set_fact("hypoglycemia_present", True, "derived.hypoglycemia_present")
         set_fact("hypoglycemia", True, "derived.hypoglycemia")
+
+
+def _derive_unified_glucose(facts: dict, set_fact: SetFactCallback) -> None:
+    # Ensure rules checking generic 'blood_glucose' hit if only specific tests exist
+    if "blood_glucose" not in facts:
+        glucose = _first_float(facts, "random_plasma_glucose", "fasting_plasma_glucose", "fasting_glucose", "2h_ogtt_75g")
+        if glucose is not None:
+            set_fact("blood_glucose", glucose, "derived.unified_glucose")
+            
+    # Ensure rules checking 'random_plasma_glucose' (like random >= 200 symptoms rule) hit if only generic blood_glucose exists
+    if "random_plasma_glucose" not in facts:
+        glucose = _first_float(facts, "blood_glucose", "fasting_plasma_glucose", "fasting_glucose", "2h_ogtt_75g")
+        if glucose is not None:
+            set_fact("random_plasma_glucose", glucose, "derived.unified_random")
+
+def _derive_lab_availability(facts: dict, set_fact: SetFactCallback) -> None:
+    has_labs = False
+    for k in ["fasting_glucose", "fasting_plasma_glucose", "hba1c", "a1c", "2h_ogtt_75g", "random_plasma_glucose", "blood_glucose"]:
+        if _as_float(facts.get(k)) is not None:
+            has_labs = True
+            break
+    if not has_labs:
+        set_fact("no_lab_values_available", True, "derived.no_lab_values_available")
+        set_fact("only_symptoms_available", True, "derived.only_symptoms_available")
 
 
 def _derive_type2_risk_pattern(facts: dict, set_fact: SetFactCallback) -> None:

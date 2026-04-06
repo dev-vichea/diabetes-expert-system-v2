@@ -106,7 +106,7 @@ function AuthenticatedRoutes() {
         <Route
           path="/users"
           element={(
-            <RoleGuard user={user} permissions={['user.view', 'permission.view']}>
+            <RoleGuard user={user} permissions={['user.view', 'permission.view']} permissionMode="any">
               <AdminPage />
             </RoleGuard>
           )}

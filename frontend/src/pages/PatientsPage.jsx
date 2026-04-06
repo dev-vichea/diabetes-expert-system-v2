@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { AppSelect, DataTable, ErrorAlert, FilterBar, FormSection, SearchInput, SectionCard, StatusBadge } from '@/components/ui'
 
@@ -25,9 +25,18 @@ function genderBadgeTone(gender) {
 
 export function PatientsPage() {
   const navigate = useNavigate()
+  const [urlParams] = useSearchParams()
   const [patients, setPatients] = useState([])
-  const [filters, setFilters] = useState(DEFAULT_FILTERS)
-  const [draftFilters, setDraftFilters] = useState(DEFAULT_FILTERS)
+
+  // Seed filters from URL query params (enables dashboard drill-down links)
+  const initialFilters = useMemo(() => ({
+    search: urlParams.get('search') || '',
+    gender: urlParams.get('gender') || '',
+    has_diagnosis: urlParams.get('has_diagnosis') || '',
+  }), []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [filters, setFilters] = useState(initialFilters)
+  const [draftFilters, setDraftFilters] = useState(initialFilters)
   const [form, setForm] = useState(DEFAULT_FORM)
   const [selectedPatientId, setSelectedPatientId] = useState(null)
   const [loading, setLoading] = useState(false)

@@ -3,14 +3,24 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
   ArrowRight,
+  Check,
   FlaskConical,
   HeartPulse,
   Plus,
-  ShieldAlert,
   RotateCcw,
   Send,
+  Sparkles,
   Trash2,
   UserRound,
+  Activity,
+  AlertTriangle,
+  Scale,
+  Stethoscope,
+  TestTube2,
+  ClipboardList,
+  PenTool,
+  PlusCircle,
+  Building2,
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import {
@@ -25,271 +35,209 @@ import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 import { saveDiagnosisResultSnapshot } from '@/lib/diagnosis-result-storage'
 
+/* ================================================================
+   STEP CONFIG — 3 steps instead of 5
+   ================================================================ */
 const STEP_ITEMS_CONFIG = [
-  { id: 1, titleKey: 'assessment.steps.profile.title', descriptionKey: 'assessment.steps.profile.description', icon: UserRound },
-  { id: 2, titleKey: 'assessment.steps.symptoms.title', descriptionKey: 'assessment.steps.symptoms.description', icon: HeartPulse },
-  { id: 3, titleKey: 'assessment.steps.labs.title', descriptionKey: 'assessment.steps.labs.description', icon: FlaskConical },
-  { id: 4, titleKey: 'assessment.steps.risks.title', descriptionKey: 'assessment.steps.risks.description', icon: ShieldAlert },
-  { id: 5, titleKey: 'assessment.steps.review.title', descriptionKey: 'assessment.steps.review.description', icon: Send },
+  { id: 1, title: 'About You', description: 'Age, body profile & patient info', icon: UserRound },
+  { id: 2, title: 'How You Feel', description: 'Symptoms & risk factors in one go', icon: HeartPulse },
+  { id: 3, title: 'Lab & Review', description: 'Lab results (optional) & submit', icon: FlaskConical },
 ]
-
 const TOTAL_STEPS = STEP_ITEMS_CONFIG.length
 const REVIEW_STEP = TOTAL_STEPS
-const DIAGNOSIS_DRAFT_VERSION = 1
+const DIAGNOSIS_DRAFT_VERSION = 2
 
-const AGE_OPTIONS_CONFIG = [
-  { id: 'under_18', labelKey: 'assessment.options.age.under18', value: 16 },
-  { id: '18_30', labelKey: 'assessment.options.age.age18to30', value: 24 },
-  { id: '31_45', labelKey: 'assessment.options.age.age31to45', value: 38 },
-  { id: '46_60', labelKey: 'assessment.options.age.age46to60', value: 53 },
-  { id: 'over_60', labelKey: 'assessment.options.age.over60', value: 67 },
+/* ── Segment-based selectors ────────────────────────── */
+const AGE_OPTIONS = [
+  { id: 'under_18', label: '< 18', value: 16 },
+  { id: '18_30', label: '18 – 30', value: 24 },
+  { id: '31_45', label: '31 – 45', value: 38 },
+  { id: '46_60', label: '46 – 60', value: 53 },
+  { id: 'over_60', label: '60 +', value: 67 },
 ]
 
-const BMI_OPTIONS_CONFIG = [
-  { id: 'underweight', labelKey: 'assessment.options.bmi.underweight', value: 18.0 },
-  { id: 'normal', labelKey: 'assessment.options.bmi.normal', value: 23.0 },
-  { id: 'overweight', labelKey: 'assessment.options.bmi.overweight', value: 28.0 },
-  { id: 'obese', labelKey: 'assessment.options.bmi.obese', value: 33.0 },
-]
-
-const WAIST_OPTIONS_CONFIG = [
-  { id: 'low', labelKey: 'assessment.options.waist.low', value: 80 },
-  { id: 'medium', labelKey: 'assessment.options.waist.medium', value: 95 },
-  { id: 'high', labelKey: 'assessment.options.waist.high', value: 110 },
+const BMI_OPTIONS = [
+  { id: 'underweight', label: 'Under', sub: '< 18.5', value: 18.0 },
+  { id: 'normal', label: 'Normal', sub: '18.5 – 24.9', value: 23.0 },
+  { id: 'Overweight', label: 'Over', sub: '25 – 29.9', value: 28.0 },
+  { id: 'obese', label: 'Obese', sub: '≥ 30', value: 33.0 },
 ]
 
 const FASTING_OPTIONS = [
-  { id: 'normal', label: '< 100 mg/dL', value: 95 },
-  { id: 'prediabetes', label: '100-125 mg/dL', value: 115 },
-  { id: 'diabetes', label: '126-199 mg/dL', value: 140 },
-  { id: 'critical', label: '>= 200 mg/dL', value: 260 },
+  { id: 'normal', label: 'Normal', sub: '< 100', value: 95 },
+  { id: 'prediabetes', label: 'Pre-diabetes', sub: '100 – 125', value: 115 },
+  { id: 'diabetes', label: 'Diabetes range', sub: '126 – 199', value: 140 },
+  { id: 'critical', label: 'Critical', sub: '≥ 200', value: 260 },
 ]
 
 const HBA1C_OPTIONS = [
-  { id: 'normal', label: '< 5.7%', value: 5.2 },
-  { id: 'prediabetes', label: '5.7%-6.4%', value: 6.0 },
-  { id: 'diabetes', label: '>= 6.5%', value: 6.8 },
-  { id: 'critical', label: '>= 10%', value: 10.5 },
+  { id: 'normal', label: 'Normal', sub: '< 5.7%', value: 5.2 },
+  { id: 'prediabetes', label: 'Pre-diabetes', sub: '5.7 – 6.4%', value: 6.0 },
+  { id: 'diabetes', label: 'Diabetes', sub: '≥ 6.5%', value: 6.8 },
+  { id: 'critical', label: 'Severe', sub: '≥ 10%', value: 10.5 },
 ]
 
-const SYMPTOM_FIELDS_CONFIG = [
-  { key: 'frequent_urination', labelKey: 'assessment.fields.symptoms.frequentUrination' },
-  { key: 'excessive_thirst', labelKey: 'assessment.fields.symptoms.excessiveThirst' },
-  { key: 'fatigue', labelKey: 'assessment.fields.symptoms.fatigue' },
-  { key: 'blurred_vision', labelKey: 'assessment.fields.symptoms.blurredVision' },
-  { key: 'weight_loss', labelKey: 'assessment.fields.symptoms.weightLoss' },
-  { key: 'slow_healing', labelKey: 'assessment.fields.symptoms.slowHealing' },
+/* ── Symptom toggle pills ─────────────── */
+const SYMPTOM_PILLS = [
+  { key: 'frequent_urination', label: 'Frequent urination' },
+  { key: 'excessive_thirst', label: 'Excessive thirst' },
+  { key: 'fatigue', label: 'Constant tiredness' },
+  { key: 'blurred_vision', label: 'Blurred vision' },
+  { key: 'weight_loss', label: 'Unexplained weight loss' },
+  { key: 'slow_healing', label: 'Slow wound healing' },
+  { key: 'nausea', label: 'Nausea' },
+  { key: 'tingling_hands_feet', label: 'Tingling hands / feet' },
+  { key: 'frequent_infections', label: 'Frequent infections' },
+  { key: 'acanthosis_nigricans', label: 'Dark skin patches' },
 ]
 
-const SAFETY_SYMPTOM_FIELDS_CONFIG = [
-  { key: 'sweating', labelKey: 'assessment.fields.safetySymptoms.sweating' },
-  { key: 'shaking', labelKey: 'assessment.fields.safetySymptoms.shaking' },
-  { key: 'dizziness', labelKey: 'assessment.fields.safetySymptoms.dizziness' },
-  { key: 'vomiting', labelKey: 'assessment.fields.safetySymptoms.vomiting' },
-  { key: 'abdominal_pain', labelKey: 'assessment.fields.safetySymptoms.abdominalPain' },
+const SAFETY_PILLS = [
+  { key: 'sweating', label: 'Sweating episodes' },
+  { key: 'shaking', label: 'Shaking / tremor' },
+  { key: 'dizziness', label: 'Dizziness' },
+  { key: 'vomiting', label: 'Vomiting' },
+  { key: 'abdominal_pain', label: 'Stomach pain' },
 ]
 
-const HYPO_BRANCH_FIELDS_CONFIG = [
-  { key: 'hypo_confusion', labelKey: 'assessment.fields.hypoglycemia.confusion' },
-  { key: 'hypo_palpitations', labelKey: 'assessment.fields.hypoglycemia.palpitations' },
-  { key: 'hypo_improves_with_sugar', labelKey: 'assessment.fields.hypoglycemia.improvesWithSugar' },
-]
-
-const URGENT_BRANCH_FIELDS_CONFIG = [
-  { key: 'nausea', labelKey: 'assessment.fields.urgent.nausea' },
-  { key: 'rapid_breathing', labelKey: 'assessment.fields.urgent.rapidBreathing' },
-  { key: 'unable_to_keep_fluids', labelKey: 'assessment.fields.urgent.unableToKeepFluids' },
-  { key: 'crisis', labelKey: 'assessment.fields.urgent.crisis' },
-]
-
-const RISK_FACTOR_FIELDS_CONFIG = [
-  { key: 'family_history', labelKey: 'assessment.fields.riskFactors.familyHistory' },
-  { key: 'obesity', labelKey: 'assessment.fields.riskFactors.obesity' },
-  { key: 'hypertension', labelKey: 'assessment.fields.riskFactors.hypertension' },
-  { key: 'sedentary_lifestyle', labelKey: 'assessment.fields.riskFactors.sedentaryLifestyle' },
-  { key: 'gestational_history', labelKey: 'assessment.fields.riskFactors.gestationalHistory' },
-  { key: 'smoking', labelKey: 'assessment.fields.riskFactors.smoking' },
+/* ── Risk factor toggle pills ───────────────────────── */
+const RISK_PILLS = [
+  { key: 'family_history', label: 'Family history of diabetes' },
+  { key: 'obesity', label: 'Obesity / overweight' },
+  { key: 'hypertension', label: 'High blood pressure' },
+  { key: 'sedentary_lifestyle', label: 'Inactive / sedentary' },
+  { key: 'gestational_history', label: 'Gestational diabetes history' },
+  { key: 'smoking', label: 'Current smoker' },
+  { key: 'high_cholesterol', label: 'High cholesterol / lipids' },
+  { key: 'pcos_history', label: 'PCOS History' },
+  { key: 'ethnicity_high_risk', label: 'High-risk ethnicity' },
 ]
 
 const DEFAULT_FORM = {
   patient_id: '',
-  age: '',
-  bmi: '',
-  waist_circumference: '',
-  fasting_glucose: '',
-  hba1c: '',
-  random_plasma_glucose: '',
+  age: '', bmi: '', waist_circumference: '',
+  fasting_glucose: '', hba1c: '', random_plasma_glucose: '',
   no_labs_available: false,
-  frequent_urination: false,
-  excessive_thirst: false,
-  fatigue: false,
-  blurred_vision: false,
-  weight_loss: false,
-  slow_healing: false,
-  sweating: false,
-  shaking: false,
-  dizziness: false,
-  vomiting: false,
-  abdominal_pain: false,
-  nausea: false,
-  rapid_breathing: false,
-  unable_to_keep_fluids: false,
-  crisis: false,
-  hypo_confusion: false,
-  hypo_palpitations: false,
-  hypo_improves_with_sugar: false,
+  frequent_urination: false, excessive_thirst: false, fatigue: false,
+  blurred_vision: false, weight_loss: false, slow_healing: false,
+  sweating: false, shaking: false, dizziness: false,
+  vomiting: false, abdominal_pain: false, nausea: false,
+  rapid_breathing: false, unable_to_keep_fluids: false, crisis: false,
+  hypo_confusion: false, hypo_palpitations: false, hypo_improves_with_sugar: false,
+  tingling_hands_feet: false, frequent_infections: false, acanthosis_nigricans: false,
   extra_symptoms: '',
-  family_history: false,
-  obesity: false,
-  hypertension: false,
-  sedentary_lifestyle: false,
-  gestational_history: false,
-  smoking: false,
-  extra_lab_name: '',
-  extra_lab_value: '',
+  family_history: false, obesity: false, hypertension: false,
+  sedentary_lifestyle: false, gestational_history: false, smoking: false,
+  high_cholesterol: false, pcos_history: false, ethnicity_high_risk: false,
+  extra_lab_name: '', extra_lab_value: '',
+  show_bmi_calculator: false, weight_kg: '', height_cm: '',
 }
 
-const DEFAULT_QCM = {
-  age_group: '',
-  bmi_group: '',
-  waist_group: '',
-  fasting_group: '',
-  hba1c_group: '',
+const DEFAULT_QCM = { age_group: '', bmi_group: '', fasting_group: '', hba1c_group: '' }
+
+function getDraftKey(user) {
+  const k = user?.id || user?.sub || user?.email || 'guest'
+  return `diagnosis-assessment-draft:v${DIAGNOSIS_DRAFT_VERSION}:${String(k)}`
 }
 
-function localizeLabelItems(items, t) {
-  return items.map((item) => ({ ...item, label: t(item.labelKey) }))
-}
-
-function localizeStepItems(items, t) {
-  return items.map((item) => ({
-    ...item,
-    title: t(item.titleKey),
-    description: t(item.descriptionKey),
-  }))
-}
-
-function getDiagnosisDraftStorageKey(user) {
-  const userKey = user?.id || user?.sub || user?.email || 'guest'
-  return `diagnosis-assessment-draft:v${DIAGNOSIS_DRAFT_VERSION}:${String(userKey)}`
-}
-
-function StepNavItem({ item, status, locked, onClick }) {
-  const Icon = item.icon
-  const stepDotClass = status === 'active'
-    ? 'border-primary-600 bg-primary-600 text-white dark:border-primary-500 dark:bg-primary-500 dark:text-white'
-    : status === 'pending'
-      ? 'border-primary-500 bg-slate-50 text-primary-600 dark:border-primary-400 dark:bg-[#070712] dark:text-primary-300'
-      : 'border-slate-300 bg-slate-50 text-slate-400 dark:border-slate-600 dark:bg-[#070712] dark:text-slate-500'
-
-  const stepTitleClass = status === 'active'
-    ? 'text-primary-700 dark:text-primary-300'
-    : status === 'pending'
-      ? 'text-slate-900 dark:text-slate-100'
-      : 'text-slate-500 dark:text-slate-400'
-  const stepDotMotionClass = status === 'active' ? 'assessment-step-dot-active' : ''
-
+/* ================================================================
+   REUSABLE COMPONENTS
+   ================================================================ */
+function TogglePill({ item, active, onToggle }) {
   return (
-    <li className="relative z-10 min-w-[11rem] flex-1">
+    <button
+      type="button"
+      className={cn('toggle-pill assessment-card-enter', active && 'active')}
+      onClick={() => onToggle(item.key, !active)}
+    >
+      <span className="flex-1 text-left">{item.label}</span>
+      <span className="pill-check">
+        {active ? <Check className="h-3 w-3" /> : null}
+      </span>
+    </button>
+  )
+}
+
+function SegmentSelector({ options, value, onChange, renderLabel }) {
+  return (
+    <div className="segment-group">
+      {options.map((opt) => (
+        <button
+          key={opt.id}
+          type="button"
+          className={cn('segment-btn', value === opt.id && 'active')}
+          onClick={() => onChange(opt)}
+        >
+          {renderLabel ? renderLabel(opt) : (
+            <>
+              <div className="text-sm font-semibold">{opt.label}</div>
+              {opt.sub ? <div className="mt-0.5 text-[11px] opacity-70">{opt.sub}</div> : null}
+            </>
+          )}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function QSection({ icon, title, sub, children, className }) {
+  return (
+    <div className={cn('q-section assessment-card-enter', className)}>
+      <div className="q-section-title">
+        {icon ? <span className="text-lg">{icon}</span> : null}
+        {title}
+      </div>
+      {sub ? <p className="q-section-sub">{sub}</p> : null}
+      <div className="mt-4">{children}</div>
+    </div>
+  )
+}
+
+function StepDot({ item, status, onClick, locked }) {
+  const Icon = item.icon
+  return (
+    <li className="relative z-10 min-w-[9rem] flex-1">
       <button
         type="button"
         onClick={onClick}
         disabled={locked}
-        className={cn(
-          'w-full transition',
-          locked && 'cursor-not-allowed'
-        )}
+        className={cn('w-full transition', locked && 'cursor-not-allowed')}
       >
         <div className="relative flex w-full items-center justify-center">
-          <span
-            className={cn(
-              'relative z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border shadow-sm transition-colors',
-              stepDotClass,
-              stepDotMotionClass
-            )}
-          >
-            <Icon className="h-5 w-5" strokeWidth={2.25} />
+          <span className={cn(
+            'relative z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border-2 shadow-sm transition-all duration-300',
+            status === 'done' ? 'border-cyan-500 bg-cyan-500 text-white' :
+            status === 'active' ? 'border-cyan-500 bg-white text-cyan-600 assessment-step-dot-active dark:bg-[#070712]' :
+            'border-slate-300 bg-slate-50 text-slate-400 dark:border-slate-600 dark:bg-[#070712] dark:text-slate-500',
+          )}>
+            {status === 'done' ? <Check className="h-5 w-5" strokeWidth={2.5} /> : <Icon className="h-5 w-5" strokeWidth={2.25} />}
           </span>
         </div>
-
         <div className="mt-2 text-center">
-          <h6 className={cn('text-sm font-semibold', stepTitleClass)}>
-            {item.title}
-          </h6>
+          <h6 className={cn(
+            'text-sm font-semibold',
+            status === 'done' ? 'text-cyan-700 dark:text-cyan-400' :
+            status === 'active' ? 'text-slate-900 dark:text-slate-100' :
+            'text-slate-500 dark:text-slate-400',
+          )}>{item.title}</h6>
+          <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500 hidden sm:block">{item.description}</p>
         </div>
       </button>
     </li>
   )
 }
 
-function QuestionCard({ title, helper, children, className }) {
-  return (
-    <div className={cn('assessment-card-enter rounded-xl bg-white p-3 shadow-sm', className)}>
-      <p className="text-sm font-semibold text-slate-900">{title}</p>
-      {helper ? <p className="mt-1 text-xs text-slate-500">{helper}</p> : null}
-      <div className="mt-3">{children}</div>
-    </div>
-  )
-}
-
-function QcmOptions({ value, options, onChange }) {
-  return (
-    <div className="space-y-2">
-      {options.map((option) => (
-        <label
-          key={option.id}
-          className={cn(
-            'flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1.5 text-sm transition',
-            value === option.id ? 'text-cyan-700' : 'text-slate-700 hover:text-slate-900'
-          )}
-        >
-          <input
-            type="checkbox"
-            className="h-4 w-4 accent-cyan-600"
-            checked={value === option.id}
-            onChange={() => onChange(option)}
-          />
-          <span>{option.label}</span>
-        </label>
-      ))}
-    </div>
-  )
-}
-
-function CheckboxListQuestion({ items, values, onToggle, helper }) {
-  return (
-    <div className="space-y-2.5">
-      {helper ? <p className="text-xs text-slate-500">{helper}</p> : null}
-      {items.map((item) => (
-        <label
-          key={item.key}
-          className={cn(
-            'flex cursor-pointer items-center gap-2 rounded-lg px-1 py-1.5 text-sm transition',
-            values[item.key] ? 'text-cyan-700' : 'text-slate-700 hover:text-slate-900'
-          )}
-        >
-          <input
-            type="checkbox"
-            className="h-4 w-4 accent-cyan-600"
-            checked={Boolean(values[item.key])}
-            onChange={(event) => onToggle(item.key, event.target.checked)}
-          />
-          <span>{item.label}</span>
-        </label>
-      ))}
-    </div>
-  )
-}
-
+/* ================================================================
+   MAIN PAGE
+   ================================================================ */
 export function DiagnosisPage() {
   const { user } = useAuth()
   const { t } = useLanguage()
   const location = useLocation()
   const navigate = useNavigate()
-  const storageKey = useMemo(() => getDiagnosisDraftStorageKey(user), [user?.id, user?.sub, user?.email])
+  const storageKey = useMemo(() => getDraftKey(user), [user?.id, user?.sub, user?.email])
 
   const [step, setStep] = useState(1)
-  const [maxReachedStep, setMaxReachedStep] = useState(1)
+  const [maxReached, setMaxReached] = useState(1)
   const [form, setForm] = useState(DEFAULT_FORM)
   const [qcm, setQcm] = useState(DEFAULT_QCM)
   const [patients, setPatients] = useState([])
@@ -298,933 +246,603 @@ export function DiagnosisPage() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [extraLabs, setExtraLabs] = useState([])
-  const [showRestartConfirm, setShowRestartConfirm] = useState(false)
+  const [showRestart, setShowRestart] = useState(false)
   const [draftReady, setDraftReady] = useState(false)
 
-  const hasHydratedDraftRef = useRef(false)
-  const isHydratingDraftRef = useRef(false)
-  const handledRestartRequestRef = useRef(null)
+  const hasHydratedRef = useRef(false)
+  const isHydratingRef = useRef(false)
+  const handledRestartRef = useRef(null)
 
   const userRoles = useMemo(() => new Set(user?.roles || (user?.role ? [user.role] : [])), [user])
-  const requiresPatientSelection = userRoles.has('doctor') || userRoles.has('admin') || userRoles.has('super_admin')
-  const stepItems = useMemo(() => localizeStepItems(STEP_ITEMS_CONFIG, t), [t])
-  const ageOptions = useMemo(() => localizeLabelItems(AGE_OPTIONS_CONFIG, t), [t])
-  const bmiOptions = useMemo(() => localizeLabelItems(BMI_OPTIONS_CONFIG, t), [t])
-  const waistOptions = useMemo(() => localizeLabelItems(WAIST_OPTIONS_CONFIG, t), [t])
-  const symptomFields = useMemo(() => localizeLabelItems(SYMPTOM_FIELDS_CONFIG, t), [t])
-  const safetySymptomFields = useMemo(() => localizeLabelItems(SAFETY_SYMPTOM_FIELDS_CONFIG, t), [t])
-  const hypoBranchFields = useMemo(() => localizeLabelItems(HYPO_BRANCH_FIELDS_CONFIG, t), [t])
-  const urgentBranchFields = useMemo(() => localizeLabelItems(URGENT_BRANCH_FIELDS_CONFIG, t), [t])
-  const riskFactorFields = useMemo(() => localizeLabelItems(RISK_FACTOR_FIELDS_CONFIG, t), [t])
-
+  const needsPatient = userRoles.has('doctor') || userRoles.has('admin') || userRoles.has('super_admin')
   const selectedPatient = useMemo(
-    () => patients.find((item) => String(item.id) === String(form.patient_id)),
-    [patients, form.patient_id]
+    () => patients.find((p) => String(p.id) === String(form.patient_id)),
+    [patients, form.patient_id],
   )
 
-  const selectedSymptoms = useMemo(
-    () => symptomFields.filter((field) => Boolean(form[field.key])).map((field) => field.label),
-    [form, symptomFields]
-  )
-
-  const selectedRiskFactors = useMemo(
-    () => riskFactorFields.filter((field) => Boolean(form[field.key])).map((field) => field.label),
-    [form, riskFactorFields]
-  )
-
-  const customSymptoms = useMemo(
-    () => form.extra_symptoms.split(/[,;\n]/).map((item) => item.trim()).filter(Boolean),
-    [form.extra_symptoms]
-  )
-
-  const hasHypoglycemiaTrigger = useMemo(
-    () => Boolean(form.sweating || form.shaking || form.dizziness),
-    [form.sweating, form.shaking, form.dizziness]
-  )
-
-  const highGlucoseSignal = useMemo(() => {
-    const fasting = Number(form.fasting_glucose)
-    const random = Number(form.random_plasma_glucose)
-    const hba1c = Number(form.hba1c)
-    return (
-      (!Number.isNaN(fasting) && fasting >= 250) ||
-      (!Number.isNaN(random) && random >= 200) ||
-      (!Number.isNaN(hba1c) && hba1c >= 10)
-    )
-  }, [form.fasting_glucose, form.random_plasma_glucose, form.hba1c])
-
-  const hasUrgentTrigger = useMemo(
-    () => Boolean(form.vomiting || form.abdominal_pain || highGlucoseSignal),
-    [form.vomiting, form.abdominal_pain, highGlucoseSignal]
-  )
-
-  const hasAnyLabData = useMemo(() => {
+  const hasAnyLab = useMemo(() => {
     if (form.no_labs_available) return false
     if (extraLabs.length) return true
-    return [
-      form.fasting_glucose,
-      form.hba1c,
-      form.random_plasma_glucose,
-    ].some((value) => String(value || '').trim() !== '')
+    return [form.fasting_glucose, form.hba1c, form.random_plasma_glucose].some(v => String(v || '').trim() !== '')
   }, [form.no_labs_available, form.fasting_glucose, form.hba1c, form.random_plasma_glucose, extraLabs.length])
 
-  const assessmentMode = hasAnyLabData ? 'diagnostic' : 'screening'
-  const isDraftPristine = useMemo(() => {
-    const hasFormChanges = Object.keys(DEFAULT_FORM).some((key) => {
-      if (key === 'patient_id') return false
-      return form[key] !== DEFAULT_FORM[key]
-    })
-    const hasQcmChanges = Object.values(qcm).some((value) => Boolean(value))
-    return !result && step === 1 && maxReachedStep === 1 && extraLabs.length === 0 && !hasFormChanges && !hasQcmChanges
-  }, [extraLabs.length, form, maxReachedStep, qcm, result, step])
+  const assessmentMode = hasAnyLab ? 'diagnostic' : 'screening'
 
-  const currentStepMeta = stepItems.find((item) => item.id === step) || stepItems[0]
+  const isDraftPristine = useMemo(() => {
+    const hasFormChanges = Object.keys(DEFAULT_FORM).some(k => k !== 'patient_id' && form[k] !== DEFAULT_FORM[k])
+    const hasQcmChanges = Object.values(qcm).some(Boolean)
+    return !result && step === 1 && maxReached === 1 && extraLabs.length === 0 && !hasFormChanges && !hasQcmChanges
+  }, [extraLabs.length, form, maxReached, qcm, result, step])
+
+  const selectedSymptoms = useMemo(
+    () => SYMPTOM_PILLS.filter(i => form[i.key]).map(i => i.label),
+    [form],
+  )
+  const selectedRisks = useMemo(
+    () => RISK_PILLS.filter(i => form[i.key]).map(i => i.label),
+    [form],
+  )
+  const customSymptoms = useMemo(
+    () => form.extra_symptoms.split(/[,;\n]/).map(s => s.trim()).filter(Boolean),
+    [form.extra_symptoms],
+  )
+
+  const hasHypoTrigger = Boolean(form.sweating || form.shaking || form.dizziness)
+  const highGlucose = useMemo(() => {
+    const f = Number(form.fasting_glucose), r = Number(form.random_plasma_glucose), h = Number(form.hba1c)
+    return (!Number.isNaN(f) && f >= 250) || (!Number.isNaN(r) && r >= 200) || (!Number.isNaN(h) && h >= 10)
+  }, [form.fasting_glucose, form.random_plasma_glucose, form.hba1c])
+  const hasUrgentTrigger = Boolean(form.vomiting || form.abdominal_pain || highGlucose)
   const flowPercent = result ? 100 : Math.round(((step - 1) / TOTAL_STEPS) * 100)
-  const stepContentKey = `${step}-${hasHypoglycemiaTrigger ? 'hypo' : 'no-hypo'}-${hasUrgentTrigger ? 'urgent' : 'no-urgent'}-${result ? 'with-result' : 'no-result'}`
+
   const restartRequested = Boolean(location.state?.requestRestart)
   const restartRequestId = location.state?.restartRequestId || null
   const forceRestart = Boolean(location.state?.forceRestart)
+  const keepData = Boolean(location.state?.keepData)
 
+  /* ── Draft persistence ─────────────────────────────── */
   useEffect(() => {
-    isHydratingDraftRef.current = true
+    isHydratingRef.current = true
     try {
       const raw = window.localStorage.getItem(storageKey)
       if (!raw) return
-
-      const parsed = JSON.parse(raw)
-      if (!parsed || parsed.version !== DIAGNOSIS_DRAFT_VERSION) return
-
-      if (parsed.form && typeof parsed.form === 'object') {
-        setForm((previous) => ({ ...previous, ...parsed.form }))
-      }
-      if (parsed.qcm && typeof parsed.qcm === 'object') {
-        setQcm((previous) => ({ ...previous, ...parsed.qcm }))
-      }
-      if (Array.isArray(parsed.extraLabs)) {
-        setExtraLabs(parsed.extraLabs)
-      }
-      if (typeof parsed.step === 'number') {
-        const normalizedStep = Math.max(1, Math.min(REVIEW_STEP, parsed.step))
-        setStep(normalizedStep)
-      }
-      if (typeof parsed.maxReachedStep === 'number') {
-        const normalizedMax = Math.max(1, Math.min(REVIEW_STEP, parsed.maxReachedStep))
-        setMaxReachedStep(normalizedMax)
-      }
-      if (parsed.result && typeof parsed.result === 'object') {
-        setResult(parsed.result)
-      }
-    } catch {
-      // Ignore malformed draft storage.
-    } finally {
-      isHydratingDraftRef.current = false
-      hasHydratedDraftRef.current = true
+      const p = JSON.parse(raw)
+      if (!p || p.version !== DIAGNOSIS_DRAFT_VERSION) return
+      if (p.form) setForm(prev => ({ ...prev, ...p.form }))
+      if (p.qcm) setQcm(prev => ({ ...prev, ...p.qcm }))
+      if (Array.isArray(p.extraLabs)) setExtraLabs(p.extraLabs)
+      if (typeof p.step === 'number') setStep(Math.max(1, Math.min(REVIEW_STEP, p.step)))
+      if (typeof p.maxReachedStep === 'number') setMaxReached(Math.max(1, Math.min(REVIEW_STEP, p.maxReachedStep)))
+      if (p.result) setResult(p.result)
+    } catch { /* ignore */ } finally {
+      isHydratingRef.current = false
+      hasHydratedRef.current = true
       setDraftReady(true)
     }
   }, [storageKey])
 
   useEffect(() => {
-    if (!draftReady || !hasHydratedDraftRef.current || isHydratingDraftRef.current) return
-    if (isDraftPristine) {
-      window.localStorage.removeItem(storageKey)
-      return
-    }
-    const draftPayload = {
-      version: DIAGNOSIS_DRAFT_VERSION,
-      step,
-      maxReachedStep,
-      form,
-      qcm,
-      extraLabs,
-      result,
-      savedAt: new Date().toISOString(),
-    }
-    window.localStorage.setItem(storageKey, JSON.stringify(draftPayload))
-  }, [storageKey, step, maxReachedStep, form, qcm, extraLabs, result, draftReady, isDraftPristine])
+    if (!draftReady || !hasHydratedRef.current || isHydratingRef.current) return
+    if (isDraftPristine) { window.localStorage.removeItem(storageKey); return }
+    window.localStorage.setItem(storageKey, JSON.stringify({
+      version: DIAGNOSIS_DRAFT_VERSION, step, maxReachedStep: maxReached,
+      form, qcm, extraLabs, result, savedAt: new Date().toISOString(),
+    }))
+  }, [storageKey, step, maxReached, form, qcm, extraLabs, result, draftReady, isDraftPristine])
 
   useEffect(() => {
-    if (!draftReady || (!restartRequested && !forceRestart)) return
-    if (forceRestart) {
-      startNewAssessment({ preservePatientId: false })
-      navigate(
-        { pathname: '/diagnosis', search: location.search },
-        { replace: true, state: null }
-      )
+    if (!draftReady || (!restartRequested && !forceRestart && !keepData)) return
+    if (keepData) {
+      setResult(null); setStep(1);
+      navigate({ pathname: '/diagnosis', search: location.search }, { replace: true, state: null })
       return
     }
+    if (forceRestart) { startNew({ preservePatient: false }); navigate({ pathname: '/diagnosis', search: location.search }, { replace: true, state: null }); return }
     if (!restartRequestId) return
-    if (handledRestartRequestRef.current === restartRequestId) return
-
-    handledRestartRequestRef.current = restartRequestId
-    if (isDraftPristine) {
-      startNewAssessment()
-    } else {
-      setShowRestartConfirm(true)
-    }
-    navigate(
-      { pathname: '/diagnosis', search: location.search },
-      { replace: true, state: null }
-    )
+    if (handledRestartRef.current === restartRequestId) return
+    handledRestartRef.current = restartRequestId
+    if (isDraftPristine) startNew(); else setShowRestart(true)
+    navigate({ pathname: '/diagnosis', search: location.search }, { replace: true, state: null })
   }, [draftReady, forceRestart, isDraftPristine, location.search, navigate, restartRequestId, restartRequested])
 
+  useEffect(() => { if (needsPatient) loadPatients() }, [needsPatient])
   useEffect(() => {
-    if (!requiresPatientSelection) return
-    loadPatients()
-  }, [requiresPatientSelection])
+    if (!needsPatient) return
+    const pid = new URLSearchParams(location.search).get('patient_id')
+    if (pid) setForm(p => ({ ...p, patient_id: pid }))
+  }, [location.search, needsPatient])
 
-  useEffect(() => {
-    if (!requiresPatientSelection) return
-    const params = new URLSearchParams(location.search)
-    const patientId = params.get('patient_id')
-    if (patientId) {
-      setForm((previous) => ({ ...previous, patient_id: patientId }))
-    }
-  }, [location.search, requiresPatientSelection])
-
+  /* ── Helpers ───────────────────────────────────────── */
   async function loadPatients() {
-    setLoadingPatients(true)
-    setError('')
-
+    setLoadingPatients(true); setError('')
     try {
-      const response = await api.get('/patients/?limit=200')
-      const loadedPatients = getApiData(response) || []
-      setPatients(loadedPatients)
+      const res = await api.get('/patients/?limit=200')
+      const list = getApiData(res) || []
+      setPatients(list)
+      if (list.length) setForm(p => {
+        const has = list.some(pt => String(pt.id) === String(p.patient_id))
+        return has ? p : { ...p, patient_id: String(list[0].id) }
+      })
+    } catch (e) { setError(getApiErrorMessage(e, t('assessment.errors.loadPatients'))) }
+    finally { setLoadingPatients(false) }
+  }
 
-      if (loadedPatients.length) {
-        setForm((previous) => {
-          const hasSelectedPatient = loadedPatients.some((patient) => String(patient.id) === String(previous.patient_id))
-          if (hasSelectedPatient) return previous
-          return { ...previous, patient_id: String(loadedPatients[0].id) }
-        })
-      }
-    } catch (err) {
-      setError(getApiErrorMessage(err, t('assessment.errors.loadPatients')))
-    } finally {
-      setLoadingPatients(false)
+  function up(field, value) { setForm(p => ({ ...p, [field]: value })) }
+  function pickSegment(qKey, opt, field) { setQcm(p => ({ ...p, [qKey]: opt.id })); setForm(p => ({ ...p, [field]: String(opt.value) })) }
+  function setCustom(qKey, field, value) { setQcm(p => ({ ...p, [qKey]: 'custom' })); setForm(p => ({ ...p, [field]: value })) }
+
+  function calculateBmi(w, h) {
+    const weight = Number(w)
+    const heightCm = Number(h)
+    if (!Number.isNaN(weight) && weight > 0 && !Number.isNaN(heightCm) && heightCm > 0) {
+      const height = heightCm / 100
+      const calculatedBmi = (weight / (height * height)).toFixed(1)
+      
+      let group = 'custom'
+      const bmiNum = Number(calculatedBmi)
+      if (bmiNum < 18.5) group = 'underweight'
+      else if (bmiNum < 25) group = 'normal'
+      else if (bmiNum < 30) group = 'Overweight'
+      else group = 'obese'
+      
+      setQcm(p => ({ ...p, bmi_group: group }))
+      setForm(p => ({ ...p, bmi: calculatedBmi }))
     }
-  }
-
-  function updateField(field, value) {
-    setForm((previous) => ({ ...previous, [field]: value }))
-  }
-
-  function selectQcm(questionKey, option, targetField) {
-    setQcm((previous) => ({ ...previous, [questionKey]: option.id }))
-    setForm((previous) => ({ ...previous, [targetField]: String(option.value) }))
-  }
-
-  function setCustomValue(questionKey, fieldName, value) {
-    setQcm((previous) => ({ ...previous, [questionKey]: 'custom' }))
-    setForm((previous) => ({ ...previous, [fieldName]: value }))
   }
 
   function addExtraLab() {
-    if (!form.extra_lab_name.trim()) {
-      setError(t('assessment.errors.enterLabName'))
-      return
-    }
-    if (!form.extra_lab_value || Number.isNaN(Number(form.extra_lab_value))) {
-      setError(t('assessment.errors.enterLabValue'))
-      return
-    }
+    if (!form.extra_lab_name.trim()) { setError('Enter a lab test name.'); return }
+    if (!form.extra_lab_value || Number.isNaN(Number(form.extra_lab_value))) { setError('Enter a valid lab value.'); return }
+    setExtraLabs(p => [...p, { test_name: form.extra_lab_name.trim(), test_value: Number(form.extra_lab_value) }])
+    setForm(p => ({ ...p, extra_lab_name: '', extra_lab_value: '' })); setError('')
+  }
 
-    setExtraLabs((previous) => [
-      ...previous,
-      { test_name: form.extra_lab_name.trim(), test_value: Number(form.extra_lab_value) },
-    ])
+  function loadDemo(type) {
+    const f = { ...DEFAULT_FORM, patient_id: form.patient_id }
+    const q = { ...DEFAULT_QCM }
+    if (type === 't2dm') {
+      f.age = '55'; q.age_group = '46_60';
+      f.bmi = '31.5'; q.bmi_group = 'obese';
+      f.fasting_glucose = '165'; q.fasting_group = 'diabetes';
+      f.hba1c = '8.2'; q.hba1c_group = 'diabetes';
+      f.frequent_urination = true; f.excessive_thirst = true; f.fatigue = true;
+      f.obesity = true; f.family_history = true; f.sedentary_lifestyle = true;
+    } else if (type === 'dka') {
+      f.age = '24'; q.age_group = '18_30';
+      f.bmi = '21.0'; q.bmi_group = 'normal';
+      f.fasting_glucose = '380'; q.fasting_group = 'critical';
+      f.hba1c = '11.5'; q.hba1c_group = 'critical';
+      f.excessive_thirst = true; f.weight_loss = true; f.fatigue = true;
+      f.vomiting = true; f.abdominal_pain = true; f.dizziness = true; f.crisis = true;
+    }
+    setForm(f); setQcm(q); setExtraLabs([]); setStep(1); setMaxReached(1); setResult(null);
+  }
 
-    setForm((previous) => ({
-      ...previous,
-      extra_lab_name: '',
-      extra_lab_value: '',
-    }))
+  function startNew(opts = {}) {
+    const pid = (opts.preservePatient ?? needsPatient) ? form.patient_id : ''
+    window.localStorage.removeItem(storageKey)
+    setForm({ ...DEFAULT_FORM, patient_id: pid }); setQcm(DEFAULT_QCM)
+    setExtraLabs([]); setResult(null); setError(''); setStep(1); setMaxReached(1)
+  }
+
+  function getStepErrors(s = step) {
+    const errs = []
+    if (s === 1) {
+      if (needsPatient && !form.patient_id) errs.push('Please select a patient.')
+      if (form.age && (Number(form.age) < 0 || Number(form.age) > 120)) errs.push('Age must be between 0 and 120.')
+      if (form.bmi && (Number(form.bmi) < 10 || Number(form.bmi) > 80)) errs.push('BMI must be between 10 and 80.')
+    }
+    if (s === 3) {
+      const fg = String(form.fasting_glucose || '').trim()
+      const hb = String(form.hba1c || '').trim()
+      const rg = String(form.random_plasma_glucose || '').trim()
+      if (fg) { const n = Number(fg); if (Number.isNaN(n) || n < 40 || n > 600) errs.push('Fasting glucose must be 40–600 mg/dL.') }
+      if (hb) { const n = Number(hb); if (Number.isNaN(n) || n < 3 || n > 20) errs.push('HbA1c must be 3–20%.') }
+      if (rg) { const n = Number(rg); if (Number.isNaN(n) || n < 30 || n > 1000) errs.push('Random glucose must be 30–1000 mg/dL.') }
+    }
+    return errs
+  }
+
+  function goNext() {
+    const errs = getStepErrors(step)
+    if (errs.length) { setError(errs[0]); return }
     setError('')
+    const next = Math.min(TOTAL_STEPS, step + 1)
+    setStep(next); setMaxReached(p => Math.max(p, next))
   }
+  function goBack() { setError(''); setStep(p => Math.max(1, p - 1)) }
+  function jumpTo(s) { if (s <= maxReached) { setError(''); setStep(s) } }
 
-  function removeExtraLab(index) {
-    setExtraLabs((previous) => previous.filter((_, currentIndex) => currentIndex !== index))
-  }
-
-  function buildResultContext() {
+  function buildContext() {
     return {
       patient_id: form.patient_id ? Number(form.patient_id) : null,
-      patient_name: requiresPatientSelection
-        ? selectedPatient?.full_name || null
-        : user?.name || null,
+      patient_name: needsPatient ? selectedPatient?.full_name || null : user?.name || null,
       assessment_mode: assessmentMode,
-      profile: {
-        age: form.age ? Number(form.age) : null,
-        bmi: form.bmi ? Number(form.bmi) : null,
-        waist_circumference: form.waist_circumference ? Number(form.waist_circumference) : null,
-      },
-      labs: {
-        fasting_glucose: form.fasting_glucose ? Number(form.fasting_glucose) : null,
-        hba1c: form.hba1c ? Number(form.hba1c) : null,
-        random_plasma_glucose: form.random_plasma_glucose ? Number(form.random_plasma_glucose) : null,
-      },
-      symptoms: selectedSymptoms,
-      risk_factors: selectedRiskFactors,
-      adaptive_flags: {
-        hypoglycemia: hasHypoglycemiaTrigger,
-        urgent_dka: hasUrgentTrigger,
-      },
+      profile: { age: form.age ? Number(form.age) : null, bmi: form.bmi ? Number(form.bmi) : null, waist_circumference: form.waist_circumference ? Number(form.waist_circumference) : null },
+      labs: { fasting_glucose: form.fasting_glucose ? Number(form.fasting_glucose) : null, hba1c: form.hba1c ? Number(form.hba1c) : null, random_plasma_glucose: form.random_plasma_glucose ? Number(form.random_plasma_glucose) : null },
+      symptoms: selectedSymptoms, risk_factors: selectedRisks,
+      adaptive_flags: { hypoglycemia: hasHypoTrigger, urgent_dka: hasUrgentTrigger },
     }
   }
 
-  function clearDraftStorage() {
-    window.localStorage.removeItem(storageKey)
-  }
-
-  function startNewAssessment(options = {}) {
-    const preservePatientId = options.preservePatientId ?? requiresPatientSelection
-    const preservedPatientId = preservePatientId ? form.patient_id : ''
-    clearDraftStorage()
-    setForm({ ...DEFAULT_FORM, patient_id: preservedPatientId })
-    setQcm(DEFAULT_QCM)
-    setExtraLabs([])
-    setResult(null)
-    setError('')
-    setStep(1)
-    setMaxReachedStep(1)
-  }
-
-  function confirmRestartAssessment() {
-    startNewAssessment()
-    setShowRestartConfirm(false)
-  }
-
-  function getStepErrors(targetStep = step) {
-    const errors = []
-
-    if (targetStep === 1) {
-      if (requiresPatientSelection && !form.patient_id) {
-        errors.push(t('assessment.errors.selectPatient'))
-      }
-      if (form.age && (Number(form.age) < 0 || Number(form.age) > 120)) {
-        errors.push(t('assessment.errors.ageRange'))
-      }
-      if (form.bmi && (Number(form.bmi) < 10 || Number(form.bmi) > 80)) {
-        errors.push(t('assessment.errors.bmiRange'))
-      }
-      if (form.waist_circumference && (Number(form.waist_circumference) < 30 || Number(form.waist_circumference) > 250)) {
-        errors.push(t('assessment.errors.waistRange'))
-      }
-    }
-
-    if (targetStep === 3) {
-      const fastingRaw = String(form.fasting_glucose || '').trim()
-      const hba1cRaw = String(form.hba1c || '').trim()
-      const randomRaw = String(form.random_plasma_glucose || '').trim()
-
-      if (fastingRaw) {
-        const fastingGlucose = Number(fastingRaw)
-        if (Number.isNaN(fastingGlucose) || fastingGlucose < 40 || fastingGlucose > 600) {
-          errors.push(t('assessment.errors.fastingRange'))
-        }
-      }
-
-      if (hba1cRaw) {
-        const hba1c = Number(hba1cRaw)
-        if (Number.isNaN(hba1c) || hba1c < 3 || hba1c > 20) {
-          errors.push(t('assessment.errors.hba1cRange'))
-        }
-      }
-
-      if (randomRaw) {
-        const randomGlucose = Number(randomRaw)
-        if (Number.isNaN(randomGlucose) || randomGlucose < 30 || randomGlucose > 1000) {
-          errors.push(t('assessment.errors.randomRange'))
-        }
-      }
-    }
-
-    return errors
-  }
-
-  function goToNextStep() {
-    const errors = getStepErrors(step)
-    if (errors.length) {
-      setError(errors[0])
-      return
-    }
-
-    setError('')
-    const nextStep = Math.min(TOTAL_STEPS, step + 1)
-    setStep(nextStep)
-    setMaxReachedStep((previous) => Math.max(previous, nextStep))
-  }
-
-  function goToPreviousStep() {
-    setError('')
-    setStep((previous) => Math.max(1, previous - 1))
-  }
-
-  function jumpToStep(nextStep) {
-    if (nextStep > maxReachedStep) return
-    setError('')
-    setStep(nextStep)
-  }
-
-  async function submitAssessment(event) {
-    event.preventDefault()
-
-    const stepErrors = getStepErrors(1).concat(getStepErrors(3))
-    if (stepErrors.length) {
-      setError(stepErrors[0])
-      return
-    }
-
-    setSubmitting(true)
-    setError('')
-
+  async function submitAssessment(e) {
+    e.preventDefault()
+    const errs = getStepErrors(1).concat(getStepErrors(3))
+    if (errs.length) { setError(errs[0]); return }
+    setSubmitting(true); setError('')
     try {
       const symptoms = {
-        fatigue: form.fatigue,
-        blurred_vision: form.blurred_vision,
-        weight_loss: form.weight_loss,
-        slow_healing: form.slow_healing,
-        sweating: form.sweating,
-        shaking: form.shaking,
-        dizziness: form.dizziness,
-        vomiting: form.vomiting,
-        abdominal_pain: form.abdominal_pain,
-        nausea: form.nausea,
+        fatigue: form.fatigue, blurred_vision: form.blurred_vision, weight_loss: form.weight_loss,
+        slow_healing: form.slow_healing, sweating: form.sweating, shaking: form.shaking,
+        dizziness: form.dizziness, vomiting: form.vomiting, abdominal_pain: form.abdominal_pain,
+        nausea: form.nausea, tingling_hands_feet: form.tingling_hands_feet,
+        frequent_infections: form.frequent_infections, acanthosis_nigricans: form.acanthosis_nigricans,
       }
-
-      const customSymptomList = customSymptoms.map((item) => ({
-        symptom_code: item.toLowerCase().replace(/\s+/g, '_'),
-        symptom_name: item,
-        present: true,
-      }))
-
-      const questionnaireAnswers = {
-        qcm,
-        yes_no: {
-          symptoms: Object.fromEntries(symptomFields.map((field) => [field.key, Boolean(form[field.key])])),
-          safety_symptoms: Object.fromEntries(safetySymptomFields.map((field) => [field.key, Boolean(form[field.key])])),
-          hypoglycemia_followup: Object.fromEntries(hypoBranchFields.map((field) => [field.key, Boolean(form[field.key])])),
-          urgent_followup: Object.fromEntries(urgentBranchFields.map((field) => [field.key, Boolean(form[field.key])])),
-          risk_factors: Object.fromEntries(riskFactorFields.map((field) => [field.key, Boolean(form[field.key])])),
+      const customList = customSymptoms.map(s => ({ symptom_code: s.toLowerCase().replace(/\s+/g, '_'), symptom_name: s, present: true }))
+      const qAnswers = {
+        qcm, yes_no: {
+          symptoms: Object.fromEntries(SYMPTOM_PILLS.map(f => [f.key, Boolean(form[f.key])])),
+          safety_symptoms: Object.fromEntries(SAFETY_PILLS.map(f => [f.key, Boolean(form[f.key])])),
+          risk_factors: Object.fromEntries(RISK_PILLS.map(f => [f.key, Boolean(form[f.key])])),
         },
-        free_text: {
-          extra_symptoms: customSymptoms,
-        },
+        free_text: { extra_symptoms: customSymptoms },
       }
-
       const payload = {
-        mode: assessmentMode,
-        no_labs_available: form.no_labs_available,
-        frequent_urination: form.frequent_urination,
-        excessive_thirst: form.excessive_thirst,
-        sweating: form.sweating,
-        shaking: form.shaking,
-        dizziness: form.dizziness,
-        vomiting: form.vomiting,
-        abdominal_pain: form.abdominal_pain,
-        nausea: form.nausea,
-        crisis: form.crisis,
-        symptoms: customSymptomList.length
-          ? [
-            ...customSymptomList,
-            ...Object.keys(symptoms).map((key) => ({
-              symptom_code: key,
-              symptom_name: key.replace('_', ' '),
-              present: symptoms[key],
-            })),
-          ]
+        mode: assessmentMode, no_labs_available: form.no_labs_available,
+        frequent_urination: form.frequent_urination, excessive_thirst: form.excessive_thirst,
+        sweating: form.sweating, shaking: form.shaking, dizziness: form.dizziness,
+        vomiting: form.vomiting, abdominal_pain: form.abdominal_pain, nausea: form.nausea, crisis: form.crisis,
+        symptoms: customList.length
+          ? [...customList, ...Object.keys(symptoms).map(k => ({ symptom_code: k, symptom_name: k.replace('_', ' '), present: symptoms[k] }))]
           : symptoms,
         risk_factors: {
-          family_history: form.family_history,
-          obesity: form.obesity,
-          hypertension: form.hypertension,
-          sedentary_lifestyle: form.sedentary_lifestyle,
-          gestational_history: form.gestational_history,
-          smoking: form.smoking,
+          family_history: form.family_history, obesity: form.obesity, hypertension: form.hypertension,
+          sedentary_lifestyle: form.sedentary_lifestyle, gestational_history: form.gestational_history, smoking: form.smoking,
+          high_cholesterol: form.high_cholesterol, pcos_history: form.pcos_history, ethnicity_high_risk: form.ethnicity_high_risk,
         },
-        questionnaire_version: 'qcm_yesno_v1',
-        questionnaire_answers: questionnaireAnswers,
+        questionnaire_version: 'qcm_yesno_v1', questionnaire_answers: qAnswers,
       }
-
-      if (String(form.fasting_glucose || '').trim()) {
-        payload.fasting_glucose = Number(form.fasting_glucose)
-      }
-      if (String(form.hba1c || '').trim()) {
-        payload.hba1c = Number(form.hba1c)
-      }
-      if (String(form.random_plasma_glucose || '').trim()) {
-        payload.random_plasma_glucose = Number(form.random_plasma_glucose)
-      }
-
+      if (String(form.fasting_glucose || '').trim()) payload.fasting_glucose = Number(form.fasting_glucose)
+      if (String(form.hba1c || '').trim()) payload.hba1c = Number(form.hba1c)
+      if (String(form.random_plasma_glucose || '').trim()) payload.random_plasma_glucose = Number(form.random_plasma_glucose)
       if (form.age) payload.age = Number(form.age)
       if (form.bmi) payload.bmi = Number(form.bmi)
       if (form.waist_circumference) payload.waist_circumference = Number(form.waist_circumference)
       if (!form.no_labs_available && extraLabs.length) payload.labs = extraLabs
-      if (requiresPatientSelection) payload.patient_id = Number(form.patient_id)
+      if (needsPatient) payload.patient_id = Number(form.patient_id)
 
-      const response = await api.post('/diagnosis/', payload)
-      const resultData = getApiData(response)
-      setResult(resultData)
-      setStep(REVIEW_STEP)
-      setMaxReachedStep(REVIEW_STEP)
-
-      const snapshot = {
-        result: resultData,
-        context: buildResultContext(),
-        savedAt: new Date().toISOString(),
-      }
-      saveDiagnosisResultSnapshot({ user, result: resultData, context: snapshot.context })
-      navigate('/diagnosis/result', { state: snapshot })
-    } catch (err) {
-      setError(getApiErrorMessage(err, t('assessment.errors.submitFailed')))
-    } finally {
-      setSubmitting(false)
-    }
+      const res = await api.post('/diagnosis/', payload)
+      const data = getApiData(res)
+      setResult(data); setStep(REVIEW_STEP); setMaxReached(REVIEW_STEP)
+      saveDiagnosisResultSnapshot({ user, result: data, context: buildContext() })
+      navigate('/diagnosis/result', { state: { result: data, context: buildContext(), savedAt: new Date().toISOString() } })
+    } catch (err) { setError(getApiErrorMessage(err, 'Assessment failed. Please try again.')) }
+    finally { setSubmitting(false) }
   }
 
-  const trackInsetPercent = 50 / TOTAL_STEPS
-  const stepFillPercent = result ? 100 : ((step - 1) / (TOTAL_STEPS - 1)) * 100
+  /* ================================================================
+     RENDER
+     ================================================================ */
+     
+  const renderBadge = (val, thresholds) => {
+    if (!val) return null;
+    const num = Number(val);
+    if (num >= thresholds.critical) return <span className="ml-2 inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2 py-0.5 text-[10px] font-semibold text-red-700 dark:text-red-400">Critical High</span>;
+    if (num >= thresholds.diabetes) return <span className="ml-2 inline-flex items-center rounded-full bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 text-[10px] font-semibold text-orange-700 dark:text-orange-400">Diabetes Range</span>;
+    if (num >= thresholds.prediabetes) return <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">Pre-diabetes</span>;
+    if (num > 0) return <span className="ml-2 inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">Normal Range</span>;
+    return null;
+  }
 
+  const totalAnswered = SYMPTOM_PILLS.filter(i => form[i.key]).length + SAFETY_PILLS.filter(i => form[i.key]).length + RISK_PILLS.filter(i => form[i.key]).length + (form.age ? 1 : 0) + (form.bmi ? 1 : 0)
+  const stepFill = result ? 100 : ((step - 1) / (TOTAL_STEPS - 1)) * 100
+  const inset = 50 / TOTAL_STEPS
 
   return (
     <div className="space-y-5">
       <section className="surface border-0 p-5 sm:p-6">
-        <div className="mx-auto w-full max-w-6xl">
-          <div className="mb-5 px-1 sm:px-2">
+        <div className="mx-auto w-full max-w-5xl">
+
+          {/* ── Step Progress Bar ─────────────────────────── */}
+          <div className="mb-6 px-1">
             <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-              <span>{t('assessment.status.flow')}</span>
-              <span>{t('assessment.status.complete', { percent: flowPercent })}</span>
+              <span className="flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5 text-cyan-500" /> Health Assessment</span>
+              <div className="flex items-center gap-4">
+                {!isDraftPristine && !result && (
+                  <span className="hidden sm:flex items-center gap-1.5 text-[10px] font-medium tracking-normal text-emerald-600 dark:text-emerald-400/80 animate-pulse-slow">
+                    <Check className="h-3 w-3" /> Draft autosaved
+                  </span>
+                )}
+                <span>{flowPercent}% Complete</span>
+              </div>
             </div>
             <div className="mt-4 overflow-x-auto pb-1">
-              <ol className="relative mx-auto flex min-w-[760px] max-w-screen-lg items-start gap-0">
-                <div
-                  className="pointer-events-none absolute top-5"
-                  style={{ left: `${trackInsetPercent}%`, right: `${trackInsetPercent}%` }}
-                >
+              <ol className="relative mx-auto flex min-w-[520px] max-w-screen-md items-start gap-0">
+                <div className="pointer-events-none absolute top-[22px]" style={{ left: `${inset}%`, right: `${inset}%` }}>
                   <div className="h-1 rounded-full bg-slate-200 dark:bg-slate-700" />
-                  <div
-                    className="absolute left-0 top-0 h-1 rounded-full bg-primary-500 transition-all duration-300 dark:bg-primary-500"
-                    style={{ width: `${stepFillPercent}%` }}
-                  />
+                  <div className="absolute left-0 top-0 h-1 rounded-full bg-gradient-to-r from-cyan-400 to-cyan-600 transition-all duration-500" style={{ width: `${stepFill}%` }} />
                 </div>
-                {stepItems.map((item) => {
-                  const status = result
-                    ? 'active'
-                    : item.id < step
-                      ? 'active'
-                      : item.id === step
-                        ? 'pending'
-                        : 'inactive'
-                  return (
-                    <StepNavItem
-                      key={item.id}
-                      item={item}
-                      status={status}
-                      locked={item.id > maxReachedStep}
-                      onClick={() => jumpToStep(item.id)}
-                    />
-                  )
+                {STEP_ITEMS_CONFIG.map((item) => {
+                  const status = result ? 'done' : item.id < step ? 'done' : item.id === step ? 'active' : 'inactive'
+                  return <StepDot key={item.id} item={item} status={status} locked={item.id > maxReached} onClick={() => jumpTo(item.id)} />
                 })}
               </ol>
             </div>
           </div>
 
-          <div className="mx-auto w-full max-w-5xl">
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <h2 className="section-title">{currentStepMeta.title}</h2>
-                <p className="section-subtitle mt-1">{currentStepMeta.description}</p>
+          {/* ── Current Step Title ────────────────────────── */}
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h2 className="section-title">{STEP_ITEMS_CONFIG[step - 1]?.title}</h2>
+              <p className="section-subtitle mt-1">{STEP_ITEMS_CONFIG[step - 1]?.description}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-2 mr-2 border-r border-slate-200 dark:border-slate-700 pr-4">
+                <span className="text-[10px] font-semibold uppercase text-slate-400 tracking-wider">Demo Fill:</span>
+                <button type="button" onClick={() => loadDemo('t2dm')} className="rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors">T2DM</button>
+                <button type="button" onClick={() => loadDemo('dka')} className="rounded bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 px-2 py-1 text-xs font-medium text-red-700 dark:text-red-400 transition-colors">DKA Crisis</button>
               </div>
-              <StatusBadge tone="info">{t('assessment.status.stepCounter', { step, total: TOTAL_STEPS })}</StatusBadge>
+              <StatusBadge tone="info">Step {step}/{TOTAL_STEPS}</StatusBadge>
+              {totalAnswered > 0 ? <StatusBadge tone="success">{totalAnswered} answered</StatusBadge> : null}
+            </div>
+          </div>
+
+          <form onSubmit={submitAssessment} className="space-y-5">
+            <div key={`step-${step}-${result ? 'r' : 'n'}`} className="assessment-step-enter">
+
+            {/* ═══════════════ STEP 1 — About You ═══════════════ */}
+            {step === 1 ? (
+              <div className="assessment-step-list space-y-5">
+                {needsPatient ? (
+                  <QSection icon={<Building2 className="h-5 w-5 text-slate-500" />} title="Patient" sub="Select the patient being assessed">
+                    {loadingPatients ? <LoadingState label="Loading patients..." /> : (
+                      <AppSelect
+                        value={form.patient_id}
+                        onValueChange={(v) => up('patient_id', v)}
+                        placeholder="Select a patient"
+                        includeEmpty emptyLabel={patients.length ? 'Select a patient' : 'No patients found'}
+                        options={patients.map(p => ({ value: String(p.id), label: `${p.full_name} (#${p.id})` }))}
+                      />
+                    )}
+                  </QSection>
+                ) : null}
+
+                <QSection icon={<UserRound className="h-5 w-5 text-slate-500" />} title="How old are you?" sub="Tap the range that fits best, or type your exact age">
+                  <SegmentSelector
+                    options={AGE_OPTIONS}
+                    value={qcm.age_group}
+                    onChange={(opt) => pickSegment('age_group', opt, 'age')}
+                    renderLabel={(opt) => (
+                      <div className="flex flex-col items-center gap-0.5 py-1">
+                        <span className="text-sm font-semibold">{opt.label}</span>
+                      </div>
+                    )}
+                  />
+                  <label className="mt-3 block">
+                    <span className="label-text">Or enter exact age</span>
+                    <input className="input-base" type="number" min={0} max={120} placeholder="e.g. 42" value={form.age} onChange={(e) => setCustom('age_group', 'age', e.target.value)} />
+                  </label>
+                </QSection>
+
+                <QSection icon={<Scale className="h-5 w-5 text-slate-500" />} title="Body Mass Index (BMI)" sub="Select your range or enter your BMI number">
+                  <SegmentSelector options={BMI_OPTIONS} value={qcm.bmi_group} onChange={(opt) => pickSegment('bmi_group', opt, 'bmi')} />
+                  <label className="mt-3 block">
+                    <span className="label-text">Exact BMI value</span>
+                    <input className="input-base" type="number" min={10} max={80} step="0.1" placeholder="e.g. 26.5" value={form.bmi} onChange={(e) => setCustom('bmi_group', 'bmi', e.target.value)} />
+                  </label>
+                  
+                  <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-3">
+                    <button type="button" className="text-sm font-semibold text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300 transition-colors" onClick={() => up('show_bmi_calculator', !form.show_bmi_calculator)}>
+                      {form.show_bmi_calculator ? "Close calculator" : "I don't know my exact BMI"}
+                    </button>
+                    {form.show_bmi_calculator && (
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-100 dark:border-slate-800">
+                        <label className="block">
+                          <span className="label-text">Weight (kg)</span>
+                          <input className="input-base bg-white dark:bg-[#070712]" type="number" placeholder="e.g. 70" value={form.weight_kg} onChange={(e) => { up('weight_kg', e.target.value); calculateBmi(e.target.value, form.height_cm); }} />
+                        </label>
+                        <label className="block">
+                          <span className="label-text">Height (cm)</span>
+                          <input className="input-base bg-white dark:bg-[#070712]" type="number" placeholder="e.g. 175" value={form.height_cm} onChange={(e) => { up('height_cm', e.target.value); calculateBmi(form.weight_kg, e.target.value); }} />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                </QSection>
+
+                <QSection icon={<Activity className="h-5 w-5 text-slate-500" />} title="Waist Circumference (optional)" sub="Helps detect central obesity — a key diabetes risk factor">
+                  <label className="block">
+                    <span className="label-text">Waist in cm</span>
+                    <input className="input-base" type="number" min={30} max={250} step="0.1" placeholder="e.g. 95 cm" value={form.waist_circumference} onChange={(e) => up('waist_circumference', e.target.value)} />
+                  </label>
+                </QSection>
+              </div>
+            ) : null}
+
+            {/* ═══════════════ STEP 2 — How You Feel ════════════ */}
+            {step === 2 ? (
+              <div className="assessment-step-list space-y-5">
+                <QSection icon={<Stethoscope className="h-5 w-5 text-slate-500" />} title="Common symptoms" sub="Tap any symptoms you're currently experiencing">
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {SYMPTOM_PILLS.map(item => (
+                      <TogglePill key={item.key} item={item} active={Boolean(form[item.key])} onToggle={(k, v) => up(k, v)} />
+                    ))}
+                  </div>
+                </QSection>
+
+                <QSection icon={<AlertTriangle className="h-5 w-5 text-red-500" />} title="Warning signs" sub="These help detect low blood sugar or emergencies" className="assessment-branch-card">
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {SAFETY_PILLS.map(item => (
+                      <TogglePill key={item.key} item={item} active={Boolean(form[item.key])} onToggle={(k, v) => up(k, v)} />
+                    ))}
+                  </div>
+                </QSection>
+
+                <QSection icon={<Activity className="h-5 w-5 text-slate-500" />} title="Risk factors" sub="Do any of these apply to you?">
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {RISK_PILLS.map(item => (
+                      <TogglePill key={item.key} item={item} active={Boolean(form[item.key])} onToggle={(k, v) => up(k, v)} />
+                    ))}
+                  </div>
+                </QSection>
+
+                <QSection icon={<PenTool className="h-5 w-5 text-slate-500" />} title="Anything else?" sub="Describe any additional symptoms (optional)">
+                  <textarea
+                    className="input-base min-h-[80px] resize-y"
+                    value={form.extra_symptoms}
+                    onChange={(e) => up('extra_symptoms', e.target.value)}
+                    placeholder="e.g. tingling feet, dry mouth, frequent infections..."
+                  />
+                </QSection>
+              </div>
+            ) : null}
+
+            {/* ═══════════════ STEP 3 — Lab & Review ════════════ */}
+            {step === 3 ? (
+              <div className="assessment-step-list space-y-5">
+                <QSection icon={<TestTube2 className="h-5 w-5 text-slate-500" />} title="Do you have lab results?" sub="Lab values improve accuracy — but you can skip this">
+                  <label className="flex items-center gap-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm">
+                    <input type="checkbox" className="h-4 w-4 accent-amber-600" checked={Boolean(form.no_labs_available)} onChange={(e) => {
+                      up('no_labs_available', e.target.checked)
+                      if (e.target.checked) {
+                        setForm(p => ({ ...p, fasting_glucose: '', hba1c: '', random_plasma_glucose: '' }))
+                        setQcm(p => ({ ...p, fasting_group: '', hba1c_group: '' }))
+                        setExtraLabs([])
+                      }
+                    }} />
+                    <span className="font-medium text-amber-800 dark:text-amber-300">I don't have lab results right now</span>
+                  </label>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Mode: <span className="font-semibold">{assessmentMode === 'diagnostic' ? '🔬 Diagnostic' : '📋 Screening'}</span>
+                  </p>
+                </QSection>
+
+                {!form.no_labs_available ? (
+                  <>
+                    <QSection icon={<TestTube2 className="h-5 w-5 text-slate-500" />} title="Fasting Blood Glucose" sub="mg/dL — after 8+ hours of fasting">
+                      <SegmentSelector options={FASTING_OPTIONS} value={qcm.fasting_group} onChange={(opt) => pickSegment('fasting_group', opt, 'fasting_glucose')} />
+                      <label className="mt-3 block">
+                        <span className="label-text">Exact value (mg/dL) {renderBadge(form.fasting_glucose, { critical: 200, diabetes: 126, prediabetes: 100 })}</span>
+                        <input className="input-base" type="number" placeholder="e.g. 115" value={form.fasting_glucose} onChange={(e) => setCustom('fasting_group', 'fasting_glucose', e.target.value)} />
+                      </label>
+                    </QSection>
+
+                    <QSection icon={<Activity className="h-5 w-5 text-slate-500" />} title="HbA1c (Glycated Hemoglobin)" sub="Percentage — reflects 2–3 month average blood sugar">
+                      <SegmentSelector options={HBA1C_OPTIONS} value={qcm.hba1c_group} onChange={(opt) => pickSegment('hba1c_group', opt, 'hba1c')} />
+                      <label className="mt-3 block">
+                        <span className="label-text">Exact value (%) {renderBadge(form.hba1c, { critical: 10, diabetes: 6.5, prediabetes: 5.7 })}</span>
+                        <input className="input-base" type="number" step="0.1" placeholder="e.g. 6.1" value={form.hba1c} onChange={(e) => setCustom('hba1c_group', 'hba1c', e.target.value)} />
+                      </label>
+                    </QSection>
+
+                    <QSection icon={<TestTube2 className="h-5 w-5 text-slate-500" />} title="Random Blood Glucose (optional)" sub="mg/dL — any time, no fasting needed">
+                      <label className="block">
+                        <span className="label-text">Value (mg/dL)</span>
+                        <input className="input-base" type="number" min={30} max={1000} placeholder="e.g. 180" value={form.random_plasma_glucose} onChange={(e) => up('random_plasma_glucose', e.target.value)} />
+                      </label>
+                    </QSection>
+
+                    <QSection icon={<PlusCircle className="h-5 w-5 text-slate-500" />} title="Additional lab tests (optional)">
+                      <div className="grid gap-3 sm:grid-cols-[1.2fr_1fr_auto]">
+                        <input className="input-base" placeholder="Test name" value={form.extra_lab_name} onChange={(e) => up('extra_lab_name', e.target.value)} />
+                        <input className="input-base" placeholder="Value" type="number" step="0.01" value={form.extra_lab_value} onChange={(e) => up('extra_lab_value', e.target.value)} />
+                        <button type="button" className="btn-secondary gap-1.5" onClick={addExtraLab}><Plus className="h-4 w-4" /> Add</button>
+                      </div>
+                      {extraLabs.length ? (
+                        <ul className="mt-3 space-y-2">
+                          {extraLabs.map((lab, i) => (
+                            <li key={i} className="flex items-center justify-between rounded-lg bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm">
+                              <span>{lab.test_name}: <strong>{lab.test_value}</strong></span>
+                              <button type="button" className="btn-secondary gap-1 px-2.5 py-1.5 text-xs" onClick={() => setExtraLabs(p => p.filter((_, j) => j !== i))}><Trash2 className="h-3.5 w-3.5" /> Remove</button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </QSection>
+                  </>
+                ) : null}
+
+                {/* ── Review Summary ──────────────────────── */}
+                <QSection icon={<ClipboardList className="h-5 w-5 text-slate-500" />} title="Review Summary" sub="Double-check before submitting">
+                  <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 px-4 py-2.5 text-white">
+                      <p className="text-sm font-semibold uppercase tracking-[0.08em]">Assessment Overview</p>
+                    </div>
+                    <dl className="divide-y divide-slate-200 dark:divide-slate-700 text-sm">
+                      {[
+                        ['Patient', needsPatient ? (selectedPatient ? `${selectedPatient.full_name} (#${selectedPatient.id})` : 'Not selected') : user?.name || 'Current user'],
+                        ['Mode', assessmentMode === 'diagnostic' ? '🔬 Diagnostic' : '📋 Screening'],
+                        ['Age / BMI / Waist', `${form.age || '-'} yrs / ${form.bmi || '-'} / ${form.waist_circumference || '-'} cm`],
+                        ['Glucose Tests', `FPG: ${form.fasting_glucose || '-'} — A1c: ${form.hba1c || '-'} — RPG: ${form.random_plasma_glucose || '-'}`],
+                        ['Symptoms', `${selectedSymptoms.length + customSymptoms.length} selected`],
+                        ['Risk Factors', `${selectedRisks.length} selected`],
+                        ['Flags', `Hypo: ${hasHypoTrigger ? '🟡 Yes' : '—'} | Urgent: ${hasUrgentTrigger ? '🔴 Yes' : '—'}`],
+                      ].map(([label, value]) => (
+                        <div key={label} className="grid gap-1 px-4 py-2.5 sm:grid-cols-[11rem_1fr] sm:items-center">
+                          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
+                          <dd className="text-slate-800 dark:text-slate-100">{value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                </QSection>
+
+                {result ? (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20 p-4">
+                    <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">✅ Assessment complete! Your results have been saved.</p>
+                    <button type="button" className="btn-primary mt-3 gap-1.5" onClick={() => navigate('/diagnosis/result')}>View Report →</button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500">Review your answers above, then click <strong>"Run Assessment"</strong> to get your results.</p>
+                )}
+              </div>
+            ) : null}
             </div>
 
-            <form onSubmit={submitAssessment} className="space-y-4">
-              <div key={stepContentKey} className="assessment-step-enter">
-              {step === 1 ? (
-                <div className="assessment-step-list space-y-4">
-                  {requiresPatientSelection ? (
-                    <QuestionCard title={t('assessment.patient.title')}>
-                      {loadingPatients ? (
-                        <LoadingState label={t('assessment.patient.loading')} />
-                      ) : (
-                        <AppSelect
-                          value={form.patient_id}
-                          onValueChange={(value) => updateField('patient_id', value)}
-                          placeholder={t('assessment.patient.selectPlaceholder')}
-                          includeEmpty
-                          emptyLabel={patients.length ? t('assessment.patient.selectPlaceholder') : t('assessment.patient.noPatients')}
-                          options={patients.map((patient) => ({
-                            value: String(patient.id),
-                            label: `${patient.full_name} (#${patient.id})`,
-                          }))}
-                        />
-                      )}
-                    </QuestionCard>
-                  ) : null}
+            <ErrorAlert message={error} />
 
-                  <QuestionCard title={t('assessment.profile.ageTitle')} helper={t('assessment.profile.ageHelper')}>
-                    <QcmOptions value={qcm.age_group} options={ageOptions} onChange={(option) => selectQcm('age_group', option, 'age')} />
-                    <label className="mt-3 block">
-                      <span className="label-text">{t('assessment.profile.exactAge')}</span>
-                      <input
-                        className="input-base"
-                        type="number"
-                        min={0}
-                        max={120}
-                        value={form.age}
-                        onChange={(event) => setCustomValue('age_group', 'age', event.target.value)}
-                      />
-                    </label>
-                  </QuestionCard>
-
-                  <QuestionCard title={t('assessment.profile.bmiTitle')}>
-                    <QcmOptions value={qcm.bmi_group} options={bmiOptions} onChange={(option) => selectQcm('bmi_group', option, 'bmi')} />
-                    <label className="mt-3 block">
-                      <span className="label-text">{t('assessment.profile.exactBmi')}</span>
-                      <input
-                        className="input-base"
-                        type="number"
-                        min={10}
-                        max={80}
-                        step="0.1"
-                        value={form.bmi}
-                        onChange={(event) => setCustomValue('bmi_group', 'bmi', event.target.value)}
-                      />
-                    </label>
-                  </QuestionCard>
-
-                  <QuestionCard title={t('assessment.profile.waistTitle')}>
-                    <QcmOptions value={qcm.waist_group} options={waistOptions} onChange={(option) => selectQcm('waist_group', option, 'waist_circumference')} />
-                    <label className="mt-3 block">
-                      <span className="label-text">{t('assessment.profile.exactWaist')}</span>
-                      <input
-                        className="input-base"
-                        type="number"
-                        min={30}
-                        max={250}
-                        step="0.1"
-                        value={form.waist_circumference}
-                        onChange={(event) => setCustomValue('waist_group', 'waist_circumference', event.target.value)}
-                      />
-                    </label>
-                  </QuestionCard>
-                </div>
-              ) : null}
-
-              {step === 2 ? (
-                <div className="assessment-step-list space-y-4">
-                  <QuestionCard title={t('assessment.symptoms.commonTitle')}>
-                    <CheckboxListQuestion
-                      items={symptomFields}
-                      values={form}
-                      onToggle={(fieldKey, checked) => updateField(fieldKey, checked)}
-                      helper={t('assessment.symptoms.commonHelper')}
-                    />
-                  </QuestionCard>
-
-                  <QuestionCard title={t('assessment.symptoms.safetyTitle')}>
-                    <CheckboxListQuestion
-                      items={safetySymptomFields}
-                      values={form}
-                      onToggle={(fieldKey, checked) => updateField(fieldKey, checked)}
-                      helper={t('assessment.symptoms.safetyHelper')}
-                    />
-                  </QuestionCard>
-
-                  {hasHypoglycemiaTrigger ? (
-                    <QuestionCard
-                      title={t('assessment.symptoms.hypoglycemiaTitle')}
-                      helper={t('assessment.symptoms.hypoglycemiaHelper')}
-                      className="assessment-branch-card"
-                    >
-                      <CheckboxListQuestion
-                        items={hypoBranchFields}
-                        values={form}
-                        onToggle={(fieldKey, checked) => updateField(fieldKey, checked)}
-                      />
-                    </QuestionCard>
-                  ) : null}
-
-                  {hasUrgentTrigger ? (
-                    <QuestionCard
-                      title={t('assessment.symptoms.urgentTitle')}
-                      helper={t('assessment.symptoms.urgentHelper')}
-                      className="assessment-branch-card"
-                    >
-                      <CheckboxListQuestion
-                        items={urgentBranchFields}
-                        values={form}
-                        onToggle={(fieldKey, checked) => updateField(fieldKey, checked)}
-                      />
-                    </QuestionCard>
-                  ) : null}
-
-                  <QuestionCard title={t('assessment.symptoms.extraTitle')} helper={t('assessment.symptoms.extraHelper')}>
-                    <textarea
-                      className="input-base min-h-[90px] resize-y"
-                      value={form.extra_symptoms}
-                      onChange={(event) => updateField('extra_symptoms', event.target.value)}
-                      placeholder={t('assessment.symptoms.extraPlaceholder')}
-                    />
-                  </QuestionCard>
-                </div>
-              ) : null}
-
-              {step === 3 ? (
-                <div className="assessment-step-list space-y-4">
-                  <QuestionCard title={t('assessment.labs.availabilityTitle')}>
-                    <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 accent-primary-600"
-                        checked={Boolean(form.no_labs_available)}
-                        onChange={(event) => {
-                          const checked = event.target.checked
-                          updateField('no_labs_available', checked)
-                          if (checked) {
-                            setForm((previous) => ({
-                              ...previous,
-                              fasting_glucose: '',
-                              hba1c: '',
-                              random_plasma_glucose: '',
-                            }))
-                            setQcm((previous) => ({
-                              ...previous,
-                              fasting_group: '',
-                              hba1c_group: '',
-                            }))
-                            setExtraLabs([])
-                          }
-                        }}
-                      />
-                      {t('assessment.labs.noLabs')}
-                    </label>
-                    <p className="mt-2 text-xs text-slate-500">
-                      {t('assessment.labs.currentMode')} <span className="font-medium">{t(`assessment.modeLabels.${assessmentMode}`)}</span>
-                    </p>
-                  </QuestionCard>
-
-                  <QuestionCard title={t('assessment.labs.fastingTitle')} helper={t('assessment.labs.rangeHelper')}>
-                    <QcmOptions
-                      value={qcm.fasting_group}
-                      options={FASTING_OPTIONS}
-                      onChange={(option) => selectQcm('fasting_group', option, 'fasting_glucose')}
-                    />
-                    <label className="mt-3 block">
-                      <span className="label-text">{t('assessment.labs.exactFasting')}</span>
-                      <input
-                        className="input-base"
-                        type="number"
-                        value={form.fasting_glucose}
-                        disabled={form.no_labs_available}
-                        onChange={(event) => setCustomValue('fasting_group', 'fasting_glucose', event.target.value)}
-                      />
-                    </label>
-                  </QuestionCard>
-
-                  <QuestionCard title={t('assessment.labs.hba1cTitle')} helper={t('assessment.labs.rangeHelper')}>
-                    <QcmOptions
-                      value={qcm.hba1c_group}
-                      options={HBA1C_OPTIONS}
-                      onChange={(option) => selectQcm('hba1c_group', option, 'hba1c')}
-                    />
-                    <label className="mt-3 block">
-                      <span className="label-text">{t('assessment.labs.exactHba1c')}</span>
-                      <input
-                        className="input-base"
-                        type="number"
-                        step="0.1"
-                        value={form.hba1c}
-                        disabled={form.no_labs_available}
-                        onChange={(event) => setCustomValue('hba1c_group', 'hba1c', event.target.value)}
-                      />
-                    </label>
-                  </QuestionCard>
-
-                  <QuestionCard title={t('assessment.labs.randomTitle')}>
-                    <label className="block">
-                      <span className="label-text">{t('assessment.labs.randomLabel')}</span>
-                      <input
-                        className="input-base"
-                        type="number"
-                        min={30}
-                        max={1000}
-                        value={form.random_plasma_glucose}
-                        disabled={form.no_labs_available}
-                        onChange={(event) => updateField('random_plasma_glucose', event.target.value)}
-                      />
-                    </label>
-                  </QuestionCard>
-
-                  <QuestionCard title={t('assessment.labs.additionalTitle')}>
-                    <div className="grid gap-3 sm:grid-cols-[1.2fr_1fr_auto]">
-                      <input className="input-base" placeholder={t('assessment.labs.labNamePlaceholder')} disabled={form.no_labs_available} value={form.extra_lab_name} onChange={(event) => updateField('extra_lab_name', event.target.value)} />
-                      <input className="input-base" placeholder={t('assessment.labs.valuePlaceholder')} type="number" disabled={form.no_labs_available} step="0.01" value={form.extra_lab_value} onChange={(event) => updateField('extra_lab_value', event.target.value)} />
-                      <button type="button" className="btn-secondary gap-1.5" disabled={form.no_labs_available} onClick={addExtraLab}>
-                        <Plus className="h-4 w-4" />
-                        {t('assessment.labs.add')}
-                      </button>
-                    </div>
-
-                    {extraLabs.length ? (
-                      <ul className="mt-3 space-y-2">
-                        {extraLabs.map((lab, index) => (
-                          <li key={`lab-${index}`} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
-                            <span>{lab.test_name}: <strong>{lab.test_value}</strong></span>
-                            <button type="button" className="btn-secondary gap-1 px-2.5 py-1.5 text-xs" onClick={() => removeExtraLab(index)}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                              {t('assessment.labs.remove')}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="mt-3 text-sm text-slate-500">{t('assessment.labs.noAdditionalLabs')}</p>
-                    )}
-                  </QuestionCard>
-                </div>
-              ) : null}
-
-              {step === 4 ? (
-                <div className="assessment-step-list space-y-4">
-                  <QuestionCard title={t('assessment.riskFactors.title')}>
-                    <CheckboxListQuestion
-                      items={riskFactorFields}
-                      values={form}
-                      onToggle={(fieldKey, checked) => updateField(fieldKey, checked)}
-                      helper={t('assessment.riskFactors.helper')}
-                    />
-                  </QuestionCard>
-                </div>
-              ) : null}
-
-              {step === REVIEW_STEP ? (
-                <div className="assessment-step-list space-y-4">
-                  <QuestionCard title={t('assessment.review.title')} helper={t('assessment.review.helper')}>
-                    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/50">
-                      <div className="bg-primary-600 px-4 py-2.5 text-white dark:bg-primary-700">
-                        <p className="text-sm font-semibold uppercase tracking-[0.08em]">{t('assessment.review.summaryTitle')}</p>
-                      </div>
-                      <dl className="divide-y divide-slate-200 dark:divide-slate-700">
-                        <div className="grid gap-1 px-4 py-3 sm:grid-cols-[14rem_1fr] sm:items-center">
-                          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('assessment.review.patient')}</dt>
-                          <dd className="text-sm text-slate-800 dark:text-slate-100">
-                            {requiresPatientSelection
-                              ? selectedPatient
-                                ? `${selectedPatient.full_name} (#${selectedPatient.id})`
-                                : t('assessment.review.notSelected')
-                              : user?.name || t('assessment.review.currentUser')}
-                          </dd>
-                        </div>
-                        <div className="grid gap-1 px-4 py-3 sm:grid-cols-[14rem_1fr] sm:items-center">
-                          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('assessment.review.mode')}</dt>
-                          <dd className="text-sm text-slate-800 dark:text-slate-100">{t(`assessment.modeLabels.${assessmentMode}`)}</dd>
-                        </div>
-                        <div className="grid gap-1 px-4 py-3 sm:grid-cols-[14rem_1fr] sm:items-center">
-                          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('assessment.review.bodyMetrics')}</dt>
-                          <dd className="text-sm text-slate-800 dark:text-slate-100">{form.age || '-'} / {form.bmi || '-'} / {form.waist_circumference || '-'}</dd>
-                        </div>
-                        <div className="grid gap-1 px-4 py-3 sm:grid-cols-[14rem_1fr] sm:items-center">
-                          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('assessment.review.glucoseTests')}</dt>
-                          <dd className="text-sm text-slate-800 dark:text-slate-100">
-                            {form.fasting_glucose || '-'} / {form.hba1c || '-'} / {form.random_plasma_glucose || '-'}
-                          </dd>
-                        </div>
-                        <div className="grid gap-1 px-4 py-3 sm:grid-cols-[14rem_1fr] sm:items-center">
-                          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('assessment.review.counts')}</dt>
-                          <dd className="text-sm text-slate-800 dark:text-slate-100">{selectedSymptoms.length + customSymptoms.length} / {selectedRiskFactors.length}</dd>
-                        </div>
-                        <div className="grid gap-1 px-4 py-3 sm:grid-cols-[14rem_1fr] sm:items-center">
-                          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('assessment.review.adaptiveFlags')}</dt>
-                          <dd className="text-sm text-slate-800 dark:text-slate-100">
-                            {t('assessment.review.hypoglycemia')}: {hasHypoglycemiaTrigger ? t('assessment.review.on') : t('assessment.review.off')} | {t('assessment.review.urgent')}: {hasUrgentTrigger ? t('assessment.review.on') : t('assessment.review.off')}
-                          </dd>
-                        </div>
-                      </dl>
-                    </div>
-                  </QuestionCard>
-
-                  {result ? (
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/50">
-                      <p className="text-sm text-slate-700 dark:text-slate-200">
-                        {t('assessment.review.resultGenerated')}
-                      </p>
-                      <div className="mt-2">
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          onClick={() => navigate('/diagnosis/result')}
-                        >
-                          {t('assessment.review.openReport')}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm text-slate-500">
-                        {t('assessment.review.submitHint')}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ) : null}
+            {/* ── Footer Navigation ──────────────────────── */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-700 pt-5">
+              <span className="text-xs text-slate-400">
+                {step < REVIEW_STEP ? '↓ Complete each section, then continue' : result ? '✅ Assessment submitted' : '🚀 Ready to submit'}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {step > 1 ? (
+                  <button type="button" className="btn-secondary gap-1.5" onClick={goBack}>
+                    <ArrowLeft className="h-4 w-4" /> Back
+                  </button>
+                ) : null}
+                {step < REVIEW_STEP ? (
+                  <button type="button" className="btn-primary gap-1.5" onClick={goNext}>
+                    Continue <ArrowRight className="h-4 w-4" />
+                  </button>
+                ) : null}
+                {step === REVIEW_STEP ? (
+                  <button type="submit" className="btn-primary gap-1.5" disabled={submitting}>
+                    <Send className="h-4 w-4" />
+                    {submitting ? 'Analyzing...' : result ? 'Run Again' : '🔬 Run Assessment'}
+                  </button>
+                ) : null}
+                {step === REVIEW_STEP && result ? (
+                  <button type="button" className="btn-secondary gap-1.5" onClick={() => setShowRestart(true)}>
+                    <RotateCcw className="h-4 w-4" /> New Assessment
+                  </button>
+                ) : null}
               </div>
-
-              <ErrorAlert message={error} />
-
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-4">
-                <span className="text-xs text-slate-500">
-                  {step < REVIEW_STEP
-                    ? t('assessment.footer.continueHint')
-                    : result
-                      ? t('assessment.footer.resultReadyHint')
-                      : t('assessment.footer.reviewHint')}
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {step > 1 ? (
-                    <button type="button" className="btn-secondary gap-1.5" onClick={goToPreviousStep}>
-                      <ArrowLeft className="h-4 w-4" />
-                      {t('assessment.footer.back')}
-                    </button>
-                  ) : null}
-
-                  {step < REVIEW_STEP ? (
-                    <button type="button" className="btn-primary gap-1.5" onClick={goToNextStep}>
-                      {t('assessment.footer.next')}
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  ) : null}
-
-                  {step === REVIEW_STEP ? (
-                    <button type="submit" className="btn-primary gap-1.5" disabled={submitting}>
-                      <Send className="h-4 w-4" />
-                      {submitting ? t('assessment.footer.running') : result ? t('assessment.footer.runAgain') : t('assessment.footer.runExpertSystem')}
-                    </button>
-                  ) : null}
-
-                  {step === REVIEW_STEP && result ? (
-                    <>
-                      <button type="button" className="btn-primary gap-1.5" onClick={() => setShowRestartConfirm(true)}>
-                        <RotateCcw className="h-4 w-4" />
-                        {t('assessment.footer.newAssessment')}
-                      </button>
-                    </>
-                  ) : null}
-                </div>
-              </div>
-            </form>
-          </div>
+            </div>
+          </form>
         </div>
       </section>
 
       <ConfirmDialog
-        open={showRestartConfirm}
-        title={t('assessment.confirm.title')}
-        description={t('assessment.confirm.description')}
-        cancelLabel={t('assessment.confirm.cancel')}
-        confirmLabel={t('assessment.confirm.confirm')}
+        open={showRestart}
+        title="Start New Assessment?"
+        description="This will clear all your current answers and start fresh. Your previous results are already saved."
+        cancelLabel="Keep Working"
+        confirmLabel="Start Fresh"
         confirmTone="danger"
-        onCancel={() => setShowRestartConfirm(false)}
-        onConfirm={confirmRestartAssessment}
+        onCancel={() => setShowRestart(false)}
+        onConfirm={() => { startNew(); setShowRestart(false) }}
       />
     </div>
   )
