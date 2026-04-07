@@ -231,6 +231,16 @@ class DiagnosisService:
             "crisis",
             "sedentary_lifestyle",
             "slow_healing",
+            "tingling_hands_feet",
+            "frequent_infections",
+            "acanthosis_nigricans",
+            "gestational_history",
+            "smoking",
+            "high_cholesterol",
+            "hypertension",
+            "obesity",
+            "pcos_history",
+            "ethnicity_high_risk",
         }:
             if key in payload and payload.get(key) not in (None, ""):
                 normalized[key] = self._as_bool(payload.get(key))

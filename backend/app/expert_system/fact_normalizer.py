@@ -10,6 +10,7 @@ NUMERIC_FACT_KEYS = {
     "hba1c",
     "a1c",
     "2h_ogtt_75g",
+    "fact_2h_ogtt_75g",
     "two_hour_ogtt_75g",
     "random_plasma_glucose",
     "blood_glucose",
@@ -51,13 +52,14 @@ BOOLEAN_FACT_KEYS = {
     "no_lab_values_available",
     "no_labs_available",
     "sedentary_lifestyle",
-    "slow_healing",
     "tingling_hands_feet",
     "frequent_infections",
     "acanthosis_nigricans",
     "gestational_history",
     "smoking",
     "high_cholesterol",
+    "hypertension",
+    "obesity",
     "pcos_history",
     "ethnicity_high_risk",
 }
@@ -71,6 +73,7 @@ LAB_FACT_ALIASES = {
     "a1c": "hba1c",
     "two_hour_ogtt_75g": "2h_ogtt_75g",
     "ogtt_2h_75g": "2h_ogtt_75g",
+    "fact_2h_ogtt_75g": "2h_ogtt_75g",
     "random_glucose": "random_plasma_glucose",
 }
 
@@ -138,11 +141,14 @@ def normalize_input_facts(payload: dict, set_fact: SetFactCallback) -> None:
 def derive_facts(facts: dict, set_fact: SetFactCallback) -> None:
     _derive_unified_glucose(facts, set_fact)
     _derive_bmi_and_obesity(facts, set_fact)
+    _derive_obesity_from_risk_factor(facts, set_fact)
     _derive_classic_hyperglycemia_symptoms(facts, set_fact)
     _derive_hyperglycemia_presence(facts, set_fact)
     _derive_hypoglycemia_presence(facts, set_fact)
     _derive_type2_risk_pattern(facts, set_fact)
     _derive_lab_availability(facts, set_fact)
+    _derive_neuropathy_cluster(facts, set_fact)
+    _derive_compound_risk_patterns(facts, set_fact)
 
 
 def coerce_optional_float(value: Any) -> float | None:
@@ -376,17 +382,17 @@ def _derive_hypoglycemia_presence(facts: dict, set_fact: SetFactCallback) -> Non
 
 
 def _derive_unified_glucose(facts: dict, set_fact: SetFactCallback) -> None:
-    # Ensure rules checking generic 'blood_glucose' hit if only specific tests exist
+    # Derive generic 'blood_glucose' for triage thresholds (e.g. hypo <70)
+    # ONLY from random_plasma_glucose (non-fasting), NOT from fasting values.
+    # Fasting and random tests are clinically distinct — never cross-contaminate.
     if "blood_glucose" not in facts:
-        glucose = _first_float(facts, "random_plasma_glucose", "fasting_plasma_glucose", "fasting_glucose", "2h_ogtt_75g")
+        glucose = _first_float(facts, "random_plasma_glucose")
         if glucose is not None:
             set_fact("blood_glucose", glucose, "derived.unified_glucose")
-            
-    # Ensure rules checking 'random_plasma_glucose' (like random >= 200 symptoms rule) hit if only generic blood_glucose exists
-    if "random_plasma_glucose" not in facts:
-        glucose = _first_float(facts, "blood_glucose", "fasting_plasma_glucose", "fasting_glucose", "2h_ogtt_75g")
-        if glucose is not None:
-            set_fact("random_plasma_glucose", glucose, "derived.unified_random")
+
+    # DO NOT derive random_plasma_glucose from fasting values.
+    # Random PG >= 200 + symptoms is a distinct ADA criterion that requires
+    # actual random blood draw, not a fasting test result.
 
 def _derive_lab_availability(facts: dict, set_fact: SetFactCallback) -> None:
     has_labs = False
@@ -415,6 +421,48 @@ def _derive_type2_risk_pattern(facts: dict, set_fact: SetFactCallback) -> None:
     if bmi is not None and bmi >= 25 and (family_history or low_activity or prediabetes or existing_type2_risk):
         set_fact("high_type2_risk_pattern", True, "derived.high_type2_risk_pattern")
         set_fact("type2_risk_increased", True, "derived.type2_risk_increased")
+
+
+def _derive_obesity_from_risk_factor(facts: dict, set_fact: SetFactCallback) -> None:
+    """Map the user-reported obesity risk factor to is_obese if BMI wasn't provided."""
+    if facts.get("is_obese") is True:
+        return  # already derived from BMI
+    obesity_reported = _first_true(facts, "obesity", "risk_obesity")
+    if obesity_reported:
+        set_fact("is_obese", True, "derived.is_obese_from_risk_factor")
+
+
+def _derive_neuropathy_cluster(facts: dict, set_fact: SetFactCallback) -> None:
+    """Flag a hidden-diabetes cluster: tingling + frequent infections + fatigue."""
+    tingling = _first_true(facts, "tingling_hands_feet")
+    infections = _first_true(facts, "frequent_infections")
+    fatigue = _first_true(facts, "fatigue")
+    if tingling and infections:
+        set_fact("neuropathy_infection_cluster", True, "derived.neuropathy_infection_cluster")
+    if tingling and fatigue:
+        set_fact("neuropathy_fatigue_cluster", True, "derived.neuropathy_fatigue_cluster")
+
+
+def _derive_compound_risk_patterns(facts: dict, set_fact: SetFactCallback) -> None:
+    """Flag high-risk compound patterns that increase diabetes probability."""
+    smoking = _first_true(facts, "smoking", "risk_smoking")
+    obesity = _first_true(facts, "is_obese", "obesity", "risk_obesity")
+    family_hist = _first_true(
+        facts, "family_history_diabetes", "family_history",
+        "risk_family_history_diabetes", "risk_family_history",
+    )
+    gestational = _first_true(facts, "gestational_history", "risk_gestational_history")
+    pcos = _first_true(facts, "pcos_history", "risk_pcos_history")
+    prediabetes = _first_true(facts, "prediabetes_possible")
+
+    if smoking and obesity and family_hist:
+        set_fact("compound_risk_smoking_obesity_family", True, "derived.compound_risk")
+    if gestational and obesity:
+        set_fact("gestational_obesity_high_risk", True, "derived.gestational_obesity_high_risk")
+    if pcos and obesity:
+        set_fact("pcos_obesity_risk", True, "derived.pcos_obesity_risk")
+    if pcos and prediabetes:
+        set_fact("pcos_prediabetes_risk", True, "derived.pcos_prediabetes_risk")
 
 
 def _set_with_aliases(name: str, value: Any, source: str, set_fact: SetFactCallback) -> None:

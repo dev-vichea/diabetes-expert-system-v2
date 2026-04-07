@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from 'recharts'
 import {
@@ -258,6 +259,7 @@ function UserEditorDialog({
 
 export function AdminPage() {
   const { user: currentUser } = useAuth()
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [stats, setStats] = useState(null)
   const [activityOverview, setActivityOverview] = useState({ summary: null, recent_events: [] })
@@ -322,8 +324,8 @@ export function AdminPage() {
 
   const statsCards = [
     {
-      title: 'Total Users',
-      description: 'All registered accounts',
+      title: t('adminStats.totalUsers'),
+      description: t('adminStats.totalUsersDesc'),
       value: stats?.users?.total ?? 0,
       icon: Users,
       iconClass: 'bg-violet-100/20 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-900/10 dark:text-violet-300 dark:ring-violet-500/30',
@@ -332,8 +334,8 @@ export function AdminPage() {
       accentClass: 'bg-violet-500',
     },
     {
-      title: 'Patients',
-      description: 'Linked patient profiles',
+      title: t('adminStats.patients'),
+      description: t('adminStats.patientsDesc'),
       value: stats?.patients?.total ?? 0,
       icon: Stethoscope,
       iconClass: 'bg-sky-100/20 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-900/10 dark:text-sky-300 dark:ring-sky-500/30',
@@ -342,8 +344,8 @@ export function AdminPage() {
       accentClass: 'bg-sky-500',
     },
     {
-      title: 'Diagnosis Total',
-      description: 'Recorded diagnostic outcomes',
+      title: t('adminStats.diagnosisTotal'),
+      description: t('adminStats.diagnosisDesc'),
       value: stats?.diagnosis?.total ?? 0,
       icon: Shield,
       iconClass: 'bg-cyan-100/20 text-cyan-700 ring-1 ring-cyan-200 dark:bg-cyan-900/10 dark:text-cyan-300 dark:ring-cyan-500/30',
@@ -352,8 +354,8 @@ export function AdminPage() {
       accentClass: 'bg-cyan-500',
     },
     {
-      title: 'Urgent Cases',
-      description: 'Cases flagged for review',
+      title: t('adminStats.urgentCases'),
+      description: t('adminStats.urgentCasesDesc'),
       value: stats?.diagnosis?.urgent ?? 0,
       icon: Siren,
       iconClass: 'bg-amber-100/20 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/10 dark:text-amber-300 dark:ring-amber-500/30',

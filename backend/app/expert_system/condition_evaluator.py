@@ -169,7 +169,17 @@ def evaluate_condition(condition: dict, facts: dict) -> bool:
     expected_value = coerce_expected_value(condition.get("expected_value"))
 
     if fact_key not in facts:
-        raise ConditionEvaluationError(f"Unknown fact: {fact_key}")
+        # Missing facts are NOT an error — the patient simply didn't provide
+        # this data point. For boolean checks (== True), this means "not present".
+        # For numeric comparisons, a missing lab value can't satisfy a threshold.
+        if operator == "==" and expected_value is True:
+            return False
+        if operator == "==" and expected_value is False:
+            return True  # "not X" is true when X is absent
+        if operator == "!=":
+            return expected_value is True  # absent != True → True, absent != False → False
+        # Numeric comparisons with missing data can't be satisfied
+        return False
 
     actual_value = facts.get(fact_key)
     return _evaluate_operator(operator, actual_value, expected_value)

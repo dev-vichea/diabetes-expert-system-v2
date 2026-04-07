@@ -6,10 +6,38 @@ from app.expert_system.rule_loading import RuleLoader
 
 
 DIAGNOSIS_BY_CONCLUSION = {
-    "diabetes_likely": "Likely Diabetes",
-    "diabetes_possible": "Possible Diabetes",
-    "prediabetes_possible": "Possible Prediabetes",
-    "classic_symptoms": "Possible Diabetes",
+    # ── Laboratory-confirmed diagnoses ──
+    "diabetes_confirmed": "Diabetes Mellitus (Confirmed)",
+    "diabetes_likely": "Likely Diabetes Mellitus",
+    "diabetes_possible": "Possible Diabetes — Further Testing Needed",
+    "prediabetes_possible": "Prediabetes (Impaired Glucose Regulation)",
+    "prediabetes_high_risk": "Prediabetes — High Progression Risk",
+    # ── Symptom-based assessments ──
+    "classic_symptoms": "Suspected Diabetes (Classic Symptom Presentation)",
+    "symptom_only_screening": "Symptom-Based Screening — Laboratory Confirmation Required",
+    # ── Complication screening ──
+    "neuropathy_screening": "Possible Diabetic Neuropathy — Neurological Evaluation Needed",
+    "metabolic_syndrome": "Metabolic Syndrome Profile — Cardiovascular Risk Elevated",
+    # ── Risk stratification ──
+    "type2_risk_increased": "Elevated Type 2 Diabetes Risk — Preventive Action Recommended",
+    "demographic_screening": "Routine Diabetes Screening Recommended",
+    # ── Normal / reassurance ──
+    "healthy_normal": "Normal Glucose Regulation — No Diabetes Indication",
+}
+
+URGENCY_MAP = {
+    "diabetes_confirmed": "urgent",
+    "diabetes_likely": "urgent",
+    "diabetes_possible": "soon",
+    "prediabetes_possible": "routine",
+    "prediabetes_high_risk": "soon",
+    "classic_symptoms": "soon",
+    "symptom_only_screening": "soon",
+    "neuropathy_screening": "urgent",
+    "metabolic_syndrome": "soon",
+    "type2_risk_increased": "routine",
+    "demographic_screening": "routine",
+    "healthy_normal": "routine",
 }
 
 
@@ -26,6 +54,7 @@ def run_inference(payload, rules):
     top_conclusion, certainty = _resolve_top_conclusion(ranked_conclusions)
 
     diagnosis = _resolve_diagnosis(top_conclusion, certainty)
+    urgency = _resolve_urgency(top_conclusion, certainty, inference_result.final_facts)
     recommendation = select_recommendation(
         top_conclusion=top_conclusion,
         recommendation_candidates=inference_result.recommendation_candidates,
@@ -37,8 +66,10 @@ def run_inference(payload, rules):
         "facts": inference_result.final_facts,
         "diagnosis": diagnosis,
         "certainty": round(certainty, 2),
+        "urgency": urgency,
         "triggered_rules": triggered_rules,
         "recommendation": recommendation,
+        "all_conclusions": ranked_conclusions,
         "explanation_trace": {
             "rule_loading": {
                 "total_rules": len(rules),
@@ -82,6 +113,26 @@ def _resolve_diagnosis(top_conclusion: str, certainty: float) -> str:
     if not top_conclusion or certainty < 0.3:
         return "No strong diabetes indication"
     return DIAGNOSIS_BY_CONCLUSION.get(top_conclusion, "No strong diabetes indication")
+
+
+def _resolve_urgency(top_conclusion: str, certainty: float, facts: dict) -> str:
+    """Determine urgency: emergency > urgent > soon > routine."""
+    # Emergency overrides everything
+    if facts.get("urgent_flag"):
+        return "emergency"
+    if facts.get("possible_dka") or facts.get("severe_hypoglycemia") or facts.get("critical_hyperglycemia"):
+        return "emergency"
+    if facts.get("level3_hypoglycemia"):
+        return "emergency"
+
+    # Map-based urgency
+    base = URGENCY_MAP.get(top_conclusion, "routine")
+
+    # Certainty boost: very high certainty on diabetes conclusions → urgent
+    if certainty >= 0.85 and top_conclusion in ("diabetes_likely", "diabetes_confirmed"):
+        return "urgent"
+
+    return base
 
 
 def _serialize_triggered_rule(fired_rule: dict) -> dict:

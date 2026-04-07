@@ -256,7 +256,7 @@ DIABETES_RULE_SEED = [
         ],
         "actions": [
             {"action_type": "assert_fact", "action_value": "diabetes_diagnostic_criterion_met=true"},
-            {"action_type": "diagnosis_conclusion", "action_value": "diabetes_possible"},
+            {"action_type": "diagnosis_conclusion", "action_value": "diabetes_likely"},
         ],
     },
     {
@@ -775,7 +775,7 @@ DIABETES_RULE_SEED = [
         "description": "Flags potential peripheral neuropathy common in prolonged untreated diabetes.",
         "category": "triage",
         "priority": "high",
-        "certainty_factor": 0.50,
+        "certainty_factor": 0.72,
         "status": "active",
         "explanation_text": "Tingling, burning, or numbness in the hands and feet is highly suspect for diabetic peripheral neuropathy, suggesting that hyperglycemia may have been present undetected for years.",
         "conditions": [
@@ -849,7 +849,7 @@ DIABETES_RULE_SEED = [
         "description": "Flags patients who meet basic ADA age or ethnicity screening criteria.",
         "category": "classification",
         "priority": "low",
-        "certainty_factor": 0.30,
+        "certainty_factor": 0.45,
         "status": "active",
         "explanation_text": "Current ADA guidelines recommend broad diabetes screening beginning at age 35, or earlier for adults from high-risk ethnic backgrounds.",
         "conditions": [
@@ -864,5 +864,414 @@ DIABETES_RULE_SEED = [
                 "conclusion": "Demographic Screening Indicated",
             },
         ],
-    }
+    },
+
+    # ================================================================== #
+    #  NEW RULES — Symptom-Only, Compound Risk, and Young At-Risk         #
+    # ================================================================== #
+    {
+        "code": "diagnosis-symptom-only-screening",
+        "name": "Diagnosis: Symptom-Only Screening (No Labs)",
+        "description": "When classic diabetes symptoms are present but no lab values are available, flag as symptom-based screening requiring lab confirmation.",
+        "category": "diagnosis",
+        "priority": "medium",
+        "certainty_factor": 0.55,
+        "status": "active",
+        "explanation_text": "Classic diabetes symptoms (polyuria, polydipsia, weight loss, fatigue) without laboratory data suggest possible diabetes but cannot be confirmed without testing. ADA requires lab confirmation for diagnosis.",
+        "conditions": [
+            {"fact_key": "classic_hyperglycemia_symptoms", "operator": "==", "expected_value": True},
+            {"fact_key": "no_lab_values_available", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "diagnosis_conclusion", "action_value": "symptom_only_screening"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Classic diabetes symptoms present but no laboratory data available. Urgently obtain: (1) Fasting plasma glucose. (2) HbA1c. (3) Random plasma glucose if fasting not possible. These tests are required for definitive diagnosis.",
+            },
+        ],
+    },
+    {
+        "code": "diagnosis-symptom-cluster-no-labs",
+        "name": "Diagnosis: Multiple Symptoms Without Labs",
+        "description": "When 3+ diabetes-related symptoms are present without labs, provide stronger screening indication.",
+        "category": "diagnosis",
+        "priority": "medium",
+        "certainty_factor": 0.60,
+        "status": "active",
+        "explanation_text": "Multiple concurrent diabetes symptoms (fatigue, blurred vision, slow healing, tingling, infections) significantly increase pre-test probability of diabetes, even without laboratory confirmation.",
+        "conditions": [
+            {"fact_key": "no_lab_values_available", "operator": "==", "expected_value": True},
+            {"fact_key": "neuropathy_infection_cluster", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "diagnosis_conclusion", "action_value": "symptom_only_screening"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Multiple diabetes-associated symptoms detected (neuropathy signs + frequent infections). Priority laboratory testing recommended: HbA1c and fasting glucose within 1 week.",
+            },
+        ],
+    },
+    {
+        "code": "classification-young-at-risk",
+        "name": "Classification: Young At-Risk (<35 with Risk Factors)",
+        "description": "ADA recommends screening adults under 35 if BMI ≥25 and one or more additional risk factors present.",
+        "category": "classification",
+        "priority": "medium",
+        "certainty_factor": 0.65,
+        "status": "active",
+        "explanation_text": "ADA Standards of Care (2025): Screen for prediabetes/diabetes in adults of any age with BMI ≥25 kg/m² AND one or more additional risk factors. Do not wait until age 35/45.",
+        "conditions": [
+            {"fact_key": "age", "operator": "<", "expected_value": 35},
+            {"fact_key": "bmi", "operator": ">=", "expected_value": 25, "logical_operator": "and"},
+            {"fact_key": "type2_risk_increased", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "early_screening_indicated=true"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Young patient with overweight/obesity and diabetes risk factors. ADA recommends screening regardless of age when BMI ≥25 with risk factors. Complete fasting glucose and HbA1c testing.",
+            },
+        ],
+    },
+    {
+        "code": "classification-gestational-obesity-combo",
+        "name": "Classification: Post-GDM + Obesity = Very High Risk",
+        "description": "Women with prior gestational diabetes AND current obesity have very high (>60%) lifetime risk of Type 2 diabetes.",
+        "category": "classification",
+        "priority": "high",
+        "certainty_factor": 0.82,
+        "status": "active",
+        "explanation_text": "Prior gestational diabetes combined with obesity creates a compounding risk. Studies show >60% lifetime risk of developing Type 2 diabetes. Annual screening and intensive lifestyle intervention are critical.",
+        "conditions": [
+            {"fact_key": "gestational_obesity_high_risk", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "type2_risk_increased=true"},
+            {"action_type": "assert_fact", "action_value": "high_type2_risk_pattern=true"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Very high diabetes risk: Prior gestational diabetes + current obesity. Recommend: (1) Annual HbA1c and fasting glucose screening. (2) Target ≥7% weight loss. (3) ≥150 min/week moderate exercise. (4) Consider metformin for prevention (ADA grade A recommendation).",
+            },
+        ],
+    },
+    {
+        "code": "triage-level3-hypoglycemia",
+        "name": "Triage: Level 3 Hypoglycemia (Requires Assistance)",
+        "description": "ADA Level 3 hypoglycemia: severe event requiring third-party assistance, with altered consciousness or seizure.",
+        "category": "triage",
+        "priority": "high",
+        "certainty_factor": 0.98,
+        "status": "active",
+        "explanation_text": "ADA Level 3 hypoglycemia is a severe event characterized by altered mental and/or physical function requiring assistance from another person for recovery. This is a medical emergency.",
+        "conditions": [
+            {"fact_key": "blood_glucose", "operator": "<", "expected_value": 40},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "level3_hypoglycemia=true"},
+            {"action_type": "assert_fact", "action_value": "severe_hypoglycemia=true"},
+            {"action_type": "urgent_flag", "action_value": "true"},
+            {
+                "action_type": "recommendation",
+                "action_value": "EMERGENCY: Level 3 severe hypoglycemia (<40 mg/dL). Call emergency services immediately. Administer glucagon if available. Do NOT attempt to give oral glucose if patient is unconscious or unable to swallow safely.",
+            },
+        ],
+    },
+    {
+        "code": "diagnosis-neuropathy-with-diabetes-labs",
+        "name": "Diagnosis: Neuropathy + Diabetic Lab Values",
+        "description": "Tingling extremities combined with lab-confirmed hyperglycemia strongly suggests established diabetic neuropathy.",
+        "category": "diagnosis",
+        "priority": "high",
+        "certainty_factor": 0.85,
+        "status": "active",
+        "explanation_text": "Peripheral neuropathy symptoms (tingling, numbness) in the setting of confirmed hyperglycemia (FPG ≥126 or HbA1c ≥6.5%) strongly indicates diabetic peripheral neuropathy, suggesting diabetes may have been undiagnosed for years.",
+        "conditions": [
+            {"fact_key": "tingling_hands_feet", "operator": "==", "expected_value": True},
+            {"fact_key": "diabetes_diagnostic_criterion_met", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "diabetic_neuropathy_likely=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "diabetes_likely"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Diabetic neuropathy likely: Tingling extremities with confirmed hyperglycemia. Urgent referrals needed: (1) Comprehensive foot examination with monofilament testing. (2) Nerve conduction study. (3) Tight glycemic control to prevent progression. (4) Neuropathic pain management if symptomatic.",
+            },
+        ],
+    },
+    {
+        "code": "classification-compound-smoking-obesity-family",
+        "name": "Classification: Compound Risk (Smoking + Obesity + Family History)",
+        "description": "Triple compound risk pattern that dramatically increases cardiovascular and diabetes risk.",
+        "category": "classification",
+        "priority": "high",
+        "certainty_factor": 0.80,
+        "status": "active",
+        "explanation_text": "Smoking, obesity, and family history of diabetes together create a compound risk that is greater than the sum of individual factors. Each independently increases insulin resistance and beta-cell dysfunction.",
+        "conditions": [
+            {"fact_key": "compound_risk_smoking_obesity_family", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "type2_risk_increased=true"},
+            {"action_type": "assert_fact", "action_value": "high_type2_risk_pattern=true"},
+            {
+                "action_type": "recommendation",
+                "action_value": "High compound risk identified (smoking + obesity + family history). Urgent recommendations: (1) Smoking cessation program. (2) Weight management target 5-10% reduction. (3) Annual HbA1c and lipid monitoring. (4) CardioVascular risk assessment. (5) Consider aspirin therapy if CVD risk >10%.",
+            },
+        ],
+    },
+    {
+        "code": "classification-pcos-prediabetes",
+        "name": "Classification: PCOS + Prediabetes = Accelerated Risk",
+        "description": "PCOS with concurrent prediabetes carries very high diabetes conversion rate requiring aggressive intervention.",
+        "category": "classification",
+        "priority": "high",
+        "certainty_factor": 0.78,
+        "status": "active",
+        "explanation_text": "Women with PCOS and prediabetes have a significantly accelerated rate of conversion to Type 2 diabetes due to underlying insulin resistance. Metformin may serve dual purpose.",
+        "conditions": [
+            {"fact_key": "pcos_prediabetes_risk", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "type2_risk_increased=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "prediabetes_possible"},
+            {
+                "action_type": "recommendation",
+                "action_value": "PCOS + prediabetes: Accelerated diabetes risk. Recommend: (1) Metformin therapy (addresses both PCOS and diabetes prevention). (2) Weight management. (3) HbA1c monitoring every 6 months. (4) Endocrine referral for comprehensive PCOS management.",
+            },
+        ],
+    },
+    {
+        "code": "triage-neuropathy-infection-fatigue-cluster",
+        "name": "Triage: Hidden Diabetes Pattern (Neuropathy + Infections + Fatigue)",
+        "description": "Tingling extremities, frequent infections, and fatigue together form a strong hidden diabetes pattern often missed in primary care.",
+        "category": "triage",
+        "priority": "medium",
+        "certainty_factor": 0.70,
+        "status": "active",
+        "explanation_text": "This symptom triad (peripheral neuropathy, recurrent infections, persistent fatigue) is a classic 'hidden diabetes' presentation. Hyperglycemia impairs immune function and nerve health simultaneously.",
+        "conditions": [
+            {"fact_key": "neuropathy_infection_cluster", "operator": "==", "expected_value": True},
+            {"fact_key": "fatigue", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "hidden_diabetes_pattern=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "diabetes_possible"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Hidden diabetes pattern detected (tingling + frequent infections + fatigue). This combination suggests possible longstanding undiagnosed diabetes. Priority: Obtain HbA1c, fasting glucose, and complete blood count. Schedule comprehensive foot and neurological exam.",
+            },
+        ],
+    },
+    {
+        "code": "recommendation-pcos-obesity-screening",
+        "name": "Recommendation: PCOS + Obesity Screening",
+        "description": "Provides targeted screening guidance for women with PCOS and obesity.",
+        "category": "recommendation",
+        "priority": "medium",
+        "certainty_factor": 0.75,
+        "status": "active",
+        "explanation_text": "Women with PCOS and obesity have 4-8x higher risk of developing Type 2 diabetes. ADA and Endocrine Society recommend regular metabolic screening.",
+        "conditions": [
+            {"fact_key": "pcos_obesity_risk", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {
+                "action_type": "recommendation",
+                "action_value": "PCOS + obesity: Elevated metabolic risk. Recommendations: (1) Annual OGTT preferred over HbA1c (PCOS affects HbA1c accuracy). (2) Lipid panel and liver function tests. (3) Weight management with target 5-10% reduction. (4) Screen for obstructive sleep apnea. (5) Consider myo-inositol supplementation.",
+            },
+        ],
+    },
+    {
+        "code": "recommendation-young-type2-prevention",
+        "name": "Recommendation: Type 2 Prevention for Young Adults",
+        "description": "Provides early prevention guidance for young adults (18-35) with identified risk factors.",
+        "category": "recommendation",
+        "priority": "medium",
+        "certainty_factor": 0.70,
+        "status": "active",
+        "explanation_text": "Type 2 diabetes in young adults is rising rapidly. Early intervention during this window is highly effective because beta-cell function is usually still preserved.",
+        "conditions": [
+            {"fact_key": "early_screening_indicated", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {
+                "action_type": "recommendation",
+                "action_value": "Young adult with diabetes risk factors. Prevention plan: (1) Target BMI <25 through sustainable lifestyle changes. (2) 150-300 min/week of moderate-to-vigorous exercise. (3) Limit added sugars and ultra-processed foods. (4) Annual fasting glucose and HbA1c screening. (5) Consider genetic counseling if strong family history.",
+            },
+        ],
+    },
+
+    # ================================================================== #
+    #  NEW RULES — Enhanced Clinical Accuracy & Reassurance               #
+    # ================================================================== #
+    {
+        "code": "diagnosis-healthy-normal-labs",
+        "name": "Diagnosis: Normal Lab Results — Healthy Assessment",
+        "description": "When fasting glucose is normal (<100) AND HbA1c is normal (<5.7%) AND no classic symptoms are present, classify as healthy normal.",
+        "category": "diagnosis",
+        "priority": "low",
+        "certainty_factor": 0.75,
+        "status": "active",
+        "explanation_text": "Both fasting glucose and HbA1c are within normal ranges, and no classic diabetes symptoms are reported. This indicates normal glucose regulation at the time of assessment.",
+        "conditions": [
+            {"fact_key": "normal_fasting_glucose", "operator": "==", "expected_value": True},
+            {"fact_key": "normal_hba1c", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "diagnosis_conclusion", "action_value": "healthy_normal"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Your fasting glucose and HbA1c are both within normal ranges. No diabetes or prediabetes detected at this time. Continue healthy lifestyle habits and schedule routine screening as recommended by your doctor.",
+            },
+        ],
+    },
+    {
+        "code": "diagnosis-healthy-normal-single-lab",
+        "name": "Diagnosis: Single Normal Lab — Reassurance",
+        "description": "When at least one lab is normal and no diabetes symptoms are present, provide reassurance while recommending follow-up.",
+        "category": "diagnosis",
+        "priority": "low",
+        "certainty_factor": 0.60,
+        "status": "active",
+        "explanation_text": "At least one laboratory value is in the normal range and the patient reports no classic diabetes symptoms. While a single normal test is reassuring, ADA recommends periodic re-screening if risk factors are present.",
+        "conditions": [
+            {"fact_key": "normal_fasting_glucose", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {"action_type": "diagnosis_conclusion", "action_value": "healthy_normal"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Your fasting glucose is within the normal range. Continue maintaining a healthy lifestyle. If you have risk factors (family history, obesity, etc.), schedule HbA1c testing for a more complete assessment.",
+            },
+        ],
+    },
+    {
+        "code": "diagnosis-prediabetes-with-classic-symptoms",
+        "name": "Diagnosis: Prediabetes + Classic Symptoms = Elevated Concern",
+        "description": "Prediabetes lab values combined with classic diabetes symptoms warrant more aggressive follow-up than prediabetes alone.",
+        "category": "diagnosis",
+        "priority": "medium",
+        "certainty_factor": 0.80,
+        "status": "active",
+        "explanation_text": "Prediabetes laboratory values in a patient with classic hyperglycemia symptoms (polyuria, polydipsia, weight loss) suggest more rapid glycemic deterioration than typical prediabetes.",
+        "conditions": [
+            {"fact_key": "prediabetes_possible", "operator": "==", "expected_value": True},
+            {"fact_key": "classic_hyperglycemia_symptoms", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "prediabetes_high_confidence=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "prediabetes_possible"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Prediabetes with classic diabetes symptoms detected. This combination suggests faster progression risk. Recommendations: (1) Repeat fasting glucose and HbA1c in 1–3 months (not 6 months). (2) Begin intensive lifestyle intervention immediately. (3) Discuss metformin with your doctor. (4) Monitor symptoms closely.",
+            },
+        ],
+    },
+    {
+        "code": "diagnosis-triple-lab-confirmation",
+        "name": "Diagnosis: Triple Lab Confirmation (FPG + HbA1c + OGTT)",
+        "description": "When all three primary lab markers exceed diabetes threshold, this represents the strongest possible diagnostic evidence.",
+        "category": "diagnosis",
+        "priority": "high",
+        "certainty_factor": 0.98,
+        "status": "active",
+        "explanation_text": "Three concordant abnormal results (FPG ≥126, HbA1c ≥6.5%, 2h-OGTT ≥200) establish diabetes with the highest possible confidence. No further confirmatory testing is needed.",
+        "conditions": [
+            {"fact_key": "fasting_glucose", "operator": ">=", "expected_value": 126},
+            {"fact_key": "hba1c", "operator": ">=", "expected_value": 6.5, "logical_operator": "and"},
+            {"fact_key": "2h_ogtt_75g", "operator": ">=", "expected_value": 200, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "diabetes_confirmed=true"},
+            {"action_type": "assert_fact", "action_value": "diabetes_diagnostic_criterion_met=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "diabetes_likely"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Diabetes confirmed by all three diagnostic criteria (FPG, HbA1c, OGTT). Immediate action: (1) Schedule endocrinology or primary care appointment within 1-2 weeks. (2) Begin diabetes self-management education. (3) Comprehensive screening for complications (eyes, feet, kidneys, cardiovascular). (4) Treatment initiation based on clinical presentation.",
+            },
+        ],
+    },
+    {
+        "code": "diagnosis-labs-normal-symptoms-present",
+        "name": "Diagnosis: Normal Labs but Symptoms Present",
+        "description": "When lab values are normal but diabetes-like symptoms exist, recommend monitoring and additional investigations.",
+        "category": "diagnosis",
+        "priority": "low",
+        "certainty_factor": 0.50,
+        "status": "active",
+        "explanation_text": "Normal glucose metabolism with diabetes-like symptoms may indicate early/fluctuating hyperglycemia, or symptoms may be attributable to other conditions. Close monitoring is warranted.",
+        "conditions": [
+            {"fact_key": "normal_fasting_glucose", "operator": "==", "expected_value": True},
+            {"fact_key": "classic_hyperglycemia_symptoms", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {
+                "action_type": "recommendation",
+                "action_value": "Your lab values are currently normal, but you report symptoms associated with diabetes. Recommendations: (1) Repeat fasting glucose in 1–3 months. (2) Request HbA1c if not already tested. (3) Consider OGTT for more sensitive detection. (4) Investigate other potential causes of your symptoms with your doctor. (5) Monitor symptom changes.",
+            },
+        ],
+    },
+    {
+        "code": "classification-borderline-prediabetes-alert",
+        "name": "Classification: Borderline High-Normal Glucose (95–99 mg/dL)",
+        "description": "FPG 95-99 mg/dL is technically normal but approaching the prediabetes threshold. Proactive awareness is beneficial.",
+        "category": "classification",
+        "priority": "low",
+        "certainty_factor": 0.45,
+        "status": "active",
+        "explanation_text": "While technically normal, fasting glucose between 95-99 mg/dL sits at the upper boundary. Studies show that even high-normal glucose increases future diabetes risk compared to glucose <90 mg/dL.",
+        "conditions": [
+            {"fact_key": "fasting_glucose", "operator": ">=", "expected_value": 95},
+            {"fact_key": "fasting_glucose", "operator": "<", "expected_value": 100, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "borderline_glucose=true"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Your fasting glucose is in the high-normal range (95-99 mg/dL). While technically normal, this is approaching the prediabetes threshold. Proactive steps: (1) Adopt a low-glycemic diet. (2) Regular physical activity. (3) Re-test in 6-12 months to track trends.",
+            },
+        ],
+    },
+    {
+        "code": "diagnosis-ogtt-with-symptoms",
+        "name": "Diagnosis: OGTT ≥200 + Symptoms = Strong Diabetes Evidence",
+        "description": "Abnormal OGTT combined with classic symptoms provides very strong diagnostic evidence.",
+        "category": "diagnosis",
+        "priority": "high",
+        "certainty_factor": 0.94,
+        "status": "active",
+        "explanation_text": "A 2-hour OGTT ≥200 mg/dL in a patient with classic hyperglycemia symptoms is very strong evidence for diabetes. This combination rarely requires additional confirmatory testing.",
+        "conditions": [
+            {"fact_key": "2h_ogtt_75g", "operator": ">=", "expected_value": 200},
+            {"fact_key": "classic_hyperglycemia_symptoms", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "diabetes_diagnostic_criterion_met=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "diabetes_likely"},
+            {
+                "action_type": "recommendation",
+                "action_value": "OGTT result combined with classic symptoms strongly indicates diabetes. Please schedule a comprehensive diabetes evaluation within 1-2 weeks. Treatment initiation should not be delayed.",
+            },
+        ],
+    },
+    {
+        "code": "recommendation-diabetes-confirmed-comprehensive-v2",
+        "name": "Recommendation: Confirmed Diabetes — Comprehensive Action Plan",
+        "description": "Enhanced comprehensive management guidance when diabetes is confirmed by multiple criteria.",
+        "category": "recommendation",
+        "priority": "high",
+        "certainty_factor": 0.90,
+        "status": "active",
+        "explanation_text": "Confirmed diabetes requires a structured, multidisciplinary care plan following ADA Standards of Care 2025.",
+        "conditions": [
+            {"fact_key": "diabetes_confirmed", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {
+                "action_type": "recommendation",
+                "action_value": "Diabetes confirmed. Your comprehensive care plan should include: (1) Individualized HbA1c target (generally <7% for most adults, <6.5% if low hypoglycemia risk). (2) Metformin as first-line therapy unless contraindicated. (3) SGLT2 inhibitor or GLP-1 receptor agonist if cardiovascular or renal disease risk. (4) Retinal screening within 5 years (or at diagnosis for T2D). (5) Annual foot exam and vaccination schedule. (6) Lipid panel — statin therapy if indicated. (7) Blood pressure target <130/80 mmHg. (8) Diabetes self-management education. (9) Psychological well-being assessment. (10) Ongoing HbA1c monitoring every 3 months until stable, then every 6 months.",
+            },
+        ],
+    },
 ]
+
