@@ -104,7 +104,7 @@ def test_diagnosis_flow_for_doctor(client, doctor_auth):
     assert response.status_code == 200
     body = response.get_json()
     assert body["success"] is True
-    assert body["data"]["diagnosis"] == "Likely Diabetes"
+    assert body["data"]["diagnosis"] == "Likely Diabetes Mellitus"
     assert body["data"]["certainty"] >= 0.9
     assert body["data"]["diagnosis_result_id"] > 0
     assert body["data"]["patient_id"] == patient_id

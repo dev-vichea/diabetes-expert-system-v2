@@ -10,7 +10,7 @@ import {
 import { translate } from '@/lib/i18n'
 
 export const NAV_ITEMS = [
-  { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, section: 'workspace' },
+  { to: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, section: 'workspace' },
   { to: '/diagnosis', labelKey: 'nav.assessment', icon: Microscope, section: 'workspace', permissions: ['diagnosis.run'] },
   { to: '/patients', labelKey: 'nav.patients', icon: Users, section: 'workspace', permissions: ['patient.view'] },
   { to: '/rules', labelKey: 'nav.knowledgeBase', icon: BookMarked, section: 'workspace', permissions: ['rule.view'] },
@@ -31,7 +31,7 @@ export const PAGE_TITLE_BY_PATH = [
   { pattern: '/my-results', titleKey: 'page.myDiagnosisResults.title', subtitleKey: 'page.myDiagnosisResults.subtitle' },
   { pattern: '/users', titleKey: 'page.users.title', subtitleKey: 'page.users.subtitle' },
   { pattern: '/roles-permissions', titleKey: 'page.rolesPermissions.title', subtitleKey: 'page.rolesPermissions.subtitle' },
-  { pattern: '/', titleKey: 'page.dashboard.title', subtitleKey: 'page.dashboard.subtitle' },
+  { pattern: '/dashboard', titleKey: 'page.dashboard.title', subtitleKey: 'page.dashboard.subtitle' },
 ]
 
 export function getPageInfo(pathname, language = 'en') {
@@ -99,8 +99,8 @@ export function getBreadcrumbs(pathname, navItems = NAV_ITEMS, language = 'en') 
   const segments = pathOnly.split('/').filter(Boolean)
   const navLabelMap = new Map(navItems.map((item) => [item.to, item.label || translate(language, item.labelKey)]))
 
-  const breadcrumbs = [{ label: translate(language, 'breadcrumbs.dashboard'), to: segments.length ? '/' : null }]
-  if (!segments.length) return breadcrumbs
+  const breadcrumbs = [{ label: translate(language, 'breadcrumbs.dashboard'), to: segments.length ? '/dashboard' : null }]
+  if (!segments.length || (segments.length === 1 && segments[0] === 'dashboard')) return breadcrumbs
 
   let parentPath = ''
 

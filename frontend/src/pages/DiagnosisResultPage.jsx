@@ -311,7 +311,7 @@ function SurfaceSection({ title, children, icon: Icon }) {
 
 export function DiagnosisResultPage() {
   const { user } = useAuth()
-  const { t } = useLanguage()
+  const { t, tExact } = useLanguage()
   const location = useLocation()
   const navigate = useNavigate()
   const [showRestartConfirm, setShowRestartConfirm] = useState(false)
@@ -427,7 +427,7 @@ export function DiagnosisResultPage() {
   const hba1cPointer = getScalePercent('hba1c', hba1cValue)
   const fastingPointer = getScalePercent('fasting', fastingValue)
 
-  const primaryHeadline = getPrimaryHeadline(result, certaintyPercent).toUpperCase()
+  const primaryHeadline = tExact(getPrimaryHeadline(result, certaintyPercent)).toUpperCase()
   const patientName = context?.patient_name || t('diagnosisResult.currentPatient', 'Current patient')
   const reportTime = result?.created_at || snapshot?.savedAt
 
@@ -502,7 +502,7 @@ export function DiagnosisResultPage() {
             
             <div className="mt-8 text-center bg-white dark:bg-slate-900/50 rounded-2xl py-3 px-6 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-slate-800 max-w-[240px]">
               <p className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-slate-200">
-                {confidenceMeta.title}
+                {tExact(confidenceMeta.title)}
               </p>
             </div>
           </article>
@@ -543,10 +543,10 @@ export function DiagnosisResultPage() {
                 <div>
                   <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{t('diagnosisResult.evidenceCompleteness', 'Evidence Completeness')}</p>
                   <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                    {t('diagnosisResult.availableLabs', 'available labs:')} {(evidenceCompleteness?.available_labs || []).map(toReadableLabel).join(', ') || t('diagnosisResult.none', 'none')}
+                    {t('diagnosisResult.availableLabs', 'available labs:')} {(evidenceCompleteness?.available_labs || []).map(l => tExact(toReadableLabel(l))).join(', ') || t('diagnosisResult.none', 'none')}
                   </p>
                   <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                    {t('diagnosisResult.missing', 'missing:')} {(evidenceCompleteness?.missing_recommended_labs || missingLabs).map(toReadableLabel).join(', ') || t('diagnosisResult.none', 'none')}
+                    {t('diagnosisResult.missing', 'missing:')} {(evidenceCompleteness?.missing_recommended_labs || missingLabs).map(l => tExact(toReadableLabel(l))).join(', ') || t('diagnosisResult.none', 'none')}
                   </p>
                 </div>
                 <EvidenceRangeGauge score={evidenceCompleteness?.score || 0} level={evidenceCompleteness?.level || 'low'} />
@@ -564,7 +564,7 @@ export function DiagnosisResultPage() {
                   {matchedSymptoms.map((symptom) => (
                     <li key={symptom} className="text-sm text-slate-800 dark:text-slate-100 flex items-start gap-2">
                       <span className="text-slate-400 dark:text-slate-600 mt-0.5">•</span>
-                      <span>{symptom}</span>
+                      <span>{tExact(symptom)}</span>
                     </li>
                   ))}
                 </ul>
@@ -587,7 +587,7 @@ export function DiagnosisResultPage() {
                   {matchedRiskFactors.map((risk) => (
                     <li key={risk} className="text-sm text-slate-800 dark:text-slate-100 flex items-start gap-2">
                       <span className="text-slate-400 dark:text-slate-600 mt-0.5">•</span>
-                      <span>{risk}</span>
+                      <span>{tExact(risk)}</span>
                     </li>
                   ))}
                 </ul>
@@ -609,8 +609,8 @@ export function DiagnosisResultPage() {
                   className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-900"
                 >
                   <p className="text-[1.02rem] leading-snug text-slate-900 dark:text-slate-100">
-                    <span className="font-extrabold">{index + 1}. {rule.name || t('diagnosisResult.matchedRule', 'Matched Rule')}:</span>{' '}
-                    {rule.description || t('diagnosisResult.ruleConditionMatched', 'Rule condition matched.')}{' '}
+                    <span className="font-extrabold">{index + 1}. {tExact(rule.name) || t('diagnosisResult.matchedRule', 'Matched Rule')}:</span>{' '}
+                    {tExact(rule.description) || t('diagnosisResult.ruleConditionMatched', 'Rule condition matched.')}{' '}
                     <span className="font-semibold text-emerald-700 dark:text-emerald-400">
                       {t('diagnosisResult.contribution', 'Contribution')} +{formatCertaintyContribution(rule)}
                     </span>
@@ -652,16 +652,16 @@ export function DiagnosisResultPage() {
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-1.5">
                     <StatusBadge tone={getUrgencyTone(item.urgency)} size="sm">
-                      {toReadableLabel(item.urgency || 'routine')} {t('diagnosisResult.priority', 'Priority')}
+                      {tExact(toReadableLabel(item.urgency || 'routine'))} {t('diagnosisResult.priority', 'Priority')}
                     </StatusBadge>
                     {item.source ? (
                       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                        {t('diagnosisResult.rule', 'Rule:')} {String(item.source).replace(/^rule:/, '')}
+                        {t('diagnosisResult.rule', 'Rule:')} {tExact(String(item.source).replace(/^rule:/, '').trim().toUpperCase())}
                       </span>
                     ) : null}
                   </div>
                   <p className="text-base font-medium leading-relaxed text-slate-800 dark:text-slate-200">
-                    {item.text}
+                    {tExact(item.text)}
                   </p>
                 </div>
               </div>
@@ -671,7 +671,7 @@ export function DiagnosisResultPage() {
           <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
             <ClipboardList className="h-10 w-10 text-slate-300 dark:text-slate-700 mb-3" />
             <p className="text-base font-medium text-slate-600 dark:text-slate-400">
-              {result.recommendation || t('diagnosisResult.noSpecificRecommendations', 'No specific recommendations were generated. Please consult with a physician.')}
+              {tExact(result.recommendation) || t('diagnosisResult.noSpecificRecommendations', 'No specific recommendations were generated. Please consult with a physician.')}
             </p>
           </div>
         )}

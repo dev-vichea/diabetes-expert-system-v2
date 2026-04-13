@@ -43,7 +43,7 @@ def test_forward_chaining_derives_fact_and_fires_dependent_rule():
         rules,
     )
 
-    assert result["diagnosis"] == "Likely Diabetes"
+    assert result["diagnosis"] == "Likely Diabetes Mellitus"
     assert result["certainty"] >= 0.8
     fired_ids = [item["id"] for item in result["triggered_rules"]]
     assert fired_ids == [2, 1] or fired_ids == [1, 2]
@@ -98,7 +98,7 @@ def test_priority_weight_is_applied_in_certainty_combination():
 
     result = run_inference({"fasting_glucose": 130, "hba1c": 6.8}, rules)
 
-    assert result["diagnosis"] == "Possible Diabetes"
+    assert result["diagnosis"] == "Possible Diabetes — Further Testing Needed"
     assert result["certainty"] == 0.87
 
     confidence_trace = result["explanation_trace"]["confidence_calculation"]
@@ -152,7 +152,7 @@ def test_grouped_forward_chaining_executes_stages_in_order_with_shared_memory():
 
     result = run_inference({"fasting_glucose": 132}, rules)
 
-    assert result["diagnosis"] == "Likely Diabetes"
+    assert result["diagnosis"] == "Likely Diabetes Mellitus"
     assert result["recommendation"] == "Schedule urgent endocrinology follow-up."
     assert result["facts"]["hyperglycemia_present"] is True
     assert result["facts"]["high_type2_risk_pattern"] is True

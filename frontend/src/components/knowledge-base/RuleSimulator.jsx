@@ -10,6 +10,7 @@ import {
   Activity,
   AlertTriangle,
 } from 'lucide-react'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 /* ── client-side condition evaluator ──────────────────────────── */
 function parseValue(raw) {
@@ -60,75 +61,83 @@ function evaluateRule(rule, facts) {
   return { match: result, details }
 }
 
-/* ── quick-fill presets ──────────────────────────────────── */
-const PRESETS = {
+const PRESET_KEYS = {
   healthy: {
-    label: 'Healthy Adult',
+    labelKey: 'sandbox.presets.healthy',
+    fallback: 'Healthy Adult',
     facts: { age: '35', bmi: '22', fasting_glucose: '85', hba1c: '5.0', fasting_plasma_glucose: '85', frequent_urination: 'false', excessive_thirst: 'false', fatigue: 'false', weight_loss: 'false', family_history_diabetes: 'false', physical_activity_low: 'false' },
   },
   prediabetes: {
-    label: 'Pre-Diabetes',
+    labelKey: 'sandbox.presets.prediabetes',
+    fallback: 'Pre-Diabetes',
     facts: { age: '52', bmi: '28', fasting_glucose: '110', hba1c: '6.0', fasting_plasma_glucose: '110', frequent_urination: 'false', excessive_thirst: 'false', fatigue: 'true', weight_loss: 'false', family_history_diabetes: 'true', physical_activity_low: 'true' },
   },
   t2dm: {
-    label: 'Type 2 Diabetes',
+    labelKey: 'sandbox.presets.t2dm',
+    fallback: 'Type 2 Diabetes',
     facts: { age: '55', bmi: '32', fasting_glucose: '145', hba1c: '7.8', fasting_plasma_glucose: '145', frequent_urination: 'true', excessive_thirst: 'true', fatigue: 'true', weight_loss: 'false', family_history_diabetes: 'true', physical_activity_low: 'true' },
   },
   dka: {
-    label: 'DKA Crisis',
+    labelKey: 'sandbox.presets.dka',
+    fallback: 'DKA Crisis',
     facts: { age: '28', bmi: '20', fasting_glucose: '380', hba1c: '12.0', random_plasma_glucose: '380', blood_glucose: '380', fasting_plasma_glucose: '380', frequent_urination: 'true', excessive_thirst: 'true', fatigue: 'true', weight_loss: 'true', nausea: 'true', vomiting: 'true', abdominal_pain: 'true', family_history_diabetes: 'false', physical_activity_low: 'false' },
   },
 }
 
-const INPUT_GROUPS = [
+const INPUT_GROUP_KEYS = [
   {
-    title: 'Demographics',
+    titleKey: 'sandbox.groups.demographics',
+    fallback: 'Demographics',
     fields: [
-      { key: 'age', label: 'Age', type: 'number', placeholder: 'e.g. 45' },
-      { key: 'bmi', label: 'BMI', type: 'number', placeholder: 'e.g. 27.5' },
+      { key: 'age', labelKey: 'sandbox.fields.age', fallback: 'Age', type: 'number', placeholder: 'e.g. 45' },
+      { key: 'bmi', labelKey: 'sandbox.fields.bmi', fallback: 'BMI', type: 'number', placeholder: 'e.g. 27.5' },
     ],
   },
   {
-    title: 'Lab Values',
+    titleKey: 'sandbox.groups.labValues',
+    fallback: 'Lab Values',
     fields: [
-      { key: 'fasting_glucose', label: 'Fasting Glucose', type: 'number', placeholder: 'mg/dL' },
-      { key: 'fasting_plasma_glucose', label: 'Fasting Plasma Glucose', type: 'number', placeholder: 'mg/dL' },
-      { key: 'hba1c', label: 'HbA1c', type: 'number', placeholder: '%' },
-      { key: '2h_ogtt_75g', label: '2h OGTT', type: 'number', placeholder: 'mg/dL' },
-      { key: 'random_plasma_glucose', label: 'Random Plasma Glucose', type: 'number', placeholder: 'mg/dL' },
-      { key: 'blood_glucose', label: 'Blood Glucose', type: 'number', placeholder: 'mg/dL' },
+      { key: 'fasting_glucose', labelKey: 'sandbox.fields.fastingGlucose', fallback: 'Fasting Glucose', type: 'number', placeholder: 'mg/dL' },
+      { key: 'fasting_plasma_glucose', labelKey: 'sandbox.fields.fastingPlasmaGlucose', fallback: 'Fasting Plasma Glucose', type: 'number', placeholder: 'mg/dL' },
+      { key: 'hba1c', labelKey: 'sandbox.fields.hba1c', fallback: 'HbA1c', type: 'number', placeholder: '%' },
+      { key: '2h_ogtt_75g', labelKey: 'sandbox.fields.ogtt', fallback: '2h OGTT', type: 'number', placeholder: 'mg/dL' },
+      { key: 'random_plasma_glucose', labelKey: 'sandbox.fields.randomPlasmaGlucose', fallback: 'Random Plasma Glucose', type: 'number', placeholder: 'mg/dL' },
+      { key: 'blood_glucose', labelKey: 'sandbox.fields.bloodGlucose', fallback: 'Blood Glucose', type: 'number', placeholder: 'mg/dL' },
     ],
   },
   {
-    title: 'Symptoms',
+    titleKey: 'sandbox.groups.symptoms',
+    fallback: 'Symptoms',
     fields: [
-      { key: 'frequent_urination', label: 'Frequent Urination', type: 'toggle' },
-      { key: 'excessive_thirst', label: 'Excessive Thirst', type: 'toggle' },
-      { key: 'fatigue', label: 'Fatigue', type: 'toggle' },
-      { key: 'blurred_vision', label: 'Blurred Vision', type: 'toggle' },
-      { key: 'weight_loss', label: 'Weight Loss', type: 'toggle' },
-      { key: 'nausea', label: 'Nausea', type: 'toggle' },
-      { key: 'vomiting', label: 'Vomiting', type: 'toggle' },
-      { key: 'abdominal_pain', label: 'Abdominal Pain', type: 'toggle' },
-      { key: 'tingling_hands_feet', label: 'Tingling Hands/Feet', type: 'toggle' },
-      { key: 'frequent_infections', label: 'Frequent Infections', type: 'toggle' },
-      { key: 'acanthosis_nigricans', label: 'Dark Skin Patches (Acanthosis Nigricans)', type: 'toggle' },
+      { key: 'frequent_urination', labelKey: 'sandbox.fields.frequentUrination', fallback: 'Frequent Urination', type: 'toggle' },
+      { key: 'excessive_thirst', labelKey: 'sandbox.fields.excessiveThirst', fallback: 'Excessive Thirst', type: 'toggle' },
+      { key: 'fatigue', labelKey: 'sandbox.fields.fatigue', fallback: 'Fatigue', type: 'toggle' },
+      { key: 'blurred_vision', labelKey: 'sandbox.fields.blurredVision', fallback: 'Blurred Vision', type: 'toggle' },
+      { key: 'weight_loss', labelKey: 'sandbox.fields.weightLoss', fallback: 'Weight Loss', type: 'toggle' },
+      { key: 'nausea', labelKey: 'sandbox.fields.nausea', fallback: 'Nausea', type: 'toggle' },
+      { key: 'vomiting', labelKey: 'sandbox.fields.vomiting', fallback: 'Vomiting', type: 'toggle' },
+      { key: 'abdominal_pain', labelKey: 'sandbox.fields.abdominalPain', fallback: 'Abdominal Pain', type: 'toggle' },
+      { key: 'tingling_hands_feet', labelKey: 'sandbox.fields.tinglingHandsFeet', fallback: 'Tingling Hands/Feet', type: 'toggle' },
+      { key: 'frequent_infections', labelKey: 'sandbox.fields.frequentInfections', fallback: 'Frequent Infections', type: 'toggle' },
+      { key: 'acanthosis_nigricans', labelKey: 'sandbox.fields.acanthosisNigricans', fallback: 'Dark Skin Patches (Acanthosis Nigricans)', type: 'toggle' },
     ],
   },
   {
-    title: 'Risk Factors',
+    titleKey: 'sandbox.groups.riskFactors',
+    fallback: 'Risk Factors',
     fields: [
-      { key: 'family_history_diabetes', label: 'Family History', type: 'toggle' },
-      { key: 'physical_activity_low', label: 'Low Physical Activity', type: 'toggle' },
-      { key: 'sedentary_lifestyle', label: 'Sedentary Lifestyle', type: 'toggle' },
-      { key: 'high_cholesterol', label: 'High Cholesterol', type: 'toggle' },
-      { key: 'pcos_history', label: 'PCOS History', type: 'toggle' },
-      { key: 'ethnicity_high_risk', label: 'High Risk Ethnicity', type: 'toggle' },
+      { key: 'family_history_diabetes', labelKey: 'sandbox.fields.familyHistory', fallback: 'Family History', type: 'toggle' },
+      { key: 'physical_activity_low', labelKey: 'sandbox.fields.lowPhysicalActivity', fallback: 'Low Physical Activity', type: 'toggle' },
+      { key: 'sedentary_lifestyle', labelKey: 'sandbox.fields.sedentaryLifestyle', fallback: 'Sedentary Lifestyle', type: 'toggle' },
+      { key: 'high_cholesterol', labelKey: 'sandbox.fields.highCholesterol', fallback: 'High Cholesterol', type: 'toggle' },
+      { key: 'pcos_history', labelKey: 'sandbox.fields.pcosHistory', fallback: 'PCOS History', type: 'toggle' },
+      { key: 'ethnicity_high_risk', labelKey: 'sandbox.fields.highRiskEthnicity', fallback: 'High Risk Ethnicity', type: 'toggle' },
     ],
   },
 ]
 
 export function RuleSimulator({ rules = [] }) {
+  const { t } = useLanguage()
   const [facts, setFacts] = useState({})
   const [expanded, setExpanded] = useState(true)
   const [showDetails, setShowDetails] = useState(null)
@@ -153,7 +162,7 @@ export function RuleSimulator({ rules = [] }) {
   }
 
   function applyPreset(presetKey) {
-    setFacts(PRESETS[presetKey].facts)
+    setFacts(PRESET_KEYS[presetKey].facts)
   }
 
   function clearAll() {
@@ -174,17 +183,17 @@ export function RuleSimulator({ rules = [] }) {
             <Beaker className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Rule Simulation Sandbox</h3>
-            <p className="text-xs text-slate-500">Test patient scenarios against active rules without saving records</p>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('sandbox.title', 'Rule Simulation Sandbox')}</h3>
+            <p className="text-xs text-slate-500">{t('sandbox.subtitle', 'Test patient scenarios against active rules without saving records')}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           {results && (
             <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium dark:bg-slate-800">
               <Zap className="h-3 w-3 text-amber-500" />
-              <span className="text-emerald-600 dark:text-emerald-400">{matchedCount} matched</span>
+              <span className="text-emerald-600 dark:text-emerald-400">{matchedCount} {t('sandbox.matched', 'matched')}</span>
               <span className="text-slate-400">/</span>
-              <span className="text-slate-600 dark:text-slate-300">{totalTested} rules</span>
+              <span className="text-slate-600 dark:text-slate-300">{totalTested} {t('sandbox.rulesLabel', 'rules')}</span>
             </div>
           )}
           {expanded ? <ChevronUp className="h-5 w-5 text-slate-400" /> : <ChevronDown className="h-5 w-5 text-slate-400" />}
@@ -198,37 +207,37 @@ export function RuleSimulator({ rules = [] }) {
             {/* Input Panel */}
             <div>
               <div className="mb-4 flex items-center justify-between">
-                <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">Test Patient Data</h4>
+                <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">{t('sandbox.testPatientData', 'Test Patient Data')}</h4>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={clearAll}
                     className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
                   >
-                    <RotateCcw className="h-3 w-3" /> Clear
+                    <RotateCcw className="h-3 w-3" /> {t('sandbox.clear', 'Clear')}
                   </button>
                 </div>
               </div>
 
               {/* Presets */}
               <div className="mb-4 flex flex-wrap gap-2">
-                {Object.entries(PRESETS).map(([key, preset]) => (
+                {Object.entries(PRESET_KEYS).map(([key, preset]) => (
                   <button
                     key={key}
                     type="button"
                     onClick={() => applyPreset(key)}
                     className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-violet-600 dark:hover:bg-violet-900/20"
                   >
-                    {preset.label}
+                    {t(preset.labelKey, preset.fallback)}
                   </button>
                 ))}
               </div>
 
               {/* Input Fields */}
               <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
-                {INPUT_GROUPS.map((group) => (
-                  <div key={group.title}>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">{group.title}</p>
+                {INPUT_GROUP_KEYS.map((group) => (
+                  <div key={group.titleKey}>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">{t(group.titleKey, group.fallback)}</p>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {group.fields.map((field) => (
                         <div key={field.key}>
@@ -240,11 +249,11 @@ export function RuleSimulator({ rules = [] }) {
                                 onChange={(e) => updateFact(field.key, e.target.checked ? 'true' : 'false')}
                                 className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
                               />
-                              <span className="text-slate-700 dark:text-slate-300">{field.label}</span>
+                              <span className="text-slate-700 dark:text-slate-300">{t(field.labelKey, field.fallback)}</span>
                             </label>
                           ) : (
                             <label className="block">
-                              <span className="mb-1 block text-xs text-slate-500">{field.label}</span>
+                              <span className="mb-1 block text-xs text-slate-500">{t(field.labelKey, field.fallback)}</span>
                               <input
                                 type="number"
                                 step="any"
@@ -265,13 +274,13 @@ export function RuleSimulator({ rules = [] }) {
 
             {/* Results Panel */}
             <div>
-              <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-slate-500">Simulation Results</h4>
+              <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-slate-500">{t('sandbox.simulationResults', 'Simulation Results')}</h4>
 
               {!results ? (
                 <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center dark:border-slate-700">
                   <Activity className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
-                  <p className="text-sm font-medium text-slate-500">Enter test data to simulate</p>
-                  <p className="mt-1 text-xs text-slate-400">Use presets above for quick scenarios</p>
+                  <p className="text-sm font-medium text-slate-500">{t('sandbox.enterTestData', 'Enter test data to simulate')}</p>
+                  <p className="mt-1 text-xs text-slate-400">{t('sandbox.usePresets', 'Use presets above for quick scenarios')}</p>
                 </div>
               ) : (
                 <div className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
@@ -286,7 +295,7 @@ export function RuleSimulator({ rules = [] }) {
                     ) : (
                       <AlertTriangle className="h-5 w-5 text-slate-400" />
                     )}
-                    {matchedCount} of {totalTested} active rules triggered
+                    {t('sandbox.triggeredSummary', `${matchedCount} of ${totalTested} active rules triggered`, { matched: matchedCount, total: totalTested })}
                   </div>
 
                   {/* Matched rules first, then unmatched */}
@@ -322,7 +331,7 @@ export function RuleSimulator({ rules = [] }) {
                             onClick={() => setShowDetails(showDetails === rule.id ? null : rule.id)}
                             className="shrink-0 rounded-md px-2 py-0.5 text-[10px] font-medium text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
                           >
-                            {showDetails === rule.id ? 'Hide' : 'Details'}
+                            {showDetails === rule.id ? t('sandbox.hide', 'Hide') : t('sandbox.details', 'Details')}
                           </button>
                         </div>
 

@@ -2,6 +2,7 @@ import { CalendarDays, Mail, Shield, UserRound } from 'lucide-react'
 import { formatDateTime } from '@/lib/datetime'
 import { Avatar, AvatarBadge, AvatarFallback } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 function getInitials(name) {
   const parts = String(name || '')
@@ -21,6 +22,7 @@ function roleBadgeClass(role) {
 }
 
 export function AdminUserSidebar({ user, permissions = [], className }) {
+  const { t } = useLanguage()
   const primaryRole = user?.role || user?.roles?.[0] || 'patient'
 
   return (
@@ -32,10 +34,12 @@ export function AdminUserSidebar({ user, permissions = [], className }) {
             <AvatarBadge className={user?.is_active ? 'bg-emerald-500' : 'bg-slate-400 dark:bg-slate-500'} />
           </Avatar>
           <div className="min-w-0">
-            <h2 className="truncate text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-50">{user?.name || 'User'}</h2>
+            <h2 className="truncate text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-50">
+              {user?.name || t('userSidebar.userFallback')}
+            </h2>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${roleBadgeClass(primaryRole)}`}>
-                {primaryRole}
+                {t(`roles.${primaryRole}`)}
               </span>
             </div>
           </div>
@@ -47,27 +51,31 @@ export function AdminUserSidebar({ user, permissions = [], className }) {
           <div className="rounded-xl bg-slate-50/80 p-3 dark:bg-slate-900/60">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
               <Mail className="h-3.5 w-3.5" />
-              Contact
+              {t('userSidebar.contact')}
             </div>
-            <p className="mt-2 break-all text-sm font-medium text-slate-900 dark:text-slate-100">{user?.email || 'No email'}</p>
+            <p className="mt-2 break-all text-sm font-medium text-slate-900 dark:text-slate-100">{user?.email || t('userSidebar.noEmail')}</p>
           </div>
 
           <div className="rounded-xl bg-slate-50/80 p-3 dark:bg-slate-900/60">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
               <UserRound className="h-3.5 w-3.5" />
-              Account ID
+              {t('userSidebar.accountId')}
             </div>
-            <p className="mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">#{user?.id ?? 'N/A'}</p>
+            <p className="mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">#{user?.id ?? t('userSidebar.na')}</p>
           </div>
 
           <div className="rounded-xl bg-slate-50/80 p-3 dark:bg-slate-900/60">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
               <CalendarDays className="h-3.5 w-3.5" />
-              Timeline
+              {t('userSidebar.timeline')}
             </div>
             <div className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-300">
-              <p><span className="font-medium text-slate-900 dark:text-slate-100">Created:</span> {formatDateTime(user?.created_at)}</p>
-              <p><span className="font-medium text-slate-900 dark:text-slate-100">Updated:</span> {formatDateTime(user?.updated_at)}</p>
+              <p>
+                <span className="font-medium text-slate-900 dark:text-slate-100">{t('userSidebar.created')}</span> {formatDateTime(user?.created_at)}
+              </p>
+              <p>
+                <span className="font-medium text-slate-900 dark:text-slate-100">{t('userSidebar.updated')}</span> {formatDateTime(user?.updated_at)}
+              </p>
             </div>
           </div>
         </div>
@@ -75,7 +83,7 @@ export function AdminUserSidebar({ user, permissions = [], className }) {
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
             <Shield className="h-3.5 w-3.5" />
-            Effective Permissions
+            {t('userSidebar.effectivePermissions')}
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             {permissions.length ? (
@@ -88,7 +96,7 @@ export function AdminUserSidebar({ user, permissions = [], className }) {
                 </span>
               ))
             ) : (
-              <p className="text-sm text-slate-500 dark:text-slate-400">No permissions available for this role.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{t('userSidebar.noPermissions')}</p>
             )}
           </div>
         </div>

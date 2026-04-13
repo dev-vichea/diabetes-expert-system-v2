@@ -5,6 +5,7 @@ import { formatDateTime } from '@/lib/datetime'
 import { RuleSimulator } from '@/components/knowledge-base/RuleSimulator'
 import { KnowledgeBaseDashboard } from '@/components/knowledge-base/KnowledgeBaseDashboard'
 import { VisualLogicMap } from '@/components/knowledge-base/VisualLogicMap'
+import { useLanguage } from '@/contexts/LanguageContext'
 import {
   AppSelect,
   Combobox,
@@ -191,6 +192,7 @@ function FactKeyCombobox({ value, options, onValueChange }) {
 }
 
 export function RulesPage() {
+  const { t, tExact } = useLanguage()
   const [rules, setRules] = useState([])
   const [ruleCategories, setRuleCategories] = useState([])
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
@@ -454,10 +456,10 @@ export function RulesPage() {
     <Tabs defaultValue="dashboard" className="w-full space-y-5">
       <div className="flex items-center justify-between pb-1">
         <TabsList>
-          <TabsTrigger value="dashboard">Overview</TabsTrigger>
-          <TabsTrigger value="editor">Rule Editor</TabsTrigger>
-          <TabsTrigger value="visual">Visual Graph</TabsTrigger>
-          <TabsTrigger value="simulator">Sandbox</TabsTrigger>
+          <TabsTrigger value="dashboard">{t('rules.tabs.overview', 'Overview')}</TabsTrigger>
+          <TabsTrigger value="editor">{t('rules.tabs.editor', 'Rule Editor')}</TabsTrigger>
+          <TabsTrigger value="visual">{t('rules.tabs.visual', 'Visual Graph')}</TabsTrigger>
+          <TabsTrigger value="simulator">{t('rules.tabs.sandbox', 'Sandbox')}</TabsTrigger>
         </TabsList>
       </div>
 
@@ -469,14 +471,14 @@ export function RulesPage() {
         <SectionCard bodyClassName="flex flex-1 min-h-0 flex-col p-0 h-full overflow-hidden">
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-[#0c1024]">
             <div>
-              <h2 className="section-title">Visual Logic Graph</h2>
+              <h2 className="section-title">{t('rules.dashboard.visualLogicGraph', 'Visual Logic Graph')}</h2>
               <p className="text-xs text-slate-500 mt-1">
-                Visualizing rule: <span className="font-semibold text-cyan-600">{form.name || 'Unnamed Rule'}</span>
+                {t('rules.dashboard.visualizingRule', 'Visualizing rule:')} <span className="font-semibold text-cyan-600">{form.name || t('rules.dashboard.unnamedRule', 'Unnamed Rule')}</span>
               </p>
             </div>
             {selectedRule && selectedRule.status !== 'archived' ? (
               <button type="button" className="btn-primary py-1.5 px-3 text-xs" onClick={saveRule} disabled={saving}>
-                 {saving ? 'Saving...' : 'Save Rule'}
+                 {saving ? t('rules.dashboard.saving', 'Saving...') : t('rules.dashboard.saveRule', 'Save Rule')}
               </button>
             ) : null}
           </div>
@@ -491,13 +493,13 @@ export function RulesPage() {
         title={
           <span className="flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-cyan-600" />
-            Knowledge Base Rules
+            {t('rules.dashboard.knowledgeBaseRules', 'Knowledge Base Rules')}
             <span className="ml-1 inline-flex items-center rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-semibold text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400">
               {filteredRules.length}
             </span>
           </span>
         }
-        description="Filter and select a rule to review versions and edit conditions."
+        description={t('rules.dashboard.filterSelectReview', "Filter and select a rule to review versions and edit conditions.")}
         className="max-h-[30rem]"
         bodyClassName="flex flex-1 min-h-0 flex-col"
       >
@@ -506,7 +508,7 @@ export function RulesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search rules by name, category, or conclusion..."
+              placeholder={t('rules.dashboard.searchPlaceholder', "Search rules by name, category, or conclusion...")}
               value={ruleSearch}
               onChange={(e) => setRuleSearch(e.target.value)}
               className="input-base w-full pl-9 py-2 text-sm"
@@ -518,7 +520,7 @@ export function RulesPage() {
               value={filters.category}
               onValueChange={(value) => setFilters({ ...filters, category: value })}
               includeEmpty
-              emptyLabel="All categories"
+              emptyLabel={t('rules.dashboard.allCategories', "All categories")}
               options={categoryOptions}
             />
 
@@ -526,35 +528,35 @@ export function RulesPage() {
               value={filters.status}
               onValueChange={(value) => setFilters({ ...filters, status: value })}
               includeEmpty
-              emptyLabel="All statuses"
+              emptyLabel={t('rules.dashboard.allStatuses', "All statuses")}
               options={[
-                { value: 'active', label: 'Active' },
-                { value: 'inactive', label: 'Inactive' },
-                { value: 'archived', label: 'Archived' },
+                { value: 'active', label: t('rules.dropdowns.active', 'Active') },
+                { value: 'inactive', label: t('rules.dropdowns.inactive', 'Inactive') },
+                { value: 'archived', label: t('rules.dropdowns.archived', 'Archived') },
               ]}
             />
 
             <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
               <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500" checked={filters.include_archived} onChange={(event) => setFilters({ ...filters, include_archived: event.target.checked })} />
-              Include archived
+              {t('rules.dashboard.includeArchived', 'Include archived')}
             </label>
 
-            <button type="button" className="btn-secondary" onClick={() => setFilters(DEFAULT_FILTERS)}>Reset</button>
+            <button type="button" className="btn-secondary" onClick={() => setFilters(DEFAULT_FILTERS)}>{t('rules.dashboard.reset', 'Reset')}</button>
           </FilterBar>
 
           <DataTable
             className="no-scrollbar mt-4 flex-1 min-h-0 overflow-y-auto"
             columns={[
-              { key: 'name', label: 'Name' },
-              { key: 'category', label: 'Category' },
-              { key: 'status', label: 'Status' },
-              { key: 'priority', label: 'Priority' },
-              { key: 'version', label: 'Version' },
+              { key: 'name', label: t('rules.dashboard.columns.name', 'Name') },
+              { key: 'category', label: t('rules.dashboard.columns.category', 'Category') },
+              { key: 'status', label: t('rules.dashboard.columns.status', 'Status') },
+              { key: 'priority', label: t('rules.dashboard.columns.priority', 'Priority') },
+              { key: 'version', label: t('rules.dashboard.columns.version', 'Version') },
             ]}
             loading={loading}
             isEmpty={!filteredRules.length}
-            loadingMessage="Loading rules..."
-            emptyTitle={ruleSearch ? 'No rules match your search.' : 'No rules found.'}
+            loadingMessage={t('rules.dashboard.loadingRules', "Loading rules...")}
+            emptyTitle={ruleSearch ? t('rules.dashboard.noRulesSearch', "No rules match your search.") : t('rules.dashboard.noRulesFound', "No rules found.")}
           >
             {filteredRules.map((rule) => (
               <tr
@@ -562,7 +564,7 @@ export function RulesPage() {
                 onClick={() => selectRule(rule.id)}
                 className={`table-row-hover ${selectedRuleId === rule.id ? 'table-row-selected' : ''}`}
               >
-                <td className="font-semibold text-slate-900 dark:text-slate-100">{rule.name}</td>
+                <td className="font-semibold text-slate-900 dark:text-slate-100">{tExact(rule.name)}</td>
                 <td>
                   <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
                     {rule.category}
@@ -579,33 +581,33 @@ export function RulesPage() {
       <SectionCard bodyClassName="flex flex-1 min-h-0 flex-col">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div>
-              <h2 className="section-title">{selectedRule ? 'Edit Rule' : 'Create Rule'}</h2>
+              <h2 className="section-title">{selectedRule ? t('rules.editor.editRule', 'Edit Rule') : t('rules.editor.createRule', 'Create Rule')}</h2>
               <p className="section-subtitle mt-1">
-                Write simple clinical logic for doctors. Example: if fasting glucose is 126 or higher, set diabetes possible.
+                {t('rules.editor.subtitle', 'Write simple clinical logic for doctors. Example: if fasting glucose is 126 or higher, set diabetes possible.')}
               </p>
             </div>
             <div className="flex gap-2">
-              <button type="button" className="btn-secondary" onClick={resetEditor}>New Rule</button>
+              <button type="button" className="btn-secondary" onClick={resetEditor}>{t('rules.editor.newRule', 'New Rule')}</button>
               {selectedRule?.status === 'archived' ? (
                 <button type="button" className="btn-secondary" onClick={unarchiveSelectedRule} disabled={unarchiving}>
-                  {unarchiving ? 'Restoring...' : 'Unarchive'}
+                  {unarchiving ? t('rules.editor.restoring', 'Restoring...') : t('rules.editor.unarchive', 'Unarchive')}
                 </button>
               ) : null}
               {selectedRule && selectedRule.status !== 'archived' ? (
-                <button type="button" className="btn-danger" onClick={() => setShowArchiveDialog(true)}>Archive</button>
+                <button type="button" className="btn-danger" onClick={() => setShowArchiveDialog(true)}>{t('rules.editor.archive', 'Archive')}</button>
               ) : null}
             </div>
           </div>
 
           <form onSubmit={saveRule} className="no-scrollbar flex-1 min-h-0 space-y-3 overflow-y-auto pr-1">
             <label className="block">
-              <span className="label-text">Rule Name</span>
+              <span className="label-text">{t('rules.editor.ruleName', 'Rule Name')}</span>
               <input className="input-base" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
             </label>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block">
-                <span className="label-text">Category</span>
+                <span className="label-text">{t('rules.editor.category', 'Category')}</span>
                 <AppSelect
                   value={form.category}
                   onValueChange={(value) => setForm({ ...form, category: value })}
@@ -614,7 +616,7 @@ export function RulesPage() {
               </label>
 
               <label className="block">
-                <span className="label-text">Conclusion</span>
+                <span className="label-text">{t('rules.editor.conclusion', 'Conclusion')}</span>
                 <input className="input-base" value={form.conclusion} onChange={(event) => setForm({ ...form, conclusion: event.target.value })} required />
               </label>
             </div>
@@ -622,12 +624,12 @@ export function RulesPage() {
             <div className="rounded-xl border border-slate-200 bg-slate-50/30 p-3 dark:border-slate-700 dark:bg-slate-900/20">
               <div className="mb-3 flex items-center justify-between gap-2">
                 <p className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                  Conditions
+                  {t('rules.editor.conditions', 'Conditions')}
                   <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-cyan-100 text-[10px] font-bold text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-400">
                     {form.conditions.length}
                   </span>
                 </p>
-                <button type="button" className="btn-secondary px-3 py-1.5 text-xs" onClick={addCondition}>+ Add Condition</button>
+                <button type="button" className="btn-secondary px-3 py-1.5 text-xs" onClick={addCondition}>{t('rules.editor.addCondition', '+ Add Condition')}</button>
               </div>
 
               <div className="space-y-2">
@@ -663,9 +665,9 @@ export function RulesPage() {
                       className="input-base font-mono text-sm"
                       value={condition.expected_value ?? ''}
                       onChange={(event) => updateCondition(index, 'expected_value', event.target.value)}
-                      placeholder="Expected value"
+                      placeholder={t('rules.editor.expectedValue', "Expected value")}
                     />
-                    <button type="button" className="btn-secondary text-xs hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 dark:hover:bg-rose-900/20 dark:hover:text-rose-400" onClick={() => removeCondition(index)}>Remove</button>
+                    <button type="button" className="btn-secondary text-xs hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 dark:hover:bg-rose-900/20 dark:hover:text-rose-400" onClick={() => removeCondition(index)}>{t('rules.editor.remove', 'Remove')}</button>
                   </div>
                 ))}
               </div>
@@ -673,54 +675,54 @@ export function RulesPage() {
 
             <div className="grid gap-3 sm:grid-cols-3">
               <label className="block">
-                <span className="label-text">Certainty Factor</span>
+                <span className="label-text">{t('rules.editor.certaintyFactor', 'Certainty Factor')}</span>
                 <input className="input-base" type="number" step="0.01" min="0" max="1" value={form.certainty_factor} onChange={(event) => setForm({ ...form, certainty_factor: event.target.value })} />
               </label>
 
               <label className="block">
-                <span className="label-text">Priority</span>
+                <span className="label-text">{t('rules.editor.priority', 'Priority')}</span>
                 <AppSelect
                   value={form.priority}
                   onValueChange={(value) => setForm({ ...form, priority: value })}
                   options={[
-                    { value: 'low', label: 'Low' },
-                    { value: 'medium', label: 'Medium' },
-                    { value: 'high', label: 'High' },
+                    { value: 'low', label: t('rules.dropdowns.low', 'Low') },
+                    { value: 'medium', label: t('rules.dropdowns.medium', 'Medium') },
+                    { value: 'high', label: t('rules.dropdowns.high', 'High') },
                   ]}
                 />
               </label>
 
               <label className="block">
-                <span className="label-text">Status</span>
+                <span className="label-text">{t('rules.editor.status', 'Status')}</span>
                 <AppSelect
                   value={form.status}
                   onValueChange={(value) => setForm({ ...form, status: value })}
                   options={[
-                    { value: 'active', label: 'Active' },
-                    { value: 'inactive', label: 'Inactive' },
-                    { value: 'archived', label: 'Archived' },
+                    { value: 'active', label: t('rules.dropdowns.active', 'Active') },
+                    { value: 'inactive', label: t('rules.dropdowns.inactive', 'Inactive') },
+                    { value: 'archived', label: t('rules.dropdowns.archived', 'Archived') },
                   ]}
                 />
               </label>
             </div>
 
             <label className="block">
-              <span className="label-text">Explanation</span>
+              <span className="label-text">{t('rules.editor.explanation', 'Explanation')}</span>
               <textarea className="input-base" value={form.explanation} rows={3} onChange={(event) => setForm({ ...form, explanation: event.target.value })} />
             </label>
 
             <label className="block">
-              <span className="label-text">Recommendation</span>
+              <span className="label-text">{t('rules.editor.recommendation', 'Recommendation')}</span>
               <textarea className="input-base" value={form.recommendation} rows={3} onChange={(event) => setForm({ ...form, recommendation: event.target.value })} />
             </label>
 
             <label className="block">
-              <span className="label-text">Notes</span>
+              <span className="label-text">{t('rules.editor.notes', 'Notes')}</span>
               <textarea className="input-base" value={form.description} rows={2} onChange={(event) => setForm({ ...form, description: event.target.value })} />
             </label>
 
           <button type="submit" className="btn-primary w-full" disabled={saving}>
-            {saving ? 'Saving...' : selectedRule ? 'Update Rule' : 'Create Rule'}
+            {saving ? t('rules.dashboard.saving', 'Saving...') : selectedRule ? t('rules.editor.updateRule', 'Update Rule') : t('rules.editor.createRule', 'Create Rule')}
           </button>
           </form>
         </SectionCard>
@@ -728,23 +730,23 @@ export function RulesPage() {
       <div className="grid gap-5 xl:grid-cols-2">
         <section className="surface p-5 sm:p-6">
           <h2 className="section-title flex items-center gap-2">
-            Rule Versions
+            {t('rules.history.ruleVersions', 'Rule Versions')}
             {selectedRule && versions.length > 0 && (
               <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
                 {versions.length}
               </span>
             )}
           </h2>
-          {!selectedRule ? <p className="state-box mt-4">Select a rule to view versions.</p> : null}
+          {!selectedRule ? <p className="state-box mt-4">{t('rules.history.selectRuleToViewVersions', 'Select a rule to view versions.')}</p> : null}
 
           <div className="mt-4 table-wrap">
             <table className="table-base">
               <thead>
                 <tr>
-                  <th>Version</th>
-                  <th>Change</th>
-                  <th>By</th>
-                  <th>Time</th>
+                  <th>{t('rules.history.columns.version', 'Version')}</th>
+                  <th>{t('rules.history.columns.change', 'Change')}</th>
+                  <th>{t('rules.history.columns.by', 'By')}</th>
+                  <th>{t('rules.history.columns.time', 'Time')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -766,7 +768,7 @@ export function RulesPage() {
                 ))}
                 {!versions.length && selectedRule ? (
                   <tr>
-                    <td colSpan="4"><div className="state-box">No version history found.</div></td>
+                    <td colSpan="4"><div className="state-box">{t('rules.history.noVersionHistory', 'No version history found.')}</div></td>
                   </tr>
                 ) : null}
               </tbody>
@@ -776,22 +778,22 @@ export function RulesPage() {
 
         <section className="surface p-5 sm:p-6">
           <h2 className="section-title flex items-center gap-2">
-            Audit Trail
+            {t('rules.history.auditTrail', 'Audit Trail')}
             {selectedRule && auditLogs.length > 0 && (
               <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
                 {auditLogs.length}
               </span>
             )}
           </h2>
-          {!selectedRule ? <p className="state-box mt-4">Select a rule to view audit logs.</p> : null}
+          {!selectedRule ? <p className="state-box mt-4">{t('rules.history.selectRuleToViewAudit', 'Select a rule to view audit logs.')}</p> : null}
 
           <div className="mt-4 table-wrap">
             <table className="table-base">
               <thead>
                 <tr>
-                  <th>Action</th>
-                  <th>By</th>
-                  <th>Time</th>
+                  <th>{t('rules.history.auditColumns.action', 'Action')}</th>
+                  <th>{t('rules.history.auditColumns.by', 'By')}</th>
+                  <th>{t('rules.history.auditColumns.time', 'Time')}</th>
                 </tr>
               </thead>
               <tbody>

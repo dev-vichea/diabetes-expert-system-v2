@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { AppSelect, DataTable, ErrorAlert, FilterBar, FormSection, SearchInput, SectionCard, StatusBadge } from '@/components/ui'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 const DEFAULT_FILTERS = {
   search: '',
@@ -24,6 +25,7 @@ function genderBadgeTone(gender) {
 }
 
 export function PatientsPage() {
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [urlParams] = useSearchParams()
   const [patients, setPatients] = useState([])
@@ -154,24 +156,24 @@ export function PatientsPage() {
 
   return (
     <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-      <SectionCard title="Patient Records" description="Search, filter, edit profiles, and open assessment workflows.">
+      <SectionCard title={t('patientsPage.records.title', 'Patient Records')} description={t('patientsPage.records.desc', 'Search, filter, edit profiles, and open assessment workflows.')}>
         <FilterBar className="mt-4 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr_auto_auto]" onSubmit={applyFilters}>
           <SearchInput
             value={draftFilters.search}
             onChange={(event) => setDraftFilters({ ...draftFilters, search: event.target.value })}
-            placeholder="Search by name or phone"
+            placeholder={t('patientsPage.filters.search', 'Search by name or phone')}
           />
 
           <AppSelect
             value={draftFilters.gender}
             onValueChange={(value) => setDraftFilters({ ...draftFilters, gender: value })}
             includeEmpty
-            emptyLabel="All genders"
+            emptyLabel={t('patientsPage.filters.allGenders', 'All genders')}
             options={[
-              { value: 'male', label: 'Male' },
-              { value: 'female', label: 'Female' },
-              { value: 'other', label: 'Other' },
-              { value: 'unknown', label: 'Unknown' },
+              { value: 'male', label: t('common.male', 'Male') },
+              { value: 'female', label: t('common.female', 'Female') },
+              { value: 'other', label: t('common.other', 'Other') },
+              { value: 'unknown', label: t('common.unknown', 'Unknown') },
             ]}
           />
 
@@ -179,30 +181,30 @@ export function PatientsPage() {
             value={draftFilters.has_diagnosis}
             onValueChange={(value) => setDraftFilters({ ...draftFilters, has_diagnosis: value })}
             includeEmpty
-            emptyLabel="Any diagnosis status"
+            emptyLabel={t('patientsPage.filters.anyDiagnosis', 'Any diagnosis status')}
             options={[
-              { value: 'true', label: 'Has diagnosis' },
-              { value: 'false', label: 'No diagnosis yet' },
+              { value: 'true', label: t('patientsPage.filters.hasDiagnosis', 'Has diagnosis') },
+              { value: 'false', label: t('patientsPage.filters.noDiagnosis', 'No diagnosis yet') },
             ]}
           />
 
-          <button type="submit" className="btn-primary">Apply</button>
-          <button type="button" className="btn-secondary" onClick={resetFilters}>Reset</button>
+          <button type="submit" className="btn-primary">{t('patientsPage.filters.apply', 'Apply')}</button>
+          <button type="button" className="btn-secondary" onClick={resetFilters}>{t('patientsPage.filters.reset', 'Reset')}</button>
         </FilterBar>
 
         <DataTable
           className="mt-4"
           columns={[
-            { key: 'name', label: 'Name' },
-            { key: 'gender', label: 'Gender' },
-            { key: 'phone', label: 'Phone' },
-            { key: 'diagnoses', label: 'Diagnoses' },
-            { key: 'actions', label: 'Actions' },
+            { key: 'name', label: t('patientsPage.table.name', 'Name') },
+            { key: 'gender', label: t('patientsPage.table.gender', 'Gender') },
+            { key: 'phone', label: t('patientsPage.table.phone', 'Phone') },
+            { key: 'diagnoses', label: t('patientsPage.table.diagnoses', 'Diagnoses') },
+            { key: 'actions', label: t('patientsPage.table.actions', 'Actions') },
           ]}
           loading={loading}
           isEmpty={!patients.length}
-          loadingMessage="Loading patients..."
-          emptyTitle="No patients found for current filters."
+          loadingMessage={t('patientsPage.table.loading', 'Loading patients...')}
+          emptyTitle={t('patientsPage.table.empty', 'No patients found for current filters.')}
         >
           {patients.map((patient) => (
             <tr
@@ -211,7 +213,7 @@ export function PatientsPage() {
               className={`table-row-hover ${selectedPatientId === patient.id ? 'table-row-selected' : ''}`}
             >
               <td className="font-semibold text-slate-900">{patient.full_name}</td>
-              <td><StatusBadge tone={genderBadgeTone(patient.gender)}>{patient.gender || 'N/A'}</StatusBadge></td>
+              <td><StatusBadge tone={genderBadgeTone(patient.gender)}>{t(`common.${patient.gender}`, patient.gender || 'N/A')}</StatusBadge></td>
               <td>{patient.phone || 'N/A'}</td>
               <td>{patient.diagnosis_count}</td>
               <td>
@@ -221,7 +223,7 @@ export function PatientsPage() {
                     className="btn-secondary px-3 py-1.5 text-xs"
                     onClick={(event) => event.stopPropagation()}
                   >
-                    History
+                    {t('patientsPage.table.history', 'History')}
                   </Link>
                   <button
                     type="button"
@@ -231,7 +233,7 @@ export function PatientsPage() {
                       openPatientWorkflow(patient)
                     }}
                   >
-                    {patient.latest_diagnosis_result_id ? 'Latest Result' : 'Assess'}
+                    {patient.latest_diagnosis_result_id ? t('patientsPage.table.latestResult', 'Latest Result') : t('patientsPage.table.assess', 'Assess')}
                   </button>
                 </div>
               </td>
@@ -241,60 +243,60 @@ export function PatientsPage() {
       </SectionCard>
 
       <SectionCard
-        title={isEditing ? 'Edit Patient' : 'Register Patient'}
-        description={isEditing ? 'Update profile details before reviewing history or running a new assessment.' : 'Add a profile before recording symptoms and labs.'}
-        actions={isEditing ? <button type="button" className="btn-secondary" onClick={resetPatientForm}>Cancel Edit</button> : null}
+        title={isEditing ? t('patientsPage.form.editTitle', 'Edit Patient') : t('patientsPage.form.createTitle', 'Register Patient')}
+        description={isEditing ? t('patientsPage.form.editDesc', 'Update profile details before reviewing history or running a new assessment.') : t('patientsPage.form.createDesc', 'Add a profile before recording symptoms and labs.')}
+        actions={isEditing ? <button type="button" className="btn-secondary" onClick={resetPatientForm}>{t('patientsPage.form.cancelEdit', 'Cancel Edit')}</button> : null}
       >
         <FormSection>
           <form onSubmit={submitPatient} className="space-y-3">
             <label className="block">
-              <span className="label-text">Full name</span>
+              <span className="label-text">{t('patientsPage.form.fullName', 'Full name')}</span>
               <input
                 className="input-base"
                 required
                 value={form.full_name}
                 onChange={(event) => setForm({ ...form, full_name: event.target.value })}
-                placeholder="Patient full name"
+                placeholder={t('patientsPage.form.fullNamePlaceholder', 'Patient full name')}
               />
             </label>
 
             <label className="block">
-              <span className="label-text">Gender</span>
+              <span className="label-text">{t('patientsPage.form.gender', 'Gender')}</span>
               <AppSelect
                 value={form.gender}
                 onValueChange={(value) => setForm({ ...form, gender: value })}
                 options={[
-                  { value: 'unknown', label: 'Unknown' },
-                  { value: 'male', label: 'Male' },
-                  { value: 'female', label: 'Female' },
-                  { value: 'other', label: 'Other' },
+                  { value: 'unknown', label: t('common.unknown', 'Unknown') },
+                  { value: 'male', label: t('common.male', 'Male') },
+                  { value: 'female', label: t('common.female', 'Female') },
+                  { value: 'other', label: t('common.other', 'Other') },
                 ]}
               />
             </label>
 
             <label className="block">
-              <span className="label-text">Date of birth</span>
+              <span className="label-text">{t('patientsPage.form.dateOfBirth', 'Date of birth')}</span>
               <input className="input-base" type="date" value={form.date_of_birth} onChange={(event) => setForm({ ...form, date_of_birth: event.target.value })} />
             </label>
 
             <label className="block">
-              <span className="label-text">Phone</span>
-              <input className="input-base" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="Phone number" />
+              <span className="label-text">{t('patientsPage.form.phone', 'Phone')}</span>
+              <input className="input-base" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder={t('patientsPage.form.phonePlaceholder', 'Phone number')} />
             </label>
 
             <label className="block">
-              <span className="label-text">Notes</span>
+              <span className="label-text">{t('patientsPage.form.notes', 'Notes')}</span>
               <textarea
                 className="input-base"
                 value={form.notes}
                 onChange={(event) => setForm({ ...form, notes: event.target.value })}
-                placeholder="Background notes"
+                placeholder={t('patientsPage.form.notesPlaceholder', 'Background notes')}
                 rows={4}
               />
             </label>
 
             <button type="submit" className="btn-primary w-full" disabled={saving}>
-              {saving ? 'Saving...' : isEditing ? 'Update Patient' : 'Create Patient'}
+              {saving ? t('patientsPage.form.saving', 'Saving...') : isEditing ? t('patientsPage.form.updatePatient', 'Update Patient') : t('patientsPage.form.createPatient', 'Create Patient')}
             </button>
           </form>
         </FormSection>

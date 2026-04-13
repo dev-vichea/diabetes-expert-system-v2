@@ -467,7 +467,7 @@
     justify-content: center;
     padding: 32px 20px;
     font-family: var(--app-font-display), sans-serif;
-    background: linear-gradient(135deg, #dce7ff 0%, #eaf1ff 100%);
+    background: linear-gradient(135deg, #f4f7f9 0%, #eefcf9 100%);
   }
 
   .auth-shell::before,
@@ -492,10 +492,10 @@
 
   .auth-shell::after {
     background:
-      radial-gradient(circle at left center, rgba(255, 255, 255, 0.42), transparent 26%),
-      radial-gradient(circle at 82% 18%, rgba(132, 161, 255, 0.18), transparent 22%),
-      linear-gradient(135deg, rgba(238, 242, 255, 0.76) 0%, rgba(231, 239, 255, 0.48) 100%);
-    backdrop-filter: blur(4px);
+      radial-gradient(circle at left center, rgba(20, 184, 166, 0.15), transparent 40%),
+      radial-gradient(circle at 82% 18%, rgba(6, 182, 212, 0.1), transparent 30%),
+      linear-gradient(135deg, rgba(244, 247, 249, 0.8) 0%, rgba(238, 252, 249, 0.6) 100%);
+    backdrop-filter: blur(12px);
     z-index: -1;
   }
 
@@ -630,7 +630,7 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    background: linear-gradient(160deg, #84a1ff 0%, #6d8ff2 52%, #6a8cf4 100%);
+    background: linear-gradient(160deg, #0f766e 0%, #14b8a6 52%, #115e59 100%);
     color: #fff;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
@@ -669,35 +669,36 @@
   .auth-accent-content {
     position: relative;
     z-index: 1;
-    max-width: 340px;
-    padding: 24px 10px;
+    max-width: 400px;
+    padding: 24px 20px;
     text-align: center;
   }
 
   .auth-eyebrow {
     display: inline-flex;
-    margin-bottom: 16px;
+    margin-bottom: 24px;
     border-radius: 999px;
     border: 1px solid rgba(255, 255, 255, 0.28);
     background: rgba(255, 255, 255, 0.12);
-    padding: 8px 14px;
-    font-size: 12px;
+    padding: 10px 18px;
+    font-size: 13px;
     font-weight: 600;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
   }
 
   .auth-accent-title {
-    margin: 0;
+    margin: 0 0 24px;
     font-size: clamp(2.4rem, 4vw, 4rem);
     font-weight: 700;
-    line-height: 1.02;
+    line-height: 1.2;
+    white-space: pre-line;
   }
 
   .auth-accent-copy {
-    margin: 18px 0 28px;
-    font-size: 1rem;
-    line-height: 1.75;
+    margin: 0 0 36px;
+    font-size: 1.05rem;
+    line-height: 1.8;
     color: rgba(255, 255, 255, 0.9);
   }
 
@@ -741,14 +742,23 @@
     margin: 0;
     font-size: clamp(2.35rem, 3vw, 3.5rem);
     font-weight: 700;
-    color: #161f32;
+    color: #0f172a;
   }
 
   .auth-form-copy {
     margin: 12px 0 0;
     font-size: 0.98rem;
     color: #64748b;
+    line-height: 1.6;
   }
+  
+  /* ── Language-Specific Overrides (Khmer Vertical Breathing Room) ── */
+  html[lang='km'] .auth-accent-title { 
+    line-height: 1.5; 
+    font-size: clamp(1.8rem, 3.5vw, 2.8rem); 
+  }
+  html[lang='km'] .auth-accent-copy { line-height: 1.9; }
+  html[lang='km'] .auth-accent-content { padding-top: 32px; padding-bottom: 32px; }
 
   .auth-form {
     display: flex;
@@ -796,8 +806,8 @@
   }
 
   .auth-input:focus {
-    border-color: rgba(110, 140, 241, 0.95);
-    box-shadow: 0 0 0 4px rgba(132, 161, 255, 0.2);
+    border-color: rgba(20, 184, 166, 0.8);
+    box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.15);
     background: #fff;
   }
 
@@ -850,13 +860,13 @@
   .auth-checkbox input {
     width: 16px;
     height: 16px;
-    accent-color: #7494ec;
+    accent-color: #0f766e;
   }
 
   .auth-inline-link {
     font-size: 0.94rem;
     font-weight: 500;
-    color: #43599d;
+    color: #0f766e;
   }
 
   .auth-inline-link:hover {
@@ -870,19 +880,19 @@
     justify-content: center;
     border: none;
     border-radius: 16px;
-    background: linear-gradient(135deg, #7c9af7 0%, #6b8ef2 100%);
+    background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
     padding: 15px 24px;
     font-size: 1rem;
     font-weight: 600;
     color: #fff;
     cursor: pointer;
-    box-shadow: 0 18px 30px rgba(106, 140, 244, 0.24);
+    box-shadow: 0 18px 30px rgba(15, 118, 110, 0.24);
     transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
   }
-
+  
   .auth-submit-button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 22px 34px rgba(106, 140, 244, 0.28);
+    box-shadow: 0 22px 34px rgba(15, 118, 110, 0.28);
   }
 
   .auth-submit-button:disabled {

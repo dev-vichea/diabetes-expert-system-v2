@@ -55,27 +55,30 @@ const DEFAULT_EDITOR = {
 }
 
 const STATUS_TABS = [
-  { value: 'all', label: 'All' },
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
-  { value: 'suspended', label: 'Suspended' },
+  { value: 'all', label: 'common.all' },
+  { value: 'active', label: 'common.active' },
+  { value: 'inactive', label: 'common.inactive' },
+  { value: 'suspended', label: 'common.suspended' },
 ]
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50]
 
-function formatRelativeTime(value) {
-  if (!value) return 'No activity yet'
+function formatRelativeTime(value, t) {
+  if (!value) return t('time.noActivity')
 
   const time = getDateTimeTimestamp(value)
-  if (Number.isNaN(time)) return 'No activity yet'
+  if (Number.isNaN(time)) return t('time.noActivity')
   const now = Date.now()
   const diffMinutes = Math.max(0, Math.round((now - time) / 60000))
 
-  if (diffMinutes < 1) return 'Just now'
-  if (diffMinutes < 60) return `${diffMinutes} min ago`
-  if (diffMinutes < 1440) return `${Math.round(diffMinutes / 60)} hour${diffMinutes >= 120 ? 's' : ''} ago`
+  if (diffMinutes < 1) return t('time.justNow')
+  if (diffMinutes < 60) return t('time.minAgo', { count: diffMinutes })
+  if (diffMinutes < 1440) {
+    const hours = Math.round(diffMinutes / 60)
+    return hours >= 2 ? t('time.hoursAgo', { count: hours }) : t('time.hourAgo', { count: hours })
+  }
   const days = Math.round(diffMinutes / 1440)
-  return `${days} day${days > 1 ? 's' : ''} ago`
+  return days > 1 ? t('time.daysAgo', { count: days }) : t('time.dayAgo', { count: days })
 }
 
 function getInitials(name) {
@@ -96,13 +99,21 @@ function roleBadgeClass(role) {
   return 'bg-slate-100 text-slate-700 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800/60'
 }
 
-function exportUsersCsv(users) {
-  const header = ['Name', 'Email', 'Role', 'Status', 'Permissions', 'Created At', 'Updated At']
+function exportUsersCsv(users, t) {
+  const header = [
+    t('usersPage.table.headers.name'),
+    t('usersPage.table.headers.email'),
+    t('usersPage.table.headers.role'),
+    t('usersPage.table.headers.status'),
+    t('usersPage.table.headers.access'),
+    t('usersPage.table.headers.created'),
+    t('usersPage.table.headers.updated'),
+  ]
   const rows = users.map((user) => [
     user.name,
     user.email,
     user.role || '',
-    user.is_active ? 'Active' : 'Inactive',
+    user.is_active ? t('common.active') : t('common.inactive'),
     user.permissions?.join('; ') || '',
     user.created_at || '',
     user.updated_at || '',
@@ -120,7 +131,7 @@ function exportUsersCsv(users) {
   link.click()
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
-  notify.info('User export downloaded.')
+  notify.info(t('usersPage.notifications.exportSuccess'))
 }
 
 function compareValues(left, right) {
@@ -155,6 +166,7 @@ function UserEditorDialog({
   onChange,
   onSubmit,
 }) {
+  const { t } = useLanguage()
   if (!open) return null
 
   return createPortal(
@@ -163,15 +175,15 @@ function UserEditorDialog({
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5 dark:border-[#1f2640]">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-              {mode === 'create' ? 'New Account' : 'Edit Account'}
+              {mode === 'create' ? t('usersPage.editor.newAccount') : t('usersPage.editor.editAccount')}
             </p>
             <h3 className="mt-1 text-2xl font-bold text-slate-950 dark:text-slate-50">
-              {mode === 'create' ? 'Add User' : 'Update User'}
+              {mode === 'create' ? t('usersPage.editor.addUser') : t('usersPage.editor.updateUser')}
             </h3>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               {mode === 'create'
-                ? 'Create a new system account and assign the initial role.'
-                : 'Update account identity, role assignment, and access state.'}
+                ? t('usersPage.editor.createDesc')
+                : t('usersPage.editor.editDesc')}
             </p>
           </div>
           <button
@@ -179,7 +191,7 @@ function UserEditorDialog({
             className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 text-slate-500 transition hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900"
             onClick={onClose}
             disabled={saving}
-            aria-label="Close editor"
+            aria-label={t('common.closeSidebar')}
           >
             <X className="h-5 w-5" />
           </button>
@@ -187,7 +199,7 @@ function UserEditorDialog({
 
         <form className="grid gap-4 px-6 py-6 sm:grid-cols-2" onSubmit={onSubmit}>
           <label className="block sm:col-span-2">
-            <span className="label-text">Full Name</span>
+            <span className="label-text">{t('usersPage.editor.fields.fullName')}</span>
             <input
               className="input-base"
               value={editor.name}
@@ -197,7 +209,7 @@ function UserEditorDialog({
           </label>
 
           <label className="block sm:col-span-2">
-            <span className="label-text">Email</span>
+            <span className="label-text">{t('usersPage.editor.fields.email')}</span>
             <input
               className="input-base"
               type="email"
@@ -209,7 +221,7 @@ function UserEditorDialog({
 
           {mode === 'create' ? (
             <label className="block sm:col-span-2">
-              <span className="label-text">Password</span>
+              <span className="label-text">{t('usersPage.editor.fields.password')}</span>
               <input
                 className="input-base"
                 type="password"
@@ -221,7 +233,7 @@ function UserEditorDialog({
           ) : null}
 
           <label className="block">
-            <span className="label-text">Role</span>
+            <span className="label-text">{t('usersPage.editor.fields.role')}</span>
             <AppSelect
               value={editor.role}
               onValueChange={(value) => onChange({ ...editor, role: value })}
@@ -230,24 +242,24 @@ function UserEditorDialog({
           </label>
 
           <label className="block">
-            <span className="label-text">Account Status</span>
+            <span className="label-text">{t('usersPage.editor.fields.status')}</span>
             <AppSelect
               value={editor.is_active ? 'active' : 'inactive'}
               onValueChange={(value) => onChange({ ...editor, is_active: value === 'active' })}
               options={[
-                { value: 'active', label: 'Active' },
-                { value: 'inactive', label: 'Inactive' },
+                { value: 'active', label: t('common.active') },
+                { value: 'inactive', label: t('common.inactive') },
               ]}
             />
           </label>
 
           <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-5 sm:col-span-2 dark:border-slate-800">
             <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>
-              Cancel
+              {t('usersPage.editor.actions.cancel')}
             </button>
             <button type="submit" className="btn-primary gap-2" disabled={saving}>
               {mode === 'create' ? <Plus className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
-              {saving ? 'Saving...' : mode === 'create' ? 'Create User' : 'Save Changes'}
+              {saving ? t('usersPage.editor.actions.saving') : mode === 'create' ? t('usersPage.editor.actions.createUser') : t('usersPage.editor.actions.saveChanges')}
             </button>
           </div>
         </form>
@@ -400,7 +412,7 @@ export function AdminPage() {
       setStats(getApiData(statsResponse) || null)
       setActivityOverview(getApiData(activityResponse) || { summary: null, recent_events: [] })
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to load admin dashboard'))
+      setError(getApiErrorMessage(err, t('usersPage.notifications.loadError')))
     } finally {
       setLoading(false)
     }
@@ -431,7 +443,7 @@ export function AdminPage() {
       setUsers(getApiData(usersResponse) || [])
       setRoles(getApiData(rolesResponse) || [])
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to load users'))
+      setError(getApiErrorMessage(err, t('usersPage.notifications.loadError')))
     } finally {
       setLoadingUsers(false)
     }
@@ -458,7 +470,7 @@ export function AdminPage() {
     event.preventDefault()
     setSavingUser(true)
     setError('')
-    const loadingToast = notify.loading(editorMode === 'create' ? 'Creating user...' : 'Saving user changes...')
+    const loadingToast = notify.loading(editorMode === 'create' ? t('usersPage.notifications.creating') : t('usersPage.notifications.updating'))
 
     try {
       if (editorMode === 'create') {
@@ -487,11 +499,11 @@ export function AdminPage() {
         loadDashboard(),
       ])
       notify.dismiss(loadingToast)
-      notify.success(editorMode === 'create' ? 'User created successfully.' : 'User updated successfully.')
+      notify.success(editorMode === 'create' ? t('usersPage.notifications.createSuccess') : t('usersPage.notifications.updateSuccess'))
       closeEditor()
     } catch (err) {
       notify.dismiss(loadingToast)
-      notify.error(getApiErrorMessage(err, `Failed to ${editorMode === 'create' ? 'create' : 'update'} user`))
+      notify.error(getApiErrorMessage(err, editorMode === 'create' ? t('usersPage.notifications.createError') : t('usersPage.notifications.updateError')))
     } finally {
       setSavingUser(false)
     }
@@ -507,7 +519,7 @@ export function AdminPage() {
 
     setSavingUser(true)
     setError('')
-    const loadingToast = notify.loading(pendingStatusUser.is_active ? 'Disabling user...' : 'Enabling user...')
+    const loadingToast = notify.loading(pendingStatusUser.is_active ? t('usersPage.notifications.disabling') : t('usersPage.notifications.enabling'))
 
     try {
       await api.patch(`/admin/users/${pendingStatusUser.id}/status`, {
@@ -518,10 +530,10 @@ export function AdminPage() {
         loadDashboard(),
       ])
       notify.dismiss(loadingToast)
-      notify.success(`User ${pendingStatusUser.is_active ? 'disabled' : 'enabled'} successfully.`)
+      notify.success(t('usersPage.notifications.statusSuccess'))
     } catch (err) {
       notify.dismiss(loadingToast)
-      notify.error(getApiErrorMessage(err, 'Failed to update account status'))
+      notify.error(getApiErrorMessage(err, t('usersPage.notifications.updateError')))
     } finally {
       setSavingUser(false)
       setShowStatusConfirm(false)
@@ -549,10 +561,10 @@ export function AdminPage() {
     <div className="space-y-6">
       <section className={pageSectionClass}>
         <AdminHeroCard
-          eyebrow="User Management"
+          eyebrow={t('usersPage.hero.eyebrow')}
           eyebrowIcon={Users}
-          title="Users"
-          description="Manage team members, roles, and account access from one control surface."
+          title={t('usersPage.hero.title')}
+          description={t('usersPage.hero.description')}
           action={(
             <button
               type="button"
@@ -560,7 +572,7 @@ export function AdminPage() {
               onClick={openCreateUser}
             >
               <Plus className="h-4 w-4" />
-              Add User
+              {t('usersPage.hero.addUser')}
             </button>
           )}
         />
@@ -586,16 +598,16 @@ export function AdminPage() {
 
         <div className="mt-5 grid gap-4 xl:grid-cols-3">
           <AdminInsightPanel
-            title="Users by Role"
-            description="Distribution across assigned roles."
+            title={t('usersPage.insights.rolesTitle')}
+            description={t('usersPage.insights.rolesDesc')}
             icon={Users}
             iconClass="text-violet-500"
             glowClass="bg-violet-200/20 dark:bg-violet-500/10"
           >
             {!roleDistributionData.length ? (
-              <EmptyState title="No role data" description="Role distribution appears when user stats are available." />
+              <EmptyState title={t('usersPage.insights.noRoleData')} description={t('usersPage.insights.noRoleDataDesc')} />
             ) : (
-              <ChartContainer className="h-64 w-full" config={{ count: { label: 'Users', color: '#1f76e8' } }}>
+              <ChartContainer className="h-64 w-full" config={{ count: { label: t('usersPage.insights.usersCount'), color: '#1f76e8' } }}>
                 <BarChart accessibilityLayer data={roleDistributionData} margin={{ left: 6, right: 8 }}>
                   <CartesianGrid vertical={false} />
                   <XAxis dataKey="role" tickLine={false} axisLine={false} />
@@ -608,21 +620,21 @@ export function AdminPage() {
           </AdminInsightPanel>
 
           <AdminInsightPanel
-            title="Rules by Status"
-            description="Current active versus archived rules."
+            title={t('usersPage.insights.rulesTitle')}
+            description={t('usersPage.insights.rulesDesc')}
             icon={Shield}
             iconClass="text-cyan-500"
             glowClass="bg-cyan-200/20 dark:bg-cyan-500/10"
           >
             {!rulesStatusData.length ? (
-              <EmptyState title="No rule data" description="Rule status chart appears once rule stats are loaded." />
+              <EmptyState title={t('usersPage.insights.noRuleData')} description={t('usersPage.insights.noRuleDataDesc')} />
             ) : (
               <ChartContainer
                 className="h-64 w-full"
                 config={{
-                  active: { label: 'Active', color: '#16a34a' },
-                  inactive: { label: 'Inactive', color: '#f59e0b' },
-                  archived: { label: 'Archived', color: '#94a3b8' },
+                  active: { label: t('common.active'), color: '#16a34a' },
+                  inactive: { label: t('common.inactive'), color: '#f59e0b' },
+                  archived: { label: t('common.archived'), color: '#94a3b8' },
                 }}
               >
                 <PieChart>
@@ -639,16 +651,16 @@ export function AdminPage() {
           </AdminInsightPanel>
 
           <AdminInsightPanel
-            title="Top Actions (7d)"
-            description="Most common admin and auth events."
+            title={t('usersPage.insights.actionsTitle')}
+            description={t('usersPage.insights.actionsDesc')}
             icon={Activity}
             iconClass="text-emerald-500"
             glowClass="bg-emerald-200/20 dark:bg-emerald-500/10"
           >
             {!topActionData.length ? (
-              <EmptyState title="No action data" description="Activity actions will be charted once events are available." />
+              <EmptyState title={t('usersPage.insights.noActionData')} description={t('usersPage.insights.noActionDataDesc')} />
             ) : (
-              <ChartContainer className="h-64 w-full" config={{ count: { label: 'Events', color: '#14b8a6' } }}>
+              <ChartContainer className="h-64 w-full" config={{ count: { label: t('usersPage.insights.eventsCount'), color: '#14b8a6' } }}>
                 <BarChart accessibilityLayer data={topActionData} layout="vertical" margin={{ left: 4, right: 4 }}>
                   <CartesianGrid horizontal={false} />
                   <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />
@@ -670,7 +682,7 @@ export function AdminPage() {
                   value={tab.value}
                   className={tab.value === 'suspended' ? 'opacity-80' : ''}
                 >
-                  {tab.label}
+                  {t(tab.label)}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -681,7 +693,7 @@ export function AdminPage() {
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 className="input-base rounded-2xl pl-11"
-                placeholder="Search users..."
+                placeholder={t('usersPage.table.searchPlaceholder')}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
@@ -692,17 +704,17 @@ export function AdminPage() {
                 <DropdownMenuTrigger asChild>
                   <button type="button" className="btn-secondary gap-2 rounded-2xl">
                     <Settings2 className="h-4 w-4" />
-                    Columns
+                    {t('usersPage.table.columns')}
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t('usersPage.table.visibleColumns')}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {[
-                    ['role', 'Role'],
-                    ['access', 'Access'],
-                    ['status', 'Status'],
-                    ['updated_at', 'Last Active'],
+                    ['role', t('usersPage.table.headers.role')],
+                    ['access', t('usersPage.table.headers.access')],
+                    ['status', t('usersPage.table.headers.status')],
+                    ['updated_at', t('usersPage.table.headers.lastActive')],
                   ].map(([key, label]) => (
                     <DropdownMenuCheckboxItem
                       key={key}
@@ -715,16 +727,16 @@ export function AdminPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <button type="button" className="btn-secondary gap-2 rounded-2xl" onClick={() => exportUsersCsv(sortedUsers)}>
+              <button type="button" className="btn-secondary gap-2 rounded-2xl" onClick={() => exportUsersCsv(sortedUsers, t)}>
                 <Download className="h-4 w-4" />
-                Export
+                {t('usersPage.table.export')}
               </button>
             </div>
           </div>
 
           {statusTab === 'suspended' ? (
             <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
-              Suspended accounts are not modeled separately in the current backend. Use <span className="font-semibold">Inactive</span> to disable access.
+              {t('usersPage.table.suspendedNotice')}
             </div>
           ) : null}
 
@@ -735,23 +747,23 @@ export function AdminPage() {
                   <tr>
                   <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
                     <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('name')}>
-                      Name
+                      {t('usersPage.table.headers.name')}
                       <ArrowUpDown className="h-4 w-4 text-slate-400" />
                       </button>
                     </th>
                     {visibleColumns.role ? (
                       <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
                         <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('role')}>
-                          Role
+                          {t('usersPage.table.headers.role')}
                           <ArrowUpDown className="h-4 w-4 text-slate-400" />
                         </button>
                       </th>
                     ) : null}
-                    {visibleColumns.access ? <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">Access</th> : null}
+                    {visibleColumns.access ? <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">{t('usersPage.table.headers.access')}</th> : null}
                     {visibleColumns.status ? (
                       <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
                         <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('status')}>
-                          Status
+                          {t('usersPage.table.headers.status')}
                           <ArrowUpDown className="h-4 w-4 text-slate-400" />
                         </button>
                       </th>
@@ -759,19 +771,19 @@ export function AdminPage() {
                     {visibleColumns.updated_at ? (
                       <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
                         <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('updated_at')}>
-                          Last Active
+                          {t('usersPage.table.headers.lastActive')}
                           <ArrowUpDown className="h-4 w-4 text-slate-400" />
                         </button>
                       </th>
                     ) : null}
-                    <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">Actions</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">{t('usersPage.table.headers.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loadingUsers ? (
                     <tr>
                       <td colSpan="6" className="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
-                        Loading users...
+                        {t('usersPage.table.states.loading')}
                       </td>
                     </tr>
                   ) : null}
@@ -779,15 +791,16 @@ export function AdminPage() {
                   {!loadingUsers && !paginatedUsers.length ? (
                     <tr>
                       <td colSpan="6" className="px-4 py-10">
-                        <EmptyState title="No users found" description="Try another search or switch account status." />
+                        <EmptyState title={t('usersPage.table.states.noneFound')} description={t('usersPage.table.states.noneFoundDesc')} />
                       </td>
                     </tr>
                   ) : null}
 
-                  {!loadingUsers
-                    ? paginatedUsers.map((user) => {
-                      const primaryRole = user.role || user.roles?.[0] || 'patient'
-                      const accessLabel = `${user.permissions?.length || 0} permission${user.permissions?.length === 1 ? '' : 's'}`
+                    {!loadingUsers
+                      ? paginatedUsers.map((user) => {
+                        const primaryRole = user.role || user.roles?.[0] || 'patient'
+                        const count = user.permissions?.length || 0
+                        const accessLabel = t('usersPage.table.states.permissions', { count })
                       return (
                         <tr key={user.id} className="border-t border-slate-200 transition hover:bg-slate-50/70 dark:border-slate-800 dark:hover:bg-slate-950/40">
                           <td className="px-3 py-3">
@@ -805,27 +818,27 @@ export function AdminPage() {
                           </td>
                           {visibleColumns.role ? (
                             <td className="px-3 py-3">
-                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${roleBadgeClass(primaryRole)}`}>
-                                {primaryRole}
+                              <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${roleBadgeClass(primaryRole)}`}>
+                                {t(`roles.${primaryRole}`)}
                               </span>
                             </td>
                           ) : null}
                           {visibleColumns.access ? (
-                            <td className="px-3 py-3 text-xs text-slate-600 dark:text-slate-300">
+                            <td className="px-3 py-3 text-xs text-slate-600 dark:text-slate-400">
                               <p>{accessLabel}</p>
                               <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">Created {formatDateTime(user.created_at)}</p>
                             </td>
                           ) : null}
                           {visibleColumns.status ? (
                             <td className="px-3 py-3">
-                              <StatusBadge tone={user.is_active ? 'success' : 'neutral'}>
-                                {user.is_active ? 'Active' : 'Inactive'}
-                              </StatusBadge>
+                              <button type="button" className="group flex items-center gap-2" onClick={() => requestStatusToggle(user)}>
+                                <StatusBadge status={user.is_active ? 'active' : 'inactive'} />
+                              </button>
                             </td>
                           ) : null}
                           {visibleColumns.updated_at ? (
-                            <td className="px-3 py-3 text-xs text-slate-600 dark:text-slate-300">
-                              {formatRelativeTime(user.updated_at || user.created_at)}
+                            <td className="px-3 py-3 text-xs text-slate-500 dark:text-slate-400">
+                              {formatRelativeTime(user.updated_at || user.created_at, t)}
                             </td>
                           ) : null}
                           <td className="px-3 py-3">
@@ -862,12 +875,12 @@ export function AdminPage() {
 
           <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Showing {showingFrom}-{showingTo} of {sortedUsers.length} results
+              {t('common.showing', { from: showingFrom, to: showingTo, total: sortedUsers.length })}
             </p>
 
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                <span>Rows</span>
+                <span>{t('common.rows')}</span>
                 <div className="min-w-[88px]">
                   <AppSelect
                     value={String(pageSize)}
@@ -884,7 +897,7 @@ export function AdminPage() {
                   disabled={page === 1}
                   onClick={() => setPage((current) => Math.max(1, current - 1))}
                 >
-                  Previous
+                  {t('common.previous')}
                 </button>
 
                 <div className="flex items-center gap-2">
@@ -919,7 +932,7 @@ export function AdminPage() {
                   disabled={page >= pageCount}
                   onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
                 >
-                  Next
+                  {t('common.next')}
                 </button>
               </div>
             </div>
@@ -943,13 +956,15 @@ export function AdminPage() {
 
       <ConfirmDialog
         open={showStatusConfirm}
-        title={pendingStatusUser?.is_active ? 'Disable user account?' : 'Enable user account?'}
+        title={pendingStatusUser?.is_active ? t('common.disableAccount') : t('common.enableAccount')}
         description={
           pendingStatusUser
-            ? `${pendingStatusUser.name} will be ${pendingStatusUser.is_active ? 'marked inactive and will lose access until re-enabled.' : 'restored and allowed to sign in again.'}`
-            : 'Confirm account status change.'
+            ? pendingStatusUser.is_active 
+                ? t('common.disableDesc', { name: pendingStatusUser.name })
+                : t('common.enableDesc', { name: pendingStatusUser.name })
+            : t('common.confirmStatusChange')
         }
-        confirmLabel={pendingStatusUser?.is_active ? 'Disable User' : 'Enable User'}
+        confirmLabel={pendingStatusUser?.is_active ? t('common.disableUser') : t('common.enableUser')}
         confirmTone="danger"
         loading={savingUser}
         onCancel={() => {

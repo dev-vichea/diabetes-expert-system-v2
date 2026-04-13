@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
 import { AppSelect } from '@/components/ui'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 const EMPTY_SYMPTOM_FORM = {
   symptom_code: '',
@@ -21,6 +22,7 @@ const EMPTY_LAB_FORM = {
 }
 
 export function PatientHistoryPage() {
+  const { t } = useLanguage()
   const { patientId } = useParams()
   const [history, setHistory] = useState(null)
   const [profile, setProfile] = useState({
@@ -53,7 +55,7 @@ export function PatientHistoryPage() {
         notes: data?.patient?.notes || '',
       })
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to load patient history'))
+      setError(getApiErrorMessage(err, t('historyPage.errors.loadHistory', 'Failed to load patient history')))
     } finally {
       setLoading(false)
     }
@@ -78,7 +80,7 @@ export function PatientHistoryPage() {
       })
       await loadHistory()
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to update profile'))
+      setError(getApiErrorMessage(err, t('historyPage.errors.updateProfile', 'Failed to update profile')))
     } finally {
       setSavingProfile(false)
     }
@@ -100,7 +102,7 @@ export function PatientHistoryPage() {
       setSymptomForm(EMPTY_SYMPTOM_FORM)
       await loadHistory()
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to add symptom'))
+      setError(getApiErrorMessage(err, t('historyPage.errors.addSymptom', 'Failed to add symptom')))
     } finally {
       setSavingSymptom(false)
     }
@@ -122,7 +124,7 @@ export function PatientHistoryPage() {
       setLabForm(EMPTY_LAB_FORM)
       await loadHistory()
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to add lab result'))
+      setError(getApiErrorMessage(err, t('historyPage.errors.addLab', 'Failed to add lab result')))
     } finally {
       setSavingLab(false)
     }
@@ -138,70 +140,70 @@ export function PatientHistoryPage() {
       <section className="surface p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="section-title">Patient Profile</h2>
-            <p className="section-subtitle mt-1">Manage demographics and monitor case history over time.</p>
+            <h2 className="section-title">{t('historyPage.profile.title', 'Patient Profile')}</h2>
+            <p className="section-subtitle mt-1">{t('historyPage.profile.desc', 'Manage demographics and monitor case history over time.')}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link to="/patients" className="btn-secondary">Back to List</Link>
-            <Link to={`/diagnosis?patient_id=${patientId}`} className="btn-primary">Run Assessment</Link>
+            <Link to="/patients" className="btn-secondary">{t('historyPage.profile.back', 'Back to List')}</Link>
+            <Link to={`/diagnosis?patient_id=${patientId}`} className="btn-primary">{t('historyPage.profile.assess', 'Run Assessment')}</Link>
           </div>
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-xs text-slate-500">Symptoms</p>
+            <p className="text-xs text-slate-500">{t('historyPage.sections.symptoms', 'Symptoms')}</p>
             <p className="text-xl font-bold text-slate-900">{symptomCount}</p>
           </div>
           <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-xs text-slate-500">Lab Results</p>
+            <p className="text-xs text-slate-500">{t('historyPage.sections.labResults', 'Lab Results')}</p>
             <p className="text-xl font-bold text-slate-900">{labCount}</p>
           </div>
           <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-xs text-slate-500">Diagnoses</p>
+            <p className="text-xs text-slate-500">{t('historyPage.sections.diagnosisHistory', 'Diagnoses')}</p>
             <p className="text-xl font-bold text-slate-900">{diagnosisCount}</p>
           </div>
         </div>
 
-        {loading ? <p className="state-box mt-4">Loading patient history...</p> : null}
+        {loading ? <p className="state-box mt-4">{t('patientsPage.table.loading', 'Loading patient history...')}</p> : null}
 
         <form onSubmit={updateProfile} className="mt-4 grid gap-3 md:grid-cols-2">
           <label className="block md:col-span-2">
-            <span className="label-text">Full Name</span>
+            <span className="label-text">{t('patientsPage.form.fullName', 'Full Name')}</span>
             <input className="input-base" required value={profile.full_name} onChange={(event) => setProfile({ ...profile, full_name: event.target.value })} />
           </label>
 
           <label className="block">
-            <span className="label-text">Gender</span>
+            <span className="label-text">{t('patientsPage.form.gender', 'Gender')}</span>
             <AppSelect
               value={profile.gender}
               onValueChange={(value) => setProfile({ ...profile, gender: value })}
               options={[
-                { value: 'unknown', label: 'Unknown' },
-                { value: 'male', label: 'Male' },
-                { value: 'female', label: 'Female' },
-                { value: 'other', label: 'Other' },
+                { value: 'unknown', label: t('common.unknown', 'Unknown') },
+                { value: 'male', label: t('common.male', 'Male') },
+                { value: 'female', label: t('common.female', 'Female') },
+                { value: 'other', label: t('common.other', 'Other') },
               ]}
             />
           </label>
 
           <label className="block">
-            <span className="label-text">Date of Birth</span>
+            <span className="label-text">{t('patientsPage.form.dateOfBirth', 'Date of Birth')}</span>
             <input className="input-base" type="date" value={profile.date_of_birth || ''} onChange={(event) => setProfile({ ...profile, date_of_birth: event.target.value })} />
           </label>
 
           <label className="block">
-            <span className="label-text">Phone</span>
+            <span className="label-text">{t('patientsPage.form.phone', 'Phone')}</span>
             <input className="input-base" value={profile.phone || ''} onChange={(event) => setProfile({ ...profile, phone: event.target.value })} />
           </label>
 
           <label className="block md:col-span-2">
-            <span className="label-text">Notes</span>
+            <span className="label-text">{t('patientsPage.form.notes', 'Notes')}</span>
             <textarea className="input-base" value={profile.notes || ''} rows={3} onChange={(event) => setProfile({ ...profile, notes: event.target.value })} />
           </label>
 
           <div className="md:col-span-2">
             <button type="submit" className="btn-primary" disabled={savingProfile || loading || !patient}>
-              {savingProfile ? 'Saving...' : 'Update Profile'}
+              {savingProfile ? t('historyPage.profile.saving', 'Saving...') : t('historyPage.profile.updateProfile', 'Update Profile')}
             </button>
           </div>
         </form>
@@ -209,20 +211,20 @@ export function PatientHistoryPage() {
 
       <div className="grid gap-5 xl:grid-cols-2">
         <section className="surface p-5 sm:p-6">
-          <h3 className="section-title">Symptoms</h3>
+          <h3 className="section-title">{t('historyPage.sections.symptoms', 'Symptoms')}</h3>
 
           <form className="mt-4 grid gap-3" onSubmit={addSymptom}>
             <input
               className="input-base"
               required
-              placeholder="Symptom code (e.g. fatigue)"
+              placeholder={t('historyPage.symptomForm.code', 'Symptom code (e.g. fatigue)')}
               value={symptomForm.symptom_code}
               onChange={(event) => setSymptomForm({ ...symptomForm, symptom_code: event.target.value })}
             />
             <input
               className="input-base"
               required
-              placeholder="Symptom name"
+              placeholder={t('historyPage.symptomForm.name', 'Symptom name')}
               value={symptomForm.symptom_name}
               onChange={(event) => setSymptomForm({ ...symptomForm, symptom_name: event.target.value })}
             />
@@ -231,7 +233,7 @@ export function PatientHistoryPage() {
               type="number"
               min="1"
               max="10"
-              placeholder="Severity 1-10"
+              placeholder={t('historyPage.symptomForm.severity', 'Severity 1-10')}
               value={symptomForm.severity}
               onChange={(event) => setSymptomForm({ ...symptomForm, severity: event.target.value })}
             />
@@ -241,17 +243,17 @@ export function PatientHistoryPage() {
                 checked={symptomForm.present}
                 onChange={(event) => setSymptomForm({ ...symptomForm, present: event.target.checked })}
               />
-              Present now
+              {t('historyPage.symptomForm.present', 'Present now')}
             </label>
             <textarea
               className="input-base"
               rows={2}
-              placeholder="Notes"
+              placeholder={t('historyPage.symptomForm.notes', 'Notes')}
               value={symptomForm.notes}
               onChange={(event) => setSymptomForm({ ...symptomForm, notes: event.target.value })}
             />
             <button type="submit" className="btn-primary" disabled={savingSymptom || !patient}>
-              {savingSymptom ? 'Saving...' : 'Add Symptom'}
+              {savingSymptom ? t('historyPage.profile.saving', 'Saving...') : t('historyPage.symptomForm.add', 'Add Symptom')}
             </button>
           </form>
 
@@ -259,10 +261,10 @@ export function PatientHistoryPage() {
             <table className="table-base">
               <thead>
                 <tr>
-                  <th>Symptom</th>
-                  <th>Severity</th>
-                  <th>Present</th>
-                  <th>Recorded</th>
+                  <th>{t('historyPage.symptomForm.name', 'Symptom')}</th>
+                  <th>{t('historyPage.symptomForm.severity', 'Severity')}</th>
+                  <th>{t('historyPage.symptomForm.present', 'Present')}</th>
+                  <th>{t('historyPage.sections.recorded', 'Recorded')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -270,13 +272,13 @@ export function PatientHistoryPage() {
                   <tr key={symptom.id}>
                     <td>{symptom.symptom_name}</td>
                     <td>{symptom.severity ?? 'N/A'}</td>
-                    <td>{symptom.present ? 'Yes' : 'No'}</td>
+                    <td>{symptom.present ? t('common.yes', 'Yes') : t('common.noSelection', 'No')}</td>
                     <td>{formatDateTime(symptom.recorded_at)}</td>
                   </tr>
                 ))}
                 {!history?.symptoms?.length ? (
                   <tr>
-                    <td colSpan="4"><div className="state-box">No symptom history.</div></td>
+                    <td colSpan="4"><div className="state-box">{t('historyPage.symptomForm.noHistory', 'No symptom history.')}</div></td>
                   </tr>
                 ) : null}
               </tbody>
@@ -285,29 +287,29 @@ export function PatientHistoryPage() {
         </section>
 
         <section className="surface p-5 sm:p-6">
-          <h3 className="section-title">Lab Results</h3>
+          <h3 className="section-title">{t('historyPage.sections.labResults', 'Lab Results')}</h3>
 
           <form className="mt-4 grid gap-3" onSubmit={addLabResult}>
-            <input className="input-base" required placeholder="Test name" value={labForm.test_name} onChange={(event) => setLabForm({ ...labForm, test_name: event.target.value })} />
+            <input className="input-base" required placeholder={t('historyPage.labForm.testName', 'Test name')} value={labForm.test_name} onChange={(event) => setLabForm({ ...labForm, test_name: event.target.value })} />
             <input
               className="input-base"
               required
               type="number"
               step="0.01"
-              placeholder="Test value"
+              placeholder={t('historyPage.labForm.testValue', 'Test value')}
               value={labForm.test_value}
               onChange={(event) => setLabForm({ ...labForm, test_value: event.target.value })}
             />
-            <input className="input-base" placeholder="Unit" value={labForm.unit} onChange={(event) => setLabForm({ ...labForm, unit: event.target.value })} />
+            <input className="input-base" placeholder={t('historyPage.labForm.unit', 'Unit')} value={labForm.unit} onChange={(event) => setLabForm({ ...labForm, unit: event.target.value })} />
             <input
               className="input-base"
-              placeholder="Reference range"
+              placeholder={t('historyPage.labForm.range', 'Reference range')}
               value={labForm.reference_range}
               onChange={(event) => setLabForm({ ...labForm, reference_range: event.target.value })}
             />
-            <textarea className="input-base" rows={2} placeholder="Notes" value={labForm.notes} onChange={(event) => setLabForm({ ...labForm, notes: event.target.value })} />
+            <textarea className="input-base" rows={2} placeholder={t('historyPage.labForm.notes', 'Notes')} value={labForm.notes} onChange={(event) => setLabForm({ ...labForm, notes: event.target.value })} />
             <button type="submit" className="btn-primary" disabled={savingLab || !patient}>
-              {savingLab ? 'Saving...' : 'Add Lab Result'}
+              {savingLab ? t('historyPage.profile.saving', 'Saving...') : t('historyPage.labForm.add', 'Add Lab Result')}
             </button>
           </form>
 
@@ -315,10 +317,10 @@ export function PatientHistoryPage() {
             <table className="table-base">
               <thead>
                 <tr>
-                  <th>Test</th>
-                  <th>Value</th>
-                  <th>Range</th>
-                  <th>Measured</th>
+                  <th>{t('historyPage.labForm.testName', 'Test')}</th>
+                  <th>{t('historyPage.labForm.testValue', 'Value')}</th>
+                  <th>{t('historyPage.labForm.range', 'Range')}</th>
+                  <th>{t('historyPage.sections.recorded', 'Measured')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -332,7 +334,7 @@ export function PatientHistoryPage() {
                 ))}
                 {!history?.lab_results?.length ? (
                   <tr>
-                    <td colSpan="4"><div className="state-box">No lab history.</div></td>
+                    <td colSpan="4"><div className="state-box">{t('historyPage.labForm.noHistory', 'No lab history.')}</div></td>
                   </tr>
                 ) : null}
               </tbody>
@@ -342,15 +344,15 @@ export function PatientHistoryPage() {
       </div>
 
       <section className="surface p-5 sm:p-6">
-        <h3 className="section-title">Diagnosis History</h3>
+        <h3 className="section-title">{t('historyPage.sections.diagnosisHistory', 'Diagnosis History')}</h3>
         <div className="mt-4 table-wrap">
           <table className="table-base">
             <thead>
               <tr>
-                <th>Diagnosis</th>
-                <th>Certainty</th>
-                <th>By</th>
-                <th>When</th>
+                <th>{t('historyPage.diagnosisTable.diagnosis', 'Diagnosis')}</th>
+                <th>{t('historyPage.diagnosisTable.certainty', 'Certainty')}</th>
+                <th>{t('historyPage.diagnosisTable.by', 'By')}</th>
+                <th>{t('historyPage.sections.recorded_at', 'When')}</th>
               </tr>
             </thead>
             <tbody>
@@ -364,7 +366,7 @@ export function PatientHistoryPage() {
               ))}
               {!history?.diagnosis_history?.length ? (
                 <tr>
-                  <td colSpan="4"><div className="state-box">No diagnosis history yet.</div></td>
+                  <td colSpan="4"><div className="state-box">{t('historyPage.diagnosisTable.noHistory', 'No diagnosis history yet.')}</div></td>
                 </tr>
               ) : null}
             </tbody>

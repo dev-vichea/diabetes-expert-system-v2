@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { DEFAULT_LANGUAGE, LANGUAGE_STORAGE_KEY, normalizeLanguage, translate } from '@/lib/i18n'
+import { DEFAULT_LANGUAGE, LANGUAGE_STORAGE_KEY, normalizeLanguage, translate, translateExact } from '@/lib/i18n'
 
 const LanguageContext = createContext(null)
 
@@ -22,7 +22,8 @@ export function LanguageProvider({ children }) {
     language,
     isKhmer: language === 'km',
     setLanguage: (nextLanguage) => setLanguage(normalizeLanguage(nextLanguage)),
-    t: (key, values) => translate(language, key, values),
+    t: (key, valuesOrFallback, maybeValues) => translate(language, key, valuesOrFallback, maybeValues),
+    tExact: (text) => translateExact(language, text),
   }), [language])
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>

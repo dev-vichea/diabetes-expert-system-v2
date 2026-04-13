@@ -18,16 +18,18 @@ import { AdminUserEditPage } from '../pages/AdminUserEditPage'
 import { RolePermissionsPage } from '../pages/RolePermissionsPage'
 import { UnauthorizedPage } from '../pages/public/UnauthorizedPage'
 import { NotFoundPage } from '../pages/public/NotFoundPage'
+import { LandingPage } from '../pages/LandingPage'
 
 function AuthenticatedRoutes() {
   const { user, logout } = useAuth()
 
   return (
     <Routes>
-      <Route path="/login" element={<Navigate to="/" replace />} />
-      <Route path="/sign-up" element={<Navigate to="/" replace />} />
-      <Route path="/auth/sign-in" element={<Navigate to="/" replace />} />
-      <Route path="/auth/sign-up" element={<Navigate to="/" replace />} />
+      {/* Redirect auth pages to dashboard if already logged in */}
+      <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/sign-up" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/auth/sign-in" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/auth/sign-up" element={<Navigate to="/dashboard" replace />} />
 
       <Route
         element={(
@@ -36,7 +38,11 @@ function AuthenticatedRoutes() {
           </ProtectedRoute>
         )}
       >
-        <Route path="/" element={<DashboardPage />} />
+        {/* Dashboard is no longer at root, but at /dashboard */}
+        <Route path="/dashboard" element={<DashboardPage />} />
+        
+        {/* If user tries to access / direct to dashboard (managed by AppRouter mostly) */}
+        {/* But we'll keep this as a fallback redirect */}
 
         <Route
           path="/diagnosis"
@@ -46,7 +52,7 @@ function AuthenticatedRoutes() {
             </RoleGuard>
           )}
         />
-
+        {/* ... existing routes ... */}
         <Route
           path="/diagnosis/result"
           element={(
@@ -147,7 +153,7 @@ function PublicRoutes() {
       <Route path="/auth/sign-up" element={<Navigate to="/sign-up" replace />} />
       <Route path="/unauthorized" element={<UnauthorizedPage isAuthenticated={false} />} />
       <Route path="/not-found" element={<NotFoundPage isAuthenticated={false} />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
@@ -155,9 +161,13 @@ function PublicRoutes() {
 export function AppRouter() {
   const { user } = useAuth()
 
-  if (user) {
-    return <AuthenticatedRoutes />
-  }
+  return (
+    <Routes>
+      {/* Root is ALWAYS the Landing Page */}
+      <Route path="/" element={<LandingPage />} />
 
-  return <PublicRoutes />
+      {/* Wildcard to sub-routers */}
+      <Route path="/*" element={user ? <AuthenticatedRoutes /> : <PublicRoutes />} />
+    </Routes>
+  )
 }

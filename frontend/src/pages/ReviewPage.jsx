@@ -13,8 +13,10 @@ import {
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
 import { EmptyState, ErrorAlert } from '@/components/ui'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export function ReviewPage() {
+  const { t, tExact } = useLanguage()
   const [results, setResults] = useState([])
   const [selectedResultId, setSelectedResultId] = useState(null)
   
@@ -43,7 +45,7 @@ export function ReviewPage() {
         setSelectedResultId(null)
       }
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to load diagnosis review list'))
+      setError(getApiErrorMessage(err, t('reviewPage.states.loadingFailed', 'Failed to load diagnosis review list')))
     } finally {
       setLoading(false)
     }
@@ -65,7 +67,7 @@ export function ReviewPage() {
     if (!selectedResultId) return
 
     if (isUrgent && !urgentReason.trim()) {
-      setError('Urgent reason is required when urgent flag is enabled.')
+      setError(t('reviewPage.doctorReview.urgentReasonRequired', 'Urgent reason is required when urgent flag is enabled.'))
       return
     }
 
@@ -80,7 +82,7 @@ export function ReviewPage() {
       })
       await loadResults()
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to save diagnosis review'))
+      setError(getApiErrorMessage(err, t('reviewPage.doctorReview.saveFailed', 'Failed to save diagnosis review')))
     } finally {
       setSaving(false)
     }
@@ -107,17 +109,17 @@ export function ReviewPage() {
         
         {/* Inbox Header */}
         <div className="border-b border-slate-200 bg-slate-50/50 p-4 dark:border-[#1b2342] dark:bg-[#070b1b]">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Patient Review Queue</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t('reviewPage.queue.title', 'Patient Review Queue')}</h2>
           <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
-            <span>{pendingCount} pending reviews</span>
-            <span className="flex items-center gap-1"><Clock className="h-3 w-3"/> Auto-updating</span>
+            <span>{t('reviewPage.queue.pendingCount', '{{count}} pending reviews', { count: pendingCount })}</span>
+            <span className="flex items-center gap-1"><Clock className="h-3 w-3"/> {t('reviewPage.queue.autoUpdating', 'Auto-updating')}</span>
           </div>
           
           <div className="mt-4 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input 
               type="text" 
-              placeholder="Search patients..." 
+              placeholder={t('reviewPage.queue.searchPlaceholder', 'Search patients...')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="input-base w-full pl-9 py-2 text-sm"
@@ -130,13 +132,13 @@ export function ReviewPage() {
           {loading && !results.length && (
             <div className="p-4 text-center text-sm text-slate-500 flex justify-center items-center gap-2">
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-600 border-t-transparent" />
-              Loading queue...
+              {t('reviewPage.states.loading', 'Loading queue...')}
             </div>
           )}
           
           {!loading && filteredResults.length === 0 && (
             <div className="p-8 text-center text-sm text-slate-500">
-              {searchQuery ? "No patients match your search." : "Queue is entirely empty. Great job!"}
+              {searchQuery ? t('reviewPage.states.noMatch', 'No patients match your search.') : t('reviewPage.states.empty', 'Queue is entirely empty. Great job!')}
             </div>
           )}
 
@@ -163,7 +165,7 @@ export function ReviewPage() {
                       <Circle className={`h-4 w-4 shrink-0 ${isCritical ? 'text-amber-500 fill-amber-500/10' : 'text-cyan-500 fill-cyan-500/10'}`} />
                     )}
                     <span className={`truncate font-medium ${!isReviewed ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>
-                      {result.patient_name || 'Unknown Patient'}
+                      {result.patient_name || t('reviewPage.states.unknownPatient', 'Unknown Patient')}
                     </span>
                   </div>
                   <span className="shrink-0 text-[10px] text-slate-400">
@@ -173,7 +175,7 @@ export function ReviewPage() {
                 
                 <div className="mt-1.5 pl-6">
                   <p className={`truncate text-xs ${isCritical ? 'text-rose-600 dark:text-rose-400 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>
-                    {result.diagnosis}
+                    {tExact(result.diagnosis)}
                   </p>
                   
                   <div className="mt-2 flex items-center gap-2">
@@ -182,10 +184,10 @@ export function ReviewPage() {
                         ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400'
                         : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
                     }`}>
-                      {isCritical ? 'URGENT' : 'Standard'}
+                      {isCritical ? t('reviewPage.states.urgent', 'URGENT') : t('reviewPage.states.standard', 'Standard')}
                     </span>
                     <span className="text-[10px] text-slate-400">
-                      Score: {result.certainty}/100
+                      {t('reviewPage.states.score', 'Score')}: {result.certainty}/100
                     </span>
                   </div>
                 </div>
@@ -203,8 +205,8 @@ export function ReviewPage() {
           <div className="flex h-full items-center justify-center p-8">
             <EmptyState 
               icon={FileText} 
-              title="No Patient Selected" 
-              description="Select a diagnosis from the queue on the left to review clinical output and append your notes." 
+              title={t('reviewPage.details.noPatientSelected', 'No Patient Selected')}
+              description={t('reviewPage.details.noPatientSelectedDesc', 'Select a diagnosis from the queue on the left to review clinical output and append your notes.')}
             />
           </div>
         ) : (
@@ -215,12 +217,12 @@ export function ReviewPage() {
                 <div>
                   <h1 className="text-2xl font-bold flex items-center gap-3 text-slate-900 dark:text-white">
                     <User className="h-6 w-6 text-slate-400" />
-                    {selectedResult.patient_name || 'Patient'}
+                    {selectedResult.patient_name || t('reviewPage.states.unknownPatient', 'Patient')}
                   </h1>
                   <p className="mt-1 flex items-center gap-2 text-sm text-slate-500">
-                    <Activity className="h-4 w-4" /> Assessment Record #{selectedResult.id}
+                    <Activity className="h-4 w-4" /> {t('reviewPage.details.assessmentRecord', 'Assessment Record')} #{selectedResult.id}
                     <span className="mx-2 text-slate-300">|</span>
-                    Generated {formatDateTime(selectedResult.created_at)}
+                    {t('reviewPage.details.generated', 'Generated')} {formatDateTime(selectedResult.created_at)}
                   </p>
                 </div>
                 
@@ -228,12 +230,12 @@ export function ReviewPage() {
                   {selectedResult.reviewed_at ? (
                     <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800">
                       <CheckCircle className="h-4 w-4" />
-                      Reviewed
+                      {t('reviewPage.details.reviewed', 'Reviewed')}
                     </div>
                   ) : (
                      <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800">
                       <AlertCircle className="h-4 w-4" />
-                      Pending Doctor Review
+                      {t('reviewPage.details.pendingReview', 'Pending Doctor Review')}
                     </div>
                   )}
                 </div>
@@ -254,15 +256,15 @@ export function ReviewPage() {
 
                 <div className="relative z-10 flex items-center justify-between">
                    <div>
-                      <p className="text-sm font-medium uppercase tracking-wider opacity-80">AI Diagnostic Output</p>
-                      <h2 className="mt-1 text-3xl font-bold">{selectedResult.diagnosis}</h2>
+                      <p className="text-sm font-medium uppercase tracking-wider opacity-80">{t('reviewPage.details.aiOutput', 'AI Diagnostic Output')}</p>
+                      <h2 className="mt-1 text-3xl font-bold">{tExact(selectedResult.diagnosis)}</h2>
                    </div>
                    <div className="text-right flex flex-col items-end">
                       <div className="flex items-baseline gap-1">
                         <span className="text-5xl font-black">{selectedResult.certainty}</span>
                         <span className="text-lg opacity-70">/100</span>
                       </div>
-                      <p className="text-xs font-medium uppercase tracking-widest opacity-80">Confidence Score</p>
+                      <p className="text-xs font-medium uppercase tracking-widest opacity-80">{t('reviewPage.details.confidenceScore', 'Confidence Score')}</p>
                    </div>
                 </div>
                 
@@ -270,7 +272,7 @@ export function ReviewPage() {
                   <div className="mt-5 rounded-lg bg-white/20 p-3 text-sm font-medium backdrop-blur-sm border border-white/30 flex items-start gap-2">
                     <AlertCircle className="h-5 w-5 shrink-0" />
                     <div>
-                      <strong>Critical Warning:</strong> {selectedResult.urgent_reason || 'This case requires immediate attention.'}
+                      <strong>{t('reviewPage.details.criticalWarning', 'Critical Warning')}:</strong> {selectedResult.urgent_reason || t('reviewPage.details.defaultCriticalMsg', 'This case requires immediate attention.')}
                     </div>
                   </div>
                 )}
@@ -285,22 +287,22 @@ export function ReviewPage() {
                 
                 <div>
                   <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-500">
-                    <FileText className="h-4 w-4" /> Clinical Evidence
+                    <FileText className="h-4 w-4" /> {t('reviewPage.evidence.title', 'Clinical Evidence')}
                   </h3>
                   <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1b2342] dark:bg-[#0c1024]">
-                    <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Recommendations</h4>
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-white">{t('reviewPage.evidence.recommendations', 'Recommendations')}</h4>
                     <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                      {selectedResult.recommendation || 'No specific recommendations provided by the engine.'}
+                      {selectedResult.recommendation || t('reviewPage.evidence.noRecommendations', 'No specific recommendations provided by the engine.')}
                     </p>
 
                     {(selectedResult.triggered_rules || []).length > 0 && (
                       <>
-                        <h4 className="mt-5 text-sm font-semibold text-slate-900 dark:text-white">Triggered Rules</h4>
+                        <h4 className="mt-5 text-sm font-semibold text-slate-900 dark:text-white">{t('reviewPage.evidence.triggeredRules', 'Triggered Rules')}</h4>
                         <ul className="mt-2 space-y-2">
                           {selectedResult.triggered_rules.map((rule) => (
                             <li key={rule.id} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
                               <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-500" />
-                              <span dangerouslySetInnerHTML={{__html: rule.name.replace(/\n/g, '<br/>')}} />
+                              <span dangerouslySetInnerHTML={{__html: tExact(rule.name)}} />
                             </li>
                           ))}
                         </ul>
@@ -314,16 +316,16 @@ export function ReviewPage() {
               {/* Annotation Pane */}
               <div>
                 <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-500">
-                  <CheckCircle2 className="h-4 w-4" /> Doctor's Review
+                  <CheckCircle2 className="h-4 w-4" /> {t('reviewPage.doctorReview.title', "Doctor's Review")}
                 </h3>
                 
                 <form onSubmit={saveReview} className="mt-3 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1b2342] dark:bg-[#0c1024]">
                   
                   <label className="block">
-                    <span className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Clinical Notes & Addendum</span>
+                    <span className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">{t('reviewPage.doctorReview.notesLabel', 'Clinical Notes & Addendum')}</span>
                     <textarea 
                       className="input-base min-h-[200px] resize-y text-sm" 
-                      placeholder="Add your own assessment notes, treatment plan adjustments, or patient follow-up instructions here..."
+                      placeholder={t('reviewPage.doctorReview.notesPlaceholder', 'Add your own assessment notes, treatment plan adjustments, or patient follow-up instructions here...')}
                       value={reviewNote} 
                       onChange={(event) => setReviewNote(event.target.value)} 
                     />
@@ -337,14 +339,14 @@ export function ReviewPage() {
                         checked={isUrgent} 
                         onChange={(event) => setIsUrgent(event.target.checked)} 
                       />
-                      <span className="font-semibold text-rose-800 dark:text-rose-400">Flag as Urgent Case</span>
+                      <span className="font-semibold text-rose-800 dark:text-rose-400">{t('reviewPage.doctorReview.urgentFlag', 'Flag as Urgent Case')}</span>
                     </label>
                     
                     {isUrgent && (
                       <div className="mt-3 pl-8">
                         <textarea 
                           className="input-base border-rose-200 focus:border-rose-400 focus:ring-rose-400 text-sm bg-white dark:bg-[#050816]" 
-                          placeholder="Why is this urgent? (Required)"
+                          placeholder={t('reviewPage.doctorReview.urgentReasonPlaceholder', 'Why is this urgent? (Required)')}
                           rows={4} 
                           value={urgentReason} 
                           onChange={(event) => setUrgentReason(event.target.value)} 
@@ -355,11 +357,11 @@ export function ReviewPage() {
 
                   <div className="mt-2 border-t border-slate-100 pt-4 dark:border-[#1b2342]">
                     <button type="submit" className="btn-primary w-full py-2.5 text-sm font-semibold shadow-md" disabled={saving}>
-                      {saving ? 'Saving Review...' : 'Sign & Submit Review'}
+                      {saving ? t('reviewPage.doctorReview.saving', 'Saving Review...') : t('reviewPage.doctorReview.submit', 'Sign & Submit Review')}
                     </button>
                     {!selectedResult.reviewed_at && (
                       <p className="mt-2 text-center text-xs text-slate-500">
-                        Submitting this form will mark the assessment as Reviewed.
+                        {t('reviewPage.doctorReview.submitNotice', 'Submitting this form will mark the assessment as Reviewed.')}
                       </p>
                     )}
                   </div>

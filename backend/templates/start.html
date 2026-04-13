@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diabetes Expert System — Clinical Decision Support</title>
+  <meta name="description" content="An intelligent clinical decision support system for early detection, risk assessment, and personalised diabetes management." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #040910;
+      --teal:      #00c9b1;
+      --teal-dim:  #14b8a6;
+      --teal-dark: #0d2b2b;
+      --blue:      #3b82f6;
+      --white:     #f0f9ff;
+      --muted:     #94a3b8;
+      --font-head: 'Orbitron', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--white);
+      font-family: var(--font-body);
+      overflow: hidden;
+    }
+
+    /* ─────────────── CANVAS ─────────────── */
+    #particleCanvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ─────────────── RADIAL GRADIENT ─────────────── */
+    .bg-glow {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      background:
+        radial-gradient(ellipse 70% 60% at 20% 20%, rgba(0,201,177,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 80% 80%, rgba(59,130,246,0.06) 0%, transparent 55%),
+        radial-gradient(ellipse 80% 80% at 50% 50%, rgba(13,43,43,0.65) 0%, transparent 100%);
+      animation: bgShift 12s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+
+    @keyframes bgShift {
+      0%   { filter: hue-rotate(0deg)   brightness(1); }
+      100% { filter: hue-rotate(18deg)  brightness(1.08); }
+    }
+
+    /* ─────────────── LAYOUT ─────────────── */
+    .page {
+      position: relative;
+      z-index: 2;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+      opacity: 1;
+      transition: opacity 0.6s ease;
+    }
+
+    .page.fade-out { opacity: 0; }
+
+    /* ─────────────── ICON AREA ─────────────── */
+    .icon-wrap {
+      position: relative;
+      width: 90px;
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2rem;
+      opacity: 0;
+      transform: translateY(24px);
+      animation: fadeUp 0.6s ease forwards 0s;
+    }
+
+    .pulse-ring {
+      position: absolute;
+      inset: -12px;
+      border-radius: 50%;
+      border: 2px solid rgba(0, 201, 177, 0.5);
+      animation: pulseRing 2.4s ease-out infinite;
+    }
+
+    .pulse-ring:nth-child(2) { animation-delay: 0.8s; }
+    .pulse-ring:nth-child(3) { animation-delay: 1.6s; }
+
+    @keyframes pulseRing {
+      0%   { transform: scale(0.85); opacity: 0.8; }
+      100% { transform: scale(1.7);  opacity: 0; }
+    }
+
+    .icon-core {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #052b2b, #0d4a4a);
+      border: 1.5px solid rgba(0, 201, 177, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow:
+        0 0 24px rgba(0,201,177,0.3),
+        0 0 60px rgba(0,201,177,0.12),
+        inset 0 0 20px rgba(0,201,177,0.06);
+    }
+
+    .icon-core svg {
+      width: 42px;
+      height: 42px;
+      filter: drop-shadow(0 0 8px rgba(0,201,177,0.8));
+    }
+
+    /* ─────────────── EYEBROW ─────────────── */
+    .eyebrow {
+      font-family: var(--font-head);
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 0.85rem;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeUp 0.6s ease forwards 0.3s;
+    }
+
+    /* ─────────────── TITLE ─────────────── */
+    .title {
+      font-family: var(--font-head);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: 0.03em;
+      color: var(--white);
+      text-shadow:
+        0 0 30px rgba(0,201,177,0.5),
+        0 0 80px rgba(0,201,177,0.2);
+      min-height: 1.3em;
+      margin-bottom: 1.4rem;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeUp 0.6s ease forwards 0.6s;
+    }
+
+    .title .cursor {
+      display: inline-block;
+      width: 3px;
+      background: var(--teal);
+      margin-left: 4px;
+      animation: blink 0.8s step-end infinite;
+      vertical-align: baseline;
+      height: 0.85em;
+      border-radius: 2px;
+      box-shadow: 0 0 8px var(--teal);
+    }
+
+    @keyframes blink { 0%, 100% { opacity: 1; }  50% { opacity: 0; } }
+
+    /* ─────────────── SUBTITLE ─────────────── */
+    .subtitle {
+      max-width: 560px;
+      font-size: 1.05rem;
+      font-weight: 300;
+      line-height: 1.7;
+      color: var(--muted);
+      margin: 0 auto 2.5rem;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+    }
+
+    .subtitle.visible { opacity: 1; }
+
+    /* ─────────────── BADGES ─────────────── */
+    .badges {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 2.8rem;
+    }
+
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.6rem 1.1rem;
+      border-radius: 999px;
+      border: 1px solid rgba(0,201,177,0.2);
+      background: rgba(0,201,177,0.05);
+      backdrop-filter: blur(8px);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--teal);
+      letter-spacing: 0.02em;
+      opacity: 0;
+      transform: scale(0.85) translateY(10px);
+      transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+    }
+
+    .badge:hover {
+      background: rgba(0,201,177,0.12);
+      box-shadow: 0 0 18px rgba(0,201,177,0.2);
+      transform: scale(1.03) translateY(0);
+    }
+
+    .badge.visible {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+
+    .badge .dot {
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+
+    /* ─────────────── BUTTON ─────────────── */
+    .cta-wrap {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .cta-wrap.visible {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    .btn-start {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.9rem 2.4rem;
+      font-family: var(--font-head);
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #022020;
+      background: linear-gradient(135deg, #00c9b1, #14b8a6 60%, #0d9488);
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      overflow: hidden;
+      outline: none;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      box-shadow:
+        0 0 0 0 rgba(0,201,177,0.4),
+        0 4px 24px rgba(0,201,177,0.3);
+      animation: btnPulse 2.8s ease-in-out infinite;
+    }
+
+    .btn-start::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .btn-start:hover {
+      transform: scale(1.06);
+      box-shadow:
+        0 0 0 6px rgba(0,201,177,0.18),
+        0 8px 32px rgba(0,201,177,0.45);
+      animation: none;
+    }
+
+    .btn-start:hover::after { left: 140%; }
+
+    .btn-start:active { transform: scale(0.98); }
+
+    @keyframes btnPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(0,201,177,0.4), 0 4px 24px rgba(0,201,177,0.3); }
+      50%       { box-shadow: 0 0 0 10px rgba(0,201,177,0), 0 4px 24px rgba(0,201,177,0.3); }
+    }
+
+    .btn-arrow {
+      display: inline-block;
+      transition: transform 0.25s ease;
+    }
+
+    .btn-start:hover .btn-arrow { transform: translateX(4px); }
+
+    /* ─────────────── FOOTER ─────────────── */
+    .footer {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.72rem;
+      color: rgba(148,163,184,0.55);
+      letter-spacing: 0.06em;
+      z-index: 3;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards 1.8s;
+    }
+
+    .footer .status {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.68rem;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 6px #22c55e;
+      animation: blinkDot 1.6s ease-in-out infinite;
+    }
+
+    @keyframes blinkDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+    /* ─────────────── SHARED KEYFRAME ─────────────── */
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ─────────────── SCANLINE OVERLAY ─────────────── */
+    .scanline {
+      position: fixed;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0,0,0,0.04) 3px,
+        rgba(0,0,0,0.04) 4px
+      );
+    }
+
+    /* ─────────────── RESPONSIVE ─────────────── */
+    @media (max-width: 480px) {
+      .badges { flex-direction: column; align-items: center; }
+      .badge  { font-size: 0.78rem; }
+      .title  { font-size: 1.7rem; }
+      .subtitle { font-size: 0.93rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="particleCanvas"></canvas>
+  <div class="bg-glow"></div>
+  <div class="scanline"></div>
+
+  <main class="page" id="page">
+
+    <!-- GLOWING ICON -->
+    <div class="icon-wrap">
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+      <div class="icon-core">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Glucose-drop / cross hybrid -->
+          <circle cx="24" cy="24" r="22" stroke="#00c9b1" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.4"/>
+          <!-- Cross -->
+          <rect x="20" y="12" width="8" height="24" rx="3" fill="#00c9b1" opacity="0.95"/>
+          <rect x="12" y="20" width="24" height="8" rx="3" fill="#00c9b1" opacity="0.95"/>
+          <!-- Dot center -->
+          <circle cx="24" cy="24" r="3" fill="#022020"/>
+          <!-- Small orbit dots -->
+          <circle cx="24" cy="9" r="1.5" fill="#3b82f6" opacity="0.7"/>
+          <circle cx="39" cy="24" r="1.5" fill="#3b82f6" opacity="0.7"/>
+          <circle cx="24" cy="39" r="1.5" fill="#0ea5e9" opacity="0.7"/>
+          <circle cx="9"  cy="24" r="1.5" fill="#0ea5e9" opacity="0.7"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- EYEBROW -->
+    <p class="eyebrow">Clinical Decision Support</p>
+
+    <!-- TITLE (typewriter target) -->
+    <h1 class="title" id="title"><span class="cursor"></span></h1>
+
+    <!-- SUBTITLE -->
+    <p class="subtitle" id="subtitle">
+      An intelligent clinical decision support system for early detection,<br class="hide-sm" />
+      risk assessment, and personalised diabetes management.
+    </p>
+
+    <!-- FEATURE BADGES -->
+    <div class="badges" id="badges">
+      <div class="badge" data-delay="0">
+        <span class="dot">🩺</span> AI-Powered Diagnosis
+      </div>
+      <div class="badge" data-delay="1">
+        <span class="dot">📊</span> Risk Assessment
+      </div>
+      <div class="badge" data-delay="2">
+        <span class="dot">💊</span> Treatment Recommendations
+      </div>
+    </div>
+
+    <!-- CTA BUTTON -->
+    <div class="cta-wrap" id="ctaWrap">
+      <button class="btn-start" id="btnStart">
+        Get Started
+        <span class="btn-arrow">→</span>
+      </button>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="status">
+      <span class="status-dot"></span>
+      Powered by Expert System Technology
+    </div>
+    <div>v1.0 &nbsp;|&nbsp; Norton University — Phnom Penh</div>
+  </footer>
+
+
+  <script>
+    /* ═══════════════════════════════════════════
+       PARTICLE CANVAS — Neural Network Style
+    ═══════════════════════════════════════════ */
+    (function () {
+      const canvas = document.getElementById('particleCanvas');
+      const ctx = canvas.getContext('2d');
+      const PARTICLE_COUNT = 72;
+      const MAX_DIST = 130;
+      let W, H, particles, raf;
+
+      function resize() {
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      }
+
+      function rand(min, max) { return Math.random() * (max - min) + min; }
+
+      function createParticle() {
+        return {
+          x:  rand(0, W),
+          y:  rand(0, H),
+          vx: rand(-0.28, 0.28),
+          vy: rand(-0.22, 0.22),
+          r:  rand(1.2, 2.4),
+          a:  rand(0.3, 0.85),
+        };
+      }
+
+      function init() {
+        resize();
+        particles = Array.from({ length: PARTICLE_COUNT }, createParticle);
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+
+        // Update + draw dots
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+
+          // Wrap edges
+          if (p.x < -10) p.x = W + 10;
+          if (p.x > W + 10) p.x = -10;
+          if (p.y < -10) p.y = H + 10;
+          if (p.y > H + 10) p.y = -10;
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(0,201,177,${p.a})`;
+          ctx.fill();
+        }
+
+        // Draw connecting lines
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const a = particles[i], b = particles[j];
+            const dx = a.x - b.x, dy = a.y - b.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < MAX_DIST) {
+              const opacity = (1 - dist / MAX_DIST) * 0.3;
+              ctx.beginPath();
+              ctx.moveTo(a.x, a.y);
+              ctx.lineTo(b.x, b.y);
+              ctx.strokeStyle = `rgba(0,201,177,${opacity})`;
+              ctx.lineWidth = 0.8;
+              ctx.stroke();
+            }
+          }
+        }
+
+        raf = requestAnimationFrame(draw);
+      }
+
+      window.addEventListener('resize', resize);
+      window.addEventListener('unload', () => cancelAnimationFrame(raf));
+
+      init();
+      draw();
+    })();
+
+
+    /* ═══════════════════════════════════════════
+       TYPEWRITER — then reveal remaining elements
+    ═══════════════════════════════════════════ */
+    (function () {
+      const titleEl   = document.getElementById('title');
+      const subtitle  = document.getElementById('subtitle');
+      const badges    = document.querySelectorAll('.badge');
+      const ctaWrap   = document.getElementById('ctaWrap');
+      const cursor    = titleEl.querySelector('.cursor');
+      const text      = 'Diabetes Expert System';
+      let   idx       = 0;
+
+      // Wait for the title element to be fully visible (animation-delay: 0.6s)
+      setTimeout(() => {
+        const timer = setInterval(() => {
+          cursor.insertAdjacentText('beforebegin', text[idx]);
+          idx++;
+          if (idx >= text.length) {
+            clearInterval(timer);
+
+            // Kill blinking cursor after a beat
+            setTimeout(() => {
+              cursor.style.display = 'none';
+            }, 1400);
+
+            // Reveal subtitle
+            setTimeout(() => {
+              subtitle.classList.add('visible');
+            }, 300);
+
+            // Reveal badges staggered
+            badges.forEach((badge, i) => {
+              setTimeout(() => {
+                badge.classList.add('visible');
+                badge.style.transition = `opacity 0.5s ease ${i * 0.15}s, transform 0.5s ease ${i * 0.15}s, box-shadow 0.3s ease, background 0.3s ease`;
+              }, 500 + i * 200);
+            });
+
+            // Reveal CTA
+            setTimeout(() => {
+              ctaWrap.classList.add('visible');
+            }, 500 + badges.length * 200 + 150);
+          }
+        }, 80);
+      }, 900); // offset after title fade-up animation
+    })();
+
+
+    /* ═══════════════════════════════════════════
+       CTA BUTTON — fade out & redirect
+    ═══════════════════════════════════════════ */
+    document.getElementById('btnStart').addEventListener('click', () => {
+      document.getElementById('page').classList.add('fade-out');
+      setTimeout(() => {
+        window.location.href = 'http://localhost:5173/login';
+      }, 620);
+    });
+  </script>
+
+</body>
+</html>

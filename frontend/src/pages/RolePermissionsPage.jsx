@@ -5,17 +5,20 @@ import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { AdminHeroCard } from '@/components/admin'
 import { Checkbox, EmptyState, ErrorAlert, SectionCard } from '@/components/ui'
 import { notify } from '@/lib/toast'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 const BUILT_IN_ROLE_NAMES = new Set(['patient', 'doctor', 'admin', 'super_admin'])
 
-const PERMISSION_GROUP_LABELS = {
-  user: 'Users',
-  permission: 'Roles & Permissions',
-  patient: 'Patients',
-  symptom: 'Symptoms',
-  lab: 'Lab Results',
-  rule: 'Rules',
-  diagnosis: 'Diagnosis',
+function getPermissionGroupLabels(t) {
+  return {
+    user: t('rolesPage.groups.user'),
+    permission: t('rolesPage.groups.permission'),
+    patient: t('rolesPage.groups.patient'),
+    symptom: t('rolesPage.groups.symptom'),
+    lab: t('rolesPage.groups.lab'),
+    rule: t('rolesPage.groups.rule'),
+    diagnosis: t('rolesPage.groups.diagnosis'),
+  }
 }
 
 const EMPTY_FORM = {
@@ -29,8 +32,9 @@ function getPermissionGroup(code) {
   return String(code || '').split('.')[0] || 'other'
 }
 
-function getPermissionGroupLabel(group) {
-  if (PERMISSION_GROUP_LABELS[group]) return PERMISSION_GROUP_LABELS[group]
+function getPermissionGroupLabel(group, t) {
+  const labels = getPermissionGroupLabels(t)
+  if (labels[group]) return labels[group]
   return group
     .split(/[_-]/)
     .filter(Boolean)
@@ -62,6 +66,7 @@ function roleBadgeClass(roleName) {
 }
 
 export function RolePermissionsPage() {
+  const { t } = useLanguage()
   const { user } = useAuth()
   const [roles, setRoles] = useState([])
   const [permissions, setPermissions] = useState([])
@@ -92,13 +97,13 @@ export function RolePermissionsPage() {
     })
 
     return Array.from(groups.entries())
-      .sort(([left], [right]) => getPermissionGroupLabel(left).localeCompare(getPermissionGroupLabel(right), undefined, { sensitivity: 'base' }))
+      .sort(([left], [right]) => getPermissionGroupLabel(left, t).localeCompare(getPermissionGroupLabel(right, t), undefined, { sensitivity: 'base' }))
       .map(([group, items]) => ({
         key: group,
-        label: getPermissionGroupLabel(group),
+        label: getPermissionGroupLabel(group, t),
         items: [...items].sort(sortPermissionItems),
       }))
-  }, [permissions])
+  }, [permissions, t])
 
   async function loadPage() {
     setLoading(true)
@@ -128,7 +133,7 @@ export function RolePermissionsPage() {
         })
       }
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to load roles and permissions'))
+      setError(getApiErrorMessage(err, t('rolesPage.notifications.loadError')))
     } finally {
       setLoading(false)
     }
@@ -173,17 +178,17 @@ export function RolePermissionsPage() {
 
     const roleName = normalizeRoleName(form.name)
     if (!roleName) {
-      notify.warning('Role name is required.')
+      notify.warning(t('rolesPage.notifications.nameRequired'))
       return
     }
     if (!form.permissions.length) {
-      notify.warning('Select at least one permission.')
+      notify.warning(t('rolesPage.notifications.permissionRequired'))
       return
     }
 
     setSaving(true)
     setError('')
-    const loadingToast = notify.loading(form.id ? 'Saving role...' : 'Creating role...')
+    const loadingToast = notify.loading(form.id ? t('rolesPage.notifications.saving') : t('rolesPage.notifications.creating'))
 
     try {
       const payload = {
@@ -200,11 +205,11 @@ export function RolePermissionsPage() {
 
       await loadPage()
       notify.dismiss(loadingToast)
-      notify.success(form.id ? 'Role updated successfully.' : 'Role created successfully.')
+      notify.success(form.id ? t('rolesPage.notifications.saveSuccess') : t('rolesPage.notifications.createSuccess'))
       createNewRole()
     } catch (err) {
       notify.dismiss(loadingToast)
-      notify.error(getApiErrorMessage(err, form.id ? 'Failed to update role' : 'Failed to create role'))
+      notify.error(getApiErrorMessage(err, form.id ? t('rolesPage.notifications.saveError') : t('rolesPage.notifications.createError')))
     } finally {
       setSaving(false)
     }
@@ -213,12 +218,12 @@ export function RolePermissionsPage() {
   return (
     <div className="space-y-6">
       <AdminHeroCard
-        title="Roles & Permissions"
-        description="Create custom roles and configure the permissions each role can access."
+        title={t('rolesPage.hero.title')}
+        description={t('rolesPage.hero.description')}
         action={canManage ? (
           <button type="button" className="btn-primary gap-2 rounded-2xl px-5 py-3 shadow-lg shadow-cyan-700/15" onClick={createNewRole}>
             <Plus className="h-4 w-4" />
-            New Role
+            {t('rolesPage.hero.newRole')}
           </button>
         ) : null}
       />
@@ -227,19 +232,19 @@ export function RolePermissionsPage() {
 
       <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
         <SectionCard
-          title="Roles"
-          description="Select a role to review its permissions or start a new custom role."
+          title={t('rolesPage.list.title')}
+          description={t('rolesPage.list.description')}
           actions={canManage ? (
             <button type="button" className="btn-secondary px-3 py-2 text-sm" onClick={createNewRole}>
-              New Role
+              {t('rolesPage.list.newRole')}
             </button>
           ) : null}
           className="h-fit xl:sticky xl:top-24"
         >
           <div className="space-y-2">
-            {loading ? <p className="state-box">Loading roles...</p> : null}
+            {loading ? <p className="state-box">{t('rolesPage.list.loading')}</p> : null}
             {!loading && !roles.length ? (
-              <EmptyState title="No roles found" description="Roles will appear here once they are available." />
+              <EmptyState title={t('rolesPage.list.emptyTitle')} description={t('rolesPage.list.emptyDescription')} />
             ) : null}
             {roles.map((role) => {
               const active = String(role.id) === String(selectedRoleId)
@@ -259,10 +264,12 @@ export function RolePermissionsPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{role.name}</p>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{role.user_count} user{role.user_count === 1 ? '' : 's'}</p>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {role.user_count === 1 ? t('rolesPage.list.userCount', { count: role.user_count }) : t('rolesPage.list.userCount_plural', { count: role.user_count })}
+                      </p>
                     </div>
                     <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${roleBadgeClass(role.name)}`}>
-                      {builtIn ? 'Built-in' : 'Custom'}
+                      {builtIn ? t('rolesPage.list.builtIn') : t('rolesPage.list.custom')}
                     </span>
                   </div>
                 </button>
@@ -272,8 +279,8 @@ export function RolePermissionsPage() {
         </SectionCard>
 
         <SectionCard
-          title={form.id ? 'Role Details' : 'New Role'}
-          description={isBuiltInRole ? 'Built-in roles are read-only. Review permissions here, but create a new role to customize access.' : 'Set the role name and choose the permissions that role should grant.'}
+          title={form.id ? t('rolesPage.form.detailsTitle') : t('rolesPage.form.newRoleTitle')}
+          description={isBuiltInRole ? t('rolesPage.form.builtInNotice') : t('rolesPage.form.newRoleDesc')}
           actions={canManage ? (
             <button
               type="submit"
@@ -282,18 +289,18 @@ export function RolePermissionsPage() {
               disabled={saving || loading || isReadOnly}
             >
               <Save className="h-4 w-4" />
-              {saving ? 'Saving...' : form.id ? 'Save Role' : 'Create Role'}
+              {saving ? t('rolesPage.form.saving') : (form.id ? t('rolesPage.form.saveRole') : t('rolesPage.form.createRole'))}
             </button>
           ) : null}
         >
           <form id="role-permissions-form" className="space-y-6" onSubmit={handleSubmit}>
             <label className="block">
-              <span className="label-text">Role Name</span>
+              <span className="label-text">{t('rolesPage.form.roleName')}</span>
               <input
                 className="input-base"
                 value={form.name}
                 onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-                placeholder="Enter role name"
+                placeholder={t('rolesPage.form.roleNamePlaceholder')}
                 disabled={loading || saving || isReadOnly}
                 required
               />
@@ -302,11 +309,11 @@ export function RolePermissionsPage() {
             <div>
               <div className="mb-4 flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-primary-600 dark:text-primary-400" />
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Permissions</h3>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('rolesPage.form.permissions')}</h3>
               </div>
 
               {!groupedPermissions.length ? (
-                <EmptyState title="No permissions found" description="Permission options will appear here once they are available." />
+                <EmptyState title={t('rolesPage.form.noPermissionsTitle')} description={t('rolesPage.form.noPermissionsDesc')} />
               ) : (
                 <div className="grid gap-6 md:grid-cols-2">
                   {groupedPermissions.map((group) => (
@@ -324,7 +331,9 @@ export function RolePermissionsPage() {
                                 onCheckedChange={(value) => togglePermission(permission.code, value === true)}
                               />
                               <div className="min-w-0">
-                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{permission.description || permission.code}</p>
+                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                  {t(`permissions.${permission.code}`, { defaultValue: permission.description || permission.code })}
+                                </p>
                               </div>
                             </label>
                           )

@@ -5,7 +5,7 @@ import { DataTable, EmptyState, ErrorAlert, SectionCard, StatusBadge } from '@/c
 import { useLanguage } from '@/contexts/LanguageContext'
 
 export function DiagnosisHistoryPage() {
-  const { t, language } = useLanguage()
+  const { t, tExact, language } = useLanguage()
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -49,7 +49,7 @@ export function DiagnosisHistoryPage() {
         >
           {results.map((result) => (
             <tr key={result.id}>
-              <td className="font-semibold text-slate-900">{result.diagnosis}</td>
+              <td className="font-semibold text-slate-900">{tExact(result.diagnosis)}</td>
               <td>{result.certainty}</td>
               <td>
                 <StatusBadge tone={result.is_urgent ? 'danger' : 'success'}>
@@ -57,7 +57,7 @@ export function DiagnosisHistoryPage() {
                 </StatusBadge>
               </td>
               <td>{result.review_note || t('common.notAvailable')}</td>
-              <td>{result.recommendation || t('common.notAvailable')}</td>
+              <td>{tExact(result.recommendation) || t('common.notAvailable')}</td>
               <td>{formatDateTime(result.created_at, language, t('common.notAvailable'))}</td>
             </tr>
           ))}
@@ -72,7 +72,7 @@ export function DiagnosisHistoryPage() {
             <div className="rounded-xl bg-slate-50 p-3">
               <p className="text-xs uppercase tracking-wide text-slate-500">{t('myResults.topConclusion')}</p>
               <p className="mt-1 text-sm font-semibold text-slate-900">
-                {latest.explanation_trace?.confidence_calculation?.top_conclusion || t('common.notAvailable')}
+                {tExact(latest.explanation_trace?.confidence_calculation?.top_conclusion) || t('common.notAvailable')}
               </p>
             </div>
             <div className="rounded-xl bg-slate-50 p-3">

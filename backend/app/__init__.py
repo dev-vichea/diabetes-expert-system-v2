@@ -103,15 +103,15 @@ def create_app(config_object=Config):
             if required_seed_tables.issubset(table_names):
                 seed_demo_data()
 
+    from flask import redirect, render_template, url_for
+
     @app.get("/")
     def root():
-        return success_response(
-            data={
-                "message": "Diabetes Expert System backend is running.",
-                "api_base": "/api",
-                "cors_origins": app.config["CORS_ORIGINS"],
-            }
-        )
+        return redirect(url_for("start"))
+
+    @app.get("/start")
+    def start():
+        return render_template("start.html")
 
     @app.get("/health")
     def health():

@@ -22,6 +22,7 @@ import {
 import api, { getApiData } from '@/api/client'
 import { formatDateTime } from '@/lib/datetime'
 import { notify } from '@/lib/toast'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 /* ------------------------------------------------------------------ */
 /*  Date-range presets                                                  */
@@ -57,6 +58,7 @@ const defaultRiskData = [
 /* ------------------------------------------------------------------ */
 export function ClinicalDashboard({ activeRole }) {
   const navigate = useNavigate()
+  const { t, tExact } = useLanguage()
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedRange, setSelectedRange] = useState(null) // null = all-time
@@ -82,10 +84,10 @@ export function ClinicalDashboard({ activeRole }) {
 
   const statsCards = useMemo(() => {
     if (!stats) return []
-    const rangeLabel = DATE_RANGES.find((r) => r.value === selectedRange)?.label || 'All Time'
+    const rangeLabel = DATE_RANGES.find((r) => r.value === selectedRange)?.label || t('dashboard.kpi.allTime', 'All Time')
     return [
       {
-        title: 'Assessments',
+        title: t('dashboard.kpi.assessments', 'Assessments'),
         description: rangeLabel,
         value: stats.assessments.value,
         trend: stats.assessments.trend,
@@ -96,8 +98,8 @@ export function ClinicalDashboard({ activeRole }) {
         href: '/my-results',
       },
       {
-        title: 'Active Patients',
-        description: 'Total registered',
+        title: t('dashboard.kpi.activePatients', 'Active Patients'),
+        description: t('dashboard.kpi.totalRegistered', 'Total registered'),
         value: stats.active_patients.value,
         trend: stats.active_patients.trend,
         icon: Users,
@@ -107,8 +109,8 @@ export function ClinicalDashboard({ activeRole }) {
         href: '/patients',
       },
       {
-        title: 'Urgent Cases',
-        description: 'Awaiting review',
+        title: t('dashboard.kpi.urgentCases', 'Urgent Cases'),
+        description: t('dashboard.kpi.awaitingReview', 'Awaiting review'),
         value: stats.urgent_cases.value,
         trend: stats.urgent_cases.trend,
         icon: AlertTriangle,
@@ -118,7 +120,7 @@ export function ClinicalDashboard({ activeRole }) {
         href: '/review',
       },
       {
-        title: 'Treatment Plans',
+        title: t('dashboard.kpi.treatmentPlans', 'Treatment Plans'),
         description: rangeLabel,
         value: stats.treatment_plans.value,
         trend: stats.treatment_plans.trend,
@@ -141,14 +143,14 @@ export function ClinicalDashboard({ activeRole }) {
           <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/50 to-transparent" />
           <div className="relative z-10 flex h-full items-center p-6 sm:p-8">
             <div className="max-w-xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">{activeRole} dashboard</p>
-              <h2 className="mt-3 text-2xl font-bold text-white sm:text-3xl">Build Better Diabetes Care Pathways</h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">{t('dashboard.hero.dashboardTitle', `${activeRole} dashboard`, { role: activeRole })}</p>
+              <h2 className="mt-3 text-2xl font-bold text-white sm:text-3xl">{t('dashboard.hero.title', 'Build Better Diabetes Care Pathways')}</h2>
               <p className="mt-3 text-sm leading-relaxed text-slate-200">
-                Monitor screening trends, review rule-driven outcomes, and coordinate medical follow-ups from one unified clinical dashboard.
+                {t('dashboard.hero.desc', 'Monitor screening trends, review rule-driven outcomes, and coordinate medical follow-ups from one unified clinical dashboard.')}
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
-                <Link to="/diagnosis" className="btn-primary">Start Assessment</Link>
-                <Link to="/patients" className="btn-secondary">Open Patients</Link>
+                <Link to="/diagnosis" className="btn-primary">{t('dashboard.hero.startAssessment', 'Start Assessment')}</Link>
+                <Link to="/patients" className="btn-secondary">{t('dashboard.hero.openPatients', 'Open Patients')}</Link>
               </div>
             </div>
           </div>
@@ -159,7 +161,7 @@ export function ClinicalDashboard({ activeRole }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <CalendarDays className="h-4 w-4 text-slate-500" />
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Date Range</span>
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('dashboard.toolbar.dateRange', 'Date Range')}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="inline-flex items-center overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-[#1b2342] dark:bg-[#0c1024]">
@@ -185,7 +187,7 @@ export function ClinicalDashboard({ activeRole }) {
             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 dark:border-[#1b2342] dark:bg-[#0c1024] dark:text-slate-400 dark:hover:bg-[#131a33] disabled:opacity-50"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('dashboard.toolbar.refresh', 'Refresh')}
           </button>
         </div>
       </div>
@@ -224,7 +226,7 @@ export function ClinicalDashboard({ activeRole }) {
                       <Area type="monotone" dataKey="value" stroke={card.chartColor} fill={card.chartColor} fillOpacity={0.2} strokeWidth={2} />
                     </AreaChart>
                   </ChartContainer>
-                  <p className="mt-2 text-[10px] font-medium text-slate-400 opacity-0 transition-opacity group-hover:opacity-100">Click to view details →</p>
+                  <p className="mt-2 text-[10px] font-medium text-slate-400 opacity-0 transition-opacity group-hover:opacity-100">{t('dashboard.kpi.clickToView', 'Click to view details →')}</p>
                 </article>
               )
             })}
@@ -234,22 +236,22 @@ export function ClinicalDashboard({ activeRole }) {
           <section className="surface overflow-hidden p-0">
             <header className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-[#1b2342]">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Recent Cases</h3>
-                <p className="mt-1 text-sm text-slate-500">Latest {stats?.recent_cases?.length || 0} diagnoses awaiting review or recently completed.</p>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('dashboard.recent.title', 'Recent Cases')}</h3>
+                <p className="mt-1 text-sm text-slate-500">{t('dashboard.recent.desc', `Latest ${stats?.recent_cases?.length || 0} diagnoses awaiting review or recently completed.`, { count: stats?.recent_cases?.length || 0 })}</p>
               </div>
               <Link to="/patients" className="btn-secondary text-xs px-3 py-1.5 h-8">
-                View All <ArrowRight className="ml-1.5 h-3 w-3" />
+                {t('dashboard.recent.viewAll', 'View All')} <ArrowRight className="ml-1.5 h-3 w-3" />
               </Link>
             </header>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead className="bg-slate-50 dark:bg-[#0c1024]">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Patient</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Diagnosis</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Assessed By</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.recent.columns.patient', 'Patient')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.recent.columns.diagnosis', 'Diagnosis')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.recent.columns.assessedBy', 'Assessed By')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.recent.columns.status', 'Status')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.recent.columns.date', 'Date')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white dark:divide-[#1b2342] dark:bg-[#050816]">
@@ -269,10 +271,10 @@ export function ClinicalDashboard({ activeRole }) {
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-slate-700 dark:text-slate-300">{caseItem.diagnosis}</span>
+                            <span className="text-slate-700 dark:text-slate-300">{tExact(caseItem.diagnosis)}</span>
                             {caseItem.is_urgent && (
                               <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
-                                Urgent
+                                {t('dashboard.recent.urgent', 'Urgent')}
                               </span>
                             )}
                           </div>
@@ -284,7 +286,7 @@ export function ClinicalDashboard({ activeRole }) {
                               ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                               : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                           }`}>
-                            {caseItem.status}
+                            {caseItem.status === 'Reviewed' ? t('dashboard.recent.reviewed', 'Reviewed') : t('dashboard.recent.pending', 'Pending')}
                           </span>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">
@@ -300,7 +302,7 @@ export function ClinicalDashboard({ activeRole }) {
 
           {/* Charts row */}
           <div className="grid items-stretch gap-5 xl:grid-cols-2">
-            <SectionCard className="h-full" title="Diagnosis Volume vs Pending" description="Monthly clinical throughput (live data).">
+            <SectionCard className="h-full" title={t('dashboard.charts.volume', 'Diagnosis Volume vs Pending')} description={t('dashboard.charts.volumeDesc', 'Monthly clinical throughput (live data).')}>
               <ChartContainer config={areaChartConfig} className="h-[300px] w-full">
                 {monthlyTrendData ? (
                   <AreaChart data={monthlyTrendData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
@@ -313,14 +315,14 @@ export function ClinicalDashboard({ activeRole }) {
                     <ChartLegend content={<ChartLegendContent />} />
                   </AreaChart>
                 ) : (
-                  <div className="flex h-full items-center justify-center text-sm text-slate-500">
-                    No trend data available yet. Create some assessments to see trends.
+                  <div className="flex h-full items-center justify-center text-sm text-slate-500 text-center">
+                    {t('dashboard.charts.noTrendData', 'No trend data available yet. Create some assessments to see trends.')}
                   </div>
                 )}
               </ChartContainer>
             </SectionCard>
 
-            <SectionCard className="h-full" title="Risk Classification" description="Click a slice to filter patients by risk level.">
+            <SectionCard className="h-full" title={t('dashboard.charts.risk', 'Risk Classification')} description={t('dashboard.charts.riskDesc', 'Click a slice to filter patients by risk level.')}>
               <ChartContainer config={pieChartConfig} className="h-[300px] w-full">
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent hideLabel />} />

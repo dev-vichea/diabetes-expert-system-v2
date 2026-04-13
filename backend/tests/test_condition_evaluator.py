@@ -1,7 +1,6 @@
 import pytest
 
 from app.expert_system.condition_evaluator import (
-    ConditionEvaluationError,
     ConditionValidationError,
     UnsupportedOperatorError,
     evaluate_conditions,
@@ -63,13 +62,13 @@ def test_normalize_conditions_parses_legacy_expression_without_eval():
     assert evaluate_conditions(conditions, {"frequent_urination": True, "hba1c": 6.7}) is True
 
 
-def test_evaluate_conditions_reports_unknown_fact():
+def test_evaluate_conditions_returns_false_for_unknown_fact():
     conditions = normalize_conditions(
         conditions=[{"fact_key": "hba1c", "operator": ">=", "expected_value": 6.5}],
         allow_legacy_aliases=False,
     )
-    with pytest.raises(ConditionEvaluationError):
-        evaluate_conditions(conditions, {})
+    # Missing facts are not an error — the condition simply evaluates to False.
+    assert evaluate_conditions(conditions, {}) is False
 
 
 def test_normalize_conditions_rejects_unsafe_expression_pattern():
