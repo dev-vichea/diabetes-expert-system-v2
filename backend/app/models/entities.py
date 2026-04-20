@@ -221,7 +221,7 @@ class RuleAction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     rule_id = db.Column(db.Integer, db.ForeignKey("rules.id", ondelete="CASCADE"), nullable=False, index=True)
     action_type = db.Column(db.String(50), nullable=False, default="diagnosis_conclusion")
-    action_value = db.Column(db.String(255), nullable=False)
+    action_value = db.Column(db.Text, nullable=False)
     recommendation = db.Column(db.Text, nullable=True)
     metadata_json = db.Column(db.JSON, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=utc_now)

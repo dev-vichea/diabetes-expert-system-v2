@@ -75,6 +75,18 @@ def _register_cli_commands(app: Flask):
         db.session.commit()
         app.logger.info("Cleaned up %d expired revoked tokens.", deleted)
 
+    @app.cli.command("seed-db")
+    def seed_db():
+        """Seed the database with medical rules, roles, and demo users."""
+        from .utils.seed import seed_demo_data
+        app.logger.info("Starting database seeding...")
+        try:
+            seed_demo_data()
+            app.logger.info("Database seeded successfully.")
+        except Exception as e:
+            app.logger.error("Error during seeding: %s", e)
+            db.session.rollback()
+
 
 def create_app(config_object=Config):
     app = Flask(__name__)
