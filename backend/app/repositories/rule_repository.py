@@ -5,6 +5,7 @@ import re
 from typing import Any
 
 from sqlalchemy import func
+from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.models import Rule, RuleAction, RuleCategory, RuleCondition, RuleVersion
@@ -78,7 +79,11 @@ class RuleRepository:
         status: str | None = None,
         include_archived: bool = False,
     ) -> list[dict]:
-        query = Rule.query
+        query = Rule.query.options(
+            selectinload(Rule.category_ref),
+            selectinload(Rule.conditions),
+            selectinload(Rule.actions),
+        )
 
         if category:
             query = query.filter_by(category=category)
