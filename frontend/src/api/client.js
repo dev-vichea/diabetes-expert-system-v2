@@ -2,10 +2,19 @@ import axios from 'axios'
 
 export const ACCESS_TOKEN_KEY = 'access_token'
 export const REFRESH_TOKEN_KEY = 'refresh_token'
+const DEFAULT_API_TIMEOUT_MS = 20000
+
+function resolveApiTimeout() {
+  const configuredTimeout = Number(import.meta.env.VITE_API_TIMEOUT_MS)
+  if (Number.isFinite(configuredTimeout) && configuredTimeout > 0) {
+    return configuredTimeout
+  }
+  return DEFAULT_API_TIMEOUT_MS
+}
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5001/api',
-  timeout: 10000,
+  timeout: resolveApiTimeout(),
 })
 
 export function getAccessToken() {
