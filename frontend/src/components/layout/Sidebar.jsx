@@ -34,7 +34,7 @@ function splitNavGroups(navItems) {
   return { workspace, system, documents }
 }
 
-const BRAND_LOGO_SRC = '/images/doctor expert.png'
+const BRAND_LOGO_SRC = '/images/logo.png'
 
 export function Sidebar({ navItems, userName, userEmail, activeRole, onLogout, onClose, collapsed = false }) {
   const { t } = useLanguage()
@@ -52,11 +52,11 @@ export function Sidebar({ navItems, userName, userEmail, activeRole, onLogout, o
             >
               <button type="button" aria-label="Diabetes Expert System">
                 {logoVisible ? (
-                  <span className="inline-flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-[#d8edf7] bg-white shadow-sm dark:border-[#24506a] dark:bg-[#0d1b29]">
+                  <span className="inline-flex h-14 w-14 items-center justify-center overflow-hidden">
                     <img
                       src={BRAND_LOGO_SRC}
                       alt="Expert system logo"
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-contain"
                       onError={() => setLogoVisible(false)}
                     />
                   </span>

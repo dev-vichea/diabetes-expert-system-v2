@@ -1,8 +1,11 @@
 import json
 
+from flask import current_app
+
 from app.errors import NotFoundError, ValidationError
 from app.expert_system.inference_engine import run_inference
 from app.models.entities import utc_now
+from app.services.diagnosis_report_service import render_diagnosis_report_pdf
 
 
 class DiagnosisService:
@@ -99,6 +102,21 @@ class DiagnosisService:
         if not result:
             raise NotFoundError("Diagnosis result not found.")
         return self.diagnosis_repository.serialize_result(result)
+
+    def generate_report_pdf(self, diagnosis_result_id: int) -> tuple[bytes, str]:
+        result = self.diagnosis_repository.get_result(diagnosis_result_id)
+        if not result:
+            raise NotFoundError("Diagnosis result not found.")
+
+        return render_diagnosis_report_pdf(
+            result,
+            config={
+                "REPORT_CLINIC_NAME": current_app.config.get("REPORT_CLINIC_NAME"),
+                "REPORT_CLINIC_ADDRESS": current_app.config.get("REPORT_CLINIC_ADDRESS"),
+                "REPORT_CLINIC_PHONE": current_app.config.get("REPORT_CLINIC_PHONE"),
+                "REPORT_CLINIC_EMAIL": current_app.config.get("REPORT_CLINIC_EMAIL"),
+            },
+        )
 
     def review_result(self, diagnosis_result_id: int, payload: dict, current_user: dict) -> dict:
         if not isinstance(payload, dict):

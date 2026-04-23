@@ -114,6 +114,40 @@ def test_diagnosis_flow_for_doctor(client, doctor_auth):
     assert stage_names[:4] == ["triage", "diagnosis", "classification", "recommendation"]
 
 
+def test_diagnosis_report_pdf_download(client, doctor_auth):
+    patient_id = doctor_auth["user"]["patient_id"]
+    if not patient_id:
+        patient_id = _get_demo_patient_id(client)
+
+    create_response = client.post(
+        "/api/diagnosis/",
+        headers=_auth_header(doctor_auth["access_token"]),
+        json={
+            "patient_id": patient_id,
+            "fasting_glucose": 142,
+            "hba1c": 7.1,
+            "frequent_urination": True,
+            "excessive_thirst": True,
+            "fatigue": True,
+        },
+    )
+
+    assert create_response.status_code == 200
+    diagnosis_result_id = create_response.get_json()["data"]["diagnosis_result_id"]
+
+    report_response = client.get(
+        f"/api/diagnosis/{diagnosis_result_id}/report.pdf",
+        headers=_auth_header(doctor_auth["access_token"]),
+    )
+
+    assert report_response.status_code == 200
+    assert report_response.mimetype == "application/pdf"
+    assert report_response.data.startswith(b"%PDF")
+    content_disposition = report_response.headers.get("Content-Disposition", "")
+    assert "attachment;" in content_disposition
+    assert ".pdf" in content_disposition
+
+
 def test_diagnosis_persists_questionnaire_answers(client, doctor_auth, app):
     patient_id = doctor_auth["user"]["patient_id"]
     if not patient_id:

@@ -1,4 +1,6 @@
-from flask import Blueprint, g, request
+from io import BytesIO
+
+from flask import Blueprint, g, request, send_file
 
 from app.dependencies import get_diagnosis_service
 from app.utils.api_response import success_response
@@ -35,6 +37,18 @@ def get_review_diagnoses():
 def get_diagnosis_result(diagnosis_result_id: int):
     result = get_diagnosis_service().get_result(diagnosis_result_id)
     return success_response(data=result)
+
+
+@diagnosis_bp.get("/<int:diagnosis_result_id>/report.pdf")
+@require_auth(permissions=["diagnosis.run"])
+def download_diagnosis_report(diagnosis_result_id: int):
+    pdf_bytes, file_name = get_diagnosis_service().generate_report_pdf(diagnosis_result_id)
+    return send_file(
+        BytesIO(pdf_bytes),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=file_name,
+    )
 
 
 @diagnosis_bp.patch("/<int:diagnosis_result_id>/review")

@@ -12,7 +12,6 @@ import {
   Heart,
   Zap,
   RotateCcw,
-  Printer,
   FileText,
   Stethoscope,
 } from 'lucide-react'
@@ -20,6 +19,7 @@ import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
 import { EmptyState, StatusBadge, ConfirmDialog } from '@/components/ui'
 import { readDiagnosisResultSnapshot, saveDiagnosisResultSnapshot } from '@/lib/diagnosis-result-storage'
+import { notify } from '@/lib/toast'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 
@@ -47,6 +47,38 @@ function normalizeSnapshot(payload) {
     context: payload.context && typeof payload.context === 'object' ? payload.context : {},
     savedAt: payload.savedAt || null,
   }
+}
+
+function getDownloadFilename(headerValue, fallbackName) {
+  if (!headerValue) return fallbackName
+
+  const utf8Match = headerValue.match(/filename\\*=UTF-8''([^;]+)/i)
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1])
+  }
+
+  const basicMatch = headerValue.match(/filename=\"?([^\";]+)\"?/i)
+  if (basicMatch?.[1]) {
+    return basicMatch[1]
+  }
+
+  return fallbackName
+}
+
+async function getDownloadErrorMessage(error, fallbackMessage) {
+  const blobData = error?.response?.data
+  if (blobData instanceof Blob) {
+    try {
+      const text = await blobData.text()
+      const parsed = JSON.parse(text)
+      const serverMessage = parsed?.error?.message
+      if (serverMessage) return serverMessage
+    } catch {
+      return fallbackMessage
+    }
+  }
+
+  return getApiErrorMessage(error, fallbackMessage)
 }
 
 function getConfidenceMeta(result, percent) {
@@ -317,6 +349,7 @@ export function DiagnosisResultPage() {
   const [showRestartConfirm, setShowRestartConfirm] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [loadingRemote, setLoadingRemote] = useState(false)
+  const [downloadingReport, setDownloadingReport] = useState(false)
   const diagnosisResultId = useMemo(() => {
     const params = new URLSearchParams(location.search)
     return params.get('diagnosis_result_id')
@@ -430,11 +463,46 @@ export function DiagnosisResultPage() {
   const primaryHeadline = tExact(getPrimaryHeadline(result, certaintyPercent)).toUpperCase()
   const patientName = context?.patient_name || t('diagnosisResult.currentPatient', 'Current patient')
   const reportTime = result?.created_at || snapshot?.savedAt
+  const reportDownloadId = diagnosisResultId || result?.id || result?.diagnosis_result_id
 
   const handleRestartConfirm = () => {
     localStorage.removeItem('diagnosisResultSnapshot')
     setShowRestartConfirm(false)
     navigate('/diagnosis', { state: { keepData: true } })
+  }
+
+  const handleDownloadReport = async () => {
+    if (!reportDownloadId) {
+      notify.error(t('diagnosisResult.downloadPdfMissingId', 'This result is missing a report identifier. Reload the page and try again.'))
+      return
+    }
+
+    setDownloadingReport(true)
+    try {
+      const response = await api.get(`/diagnosis/${reportDownloadId}/report.pdf`, {
+        responseType: 'blob',
+      })
+
+      const blob = response?.data instanceof Blob
+        ? response.data
+        : new Blob([response?.data], { type: 'application/pdf' })
+
+      const fallbackFileName = `assessment-report-${reportDownloadId}.pdf`
+      const contentDisposition = response?.headers?.['content-disposition']
+      const fileName = getDownloadFilename(contentDisposition, fallbackFileName)
+      const objectUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = objectUrl
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(objectUrl)
+    } catch (err) {
+      notify.error(await getDownloadErrorMessage(err, t('diagnosisResult.downloadPdfFailed', 'Failed to download PDF report')))
+    } finally {
+      setDownloadingReport(false)
+    }
   }
 
   return (
@@ -452,9 +520,18 @@ export function DiagnosisResultPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button type="button" onClick={() => window.print()} className="btn-secondary gap-2 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 shadow-sm border-slate-200 dark:border-slate-700 h-10 px-4 transition-all">
-            <Printer className="h-4 w-4 text-slate-500" />
-            <span className="font-semibold">{t('diagnosisResult.printPdf', 'Print PDF')}</span>
+          <button
+            type="button"
+            onClick={handleDownloadReport}
+            disabled={downloadingReport}
+            className="btn-secondary gap-2 bg-white hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-slate-900 dark:hover:bg-slate-800 shadow-sm border-slate-200 dark:border-slate-700 h-10 px-4 transition-all"
+          >
+            <FileText className="h-4 w-4 text-slate-500" />
+            <span className="font-semibold">
+              {downloadingReport
+                ? t('diagnosisResult.generatingPdf', 'Generating PDF...')
+                : t('diagnosisResult.downloadPdf', 'Download PDF Report')}
+            </span>
           </button>
         </div>
       </div>

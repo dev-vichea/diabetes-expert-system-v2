@@ -83,5 +83,10 @@ class Config:
     DB_FALLBACK_AUTO_CREATE = _as_bool(os.getenv("DB_FALLBACK_AUTO_CREATE"), default=True)
     DB_FALLBACK_SEED = _as_bool(os.getenv("DB_FALLBACK_SEED"), default=True)
 
+    REPORT_CLINIC_NAME = os.getenv("REPORT_CLINIC_NAME", "General Diabetes Clinic")
+    REPORT_CLINIC_ADDRESS = os.getenv("REPORT_CLINIC_ADDRESS", "Clinical Services Unit")
+    REPORT_CLINIC_PHONE = os.getenv("REPORT_CLINIC_PHONE", "")
+    REPORT_CLINIC_EMAIL = os.getenv("REPORT_CLINIC_EMAIL", "")
+
     DB_FALLBACK_ACTIVE = False
     DB_PRIMARY_DATABASE_URI = None

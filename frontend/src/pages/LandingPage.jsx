@@ -26,6 +26,8 @@ const C = {
   glassShadow:  '0 8px 32px rgba(15, 118, 110, 0.06)',
 }
 
+const BRAND_LOGO_SRC = '/images/logo.png'
+
 export function LandingPage() {
   const navigate  = useNavigate()
   const { user }  = useAuth()
@@ -150,37 +152,22 @@ export function LandingPage() {
 
       <main ref={pageRef} style={{ position: 'relative', zIndex: 3, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem 6rem', textAlign: 'center', transition: 'opacity 0.6s ease' }}>
         
-        {/* ── 1. Breathing Hero Icon (AI Core) ── */}
-        <div style={{ position: 'relative', width: 90, height: 90, marginBottom: '2.5rem', animation: 'lpFadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
-          
-          {/* Pulsing Backglow */}
-          <div style={{ position: 'absolute', inset: -20, background: 'radial-gradient(circle, rgba(20,184,166,0.3) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(8px)', animation: 'pulseGlow 3s ease-in-out infinite' }} />
-          
+        {/* ── 1. Hero Logo ── */}
+        <div style={{ position: 'relative', width: 104, height: 104, marginBottom: '2.5rem', animation: 'lpFadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
+
           {/* Rotating AI Ring */}
-          <svg style={{ position: 'absolute', inset: -14, width: 118, height: 118, animation: 'spinSlow 15s linear infinite' }} viewBox="0 0 100 100">
+          <svg style={{ position: 'absolute', inset: -14, width: 132, height: 132, animation: 'spinSlow 15s linear infinite' }} viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="48" fill="none" stroke={C.tealLight} strokeWidth="1" strokeDasharray="4 8" opacity="0.4" />
             <circle cx="50" cy="5" r="2" fill={C.teal} />
             <circle cx="95" cy="50" r="1.5" fill={C.sky} />
             <circle cx="5" cy="50" r="1.5" fill={C.blue} />
           </svg>
 
-          {/* Core Glass Icon */}
-          <div style={{
-            width: 90, height: 90, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6))', border: `1.5px solid rgba(255,255,255,1)`,
-            backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 32px rgba(15,118,110,0.12), inset 0 0 20px rgba(255,255,255,1)'
-          }}>
-            <svg viewBox="0 0 48 48" width={38} height={38} style={{ filter: 'drop-shadow(0 4px 6px rgba(20,184,166,0.3))' }}>
-              <rect x="20" y="12" width="8" height="24" rx="3" fill="url(#tealGrad)" />
-              <rect x="12" y="20" width="24" height="8" rx="3" fill="url(#tealGrad)" />
-              <circle cx="24" cy="24" r="3" fill="#fff" />
-              <defs>
-                <linearGradient id="tealGrad" x1="12" y1="12" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-                  <stop stopColor={C.tealLight} />
-                  <stop offset="1" stopColor={C.teal} />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
+          <img
+            src={BRAND_LOGO_SRC}
+            alt="Diabetes Expert System logo"
+            style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', objectFit: 'contain' }}
+          />
         </div>
 
         {/* ── 2. Animated Gradient Title ── */}

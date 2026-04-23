@@ -15,6 +15,43 @@ import { formatDateTime } from '@/lib/datetime'
 import { EmptyState, ErrorAlert } from '@/components/ui'
 import { useLanguage } from '@/contexts/LanguageContext'
 
+function toCertaintyPercent(certainty) {
+  const numeric = Number(certainty)
+  if (Number.isNaN(numeric)) return 0
+  const raw = numeric <= 1 ? numeric * 100 : numeric
+  return Math.max(0, Math.min(100, Math.round(raw)))
+}
+
+function getRiskGradient(percent) {
+  const safePercent = Number(percent) || 0
+
+  if (safePercent >= 85) return 'bg-gradient-to-r from-red-700 to-red-600'
+  if (safePercent >= 70) return 'bg-gradient-to-r from-orange-700 to-orange-600'
+  if (safePercent >= 45) return 'bg-gradient-to-r from-amber-700 to-amber-600'
+  if (safePercent >= 25) return 'bg-gradient-to-r from-yellow-700 to-yellow-600'
+  return 'bg-gradient-to-r from-emerald-700 to-emerald-600'
+}
+
+function getRiskShadow(percent) {
+  const safePercent = Number(percent) || 0
+
+  if (safePercent >= 85) return 'shadow-red-500/20'
+  if (safePercent >= 70) return 'shadow-orange-500/20'
+  if (safePercent >= 45) return 'shadow-amber-500/20'
+  if (safePercent >= 25) return 'shadow-yellow-500/20'
+  return 'shadow-emerald-500/20'
+}
+
+function getRiskTextColor(percent) {
+  const safePercent = Number(percent) || 0
+
+  if (safePercent >= 85) return 'text-red-500'
+  if (safePercent >= 70) return 'text-orange-500'
+  if (safePercent >= 45) return 'text-amber-500'
+  if (safePercent >= 25) return 'text-yellow-500'
+  return 'text-emerald-500'
+}
+
 export function ReviewPage() {
   const { t, tExact } = useLanguage()
   const [results, setResults] = useState([])
@@ -100,6 +137,8 @@ export function ReviewPage() {
 
   // Split into pending vs reviewed for neatness
   const pendingCount = results.filter(r => !r.reviewed_at).length
+  const selectedCertaintyPercent = selectedResult ? toCertaintyPercent(selectedResult.certainty) : 0
+  const selectedBannerClasses = `${getRiskGradient(selectedCertaintyPercent)} ${getRiskShadow(selectedCertaintyPercent)}`
   
   return (
     <div className="flex h-[calc(100vh-6rem)] w-full gap-6 overflow-hidden">
@@ -146,6 +185,7 @@ export function ReviewPage() {
             const isSelected = selectedResultId === result.id
             const isReviewed = Boolean(result.status === 'Reviewed' || result.reviewed_at)
             const isCritical = result.is_urgent
+            const certaintyPercent = toCertaintyPercent(result.certainty)
             
             return (
               <button
@@ -186,8 +226,8 @@ export function ReviewPage() {
                     }`}>
                       {isCritical ? t('reviewPage.states.urgent', 'URGENT') : t('reviewPage.states.standard', 'Standard')}
                     </span>
-                    <span className="text-[10px] text-slate-400">
-                      {t('reviewPage.states.score', 'Score')}: {result.certainty}/100
+                    <span className={`text-[10px] font-medium ${getRiskTextColor(certaintyPercent)}`}>
+                      {t('reviewPage.states.score', 'Score')}: {certaintyPercent}/100
                     </span>
                   </div>
                 </div>
@@ -242,13 +282,7 @@ export function ReviewPage() {
               </div>
 
               {/* Diagnostic Readout Banner */}
-              <div className={`mt-6 rounded-2xl p-6 text-white overflow-hidden relative ${
-                 selectedResult.certainty >= 75 
-                   ? 'bg-gradient-to-br from-rose-500 to-rose-700 shadow-rose-500/20 shadow-lg'
-                   : selectedResult.certainty >= 40
-                     ? 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-orange-500/20 shadow-lg'
-                     : 'bg-gradient-to-br from-cyan-600 to-blue-700 shadow-blue-500/20 shadow-lg'
-              }`}>
+              <div className={`relative mt-6 overflow-hidden rounded-2xl p-6 text-white shadow-lg ${selectedBannerClasses}`}>
                 {/* Decorative background overlay */}
                 <div className="absolute -right-10 -top-24 opacity-10 blur-xl pointer-events-none">
                    <Activity className="w-64 h-64" />
@@ -261,7 +295,7 @@ export function ReviewPage() {
                    </div>
                    <div className="text-right flex flex-col items-end">
                       <div className="flex items-baseline gap-1">
-                        <span className="text-5xl font-black">{selectedResult.certainty}</span>
+                        <span className="text-5xl font-black">{selectedCertaintyPercent}</span>
                         <span className="text-lg opacity-70">/100</span>
                       </div>
                       <p className="text-xs font-medium uppercase tracking-widest opacity-80">{t('reviewPage.details.confidenceScore', 'Confidence Score')}</p>
