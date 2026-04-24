@@ -135,8 +135,8 @@ function StepDot({ item, status, onClick, locked }) {
           <span className={cn(
             'relative z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border-2 shadow-sm transition-all duration-300',
             status === 'done' ? 'border-cyan-500 bg-cyan-500 text-white' :
-            status === 'active' ? 'border-cyan-500 bg-white text-cyan-600 assessment-step-dot-active dark:bg-[#070712]' :
-            'border-slate-300 bg-slate-50 text-slate-400 dark:border-slate-600 dark:bg-[#070712] dark:text-slate-500',
+              status === 'active' ? 'border-cyan-500 bg-white text-cyan-600 assessment-step-dot-active dark:bg-[#070712]' :
+                'border-slate-300 bg-slate-50 text-slate-400 dark:border-slate-600 dark:bg-[#070712] dark:text-slate-500',
           )}>
             {status === 'done' ? <Check className="h-5 w-5" strokeWidth={2.5} /> : <Icon className="h-5 w-5" strokeWidth={2.25} />}
           </span>
@@ -145,8 +145,8 @@ function StepDot({ item, status, onClick, locked }) {
           <h6 className={cn(
             'text-sm font-semibold',
             status === 'done' ? 'text-cyan-700 dark:text-cyan-400' :
-            status === 'active' ? 'text-slate-900 dark:text-slate-100' :
-            'text-slate-500 dark:text-slate-400',
+              status === 'active' ? 'text-slate-900 dark:text-slate-100' :
+                'text-slate-500 dark:text-slate-400',
           )}>{t(`assessment.steps.${item.id === 1 ? 'profile' : item.id === 2 ? 'symptoms' : 'review'}.title`, item.title)}</h6>
           <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500 hidden sm:block">{t(`assessment.steps.${item.id === 1 ? 'profile' : item.id === 2 ? 'symptoms' : 'review'}.description`, item.description)}</p>
         </div>
@@ -385,14 +385,14 @@ export function DiagnosisPage() {
     if (!Number.isNaN(weight) && weight > 0 && !Number.isNaN(heightCm) && heightCm > 0) {
       const height = heightCm / 100
       const calculatedBmi = (weight / (height * height)).toFixed(1)
-      
+
       let group = 'custom'
       const bmiNum = Number(calculatedBmi)
       if (bmiNum < 18.5) group = 'underweight'
       else if (bmiNum < 25) group = 'normal'
       else if (bmiNum < 30) group = 'Overweight'
       else group = 'obese'
-      
+
       setQcm(p => ({ ...p, bmi_group: group }))
       setForm(p => ({ ...p, bmi: calculatedBmi }))
     }
@@ -541,7 +541,7 @@ export function DiagnosisPage() {
   /* ================================================================
      RENDER
      ================================================================ */
-     
+
   const renderBadge = (val, thresholds) => {
     if (!val) return null;
     const num = Number(val);
@@ -558,12 +558,12 @@ export function DiagnosisPage() {
 
   return (
     <div className="space-y-5">
-      <section className="surface border-0 p-5 sm:p-6">
+      <section className="surface min-w-0 border-0 p-4 sm:p-6">
         <div className="mx-auto w-full max-w-5xl">
 
           {/* ── Step Progress Bar ─────────────────────────── */}
           <div className="mb-6 px-1">
-            <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+            <div className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 sm:flex-row sm:items-center sm:justify-between">
               <span className="flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5 text-cyan-500" /> {t('assessment.healthAssessment', 'Health Assessment')}</span>
               <div className="flex items-center gap-4">
                 {!isDraftPristine && !result && (
@@ -589,12 +589,12 @@ export function DiagnosisPage() {
           </div>
 
           {/* ── Current Step Title ────────────────────────── */}
-          <div className="mb-5 flex flex-wrap items-start justify-between gap-2">
-            <div>
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+            <div className="min-w-0">
               <h2 className="section-title">{t(`assessment.steps.${step === 1 ? 'profile' : step === 2 ? 'symptoms' : 'review'}.title`, STEP_ITEMS_CONFIG[step - 1]?.title)}</h2>
               <p className="section-subtitle mt-1">{t(`assessment.steps.${step === 1 ? 'profile' : step === 2 ? 'symptoms' : 'review'}.description`, STEP_ITEMS_CONFIG[step - 1]?.description)}</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="hidden sm:flex items-center gap-2 mr-2 border-r border-slate-200 dark:border-slate-700 pr-4">
                 <span className="text-[10px] font-semibold uppercase text-slate-400 tracking-wider">{t('assessment.demoFill', 'Demo Fill:')}</span>
                 <button type="button" onClick={() => loadDemo('t2dm')} className="rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors">T2DM</button>
@@ -608,234 +608,234 @@ export function DiagnosisPage() {
           <form onSubmit={submitAssessment} className="space-y-5">
             <div key={`step-${step}-${result ? 'r' : 'n'}`} className="assessment-step-enter">
 
-            {/* ═══════════════ STEP 1 — About You ═══════════════ */}
-            {step === 1 ? (
-              <div className="assessment-step-list space-y-5">
-                {needsPatient ? (
-                  <QSection icon={<Building2 className="h-5 w-5 text-slate-500" />} title={t('assessment.patient.title', "Patient")} sub={t('assessment.patient.noSelection', "Select the patient being assessed")}>
-                    {loadingPatients ? <LoadingState label="Loading patients..." /> : (
-                      <AppSelect
-                        value={form.patient_id}
-                        onValueChange={(v) => up('patient_id', v)}
-                        placeholder={t('assessment.patient.selectPlaceholder', "Select a patient")}
-                        includeEmpty emptyLabel={patients.length ? t('assessment.patient.selectPlaceholder', 'Select a patient') : t('assessment.patient.noPatients', 'No patients found')}
-                        options={patients.map(p => ({ value: String(p.id), label: `${p.full_name} (#${p.id})` }))}
-                      />
-                    )}
-                  </QSection>
-                ) : null}
-
-                <QSection icon={<UserRound className="h-5 w-5 text-slate-500" />} title={t('assessment.profile.ageTitle', 'How old are you?')} sub={t('assessment.profile.ageHelper', 'Tap the range that fits best, or type your exact age')}>
-                  <SegmentSelector
-                    options={AGE_OPTIONS.map(o => {
-                      const keyMap = { under_18: 'under18', '18_30': 'age18to30', '31_45': 'age31to45', '46_60': 'age46to60', over_60: 'over60' };
-                      return {...o, label: t(`assessment.options.age.${keyMap[o.id] || o.id}`, o.label)};
-                    })}
-                    value={qcm.age_group}
-                    onChange={(opt) => pickSegment('age_group', opt, 'age')}
-                    renderLabel={(opt) => (
-                      <div className="flex flex-col items-center gap-0.5 py-1">
-                        <span className="text-sm font-semibold">{opt.label}</span>
-                      </div>
-                    )}
-                  />
-                  <label className="mt-3 block">
-                    <span className="label-text">{t('assessment.profile.exactAge', 'Or enter exact age')}</span>
-                    <input className="input-base" type="number" min={0} max={120} placeholder="e.g. 42" value={form.age} onChange={(e) => setCustom('age_group', 'age', e.target.value)} />
-                  </label>
-                </QSection>
-
-                <QSection icon={<Scale className="h-5 w-5 text-slate-500" />} title={t('assessment.profile.bmiTitle', 'Body Mass Index (BMI)')} sub={t('assessment.profile.exactBmi', 'Select your range or enter your BMI number')}>
-                  <SegmentSelector options={BMI_OPTIONS.map(o => ({...o, label: t(`assessment.options.bmi.${o.id.toLowerCase()}`, o.label)}))} value={qcm.bmi_group} onChange={(opt) => pickSegment('bmi_group', opt, 'bmi')} />
-                  <label className="mt-3 block">
-                    <span className="label-text">{t('assessment.profile.exactBmi', 'Exact BMI value')}</span>
-                    <input className="input-base" type="number" min={10} max={80} step="0.1" placeholder="e.g. 26.5" value={form.bmi} onChange={(e) => setCustom('bmi_group', 'bmi', e.target.value)} />
-                  </label>
-                  
-                  <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-3">
-                    <button type="button" className="text-sm font-semibold text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300 transition-colors" onClick={() => up('show_bmi_calculator', !form.show_bmi_calculator)}>
-                      {form.show_bmi_calculator ? t('assessment.closeBmiCalc', 'Close calculator') : t('assessment.openBmiCalc', "I don't know my exact BMI")}
-                    </button>
-                    {form.show_bmi_calculator && (
-                      <div className="mt-3 grid gap-3 sm:grid-cols-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-100 dark:border-slate-800">
-                        <label className="block">
-                          <span className="label-text">{t('assessment.weightKg', 'Weight (kg)')}</span>
-                          <input className="input-base bg-white dark:bg-[#070712]" type="number" placeholder="e.g. 70" value={form.weight_kg} onChange={(e) => { up('weight_kg', e.target.value); calculateBmi(e.target.value, form.height_cm); }} />
-                        </label>
-                        <label className="block">
-                          <span className="label-text">{t('assessment.heightCm', 'Height (cm)')}</span>
-                          <input className="input-base bg-white dark:bg-[#070712]" type="number" placeholder="e.g. 175" value={form.height_cm} onChange={(e) => { up('height_cm', e.target.value); calculateBmi(form.weight_kg, e.target.value); }} />
-                        </label>
-                      </div>
-                    )}
-                  </div>
-                </QSection>
-
-                <QSection icon={<Activity className="h-5 w-5 text-slate-500" />} title={t('assessment.profile.waistTitle', "Waist Circumference (optional)")} sub={t('assessment.profile.waistHelper', "Helps detect central obesity — a key diabetes risk factor")}>
-                  <label className="block">
-                    <span className="label-text">{t('assessment.profile.exactWaist', "Waist in cm")}</span>
-                    <input className="input-base" type="number" min={30} max={250} step="0.1" placeholder="e.g. 95 cm" value={form.waist_circumference} onChange={(e) => up('waist_circumference', e.target.value)} />
-                  </label>
-                </QSection>
-              </div>
-            ) : null}
-
-            {/* ═══════════════ STEP 2 — How You Feel ════════════ */}
-            {step === 2 ? (
-              <div className="assessment-step-list space-y-5">
-                <QSection icon={<Stethoscope className="h-5 w-5 text-slate-500" />} title={t('assessment.symptoms.commonTitle', 'Common symptoms')} sub={t('assessment.symptoms.commonHelper', "Tap any symptoms you're currently experiencing")}>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {SYMPTOM_PILLS.map(item => (
-                      <TogglePill key={item.key} item={{...item, label: t(`assessment.fields.symptoms.${item.key.replace(/_([a-z])/g, g => g[1].toUpperCase())}`, item.label)}} active={Boolean(form[item.key])} onToggle={(k, v) => up(k, v)} />
-                    ))}
-                  </div>
-                </QSection>
-
-                <QSection icon={<AlertTriangle className="h-5 w-5 text-red-500" />} title={t('assessment.symptoms.safetyTitle', 'Warning signs')} sub={t('assessment.symptoms.safetyHelper', 'These help detect low blood sugar or emergencies')} className="assessment-branch-card">
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {SAFETY_PILLS.map(item => (
-                      <TogglePill key={item.key} item={{...item, label: t(`assessment.fields.safetySymptoms.${item.key.replace(/_([a-z])/g, g => g[1].toUpperCase())}`, item.label)}} active={Boolean(form[item.key])} onToggle={(k, v) => up(k, v)} />
-                    ))}
-                  </div>
-                </QSection>
-
-                <QSection icon={<Activity className="h-5 w-5 text-slate-500" />} title={t('assessment.risks.title', 'Risk factors')} sub={t('assessment.risks.helper', 'Do any of these apply to you?')}>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {RISK_PILLS.map(item => (
-                      <TogglePill key={item.key} item={{...item, label: t(`assessment.fields.riskFactors.${item.key.replace(/_([a-z])/g, g => g[1].toUpperCase())}`, item.label)}} active={Boolean(form[item.key])} onToggle={(k, v) => up(k, v)} />
-                    ))}
-                  </div>
-                </QSection>
-
-                <QSection icon={<PenTool className="h-5 w-5 text-slate-500" />} title={t('assessment.symptoms.extraTitle', "Anything else?")} sub={t('assessment.symptoms.extraHelper', "Describe any additional symptoms (optional)")}>
-                  <textarea
-                    className="input-base min-h-[80px] resize-y"
-                    value={form.extra_symptoms}
-                    onChange={(e) => up('extra_symptoms', e.target.value)}
-                    placeholder={t('assessment.extraPlaceholderText', 'e.g. tingling feet, dry mouth, frequent infections...')}
-                  />
-                </QSection>
-              </div>
-            ) : null}
-
-            {/* ═══════════════ STEP 3 — Lab & Review ════════════ */}
-            {step === 3 ? (
-              <div className="assessment-step-list space-y-5">
-                <QSection icon={<TestTube2 className="h-5 w-5 text-slate-500" />} title={t('assessment.labHaveResults', 'Do you have lab results?')} sub={t('assessment.labHaveResultsSub', 'Lab values improve accuracy — but you can skip this')}>
-                  <label className="flex items-center gap-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm">
-                    <input type="checkbox" className="h-4 w-4 accent-amber-600" checked={Boolean(form.no_labs_available)} onChange={(e) => {
-                      up('no_labs_available', e.target.checked)
-                      if (e.target.checked) {
-                        setForm(p => ({ ...p, fasting_glucose: '', hba1c: '', random_plasma_glucose: '', ogtt_2h: '' }))
-                        setQcm(p => ({ ...p, fasting_group: '', hba1c_group: '', ogtt_group: '' }))
-                        setExtraLabs([])
-                      }
-                    }} />
-                    <span className="font-medium text-amber-800 dark:text-amber-300">{t('assessment.labs.noLabsAvailable', "I don't have lab results right now")}</span>
-                  </label>
-                  <p className="mt-2 text-xs text-slate-500">
-                    {t('assessment.labs.mode', 'Mode')}: <span className="font-semibold">{assessmentMode === 'diagnostic' ? t('assessment.labs.diagnosticMode', '🔬 Diagnostic') : t('assessment.labs.screeningMode', '📋 Screening')}</span>
-                  </p>
-                </QSection>
-
-                {!form.no_labs_available ? (
-                  <>
-                    <QSection icon={<TestTube2 className="h-5 w-5 text-slate-500" />} title={t('assessment.labs.fastingTitle', 'Fasting Blood Glucose')} sub={t('assessment.labs.fastingHelper', 'mg/dL — after 8+ hours of fasting')}>
-                      <SegmentSelector options={FASTING_OPTIONS.map(o => ({...o, label: t(`assessment.fields.labs.fasting.${o.id}`, o.label)}))} value={qcm.fasting_group} onChange={(opt) => pickSegment('fasting_group', opt, 'fasting_glucose')} />
-                      <label className="mt-3 block">
-                        <span className="label-text">{t('assessment.exactValueMgDl', 'Exact value (mg/dL)')} {renderBadge(form.fasting_glucose, { critical: 200, diabetes: 126, prediabetes: 100 })}</span>
-                        <input className="input-base" type="number" placeholder="e.g. 115" value={form.fasting_glucose} onChange={(e) => setCustom('fasting_group', 'fasting_glucose', e.target.value)} />
-                      </label>
+              {/* ═══════════════ STEP 1 — About You ═══════════════ */}
+              {step === 1 ? (
+                <div className="assessment-step-list space-y-5">
+                  {needsPatient ? (
+                    <QSection icon={<Building2 className="h-5 w-5 text-slate-500" />} title={t('assessment.patient.title', "Patient")} sub={t('assessment.patient.noSelection', "Select the patient being assessed")}>
+                      {loadingPatients ? <LoadingState label="Loading patients..." /> : (
+                        <AppSelect
+                          value={form.patient_id}
+                          onValueChange={(v) => up('patient_id', v)}
+                          placeholder={t('assessment.patient.selectPlaceholder', "Select a patient")}
+                          includeEmpty emptyLabel={patients.length ? t('assessment.patient.selectPlaceholder', 'Select a patient') : t('assessment.patient.noPatients', 'No patients found')}
+                          options={patients.map(p => ({ value: String(p.id), label: `${p.full_name} (#${p.id})` }))}
+                        />
+                      )}
                     </QSection>
+                  ) : null}
 
-                    <QSection icon={<Activity className="h-5 w-5 text-slate-500" />} title={t('assessment.labs.hba1cTitle', "HbA1c (Glycated Hemoglobin)")} sub={t('assessment.labs.hba1cHelper', "Percentage — reflects 2–3 month average blood sugar")}>
-                      <SegmentSelector options={HBA1C_OPTIONS.map(o => ({...o, label: t(`assessment.fields.labs.hba1c.${o.id}`, o.label)}))} value={qcm.hba1c_group} onChange={(opt) => pickSegment('hba1c_group', opt, 'hba1c')} />
-                      <label className="mt-3 block">
-                        <span className="label-text">{t('assessment.exactValuePercent', 'Exact value (%)')} {renderBadge(form.hba1c, { critical: 10, diabetes: 6.5, prediabetes: 5.7 })}</span>
-                        <input className="input-base" type="number" step="0.1" placeholder="e.g. 6.1" value={form.hba1c} onChange={(e) => setCustom('hba1c_group', 'hba1c', e.target.value)} />
-                      </label>
-                    </QSection>
-
-                    <QSection icon={<TestTube2 className="h-5 w-5 text-slate-500" />} title={t('assessment.labs.ogttTitle', '2-Hour OGTT (optional)')} sub={t('assessment.labs.ogttHelper', 'mg/dL — measured 2 hours after 75g glucose load')}>
-                      <SegmentSelector options={OGTT_OPTIONS.map(o => ({...o, label: t(`assessment.options.ogtt.${o.id}`, o.label)}))} value={qcm.ogtt_group} onChange={(opt) => pickSegment('ogtt_group', opt, 'ogtt_2h')} />
-                      <label className="mt-3 block">
-                        <span className="label-text">{t('assessment.exactValueMgDl', 'Exact value (mg/dL)')} {renderBadge(form.ogtt_2h, { diabetes: 200, prediabetes: 140 })}</span>
-                        <input className="input-base" type="number" placeholder="e.g. 165" value={form.ogtt_2h} onChange={(e) => setCustom('ogtt_group', 'ogtt_2h', e.target.value)} />
-                      </label>
-                    </QSection>
-
-                    <QSection icon={<TestTube2 className="h-5 w-5 text-slate-500" />} title={t('assessment.labs.rpgTitle', "Random Blood Glucose (optional)")} sub={t('assessment.labs.rpgHelper', "mg/dL — any time, no fasting needed")}>
-                      <label className="block">
-                        <span className="label-text">{t('assessment.valueMgDl', 'Value (mg/dL)')}</span>
-                        <input className="input-base" type="number" min={30} max={1000} placeholder="e.g. 180" value={form.random_plasma_glucose} onChange={(e) => up('random_plasma_glucose', e.target.value)} />
-                      </label>
-                    </QSection>
-
-                    <QSection icon={<PlusCircle className="h-5 w-5 text-slate-500" />} title={t('assessment.additionalLabTests', 'Additional lab tests (optional)')}>
-                      <div className="grid gap-3 sm:grid-cols-[1.2fr_1fr_auto]">
-                        <input className="input-base" placeholder={t('assessment.testName', 'Test name')} value={form.extra_lab_name} onChange={(e) => up('extra_lab_name', e.target.value)} />
-                        <input className="input-base" placeholder={t('assessment.value', 'Value')} type="number" step="0.01" value={form.extra_lab_value} onChange={(e) => up('extra_lab_value', e.target.value)} />
-                        <button type="button" className="btn-secondary gap-1.5" onClick={addExtraLab}><Plus className="h-4 w-4" /> {t('assessment.add', 'Add')}</button>
-                      </div>
-                      {extraLabs.length ? (
-                        <ul className="mt-3 space-y-2">
-                          {extraLabs.map((lab, i) => (
-                            <li key={i} className="flex items-center justify-between rounded-lg bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm">
-                              <span>{lab.test_name}: <strong>{lab.test_value}</strong></span>
-                              <button type="button" className="btn-secondary gap-1 px-2.5 py-1.5 text-xs" onClick={() => setExtraLabs(p => p.filter((_, j) => j !== i))}><Trash2 className="h-3.5 w-3.5" /> {t('assessment.remove', 'Remove')}</button>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </QSection>
-                  </>
-                ) : null}
-
-                {/* ── Review Summary ──────────────────────── */}
-                <QSection icon={<ClipboardList className="h-5 w-5 text-slate-500" />} title={t('assessment.reviewSummary', 'Review Summary')} sub={t('assessment.reviewSummarySub', 'Double-check before submitting')}>
-                  <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
-                    <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 px-4 py-2.5 text-white">
-                      <p className="text-sm font-semibold uppercase tracking-[0.08em]">{t('assessment.review.overview', 'Assessment Overview')}</p>
-                    </div>
-                    <dl className="divide-y divide-slate-200 dark:divide-slate-700 text-sm">
-                      {[
-                        [t('assessment.review.patient', 'Patient'), needsPatient ? (selectedPatient ? `${selectedPatient.full_name} (#${selectedPatient.id})` : t('assessment.patient.noSelection', 'Not selected')) : user?.name || 'Current user'],
-                        [t('assessment.review.mode', 'Mode'), assessmentMode === 'diagnostic' ? t('assessment.labs.diagnosticMode', '🔬 Diagnostic') : t('assessment.labs.screeningMode', '📋 Screening')],
-                        [t('assessment.review.profile', 'Age / BMI / Waist'), `${form.age || '-'} yrs / ${form.bmi || '-'} / ${form.waist_circumference || '-'} cm`],
-                        [t('assessment.review.glucose', 'Glucose Tests'), `FPG: ${form.fasting_glucose || '-'} — A1c: ${form.hba1c || '-'} — OGTT: ${form.ogtt_2h || '-'} — RPG: ${form.random_plasma_glucose || '-'}`],
-                        [t('assessment.review.symptoms', 'Symptoms'), `${selectedSymptoms.length + customSymptoms.length} ${t('common.selected', 'selected')}`],
-                        [t('assessment.review.risks', 'Risk Factors'), `${selectedRisks.length} ${t('common.selected', 'selected')}`],
-                        [t('assessment.review.flags', 'Flags'), `Hypo: ${hasHypoTrigger ? t('common.yes', '🟡 Yes') : '—'} | Urgent: ${hasUrgentTrigger ? t('common.yes', '🔴 Yes') : '—'}`],
-                      ].map(([label, value]) => (
-                        <div key={label} className="grid gap-1 px-4 py-2.5 sm:grid-cols-[11rem_1fr] sm:items-center">
-                          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
-                          <dd className="text-slate-800 dark:text-slate-100">{value}</dd>
+                  <QSection icon={<UserRound className="h-5 w-5 text-slate-500" />} title={t('assessment.profile.ageTitle', 'How old are you?')} sub={t('assessment.profile.ageHelper', 'Tap the range that fits best, or type your exact age')}>
+                    <SegmentSelector
+                      options={AGE_OPTIONS.map(o => {
+                        const keyMap = { under_18: 'under18', '18_30': 'age18to30', '31_45': 'age31to45', '46_60': 'age46to60', over_60: 'over60' };
+                        return { ...o, label: t(`assessment.options.age.${keyMap[o.id] || o.id}`, o.label) };
+                      })}
+                      value={qcm.age_group}
+                      onChange={(opt) => pickSegment('age_group', opt, 'age')}
+                      renderLabel={(opt) => (
+                        <div className="flex flex-col items-center gap-0.5 py-1">
+                          <span className="text-sm font-semibold">{opt.label}</span>
                         </div>
-                      ))}
-                    </dl>
-                  </div>
-                </QSection>
+                      )}
+                    />
+                    <label className="mt-3 block">
+                      <span className="label-text">{t('assessment.profile.exactAge', 'Or enter exact age')}</span>
+                      <input className="input-base" type="number" min={0} max={120} placeholder="e.g. 42" value={form.age} onChange={(e) => setCustom('age_group', 'age', e.target.value)} />
+                    </label>
+                  </QSection>
 
-                {result ? (
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20 p-4">
-                    <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">✅ {t('diagnosisResult.assessmentComplete', 'Assessment complete! Your results have been saved.')}</p>
-                    <button type="button" className="btn-primary mt-3 gap-1.5" onClick={() => navigate('/diagnosis/result')}>{t('diagnosisResult.viewReport', 'View Report →')}</button>
-                  </div>
-                ) : (
-                  <p className="text-sm text-slate-500">{t('diagnosisResult.reviewBeforeSubmit', 'Review your answers above, then click "Run Assessment" to get your results.')}</p>
-                )}
-              </div>
-            ) : null}
+                  <QSection icon={<Scale className="h-5 w-5 text-slate-500" />} title={t('assessment.profile.bmiTitle', 'Body Mass Index (BMI)')} sub={t('assessment.profile.exactBmi', 'Select your range or enter your BMI number')}>
+                    <SegmentSelector options={BMI_OPTIONS.map(o => ({ ...o, label: t(`assessment.options.bmi.${o.id.toLowerCase()}`, o.label) }))} value={qcm.bmi_group} onChange={(opt) => pickSegment('bmi_group', opt, 'bmi')} />
+                    <label className="mt-3 block">
+                      <span className="label-text">{t('assessment.profile.exactBmi', 'Exact BMI value')}</span>
+                      <input className="input-base" type="number" min={10} max={80} step="0.1" placeholder="e.g. 26.5" value={form.bmi} onChange={(e) => setCustom('bmi_group', 'bmi', e.target.value)} />
+                    </label>
+
+                    <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-3">
+                      <button type="button" className="text-sm font-semibold text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300 transition-colors" onClick={() => up('show_bmi_calculator', !form.show_bmi_calculator)}>
+                        {form.show_bmi_calculator ? t('assessment.closeBmiCalc', 'Close calculator') : t('assessment.openBmiCalc', "I don't know my exact BMI")}
+                      </button>
+                      {form.show_bmi_calculator && (
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-100 dark:border-slate-800">
+                          <label className="block">
+                            <span className="label-text">{t('assessment.weightKg', 'Weight (kg)')}</span>
+                            <input className="input-base bg-white dark:bg-[#070712]" type="number" placeholder="e.g. 70" value={form.weight_kg} onChange={(e) => { up('weight_kg', e.target.value); calculateBmi(e.target.value, form.height_cm); }} />
+                          </label>
+                          <label className="block">
+                            <span className="label-text">{t('assessment.heightCm', 'Height (cm)')}</span>
+                            <input className="input-base bg-white dark:bg-[#070712]" type="number" placeholder="e.g. 175" value={form.height_cm} onChange={(e) => { up('height_cm', e.target.value); calculateBmi(form.weight_kg, e.target.value); }} />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  </QSection>
+
+                  <QSection icon={<Activity className="h-5 w-5 text-slate-500" />} title={t('assessment.profile.waistTitle', "Waist Circumference (optional)")} sub={t('assessment.profile.waistHelper', "Helps detect central obesity — a key diabetes risk factor")}>
+                    <label className="block">
+                      <span className="label-text">{t('assessment.profile.exactWaist', "Waist in cm")}</span>
+                      <input className="input-base" type="number" min={30} max={250} step="0.1" placeholder="e.g. 95 cm" value={form.waist_circumference} onChange={(e) => up('waist_circumference', e.target.value)} />
+                    </label>
+                  </QSection>
+                </div>
+              ) : null}
+
+              {/* ═══════════════ STEP 2 — How You Feel ════════════ */}
+              {step === 2 ? (
+                <div className="assessment-step-list space-y-5">
+                  <QSection icon={<Stethoscope className="h-5 w-5 text-slate-500" />} title={t('assessment.symptoms.commonTitle', 'Common symptoms')} sub={t('assessment.symptoms.commonHelper', "Tap any symptoms you're currently experiencing")}>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {SYMPTOM_PILLS.map(item => (
+                        <TogglePill key={item.key} item={{ ...item, label: t(`assessment.fields.symptoms.${item.key.replace(/_([a-z])/g, g => g[1].toUpperCase())}`, item.label) }} active={Boolean(form[item.key])} onToggle={(k, v) => up(k, v)} />
+                      ))}
+                    </div>
+                  </QSection>
+
+                  <QSection icon={<AlertTriangle className="h-5 w-5 text-red-500" />} title={t('assessment.symptoms.safetyTitle', 'Warning signs')} sub={t('assessment.symptoms.safetyHelper', 'These help detect low blood sugar or emergencies')} className="assessment-branch-card">
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {SAFETY_PILLS.map(item => (
+                        <TogglePill key={item.key} item={{ ...item, label: t(`assessment.fields.safetySymptoms.${item.key.replace(/_([a-z])/g, g => g[1].toUpperCase())}`, item.label) }} active={Boolean(form[item.key])} onToggle={(k, v) => up(k, v)} />
+                      ))}
+                    </div>
+                  </QSection>
+
+                  <QSection icon={<Activity className="h-5 w-5 text-slate-500" />} title={t('assessment.risks.title', 'Risk factors')} sub={t('assessment.risks.helper', 'Do any of these apply to you?')}>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {RISK_PILLS.map(item => (
+                        <TogglePill key={item.key} item={{ ...item, label: t(`assessment.fields.riskFactors.${item.key.replace(/_([a-z])/g, g => g[1].toUpperCase())}`, item.label) }} active={Boolean(form[item.key])} onToggle={(k, v) => up(k, v)} />
+                      ))}
+                    </div>
+                  </QSection>
+
+                  <QSection icon={<PenTool className="h-5 w-5 text-slate-500" />} title={t('assessment.symptoms.extraTitle', "Anything else?")} sub={t('assessment.symptoms.extraHelper', "Describe any additional symptoms (optional)")}>
+                    <textarea
+                      className="input-base min-h-[80px] resize-y"
+                      value={form.extra_symptoms}
+                      onChange={(e) => up('extra_symptoms', e.target.value)}
+                      placeholder={t('assessment.extraPlaceholderText', 'e.g. tingling feet, dry mouth, frequent infections...')}
+                    />
+                  </QSection>
+                </div>
+              ) : null}
+
+              {/* ═══════════════ STEP 3 — Lab & Review ════════════ */}
+              {step === 3 ? (
+                <div className="assessment-step-list space-y-5">
+                  <QSection icon={<TestTube2 className="h-5 w-5 text-slate-500" />} title={t('assessment.labHaveResults', 'Do you have lab results?')} sub={t('assessment.labHaveResultsSub', 'Lab values improve accuracy — but you can skip this')}>
+                    <label className="flex items-center gap-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm">
+                      <input type="checkbox" className="h-4 w-4 accent-amber-600" checked={Boolean(form.no_labs_available)} onChange={(e) => {
+                        up('no_labs_available', e.target.checked)
+                        if (e.target.checked) {
+                          setForm(p => ({ ...p, fasting_glucose: '', hba1c: '', random_plasma_glucose: '', ogtt_2h: '' }))
+                          setQcm(p => ({ ...p, fasting_group: '', hba1c_group: '', ogtt_group: '' }))
+                          setExtraLabs([])
+                        }
+                      }} />
+                      <span className="font-medium text-amber-800 dark:text-amber-300">{t('assessment.labs.noLabsAvailable', "I don't have lab results right now")}</span>
+                    </label>
+                    <p className="mt-2 text-xs text-slate-500">
+                      {t('assessment.labs.mode', 'Mode')}: <span className="font-semibold">{assessmentMode === 'diagnostic' ? t('assessment.labs.diagnosticMode', '🔬 Diagnostic') : t('assessment.labs.screeningMode', '📋 Screening')}</span>
+                    </p>
+                  </QSection>
+
+                  {!form.no_labs_available ? (
+                    <>
+                      <QSection icon={<TestTube2 className="h-5 w-5 text-slate-500" />} title={t('assessment.labs.fastingTitle', 'Fasting Blood Glucose')} sub={t('assessment.labs.fastingHelper', 'mg/dL — after 8+ hours of fasting')}>
+                        <SegmentSelector options={FASTING_OPTIONS.map(o => ({ ...o, label: t(`assessment.fields.labs.fasting.${o.id}`, o.label) }))} value={qcm.fasting_group} onChange={(opt) => pickSegment('fasting_group', opt, 'fasting_glucose')} />
+                        <label className="mt-3 block">
+                          <span className="label-text">{t('assessment.exactValueMgDl', 'Exact value (mg/dL)')} {renderBadge(form.fasting_glucose, { critical: 200, diabetes: 126, prediabetes: 100 })}</span>
+                          <input className="input-base" type="number" placeholder="e.g. 115" value={form.fasting_glucose} onChange={(e) => setCustom('fasting_group', 'fasting_glucose', e.target.value)} />
+                        </label>
+                      </QSection>
+
+                      <QSection icon={<Activity className="h-5 w-5 text-slate-500" />} title={t('assessment.labs.hba1cTitle', "HbA1c (Glycated Hemoglobin)")} sub={t('assessment.labs.hba1cHelper', "Percentage — reflects 2–3 month average blood sugar")}>
+                        <SegmentSelector options={HBA1C_OPTIONS.map(o => ({ ...o, label: t(`assessment.fields.labs.hba1c.${o.id}`, o.label) }))} value={qcm.hba1c_group} onChange={(opt) => pickSegment('hba1c_group', opt, 'hba1c')} />
+                        <label className="mt-3 block">
+                          <span className="label-text">{t('assessment.exactValuePercent', 'Exact value (%)')} {renderBadge(form.hba1c, { critical: 10, diabetes: 6.5, prediabetes: 5.7 })}</span>
+                          <input className="input-base" type="number" step="0.1" placeholder="e.g. 6.1" value={form.hba1c} onChange={(e) => setCustom('hba1c_group', 'hba1c', e.target.value)} />
+                        </label>
+                      </QSection>
+
+                      <QSection icon={<TestTube2 className="h-5 w-5 text-slate-500" />} title={t('assessment.labs.ogttTitle', '2-Hour OGTT (optional)')} sub={t('assessment.labs.ogttHelper', 'mg/dL — measured 2 hours after 75g glucose load')}>
+                        <SegmentSelector options={OGTT_OPTIONS.map(o => ({ ...o, label: t(`assessment.options.ogtt.${o.id}`, o.label) }))} value={qcm.ogtt_group} onChange={(opt) => pickSegment('ogtt_group', opt, 'ogtt_2h')} />
+                        <label className="mt-3 block">
+                          <span className="label-text">{t('assessment.exactValueMgDl', 'Exact value (mg/dL)')} {renderBadge(form.ogtt_2h, { diabetes: 200, prediabetes: 140 })}</span>
+                          <input className="input-base" type="number" placeholder="e.g. 165" value={form.ogtt_2h} onChange={(e) => setCustom('ogtt_group', 'ogtt_2h', e.target.value)} />
+                        </label>
+                      </QSection>
+
+                      <QSection icon={<TestTube2 className="h-5 w-5 text-slate-500" />} title={t('assessment.labs.rpgTitle', "Random Blood Glucose (optional)")} sub={t('assessment.labs.rpgHelper', "mg/dL — any time, no fasting needed")}>
+                        <label className="block">
+                          <span className="label-text">{t('assessment.valueMgDl', 'Value (mg/dL)')}</span>
+                          <input className="input-base" type="number" min={30} max={1000} placeholder="e.g. 180" value={form.random_plasma_glucose} onChange={(e) => up('random_plasma_glucose', e.target.value)} />
+                        </label>
+                      </QSection>
+
+                      <QSection icon={<PlusCircle className="h-5 w-5 text-slate-500" />} title={t('assessment.additionalLabTests', 'Additional lab tests (optional)')}>
+                        <div className="grid gap-3 md:grid-cols-[1.2fr_1fr_auto]">
+                          <input className="input-base" placeholder={t('assessment.testName', 'Test name')} value={form.extra_lab_name} onChange={(e) => up('extra_lab_name', e.target.value)} />
+                          <input className="input-base" placeholder={t('assessment.value', 'Value')} type="number" step="0.01" value={form.extra_lab_value} onChange={(e) => up('extra_lab_value', e.target.value)} />
+                          <button type="button" className="btn-secondary gap-1.5" onClick={addExtraLab}><Plus className="h-4 w-4" /> {t('assessment.add', 'Add')}</button>
+                        </div>
+                        {extraLabs.length ? (
+                          <ul className="mt-3 space-y-2">
+                            {extraLabs.map((lab, i) => (
+                              <li key={i} className="flex flex-col gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800 sm:flex-row sm:items-center sm:justify-between">
+                                <span className="break-words">{lab.test_name}: <strong>{lab.test_value}</strong></span>
+                                <button type="button" className="btn-secondary gap-1 px-2.5 py-1.5 text-xs" onClick={() => setExtraLabs(p => p.filter((_, j) => j !== i))}><Trash2 className="h-3.5 w-3.5" /> {t('assessment.remove', 'Remove')}</button>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </QSection>
+                    </>
+                  ) : null}
+
+                  {/* ── Review Summary ──────────────────────── */}
+                  <QSection icon={<ClipboardList className="h-5 w-5 text-slate-500" />} title={t('assessment.reviewSummary', 'Review Summary')} sub={t('assessment.reviewSummarySub', 'Double-check before submitting')}>
+                    <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                      <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 px-4 py-2.5 text-white">
+                        <p className="text-sm font-semibold uppercase tracking-[0.08em]">{t('assessment.review.overview', 'Assessment Overview')}</p>
+                      </div>
+                      <dl className="divide-y divide-slate-200 dark:divide-slate-700 text-sm">
+                        {[
+                          [t('assessment.review.patient', 'Patient'), needsPatient ? (selectedPatient ? `${selectedPatient.full_name} (#${selectedPatient.id})` : t('assessment.patient.noSelection', 'Not selected')) : user?.name || 'Current user'],
+                          [t('assessment.review.mode', 'Mode'), assessmentMode === 'diagnostic' ? t('assessment.labs.diagnosticMode', '🔬 Diagnostic') : t('assessment.labs.screeningMode', '📋 Screening')],
+                          [t('assessment.review.profile', 'Age / BMI / Waist'), `${form.age || '-'} yrs / ${form.bmi || '-'} / ${form.waist_circumference || '-'} cm`],
+                          [t('assessment.review.glucose', 'Glucose Tests'), `FPG: ${form.fasting_glucose || '-'} — A1c: ${form.hba1c || '-'} — OGTT: ${form.ogtt_2h || '-'} — RPG: ${form.random_plasma_glucose || '-'}`],
+                          [t('assessment.review.symptoms', 'Symptoms'), `${selectedSymptoms.length + customSymptoms.length} ${t('common.selected', 'selected')}`],
+                          [t('assessment.review.risks', 'Risk Factors'), `${selectedRisks.length} ${t('common.selected', 'selected')}`],
+                          [t('assessment.review.flags', 'Flags'), `Hypo: ${hasHypoTrigger ? t('common.yes', '🟡 Yes') : '—'} | Urgent: ${hasUrgentTrigger ? t('common.yes', '🔴 Yes') : '—'}`],
+                        ].map(([label, value]) => (
+                          <div key={label} className="grid gap-1 px-4 py-2.5 sm:grid-cols-[11rem_1fr] sm:items-center">
+                            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
+                            <dd className="break-words text-slate-800 dark:text-slate-100">{value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </div>
+                  </QSection>
+
+                  {result ? (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20 p-4">
+                      <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">✅ {t('diagnosisResult.assessmentComplete', 'Assessment complete! Your results have been saved.')}</p>
+                      <button type="button" className="btn-primary mt-3 gap-1.5" onClick={() => navigate('/diagnosis/result')}>{t('diagnosisResult.viewReport', 'View Report →')}</button>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500">{t('diagnosisResult.reviewBeforeSubmit', 'Review your answers above, then click "Run Assessment" to get your results.')}</p>
+                  )}
+                </div>
+              ) : null}
             </div>
 
             <ErrorAlert message={error} />
 
             {/* ── Footer Navigation ──────────────────────── */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-700 pt-5">
+            <div className="flex flex-col gap-3 border-t border-slate-200 pt-5 dark:border-slate-700 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <span className="text-xs text-slate-400">
                 {step < REVIEW_STEP ? t('assessment.footerHintContinue', '↓ Complete each section, then continue') : result ? t('assessment.footerHintSubmitted', '✅ Assessment submitted') : t('assessment.footerHintReady', '🚀 Ready to submit')}
               </span>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                 {step > 1 ? (
                   <button type="button" className="btn-secondary gap-1.5" onClick={goBack}>
                     <ArrowLeft className="h-4 w-4" /> {t('common.back', 'Back')}

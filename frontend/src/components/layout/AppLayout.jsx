@@ -43,8 +43,8 @@ export function AppLayout() {
   const sidebarWidth = desktopSidebarCollapsed ? 'lg:grid-cols-[5rem_1fr]' : 'lg:grid-cols-[15rem_1fr]'
 
   return (
-    <div className={`h-screen overflow-hidden bg-white dark:bg-[#030309] lg:grid ${sidebarWidth}`}>
-      <aside className="hidden h-screen min-h-0 overflow-hidden border-r border-slate-200 bg-white dark:border-[#161b31] dark:bg-[#030309] lg:static lg:block lg:w-auto">
+    <div className={`h-[100dvh] min-w-0 overflow-hidden bg-white dark:bg-[#030309] lg:grid ${sidebarWidth}`}>
+      <aside className="hidden h-[100dvh] min-h-0 overflow-hidden border-r border-slate-200 bg-white dark:border-[#161b31] dark:bg-[#030309] lg:static lg:block lg:w-auto">
         <Sidebar
           navItems={navItems}
           userName={user?.name}
@@ -63,7 +63,7 @@ export function AppLayout() {
         onClose={() => setMobileNavOpen(false)}
       />
 
-      <div className="relative z-10 flex h-screen min-h-0 flex-col overflow-hidden">
+      <div className="relative z-10 flex h-[100dvh] min-w-0 min-h-0 flex-col overflow-hidden">
         <Topbar
           page={page}
           user={user}
@@ -76,7 +76,7 @@ export function AppLayout() {
           onOpenMobileNav={() => setMobileNavOpen(true)}
         />
 
-        <main key={location.pathname} className="custom-scrollbar page-open-motion flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
+        <main key={location.pathname} className="custom-scrollbar page-open-motion min-w-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6">
           <Outlet />
         </main>
       </div>

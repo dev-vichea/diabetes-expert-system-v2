@@ -50,7 +50,7 @@ export function Topbar({
 
   const hideNewAssessmentPaths = ['/', '/users', '/rules', '/roles-permissions']
   const shouldShowNewAssessment = !(
-    hideNewAssessmentPaths.includes(location.pathname) || 
+    hideNewAssessmentPaths.includes(location.pathname) ||
     location.pathname.startsWith('/users/') ||
     // Also consider patient specific user dashboard if any. But standard user dashboard is '/'.
     // If user dashboard means patient landing page.
@@ -60,14 +60,14 @@ export function Topbar({
   return (
     <header
       className={cn(
-        'sticky top-0 z-20 px-4 py-3 backdrop-blur sm:px-6',
+        'sticky top-0 z-20 px-3 py-3 backdrop-blur sm:px-6',
         isDark
           ? 'border-b border-[#17384b] bg-[linear-gradient(90deg,rgba(7,20,31,0.98),rgba(10,30,41,0.96),rgba(7,20,31,0.98))] shadow-[0_12px_28px_rgba(0,0,0,0.28)]'
           : 'border-b border-[#dbeef7] bg-[#f8fdff]/95'
       )}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 items-start justify-between gap-2 sm:items-center sm:gap-3">
+        <div className="flex min-w-0 flex-1 items-start gap-2 sm:items-center sm:gap-3">
           <button
             type="button"
             onClick={onToggleDesktopSidebar}
@@ -80,33 +80,33 @@ export function Topbar({
           <button
             type="button"
             onClick={onOpenMobileNav}
-            className="dark-hover-border rounded-xl border border-[#d7eaf4] bg-white p-2 text-[#5a7487] transition-colors hover:bg-[#ecf8ff] hover:text-[#0f4c81] dark:border-[#1d3b4d] dark:bg-[#0d1a28] dark:text-[#9eb5c8] dark:hover:bg-[#112335] dark:hover:text-[#dff8ff] lg:hidden"
+            className="dark-hover-border inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#d7eaf4] bg-white p-2 text-[#5a7487] transition-colors hover:bg-[#ecf8ff] hover:text-[#0f4c81] dark:border-[#1d3b4d] dark:bg-[#0d1a28] dark:text-[#9eb5c8] dark:hover:bg-[#112335] dark:hover:text-[#dff8ff] lg:hidden"
             aria-label={t('topbar.openMenu')}
           >
             <Menu className="h-4 w-4" />
           </button>
 
-          <div className="min-w-0">
-            <nav aria-label={t('topbar.breadcrumb')} className="mb-0.5 flex flex-wrap items-center gap-1 text-[11px] text-[#6d889a] dark:text-[#8ea7ba]">
+          <div className="min-w-0 flex-1">
+            <nav aria-label={t('topbar.breadcrumb')} className="mb-0.5 hidden flex-wrap items-center gap-1 text-[11px] text-[#6d889a] dark:text-[#8ea7ba] lg:flex">
               {breadcrumbs.map((crumb, index) => (
                 <div key={`${crumb.label}-${index}`} className="flex items-center gap-1">
                   {index > 0 ? <ChevronRight className="h-3 w-3 text-[#9bb2c2]" /> : null}
                   {crumb.to ? (
-                    <Link to={crumb.to} className="rounded px-1 py-0.5 hover:bg-[#e9f7ff] hover:text-[#0f4c81] dark:hover:bg-[#102234] dark:hover:text-[#dff8ff]">
+                    <Link to={crumb.to} className="max-w-[9rem] truncate rounded px-1 py-0.5 hover:bg-[#e9f7ff] hover:text-[#0f4c81] dark:hover:bg-[#102234] dark:hover:text-[#dff8ff]">
                       {crumb.label}
                     </Link>
                   ) : (
-                    <span className="px-1 py-0.5 font-semibold text-[#193f59] dark:text-[#eaf8ff]">{crumb.label}</span>
+                    <span className="max-w-[10rem] truncate px-1 py-0.5 font-semibold text-[#193f59] dark:text-[#eaf8ff]">{crumb.label}</span>
                   )}
                 </div>
               ))}
             </nav>
-            <h2 className="text-lg font-semibold text-[#17384f] dark:text-[#eefbff] sm:text-xl">{page.title}</h2>
-            <p className="text-xs text-[#678197] dark:text-[#8ea7ba] sm:text-sm">{page.subtitle}</p>
+            <h2 className="hidden truncate text-xl font-semibold text-[#17384f] dark:text-[#eefbff] lg:block">{page.title}</h2>
+            <p className="hidden truncate text-sm text-[#678197] dark:text-[#8ea7ba] lg:block">{page.subtitle}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2 xl:gap-3">
           {shouldShowNewAssessment && (
             <button
               type="button"
@@ -132,7 +132,7 @@ export function Topbar({
           <button
             type="button"
             onClick={() => setLanguage(nextLanguage)}
-            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#d7eaf4] bg-white px-3 py-2 text-xs font-semibold text-[#365167] transition-colors hover:bg-[#ecf8ff] hover:text-[#0f4c81] dark:border-[#1d3b4d] dark:bg-[#0d1a28] dark:text-[#dff8ff] dark:hover:bg-[#112335]"
+            className="hidden min-h-10 items-center gap-2 rounded-full border border-[#d7eaf4] bg-white px-3 py-2 text-xs font-semibold text-[#365167] transition-colors hover:bg-[#ecf8ff] hover:text-[#0f4c81] dark:border-[#1d3b4d] dark:bg-[#0d1a28] dark:text-[#dff8ff] dark:hover:bg-[#112335] sm:inline-flex"
             aria-label={t('topbar.languageSwitcher')}
             title={t('topbar.languageSwitcher')}
           >
@@ -143,7 +143,7 @@ export function Topbar({
           <button
             type="button"
             onClick={onToggleTheme}
-            className="dark-hover-border inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d7eaf4] bg-white text-[#5a7487] transition-colors hover:bg-[#ecf8ff] hover:text-[#0f4c81] dark:border-[#1d3b4d] dark:bg-[#0d1a28] dark:text-[#9eb5c8] dark:hover:bg-[#112335] dark:hover:text-[#dff8ff]"
+            className="dark-hover-border inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#d7eaf4] bg-white text-[#5a7487] transition-colors hover:bg-[#ecf8ff] hover:text-[#0f4c81] dark:border-[#1d3b4d] dark:bg-[#0d1a28] dark:text-[#9eb5c8] dark:hover:bg-[#112335] dark:hover:text-[#dff8ff]"
             aria-label={isDark ? t('topbar.switchToLightTheme') : t('topbar.switchToDarkTheme')}
             title={isDark ? t('topbar.switchToLightTheme') : t('topbar.switchToDarkTheme')}
           >
@@ -152,7 +152,7 @@ export function Topbar({
 
           <button
             type="button"
-            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d7eaf4] bg-white text-[#5a7487] transition-colors hover:bg-[#ecf8ff] hover:text-[#0f4c81] dark:border-[#1d3b4d] dark:bg-[#0d1a28] dark:text-[#9eb5c8] dark:hover:bg-[#112335] dark:hover:text-[#dff8ff]"
+            className="relative hidden h-11 w-11 items-center justify-center rounded-full border border-[#d7eaf4] bg-white text-[#5a7487] transition-colors hover:bg-[#ecf8ff] hover:text-[#0f4c81] dark:border-[#1d3b4d] dark:bg-[#0d1a28] dark:text-[#9eb5c8] dark:hover:bg-[#112335] dark:hover:text-[#dff8ff] md:inline-flex"
             aria-label={t('topbar.notifications')}
           >
             <Bell className="h-4 w-4" />
@@ -162,18 +162,18 @@ export function Topbar({
           <div className="relative" ref={menuRef}>
             <button
               type="button"
-              className="dark-hover-border flex items-center gap-2 rounded-full border border-[#d7eaf4] bg-white px-2 py-1.5 text-[#365167] shadow-sm transition-colors hover:bg-[#ecf8ff] dark:border-[#1d3b4d] dark:bg-[#0d1a28] dark:text-[#e3f7ff] dark:hover:bg-[#112335]"
+              className="dark-hover-border flex min-h-11 items-center gap-1 rounded-full border border-[#d7eaf4] bg-white px-1.5 py-1.5 text-[#365167] shadow-sm transition-colors hover:bg-[#ecf8ff] dark:border-[#1d3b4d] dark:bg-[#0d1a28] dark:text-[#e3f7ff] dark:hover:bg-[#112335] sm:gap-2 sm:px-2"
               onClick={() => setMenuOpen((prev) => !prev)}
             >
               <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-[#1098c7] to-[#13b6a5] text-xs font-bold text-white">
                 {initials}
               </span>
-              <span className="hidden max-w-32 truncate text-sm font-semibold sm:inline">{user?.name || t('common.user')}</span>
+              <span className="hidden max-w-32 truncate text-sm font-semibold md:inline">{user?.name || t('common.user')}</span>
               <ChevronDown className="h-4 w-4" />
             </button>
 
             {menuOpen ? (
-              <div className="dark-hover-border absolute right-0 z-30 mt-2 w-64 overflow-hidden rounded-2xl border border-[#d7eaf4] bg-white shadow-lg dark:border-[#1d3b4d] dark:bg-[#0d1a28]">
+              <div className="dark-hover-border absolute right-0 z-30 mt-2 w-[min(16rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-[#d7eaf4] bg-white shadow-lg dark:border-[#1d3b4d] dark:bg-[#0d1a28]">
                 <div className="border-b border-[#d7eaf4] bg-[#f3fbff] px-4 py-3 dark:border-[#1d3b4d] dark:bg-[#112335]">
                   <p className="text-sm font-semibold text-[#17384f] dark:text-[#eefbff]">{user?.name || t('common.unknownUser')}</p>
                   <p className="text-xs text-[#678197] dark:text-[#8ea7ba]">{user?.email || t('common.noEmail')}</p>

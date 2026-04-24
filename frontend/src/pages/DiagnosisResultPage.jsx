@@ -131,7 +131,7 @@ function formatLabValue(labKey, rawValue) {
 
 function getRiskGradient(percent) {
   percent = Number(percent) || 0
-  
+
   if (percent >= 85) {
     return 'bg-gradient-to-r from-red-700 to-red-600'
   }
@@ -149,7 +149,7 @@ function getRiskGradient(percent) {
 
 function getGaugeColor(score) {
   score = Number(score) || 0
-  
+
   if (score >= 85) {
     return { light: 'stroke-red-600', dark: 'stroke-red-400' }
   }
@@ -228,7 +228,7 @@ function CertaintyRing({ percent, size = 140, stroke = 12 }) {
   const center = size / 2
   const circumference = 2 * Math.PI * radius
   const offset = circumference * (1 - safePercent / 100)
-  
+
   const colorClass = safePercent >= 85 ? 'text-red-500' : safePercent >= 70 ? 'text-orange-500' : safePercent >= 45 ? 'text-amber-500' : 'text-emerald-500'
 
   return (
@@ -254,7 +254,7 @@ function EvidenceRangeGauge({ score = 0, level = 'low' }) {
   const arcPath = 'M 10 66 A 54 54 0 0 1 118 66'
 
   return (
-    <div className="w-[150px] shrink-0">
+    <div className="w-full shrink-0 sm:w-[150px]">
       <svg viewBox="0 0 128 80" className="h-[80px] w-[128px]">
         <path
           d={arcPath}
@@ -287,16 +287,16 @@ function LabIndicatorCard({ title, valueLabel, status, subtitle, pointerPercent,
     ? null
     : Math.max(1.5, Math.min(98.5, Number(pointerPercent)))
   return (
-    <div className="rounded-lg bg-white p-3 dark:bg-slate-900">
+    <div className="min-w-0 rounded-lg bg-white p-3 dark:bg-slate-900">
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div className="min-w-0 flex items-center gap-2">
           {Icon && <Icon className="h-5 w-5 text-slate-700 dark:text-slate-300" />}
-          <p className="text-[1.05rem] font-bold leading-snug text-slate-900 dark:text-slate-100">{title}</p>
+          <p className="break-words text-[1.05rem] font-bold leading-snug text-slate-900 dark:text-slate-100">{title}</p>
         </div>
         <StatusBadge tone={status.tone} size="sm">{status.label}</StatusBadge>
       </div>
 
-      <p className="mt-2 text-[2.2rem] font-extrabold leading-none text-slate-900 dark:text-slate-100">{valueLabel}</p>
+      <p className="mt-2 break-words text-3xl font-extrabold leading-none text-slate-900 dark:text-slate-100 sm:text-[2.2rem]">{valueLabel}</p>
 
       <div className="mt-5">
         <div className="relative h-2 rounded-full bg-slate-200 dark:bg-slate-700">
@@ -506,20 +506,20 @@ export function DiagnosisResultPage() {
   }
 
   return (
-    <div className="pb-10 max-w-6xl mx-auto space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6 pb-10">
 
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+      <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="break-words text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
             {t('diagnosisResult.pageTitle', 'Medical Assessment Report')}
           </h1>
-          <p className="mt-1.5 flex items-center gap-2 text-sm font-medium text-slate-500">
+          <p className="mt-1.5 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-500">
             <span>{t('diagnosisResult.patient', 'Patient')}: <strong className="text-slate-700 dark:text-slate-300 uppercase tracking-wide">{patientName}</strong></span>
             <span className="text-slate-300 dark:text-slate-700">&bull;</span>
             <span>{t('diagnosisResult.generatedOn', 'Generated on')}: {formatDateTime(reportTime)}</span>
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
             onClick={handleDownloadReport}
@@ -549,34 +549,34 @@ export function DiagnosisResultPage() {
 
       <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-100 dark:bg-[#070b15] dark:ring-slate-800/60">
         <div className="grid lg:grid-cols-5">
-          <article className={`relative lg:col-span-3 overflow-hidden ${getRiskGradient(certaintyPercent)} px-8 py-10 md:py-14 text-white`}>
+          <article className={`relative overflow-hidden px-5 py-8 text-white sm:px-8 md:py-14 lg:col-span-3 ${getRiskGradient(certaintyPercent)}`}>
             <div className="absolute inset-0 bg-black/10 mix-blend-overlay"></div>
-            <img src="/images/disease.png" alt="Disease illustration" className="absolute -right-10 top-0 h-full w-auto opacity-[0.15] object-cover mix-blend-luminosity" />
-            
+            <img src="/images/disease.png" alt="Disease illustration" className="absolute -right-10 top-0 hidden h-full w-auto opacity-[0.15] object-cover mix-blend-luminosity sm:block" />
+
             <div className="relative z-10 flex h-full flex-col justify-center">
               <span className="mb-4 flex items-center gap-1.5 w-fit rounded-full bg-white/20 px-3 py-1 text-xs font-black uppercase tracking-widest text-white backdrop-blur-md shadow-sm border border-white/10">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 {t('diagnosisResult.diagnosticOutput', 'Diagnostic Output')}
               </span>
-              <h2 className="text-4xl md:text-5xl font-black uppercase leading-tight drop-shadow-sm">{primaryHeadline}</h2>
-              <p className="mt-4 max-w-md text-lg leading-relaxed text-white/95 font-medium drop-shadow-sm">
+              <h2 className="break-words text-3xl font-black uppercase leading-tight drop-shadow-sm sm:text-4xl md:text-5xl">{primaryHeadline}</h2>
+              <p className="mt-4 max-w-md text-base font-medium leading-relaxed text-white/95 drop-shadow-sm sm:text-lg">
                 {t('diagnosisResult.probabilityBase', 'Based on comprehensive clinical data, the inference engine calculates a ')}<strong className="font-extrabold text-white">{certaintyPercent >= 85 ? t('diagnosisResult.probability.veryHigh', 'very high probability') : certaintyPercent >= 70 ? t('diagnosisResult.probability.high', 'high probability') : certaintyPercent >= 45 ? t('diagnosisResult.probability.moderate', 'moderate probability') : t('diagnosisResult.probability.low', 'low probability')}</strong>{t('diagnosisResult.probabilityOf', ' of this diagnosis.')}
               </p>
             </div>
           </article>
 
-          <article className="lg:col-span-2 bg-slate-50 dark:bg-[#0a0f1c] px-8 py-10 flex flex-col items-center justify-center relative">
+          <article className="relative flex flex-col items-center justify-center bg-slate-50 px-5 py-8 dark:bg-[#0a0f1c] sm:px-8 sm:py-10 lg:col-span-2">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-black/5 to-transparent dark:via-white/5"></div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-8 mt-2">{t('diagnosisResult.overallScore', 'Overall Score')}</p>
-            
+
             <div className="relative flex items-center justify-center">
               <CertaintyRing percent={certaintyPercent} size={180} stroke={14} />
               <div className="absolute inset-0 flex flex-col items-center justify-center drop-shadow-md">
-                 <span className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white leading-none">{certaintyPercent}</span>
-                 <span className="text-[10px] font-black text-slate-400 uppercase mt-1 tracking-widest">/ 100</span>
+                <span className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white leading-none">{certaintyPercent}</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase mt-1 tracking-widest">/ 100</span>
               </div>
             </div>
-            
+
             <div className="mt-8 text-center bg-white dark:bg-slate-900/50 rounded-2xl py-3 px-6 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-slate-800 max-w-[240px]">
               <p className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-slate-200">
                 {tExact(confidenceMeta.title)}
@@ -591,9 +591,9 @@ export function DiagnosisResultPage() {
         <h3 className="text-xl font-black tracking-tight text-slate-800 dark:text-slate-100">{t('diagnosisResult.clinicalEvidence', 'Clinical Evidence')}</h3>
       </div>
 
-      <div className="mt-3 grid gap-3 xl:grid-cols-12">
+      <div className="mt-3 grid min-w-0 gap-3 xl:grid-cols-12">
         <article className="xl:col-span-6">
-            <SurfaceSection title={t('diagnosisResult.keyDiagnosticIndicators', 'Key Diagnostic Indicators')} icon={FlaskConical}>
+          <SurfaceSection title={t('diagnosisResult.keyDiagnosticIndicators', 'Key Diagnostic Indicators')} icon={FlaskConical}>
             <div className="grid gap-2 sm:grid-cols-2">
               <LabIndicatorCard
                 title={t('diagnosisResult.hba1cIndicator', 'HbA1c Level Indicator')}
@@ -616,8 +616,8 @@ export function DiagnosisResultPage() {
             </div>
 
             <div className="mt-3 rounded-lg bg-white p-3 dark:bg-slate-900">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+                <div className="min-w-0">
                   <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{t('diagnosisResult.evidenceCompleteness', 'Evidence Completeness')}</p>
                   <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                     {t('diagnosisResult.availableLabs', 'available labs:')} {(evidenceCompleteness?.available_labs || []).map(l => tExact(toReadableLabel(l))).join(', ') || t('diagnosisResult.none', 'none')}
@@ -633,7 +633,7 @@ export function DiagnosisResultPage() {
         </article>
 
         <article className="xl:col-span-4">
-            <SurfaceSection title={t('diagnosisResult.relevantHistory', 'Relevant History & Symptoms')} icon={Heart}>
+          <SurfaceSection title={t('diagnosisResult.relevantHistory', 'Relevant History & Symptoms')} icon={Heart}>
             {matchedSymptoms.length ? (
               <div>
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('diagnosisResult.knownSymptoms', 'Known symptoms includes:')}</p>
@@ -656,7 +656,7 @@ export function DiagnosisResultPage() {
         </article>
 
         <article className="xl:col-span-2">
-            <SurfaceSection title={t('diagnosisResult.riskFactors', 'Risk Factors')} icon={Zap}>
+          <SurfaceSection title={t('diagnosisResult.riskFactors', 'Risk Factors')} icon={Zap}>
             {matchedRiskFactors.length ? (
               <div>
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('diagnosisResult.knownHistory', 'Known history includes:')}</p>
@@ -756,8 +756,8 @@ export function DiagnosisResultPage() {
 
       {result?.fact_preparation_trace?.length ? (
         <SurfaceSection title={t('diagnosisResult.factPreparation', 'Fact Preparation')} icon={FlaskConical}>
-          <div className="overflow-auto">
-            <table className="min-w-full text-left text-sm">
+        <div className="table-wrap border-0">
+            <table className="w-full min-w-[680px] text-left text-sm">
               <thead>
                 <tr className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-700">
                   <th className="px-2 py-2">{t('diagnosisResult.factKey', 'Fact Key')}</th>
@@ -780,7 +780,7 @@ export function DiagnosisResultPage() {
       ) : null}
 
       <div className="rounded-xl bg-white px-4 py-3 dark:bg-[#050912]">
-        <div className="flex items-center gap-2">
+        <div className="flex items-start gap-2">
           <Activity className="h-4 w-4 text-primary-600 dark:text-primary-400" />
           <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
             {t('diagnosisResult.savedResultActive', 'Saved result snapshot is active for this account. Start a new assessment to replace it.')}
@@ -788,11 +788,11 @@ export function DiagnosisResultPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-4">
+      <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <span className="text-xs text-slate-500">
           {t('diagnosisResult.viewAssessmentResults', 'View your assessment results and recommendations above.')}
         </span>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <button type="button" className="btn-secondary gap-1.5" onClick={() => navigate('/diagnosis')}>
             <ArrowLeft className="h-4 w-4" />
             Back

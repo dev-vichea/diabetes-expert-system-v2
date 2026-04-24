@@ -120,15 +120,15 @@ export function KnowledgeBaseDashboard() {
     <div className="w-full space-y-6">
       
       {/* ── Date range toolbar ─────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm dark:border-[#1b2342] dark:bg-[#0c1024]">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex max-w-full overflow-x-auto rounded-lg border border-slate-200 bg-white p-1 text-sm dark:border-[#1b2342] dark:bg-[#0c1024]">
             {dateRanges.map((range) => (
               <button
                 key={range.label}
                 type="button"
                 onClick={() => setSelectedRange(range.value)}
-                className={`px-3 py-1.5 text-xs font-medium transition-all duration-200 rounded-md ${
+                className={`min-h-10 shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
                   selectedRange === range.value
                     ? 'bg-cyan-600 text-white shadow-sm'
                     : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-[#131a33]'
@@ -142,7 +142,7 @@ export function KnowledgeBaseDashboard() {
             type="button"
             onClick={() => fetchStats(selectedRange)}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 dark:border-[#1b2342] dark:bg-[#0c1024] dark:text-slate-400 dark:hover:bg-[#131a33] disabled:opacity-50"
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 dark:border-[#1b2342] dark:bg-[#0c1024] dark:text-slate-400 dark:hover:bg-[#131a33] disabled:opacity-50"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
             {t('kbDashboard.refresh', 'Refresh')}
@@ -167,7 +167,7 @@ export function KnowledgeBaseDashboard() {
                   className="surface flex h-full flex-col p-5 cursor-default transition-all duration-200 hover:shadow-lg hover:scale-[1.02]"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div>
+                    <div className="min-w-0">
                       <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{card.title}</h3>
                       <p className="mt-1 text-xs text-slate-500">{card.description}</p>
                     </div>
@@ -212,11 +212,11 @@ export function KnowledgeBaseDashboard() {
                     </PieChart>
                  </ChartContainer>
                </div>
-               <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+               <div className="mt-4 grid gap-2 text-xs sm:grid-cols-2">
                  {categoryData.map(c => (
-                   <div key={c.name} className="flex items-center gap-2">
+                   <div key={c.name} className="flex min-w-0 items-center gap-2">
                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: c.color }} />
-                     <span className="text-slate-600 dark:text-slate-400">{c.name} ({c.value})</span>
+                     <span className="truncate text-slate-600 dark:text-slate-400">{c.name} ({c.value})</span>
                    </div>
                  ))}
                </div>
@@ -224,7 +224,7 @@ export function KnowledgeBaseDashboard() {
 
              <SectionCard title={t('kbDashboard.topTriggeredRules', 'Top Triggered Rules')} className="lg:col-span-2 overflow-hidden p-0">
                 <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
+                  <table className="w-full min-w-[720px] text-sm">
                     <thead className="bg-slate-50 dark:bg-[#0c1024]">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">{t('kbDashboard.columns.rank', 'Rank')}</th>
@@ -254,17 +254,17 @@ export function KnowledgeBaseDashboard() {
 
           {/* Recent Cases table */}
           <section className="surface overflow-hidden p-0 mt-5">
-            <header className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-[#1b2342]">
-              <div>
+            <header className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 dark:border-[#1b2342] sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <div className="min-w-0">
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('kbDashboard.recentCases.title', 'Recent Cases')}</h3>
                 <p className="mt-1 text-sm text-slate-500">{t('kbDashboard.recentCases.desc', `Latest ${stats?.recent_cases?.length || 0} diagnoses evaluated by the system.`, { count: stats?.recent_cases?.length || 0 })}</p>
               </div>
-              <Link to="/patients" className="btn-secondary text-xs px-3 py-1.5 h-8">
+              <Link to="/patients" className="btn-secondary px-3 py-1.5 text-xs sm:h-8 sm:min-h-0">
                 {t('kbDashboard.recentCases.viewAll', 'View All')} <ArrowRight className="ml-1.5 h-3 w-3" />
               </Link>
             </header>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+              <table className="w-full min-w-[820px] text-sm">
                 <thead className="bg-slate-50 dark:bg-[#0c1024]">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('kbDashboard.recentCases.columns.patient', 'Patient')}</th>

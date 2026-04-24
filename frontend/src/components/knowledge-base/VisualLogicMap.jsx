@@ -19,7 +19,7 @@ function ConditionNode({ data }) {
   const isOr = data.logical_operator?.toLowerCase() === 'or'
   
   return (
-    <div className={`px-4 py-3 rounded-xl border-2 shadow-lg w-[280px] bg-white dark:bg-[#0c1024] 
+    <div className={`px-4 py-3 rounded-xl border-2 shadow-lg w-[min(280px,80vw)] bg-white dark:bg-[#0c1024] 
       ${isOr ? 'border-amber-400/50 shadow-amber-500/10' : 'border-cyan-400/50 shadow-cyan-500/10'}
       transition-all duration-300 hover:shadow-xl hover:scale-[1.02]`}
     >
@@ -55,7 +55,7 @@ function ConditionNode({ data }) {
 // Custom Node for the Conclusion
 function ConclusionNode({ data }) {
   return (
-    <div className="px-5 py-4 rounded-xl border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 shadow-lg shadow-emerald-500/20 w-[300px]">
+    <div className="px-5 py-4 rounded-xl border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 shadow-lg shadow-emerald-500/20 w-[min(300px,82vw)]">
       <Handle type="target" position={Position.Top} className="w-3 h-3 border-2 border-emerald-500 bg-emerald-100 dark:bg-emerald-800" />
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-inner">
@@ -80,7 +80,7 @@ function ConclusionNode({ data }) {
 // Custom Node for the Rule Entry
 function StartNode({ data }) {
   return (
-    <div className="px-5 py-3 rounded-xl border-2 border-slate-800 bg-slate-900 text-white shadow-xl shadow-slate-900/20 w-[240px]">
+    <div className="px-5 py-3 rounded-xl border-2 border-slate-800 bg-slate-900 text-white shadow-xl shadow-slate-900/20 w-[min(240px,78vw)]">
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
           <Layers className="w-4 h-4 text-white" />

@@ -54,7 +54,7 @@ export function PatientDashboardPage() {
         urgentCount={urgentCount}
       />
 
-      <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
         <PatientRecentAssessments loading={loading} results={patientResults} />
         <PatientCarePanel latestResult={latestResult} />
       </div>

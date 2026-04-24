@@ -170,14 +170,14 @@ function UserEditorDialog({
   if (!open) return null
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 px-4 backdrop-blur-[2px] animate-in fade-in-0">
-      <div className="surface dark-hover-border w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-[#1f2640] dark:bg-[#070712] animate-in zoom-in-95">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5 dark:border-[#1f2640]">
-          <div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/45 px-3 py-4 backdrop-blur-[2px] animate-in fade-in-0 sm:px-4">
+      <div className="surface dark-hover-border max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-[#1f2640] dark:bg-[#070712] animate-in zoom-in-95">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-[#1f2640] sm:px-6 sm:py-5">
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
               {mode === 'create' ? t('usersPage.editor.newAccount') : t('usersPage.editor.editAccount')}
             </p>
-            <h3 className="mt-1 text-2xl font-bold text-slate-950 dark:text-slate-50">
+            <h3 className="mt-1 break-words text-2xl font-bold text-slate-950 dark:text-slate-50">
               {mode === 'create' ? t('usersPage.editor.addUser') : t('usersPage.editor.updateUser')}
             </h3>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -197,7 +197,7 @@ function UserEditorDialog({
           </button>
         </div>
 
-        <form className="grid gap-4 px-6 py-6 sm:grid-cols-2" onSubmit={onSubmit}>
+        <form className="grid gap-4 px-4 py-5 sm:grid-cols-2 sm:px-6 sm:py-6" onSubmit={onSubmit}>
           <label className="block sm:col-span-2">
             <span className="label-text">{t('usersPage.editor.fields.fullName')}</span>
             <input
@@ -253,7 +253,7 @@ function UserEditorDialog({
             />
           </label>
 
-          <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-5 sm:col-span-2 dark:border-slate-800">
+          <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:col-span-2 sm:flex-row sm:items-center sm:justify-end dark:border-slate-800">
             <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>
               {t('usersPage.editor.actions.cancel')}
             </button>
@@ -673,9 +673,9 @@ export function AdminPage() {
           </AdminInsightPanel>
         </div>
 
-        <div className="surface mt-6 p-4">
+        <div className="surface mt-6 min-w-0 p-4">
           <Tabs value={statusTab} onValueChange={setStatusTab}>
-            <TabsList>
+            <TabsList className="max-w-full overflow-x-auto">
               {STATUS_TABS.map((tab) => (
                 <TabsTrigger
                   key={tab.value}
@@ -699,7 +699,7 @@ export function AdminPage() {
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button type="button" className="btn-secondary gap-2 rounded-2xl">
@@ -742,13 +742,13 @@ export function AdminPage() {
 
           <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
             <div className="overflow-x-auto">
-              <table className="min-w-full bg-white dark:bg-slate-950/20">
+              <table className="w-full min-w-[860px] bg-white dark:bg-slate-950/20">
                 <thead className="bg-slate-50/80 dark:bg-slate-950/60">
                   <tr>
-                  <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
-                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('name')}>
-                      {t('usersPage.table.headers.name')}
-                      <ArrowUpDown className="h-4 w-4 text-slate-400" />
+                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
+                      <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('name')}>
+                        {t('usersPage.table.headers.name')}
+                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
                       </button>
                     </th>
                     {visibleColumns.role ? (
@@ -796,11 +796,11 @@ export function AdminPage() {
                     </tr>
                   ) : null}
 
-                    {!loadingUsers
-                      ? paginatedUsers.map((user) => {
-                        const primaryRole = user.role || user.roles?.[0] || 'patient'
-                        const count = user.permissions?.length || 0
-                        const accessLabel = t('usersPage.table.states.permissions', { count })
+                  {!loadingUsers
+                    ? paginatedUsers.map((user) => {
+                      const primaryRole = user.role || user.roles?.[0] || 'patient'
+                      const count = user.permissions?.length || 0
+                      const accessLabel = t('usersPage.table.states.permissions', { count })
                       return (
                         <tr key={user.id} className="border-t border-slate-200 transition hover:bg-slate-50/70 dark:border-slate-800 dark:hover:bg-slate-950/40">
                           <td className="px-3 py-3">
@@ -854,8 +854,8 @@ export function AdminPage() {
                               <button
                                 type="button"
                                 className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition ${user.is_active
-                                    ? 'text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30'
-                                    : 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30'
+                                  ? 'text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30'
+                                  : 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30'
                                   }`}
                                 onClick={() => requestStatusToggle(user)}
                                 aria-label={`${user.is_active ? 'Disable' : 'Enable'} ${user.name}`}
@@ -878,7 +878,7 @@ export function AdminPage() {
               {t('common.showing', { from: showingFrom, to: showingTo, total: sortedUsers.length })}
             </p>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                 <span>{t('common.rows')}</span>
                 <div className="min-w-[88px]">
@@ -890,7 +890,7 @@ export function AdminPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   className="btn-secondary rounded-2xl px-4 py-2"
@@ -915,8 +915,8 @@ export function AdminPage() {
                         key={pageNumber}
                         type="button"
                         className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl border text-sm font-semibold transition ${active
-                            ? 'border-violet-500 bg-violet-600 text-white shadow-sm'
-                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950/30 dark:text-slate-200 dark:hover:bg-slate-900'
+                          ? 'border-violet-500 bg-violet-600 text-white shadow-sm'
+                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950/30 dark:text-slate-200 dark:hover:bg-slate-900'
                           }`}
                         onClick={() => setPage(pageNumber)}
                       >
@@ -959,9 +959,9 @@ export function AdminPage() {
         title={pendingStatusUser?.is_active ? t('common.disableAccount') : t('common.enableAccount')}
         description={
           pendingStatusUser
-            ? pendingStatusUser.is_active 
-                ? t('common.disableDesc', { name: pendingStatusUser.name })
-                : t('common.enableDesc', { name: pendingStatusUser.name })
+            ? pendingStatusUser.is_active
+              ? t('common.disableDesc', { name: pendingStatusUser.name })
+              : t('common.enableDesc', { name: pendingStatusUser.name })
             : t('common.confirmStatusChange')
         }
         confirmLabel={pendingStatusUser?.is_active ? t('common.disableUser') : t('common.enableUser')}

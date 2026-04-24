@@ -155,7 +155,7 @@ export function PatientsPage() {
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+    <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
       <SectionCard title={t('patientsPage.records.title', 'Patient Records')} description={t('patientsPage.records.desc', 'Search, filter, edit profiles, and open assessment workflows.')}>
         <FilterBar className="mt-4 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr_auto_auto]" onSubmit={applyFilters}>
           <SearchInput
@@ -195,11 +195,11 @@ export function PatientsPage() {
         <DataTable
           className="mt-4"
           columns={[
-            { key: 'name', label: t('patientsPage.table.name', 'Name') },
-            { key: 'gender', label: t('patientsPage.table.gender', 'Gender') },
-            { key: 'phone', label: t('patientsPage.table.phone', 'Phone') },
-            { key: 'diagnoses', label: t('patientsPage.table.diagnoses', 'Diagnoses') },
-            { key: 'actions', label: t('patientsPage.table.actions', 'Actions') },
+            { key: 'name', label: t('patientsPage.table.name', 'Name'), className: 'w-[24%]' },
+            { key: 'gender', label: t('patientsPage.table.gender', 'Gender'), className: 'w-[14%]' },
+            { key: 'phone', label: t('patientsPage.table.phone', 'Phone'), className: 'w-[20%]' },
+            { key: 'diagnoses', label: t('patientsPage.table.diagnoses', 'Diagnoses'), className: 'w-[12%]' },
+            { key: 'actions', label: t('patientsPage.table.actions', 'Actions'), className: 'w-[30%]' },
           ]}
           loading={loading}
           isEmpty={!patients.length}
@@ -214,20 +214,20 @@ export function PatientsPage() {
             >
               <td className="font-semibold text-slate-900">{patient.full_name}</td>
               <td><StatusBadge tone={genderBadgeTone(patient.gender)}>{t(`common.${patient.gender}`, patient.gender || 'N/A')}</StatusBadge></td>
-              <td>{patient.phone || 'N/A'}</td>
+              <td className="break-all">{patient.phone || 'N/A'}</td>
               <td>{patient.diagnosis_count}</td>
               <td>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <Link
                     to={`/patients/${patient.id}`}
-                    className="btn-secondary px-3 py-1.5 text-xs"
+                    className="btn-secondary min-h-9 w-full whitespace-nowrap px-2 py-1 text-[11px] sm:w-auto sm:px-3 sm:py-1.5 sm:text-xs"
                     onClick={(event) => event.stopPropagation()}
                   >
                     {t('patientsPage.table.history', 'History')}
                   </Link>
                   <button
                     type="button"
-                    className="btn-primary px-3 py-1.5 text-xs"
+                    className="btn-primary min-h-9 w-full whitespace-nowrap px-2 py-1 text-[11px] sm:w-auto sm:px-3 sm:py-1.5 sm:text-xs"
                     onClick={(event) => {
                       event.stopPropagation()
                       openPatientWorkflow(patient)

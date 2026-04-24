@@ -41,21 +41,21 @@ export function ConfirmDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 px-4 backdrop-blur-[2px] animate-in fade-in-0"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/55 px-3 py-4 backdrop-blur-[2px] animate-in fade-in-0 sm:px-4"
       onClick={() => {
         if (!loading) onCancel?.()
       }}
     >
       <div
-        className="dark-hover-border w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-[#1f2640] dark:bg-[#070712] animate-in zoom-in-95"
+        className="dark-hover-border max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-[#1f2640] dark:bg-[#070712] animate-in zoom-in-95"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="border-b border-slate-200 px-6 py-5 dark:border-[#1f2640]">
-          <div className="flex items-start gap-4">
+        <div className="border-b border-slate-200 px-4 py-4 dark:border-[#1f2640] sm:px-6 sm:py-5">
+          <div className="flex items-start gap-3 sm:gap-4">
             <span
               className={cn(
                 'mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-full',
@@ -71,7 +71,7 @@ export function ConfirmDialog({
           </div>
         </div>
 
-        <div className="flex flex-col-reverse gap-2 bg-slate-50/80 px-6 py-4 sm:flex-row sm:justify-end dark:bg-[#0c1324]">
+        <div className="flex flex-col-reverse gap-2 bg-slate-50/80 px-4 py-4 sm:flex-row sm:justify-end sm:px-6 dark:bg-[#0c1324]">
           <button
             type="button"
             className="btn-secondary w-full sm:w-auto"

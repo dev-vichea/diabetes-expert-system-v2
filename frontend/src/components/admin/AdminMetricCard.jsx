@@ -15,7 +15,7 @@ export function AdminMetricCard({
   return (
     <article
       className={cn(
-        'surface dark-hover-border relative flex h-full overflow-hidden border border-slate-200 bg-gradient-to-br px-5 py-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800',
+        'surface dark-hover-border relative flex h-full min-w-0 overflow-hidden border border-slate-200 bg-gradient-to-br px-5 py-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800',
         shellClass,
         className
       )}

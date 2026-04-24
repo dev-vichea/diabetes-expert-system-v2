@@ -171,23 +171,23 @@ export function RuleSimulator({ rules = [] }) {
   }
 
   return (
-    <div className="surface overflow-hidden">
+    <div className="surface min-w-0 overflow-hidden">
       {/* Header */}
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center justify-between p-5 text-left transition-colors hover:bg-slate-50/50 dark:hover:bg-[#0c1024]"
+        className="flex w-full flex-col gap-3 p-4 text-left transition-colors hover:bg-slate-50/50 dark:hover:bg-[#0c1024] sm:flex-row sm:items-center sm:justify-between sm:p-5"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/20">
             <Beaker className="h-5 w-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('sandbox.title', 'Rule Simulation Sandbox')}</h3>
             <p className="text-xs text-slate-500">{t('sandbox.subtitle', 'Test patient scenarios against active rules without saving records')}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
           {results && (
             <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium dark:bg-slate-800">
               <Zap className="h-3 w-3 text-amber-500" />
@@ -202,11 +202,11 @@ export function RuleSimulator({ rules = [] }) {
 
       {expanded && (
         <div className="border-t border-slate-200 dark:border-[#1b2342]">
-          <div className="grid gap-6 p-6 xl:grid-cols-[1fr_1fr]">
+          <div className="grid min-w-0 gap-6 p-4 sm:p-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
 
             {/* Input Panel */}
             <div>
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">{t('sandbox.testPatientData', 'Test Patient Data')}</h4>
                 <div className="flex items-center gap-2">
                   <button
@@ -234,7 +234,7 @@ export function RuleSimulator({ rules = [] }) {
               </div>
 
               {/* Input Fields */}
-              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
+              <div className="max-h-[400px] space-y-4 overflow-y-auto pr-1">
                 {INPUT_GROUP_KEYS.map((group) => (
                   <div key={group.titleKey}>
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">{t(group.titleKey, group.fallback)}</p>
@@ -283,7 +283,7 @@ export function RuleSimulator({ rules = [] }) {
                   <p className="mt-1 text-xs text-slate-400">{t('sandbox.usePresets', 'Use presets above for quick scenarios')}</p>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
+                <div className="max-h-[440px] space-y-2 overflow-y-auto pr-1">
                   {/* Summary Bar */}
                   <div className={`mb-3 flex items-center gap-3 rounded-xl p-3 text-sm font-medium ${
                     matchedCount > 0
@@ -310,7 +310,7 @@ export function RuleSimulator({ rules = [] }) {
                             : 'border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900/30'
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                           <div className="flex items-start gap-2 min-w-0">
                             {match ? (
                               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
@@ -318,7 +318,7 @@ export function RuleSimulator({ rules = [] }) {
                               <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-slate-300 dark:text-slate-600" />
                             )}
                             <div className="min-w-0">
-                              <p className={`truncate text-sm font-semibold ${match ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-500 dark:text-slate-400'}`}>
+                              <p className={`break-words text-sm font-semibold ${match ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-500 dark:text-slate-400'}`}>
                                 {rule.name}
                               </p>
                               <p className="text-[11px] text-slate-400 dark:text-slate-500">
@@ -340,7 +340,7 @@ export function RuleSimulator({ rules = [] }) {
                             {details.map((d, i) => (
                               <div
                                 key={i}
-                                className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs ${
+                                className={`flex flex-col gap-1 rounded-md px-2 py-1 text-xs sm:flex-row sm:items-center sm:gap-2 ${
                                   d.passed
                                     ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
                                     : 'bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400'
@@ -351,11 +351,11 @@ export function RuleSimulator({ rules = [] }) {
                                 ) : (
                                   <XCircle className="h-3 w-3 shrink-0" />
                                 )}
-                                <span className="font-mono">
+                                <span className="break-all font-mono">
                                   {i > 0 ? `${d.logical_operator?.toUpperCase()} ` : ''}
                                   {d.fact_key} {d.operator} {JSON.stringify(d.expected_value)}
                                 </span>
-                                <span className="ml-auto text-[10px] opacity-70">
+                                <span className="text-[10px] opacity-70 sm:ml-auto">
                                   actual: {d.actualValue !== undefined ? String(d.actualValue) : 'N/A'}
                                 </span>
                               </div>

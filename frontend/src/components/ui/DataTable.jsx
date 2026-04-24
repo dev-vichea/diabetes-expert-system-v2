@@ -23,7 +23,7 @@ export function DataTable({
   const colSpan = normalizedColumns.length || 1
 
   return (
-    <div className={cn('table-wrap', className)}>
+    <div className={cn('table-wrap min-w-0', className)}>
       <table className="table-base">
         <thead>
           <tr>

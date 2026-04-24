@@ -453,9 +453,9 @@ export function RulesPage() {
   }
 
   return (
-    <Tabs defaultValue="dashboard" className="w-full space-y-5">
-      <div className="flex items-center justify-between pb-1">
-        <TabsList>
+    <Tabs defaultValue="dashboard" className="w-full min-w-0 space-y-5">
+      <div className="flex min-w-0 items-center justify-between overflow-x-auto pb-1">
+        <TabsList className="shrink-0">
           <TabsTrigger value="dashboard">{t('rules.tabs.overview', 'Overview')}</TabsTrigger>
           <TabsTrigger value="editor">{t('rules.tabs.editor', 'Rule Editor')}</TabsTrigger>
           <TabsTrigger value="visual">{t('rules.tabs.visual', 'Visual Graph')}</TabsTrigger>
@@ -467,10 +467,10 @@ export function RulesPage() {
         <KnowledgeBaseDashboard />
       </TabsContent>
 
-      <TabsContent value="visual" className="mt-0 h-[600px]">
+      <TabsContent value="visual" className="mt-0 h-[70dvh] min-h-[420px] lg:h-[600px]">
         <SectionCard bodyClassName="flex flex-1 min-h-0 flex-col p-0 h-full overflow-hidden">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-[#0c1024]">
-            <div>
+          <div className="flex flex-col gap-3 border-b border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-[#0c1024] sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <h2 className="section-title">{t('rules.dashboard.visualLogicGraph', 'Visual Logic Graph')}</h2>
               <p className="text-xs text-slate-500 mt-1">
                 {t('rules.dashboard.visualizingRule', 'Visualizing rule:')} <span className="font-semibold text-cyan-600">{form.name || t('rules.dashboard.unnamedRule', 'Unnamed Rule')}</span>
@@ -478,7 +478,7 @@ export function RulesPage() {
             </div>
             {selectedRule && selectedRule.status !== 'archived' ? (
               <button type="button" className="btn-primary py-1.5 px-3 text-xs" onClick={saveRule} disabled={saving}>
-                 {saving ? t('rules.dashboard.saving', 'Saving...') : t('rules.dashboard.saveRule', 'Save Rule')}
+                {saving ? t('rules.dashboard.saving', 'Saving...') : t('rules.dashboard.saveRule', 'Save Rule')}
               </button>
             ) : null}
           </div>
@@ -489,20 +489,20 @@ export function RulesPage() {
       </TabsContent>
 
       <TabsContent value="editor" className="mt-0 space-y-5">
-      <SectionCard
-        title={
-          <span className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-cyan-600" />
-            {t('rules.dashboard.knowledgeBaseRules', 'Knowledge Base Rules')}
-            <span className="ml-1 inline-flex items-center rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-semibold text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400">
-              {filteredRules.length}
+        <SectionCard
+          title={
+            <span className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-cyan-600" />
+              {t('rules.dashboard.knowledgeBaseRules', 'Knowledge Base Rules')}
+              <span className="ml-1 inline-flex items-center rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-semibold text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400">
+                {filteredRules.length}
+              </span>
             </span>
-          </span>
-        }
-        description={t('rules.dashboard.filterSelectReview', "Filter and select a rule to review versions and edit conditions.")}
-        className="max-h-[30rem]"
-        bodyClassName="flex flex-1 min-h-0 flex-col"
-      >
+          }
+          description={t('rules.dashboard.filterSelectReview', "Filter and select a rule to review versions and edit conditions.")}
+          className="max-h-[30rem]"
+          bodyClassName="flex flex-1 min-h-0 flex-col"
+        >
           {/* Search Bar */}
           <div className="mt-4 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -578,15 +578,15 @@ export function RulesPage() {
           </DataTable>
         </SectionCard>
 
-      <SectionCard bodyClassName="flex flex-1 min-h-0 flex-col">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <div>
+        <SectionCard bodyClassName="flex flex-1 min-h-0 flex-col">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div>
               <h2 className="section-title">{selectedRule ? t('rules.editor.editRule', 'Edit Rule') : t('rules.editor.createRule', 'Create Rule')}</h2>
               <p className="section-subtitle mt-1">
                 {t('rules.editor.subtitle', 'Write simple clinical logic for doctors. Example: if fasting glucose is 126 or higher, set diabetes possible.')}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <button type="button" className="btn-secondary" onClick={resetEditor}>{t('rules.editor.newRule', 'New Rule')}</button>
               {selectedRule?.status === 'archived' ? (
                 <button type="button" className="btn-secondary" onClick={unarchiveSelectedRule} disabled={unarchiving}>
@@ -634,7 +634,7 @@ export function RulesPage() {
 
               <div className="space-y-2">
                 {form.conditions.map((condition, index) => (
-                  <div key={`condition-${index}`} className="grid gap-2 rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-800/50 sm:grid-cols-[90px_1.2fr_0.7fr_1fr_auto]">
+                  <div key={`condition-${index}`} className="grid gap-2 rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-800/50 lg:grid-cols-[90px_minmax(0,1.2fr)_0.7fr_minmax(0,1fr)_auto]">
                     {index > 0 ? (
                       <AppSelect
                         value={condition.logical_operator}
@@ -721,116 +721,116 @@ export function RulesPage() {
               <textarea className="input-base" value={form.description} rows={2} onChange={(event) => setForm({ ...form, description: event.target.value })} />
             </label>
 
-          <button type="submit" className="btn-primary w-full" disabled={saving}>
-            {saving ? t('rules.dashboard.saving', 'Saving...') : selectedRule ? t('rules.editor.updateRule', 'Update Rule') : t('rules.editor.createRule', 'Create Rule')}
-          </button>
+            <button type="submit" className="btn-primary w-full" disabled={saving}>
+              {saving ? t('rules.dashboard.saving', 'Saving...') : selectedRule ? t('rules.editor.updateRule', 'Update Rule') : t('rules.editor.createRule', 'Create Rule')}
+            </button>
           </form>
         </SectionCard>
 
-      <div className="grid gap-5 xl:grid-cols-2">
-        <section className="surface p-5 sm:p-6">
-          <h2 className="section-title flex items-center gap-2">
-            {t('rules.history.ruleVersions', 'Rule Versions')}
-            {selectedRule && versions.length > 0 && (
-              <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                {versions.length}
-              </span>
-            )}
-          </h2>
-          {!selectedRule ? <p className="state-box mt-4">{t('rules.history.selectRuleToViewVersions', 'Select a rule to view versions.')}</p> : null}
+        <div className="grid gap-5 xl:grid-cols-2">
+          <section className="surface p-5 sm:p-6">
+            <h2 className="section-title flex items-center gap-2">
+              {t('rules.history.ruleVersions', 'Rule Versions')}
+              {selectedRule && versions.length > 0 && (
+                <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                  {versions.length}
+                </span>
+              )}
+            </h2>
+            {!selectedRule ? <p className="state-box mt-4">{t('rules.history.selectRuleToViewVersions', 'Select a rule to view versions.')}</p> : null}
 
-          <div className="mt-4 table-wrap">
-            <table className="table-base">
-              <thead>
-                <tr>
-                  <th>{t('rules.history.columns.version', 'Version')}</th>
-                  <th>{t('rules.history.columns.change', 'Change')}</th>
-                  <th>{t('rules.history.columns.by', 'By')}</th>
-                  <th>{t('rules.history.columns.time', 'Time')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {versions.map((version) => (
-                  <tr key={version.id}>
-                    <td>
-                      <span className="inline-flex items-center justify-center rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-bold text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400">
-                        v{version.version_number}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                        {version.change_type}
-                      </span>
-                    </td>
-                    <td>{version.changed_by_name || version.changed_by_user_id || 'N/A'}</td>
-                    <td className="text-xs text-slate-500">{formatDateTime(version.created_at)}</td>
-                  </tr>
-                ))}
-                {!versions.length && selectedRule ? (
+            <div className="mt-4 table-wrap">
+              <table className="table-base">
+                <thead>
                   <tr>
-                    <td colSpan="4"><div className="state-box">{t('rules.history.noVersionHistory', 'No version history found.')}</div></td>
+                    <th>{t('rules.history.columns.version', 'Version')}</th>
+                    <th>{t('rules.history.columns.change', 'Change')}</th>
+                    <th>{t('rules.history.columns.by', 'By')}</th>
+                    <th>{t('rules.history.columns.time', 'Time')}</th>
                   </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-        </section>
+                </thead>
+                <tbody>
+                  {versions.map((version) => (
+                    <tr key={version.id}>
+                      <td>
+                        <span className="inline-flex items-center justify-center rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-bold text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400">
+                          v{version.version_number}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                          {version.change_type}
+                        </span>
+                      </td>
+                      <td>{version.changed_by_name || version.changed_by_user_id || 'N/A'}</td>
+                      <td className="text-xs text-slate-500">{formatDateTime(version.created_at)}</td>
+                    </tr>
+                  ))}
+                  {!versions.length && selectedRule ? (
+                    <tr>
+                      <td colSpan="4"><div className="state-box">{t('rules.history.noVersionHistory', 'No version history found.')}</div></td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-        <section className="surface p-5 sm:p-6">
-          <h2 className="section-title flex items-center gap-2">
-            {t('rules.history.auditTrail', 'Audit Trail')}
-            {selectedRule && auditLogs.length > 0 && (
-              <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                {auditLogs.length}
-              </span>
-            )}
-          </h2>
-          {!selectedRule ? <p className="state-box mt-4">{t('rules.history.selectRuleToViewAudit', 'Select a rule to view audit logs.')}</p> : null}
+          <section className="surface p-5 sm:p-6">
+            <h2 className="section-title flex items-center gap-2">
+              {t('rules.history.auditTrail', 'Audit Trail')}
+              {selectedRule && auditLogs.length > 0 && (
+                <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                  {auditLogs.length}
+                </span>
+              )}
+            </h2>
+            {!selectedRule ? <p className="state-box mt-4">{t('rules.history.selectRuleToViewAudit', 'Select a rule to view audit logs.')}</p> : null}
 
-          <div className="mt-4 table-wrap">
-            <table className="table-base">
-              <thead>
-                <tr>
-                  <th>{t('rules.history.auditColumns.action', 'Action')}</th>
-                  <th>{t('rules.history.auditColumns.by', 'By')}</th>
-                  <th>{t('rules.history.auditColumns.time', 'Time')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {auditLogs.map((log) => (
-                  <tr key={log.id}>
-                    <td>
-                      <span className="inline-flex rounded-md bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
-                        {log.action}
-                      </span>
-                    </td>
-                    <td>{log.actor_user_id || 'N/A'}</td>
-                    <td className="text-xs text-slate-500">{formatDateTime(log.created_at)}</td>
-                  </tr>
-                ))}
-                {!auditLogs.length && selectedRule ? (
+            <div className="mt-4 table-wrap">
+              <table className="table-base">
+                <thead>
                   <tr>
-                    <td colSpan="3"><div className="state-box">No audit history found.</div></td>
+                    <th>{t('rules.history.auditColumns.action', 'Action')}</th>
+                    <th>{t('rules.history.auditColumns.by', 'By')}</th>
+                    <th>{t('rules.history.auditColumns.time', 'Time')}</th>
                   </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
+                </thead>
+                <tbody>
+                  {auditLogs.map((log) => (
+                    <tr key={log.id}>
+                      <td>
+                        <span className="inline-flex rounded-md bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
+                          {log.action}
+                        </span>
+                      </td>
+                      <td>{log.actor_user_id || 'N/A'}</td>
+                      <td className="text-xs text-slate-500">{formatDateTime(log.created_at)}</td>
+                    </tr>
+                  ))}
+                  {!auditLogs.length && selectedRule ? (
+                    <tr>
+                      <td colSpan="3"><div className="state-box">No audit history found.</div></td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
 
-      <ErrorAlert message={error} />
+        <ErrorAlert message={error} />
 
-      <ConfirmDialog
-        open={showArchiveDialog}
-        title="Archive Rule"
-        description="This rule will be moved to archived status and removed from active decision flow."
-        confirmLabel="Archive Rule"
-        cancelLabel="Cancel"
-        loading={archiving}
-        onCancel={() => setShowArchiveDialog(false)}
-        onConfirm={archiveSelectedRule}
-      />
+        <ConfirmDialog
+          open={showArchiveDialog}
+          title="Archive Rule"
+          description="This rule will be moved to archived status and removed from active decision flow."
+          confirmLabel="Archive Rule"
+          cancelLabel="Cancel"
+          loading={archiving}
+          onCancel={() => setShowArchiveDialog(false)}
+          onConfirm={archiveSelectedRule}
+        />
       </TabsContent>
 
       <TabsContent value="simulator" className="mt-0">

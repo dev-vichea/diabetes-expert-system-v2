@@ -12,7 +12,7 @@ export function AdminInsightPanel({
   bodyClassName,
 }) {
   return (
-    <section className={cn('surface dark-hover-border relative overflow-hidden border border-slate-200 p-4 dark:border-slate-800', className)}>
+    <section className={cn('surface dark-hover-border relative min-w-0 overflow-hidden border border-slate-200 p-4 dark:border-slate-800', className)}>
       {glowClass ? <div className={cn('pointer-events-none absolute right-0 top-0 h-20 w-20 rounded-full blur-2xl', glowClass)} /> : null}
       <div className="relative mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -24,7 +24,7 @@ export function AdminInsightPanel({
         </div>
         {actions ? <div className="flex shrink-0 flex-wrap gap-2">{actions}</div> : null}
       </div>
-      <div className={cn('relative min-h-0 flex-1', bodyClassName)}>{children}</div>
+      <div className={cn('relative min-h-0 min-w-0 flex-1', bodyClassName)}>{children}</div>
     </section>
   )
 }

@@ -339,7 +339,7 @@ export function AdminUserEditPage() {
       />
 
       {error ? <p className="error-box">{error}</p> : null}
-      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
         <AdminUserSidebar user={previewUser} permissions={selectedPermissions} />
 
         <div className="space-y-5">
@@ -402,7 +402,7 @@ export function AdminUserEditPage() {
 
           <section className="surface p-5 sm:p-6">
             <div className="border-b border-slate-200 pb-4 dark:border-slate-800">
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-3">
                 <Shield className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />
                 <div>
                   <h2 className="section-title">Permissions</h2>
@@ -411,7 +411,7 @@ export function AdminUserEditPage() {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-6 md:grid-cols-2">
+            <div className="mt-5 grid gap-6 lg:grid-cols-2">
               {groupedPermissions.length ? (
                 groupedPermissions.map((group) => (
                   <div key={group.key}>
@@ -441,7 +441,7 @@ export function AdminUserEditPage() {
               )}
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3 border-t border-slate-200 pt-5 dark:border-slate-800">
+            <div className="mt-6 flex flex-col gap-3 border-t border-slate-200 pt-5 dark:border-slate-800 sm:flex-row sm:flex-wrap">
               <button
                 type="submit"
                 form="admin-user-edit-form"

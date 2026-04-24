@@ -56,18 +56,18 @@ export function ReviewPage() {
   const { t, tExact } = useLanguage()
   const [results, setResults] = useState([])
   const [selectedResultId, setSelectedResultId] = useState(null)
-  
+
   // Form State
   const [reviewNote, setReviewNote] = useState('')
   const [isUrgent, setIsUrgent] = useState(false)
   const [urgentReason, setUrgentReason] = useState('')
-  
+
   // UI State
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  
+
   const selectedResult = results.find((result) => result.id === selectedResultId) || null
 
   async function loadResults() {
@@ -129,7 +129,7 @@ export function ReviewPage() {
   const filteredResults = useMemo(() => {
     if (!searchQuery) return results
     const lowerQ = searchQuery.toLowerCase()
-    return results.filter(r => 
+    return results.filter(r =>
       (r.patient_name || '').toLowerCase().includes(lowerQ) ||
       (r.diagnosis || '').toLowerCase().includes(lowerQ)
     )
@@ -139,25 +139,25 @@ export function ReviewPage() {
   const pendingCount = results.filter(r => !r.reviewed_at).length
   const selectedCertaintyPercent = selectedResult ? toCertaintyPercent(selectedResult.certainty) : 0
   const selectedBannerClasses = `${getRiskGradient(selectedCertaintyPercent)} ${getRiskShadow(selectedCertaintyPercent)}`
-  
+
   return (
-    <div className="flex h-[calc(100vh-6rem)] w-full gap-6 overflow-hidden">
-      
+    <div className="flex w-full min-w-0 flex-col gap-4 overflow-visible xl:h-[calc(100dvh-7rem)] xl:flex-row xl:gap-6 xl:overflow-hidden">
+
       {/* ── Left Sidebar (Inbox Queue) ──────────────────────────────────────── */}
-      <div className="surface flex w-full max-w-[380px] shrink-0 flex-col overflow-hidden p-0">
-        
+      <div className="surface flex w-full min-w-0 flex-col overflow-hidden p-0 xl:max-w-[380px] xl:shrink-0">
+
         {/* Inbox Header */}
         <div className="border-b border-slate-200 bg-slate-50/50 p-4 dark:border-[#1b2342] dark:bg-[#070b1b]">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t('reviewPage.queue.title', 'Patient Review Queue')}</h2>
           <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
             <span>{t('reviewPage.queue.pendingCount', '{{count}} pending reviews', { count: pendingCount })}</span>
-            <span className="flex items-center gap-1"><Clock className="h-3 w-3"/> {t('reviewPage.queue.autoUpdating', 'Auto-updating')}</span>
+            <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {t('reviewPage.queue.autoUpdating', 'Auto-updating')}</span>
           </div>
-          
+
           <div className="mt-4 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder={t('reviewPage.queue.searchPlaceholder', 'Search patients...')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -167,14 +167,14 @@ export function ReviewPage() {
         </div>
 
         {/* Inbox List */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-1 bg-slate-50/30 dark:bg-transparent">
+        <div className="max-h-[40vh] flex-1 space-y-1 overflow-y-auto bg-slate-50/30 p-2 dark:bg-transparent xl:max-h-none">
           {loading && !results.length && (
             <div className="p-4 text-center text-sm text-slate-500 flex justify-center items-center gap-2">
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-600 border-t-transparent" />
               {t('reviewPage.states.loading', 'Loading queue...')}
             </div>
           )}
-          
+
           {!loading && filteredResults.length === 0 && (
             <div className="p-8 text-center text-sm text-slate-500">
               {searchQuery ? t('reviewPage.states.noMatch', 'No patients match your search.') : t('reviewPage.states.empty', 'Queue is entirely empty. Great job!')}
@@ -186,16 +186,15 @@ export function ReviewPage() {
             const isReviewed = Boolean(result.status === 'Reviewed' || result.reviewed_at)
             const isCritical = result.is_urgent
             const certaintyPercent = toCertaintyPercent(result.certainty)
-            
+
             return (
               <button
                 key={result.id}
                 onClick={() => selectResult(result)}
-                className={`w-full max-w-full truncate text-left rounded-xl p-4 transition-all duration-200 border ${
-                  isSelected 
-                    ? 'bg-cyan-50 border-cyan-200 shadow-sm dark:bg-[#0c132b] dark:border-cyan-900/50' 
+                className={`w-full max-w-full text-left rounded-xl border p-4 transition-all duration-200 ${isSelected
+                    ? 'bg-cyan-50 border-cyan-200 shadow-sm dark:bg-[#0c132b] dark:border-cyan-900/50'
                     : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200 dark:bg-[#050816] dark:hover:bg-[#0c1024] dark:hover:border-[#1b2342]'
-                }`}
+                  }`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 truncate">
@@ -212,18 +211,17 @@ export function ReviewPage() {
                     {formatDateTime(result.created_at).split(',')[0]}
                   </span>
                 </div>
-                
+
                 <div className="mt-1.5 pl-6">
                   <p className={`truncate text-xs ${isCritical ? 'text-rose-600 dark:text-rose-400 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>
                     {tExact(result.diagnosis)}
                   </p>
-                  
+
                   <div className="mt-2 flex items-center gap-2">
-                    <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium ${
-                      isCritical 
+                    <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium ${isCritical
                         ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400'
                         : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                    }`}>
+                      }`}>
                       {isCritical ? t('reviewPage.states.urgent', 'URGENT') : t('reviewPage.states.standard', 'Standard')}
                     </span>
                     <span className={`text-[10px] font-medium ${getRiskTextColor(certaintyPercent)}`}>
@@ -238,13 +236,13 @@ export function ReviewPage() {
       </div>
 
       {/* ── Right Panel (Details & Review) ────────────────────────────────────── */}
-      <div className="surface flex-1 overflow-y-auto p-0 relative">
-        <ErrorAlert message={error} className="absolute top-4 right-4 z-10 max-w-sm shadow-lg border-rose-200" />
+      <div className="surface relative min-w-0 flex-1 overflow-y-auto p-0">
+        <ErrorAlert message={error} className="m-4 max-w-sm border-rose-200 shadow-lg xl:absolute xl:right-4 xl:top-4 xl:z-10 xl:m-0" />
 
         {!selectedResult ? (
           <div className="flex h-full items-center justify-center p-8">
-            <EmptyState 
-              icon={FileText} 
+            <EmptyState
+              icon={FileText}
               title={t('reviewPage.details.noPatientSelected', 'No Patient Selected')}
               description={t('reviewPage.details.noPatientSelectedDesc', 'Select a diagnosis from the queue on the left to review clinical output and append your notes.')}
             />
@@ -252,20 +250,20 @@ export function ReviewPage() {
         ) : (
           <div className="flex flex-col min-h-full">
             {/* Header */}
-            <div className="bg-slate-50 p-8 border-b border-slate-200 dark:bg-[#070b1b] dark:border-[#1b2342]">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold flex items-center gap-3 text-slate-900 dark:text-white">
+            <div className="border-b border-slate-200 bg-slate-50 p-4 dark:border-[#1b2342] dark:bg-[#070b1b] sm:p-8">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <h1 className="flex items-center gap-3 break-words text-2xl font-bold text-slate-900 dark:text-white">
                     <User className="h-6 w-6 text-slate-400" />
                     {selectedResult.patient_name || t('reviewPage.states.unknownPatient', 'Patient')}
                   </h1>
-                  <p className="mt-1 flex items-center gap-2 text-sm text-slate-500">
+                  <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
                     <Activity className="h-4 w-4" /> {t('reviewPage.details.assessmentRecord', 'Assessment Record')} #{selectedResult.id}
                     <span className="mx-2 text-slate-300">|</span>
                     {t('reviewPage.details.generated', 'Generated')} {formatDateTime(selectedResult.created_at)}
                   </p>
                 </div>
-                
+
                 <div className="shrink-0">
                   {selectedResult.reviewed_at ? (
                     <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800">
@@ -273,7 +271,7 @@ export function ReviewPage() {
                       {t('reviewPage.details.reviewed', 'Reviewed')}
                     </div>
                   ) : (
-                     <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800">
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800">
                       <AlertCircle className="h-4 w-4" />
                       {t('reviewPage.details.pendingReview', 'Pending Doctor Review')}
                     </div>
@@ -282,26 +280,26 @@ export function ReviewPage() {
               </div>
 
               {/* Diagnostic Readout Banner */}
-              <div className={`relative mt-6 overflow-hidden rounded-2xl p-6 text-white shadow-lg ${selectedBannerClasses}`}>
+              <div className={`relative mt-6 overflow-hidden rounded-2xl p-4 text-white shadow-lg sm:p-6 ${selectedBannerClasses}`}>
                 {/* Decorative background overlay */}
                 <div className="absolute -right-10 -top-24 opacity-10 blur-xl pointer-events-none">
-                   <Activity className="w-64 h-64" />
+                  <Activity className="w-64 h-64" />
                 </div>
 
-                <div className="relative z-10 flex items-center justify-between">
-                   <div>
-                      <p className="text-sm font-medium uppercase tracking-wider opacity-80">{t('reviewPage.details.aiOutput', 'AI Diagnostic Output')}</p>
-                      <h2 className="mt-1 text-3xl font-bold">{tExact(selectedResult.diagnosis)}</h2>
-                   </div>
-                   <div className="text-right flex flex-col items-end">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-5xl font-black">{selectedCertaintyPercent}</span>
-                        <span className="text-lg opacity-70">/100</span>
-                      </div>
-                      <p className="text-xs font-medium uppercase tracking-widest opacity-80">{t('reviewPage.details.confidenceScore', 'Confidence Score')}</p>
-                   </div>
+                <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium uppercase tracking-wider opacity-80">{t('reviewPage.details.aiOutput', 'AI Diagnostic Output')}</p>
+                    <h2 className="mt-1 break-words text-2xl font-bold sm:text-3xl">{tExact(selectedResult.diagnosis)}</h2>
+                  </div>
+                  <div className="flex flex-col sm:items-end sm:text-right">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-5xl font-black">{selectedCertaintyPercent}</span>
+                      <span className="text-lg opacity-70">/100</span>
+                    </div>
+                    <p className="text-xs font-medium uppercase tracking-widest opacity-80">{t('reviewPage.details.confidenceScore', 'Confidence Score')}</p>
+                  </div>
                 </div>
-                
+
                 {selectedResult.is_urgent && (
                   <div className="mt-5 rounded-lg bg-white/20 p-3 text-sm font-medium backdrop-blur-sm border border-white/30 flex items-start gap-2">
                     <AlertCircle className="h-5 w-5 shrink-0" />
@@ -314,11 +312,11 @@ export function ReviewPage() {
             </div>
 
             {/* Evidence & Annotation Grid */}
-            <div className="grid flex-1 gap-8 p-8 lg:grid-cols-2">
-              
+            <div className="grid flex-1 gap-5 p-4 sm:p-8 lg:grid-cols-2">
+
               {/* Evidence Pane */}
               <div className="space-y-6">
-                
+
                 <div>
                   <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-500">
                     <FileText className="h-4 w-4" /> {t('reviewPage.evidence.title', 'Clinical Evidence')}
@@ -336,7 +334,7 @@ export function ReviewPage() {
                           {selectedResult.triggered_rules.map((rule) => (
                             <li key={rule.id} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
                               <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-500" />
-                              <span dangerouslySetInnerHTML={{__html: tExact(rule.name)}} />
+                              <span dangerouslySetInnerHTML={{ __html: tExact(rule.name) }} />
                             </li>
                           ))}
                         </ul>
@@ -352,38 +350,38 @@ export function ReviewPage() {
                 <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-500">
                   <CheckCircle2 className="h-4 w-4" /> {t('reviewPage.doctorReview.title', "Doctor's Review")}
                 </h3>
-                
+
                 <form onSubmit={saveReview} className="mt-3 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#1b2342] dark:bg-[#0c1024]">
-                  
+
                   <label className="block">
                     <span className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">{t('reviewPage.doctorReview.notesLabel', 'Clinical Notes & Addendum')}</span>
-                    <textarea 
-                      className="input-base min-h-[200px] resize-y text-sm" 
+                    <textarea
+                      className="input-base min-h-[200px] resize-y text-sm"
                       placeholder={t('reviewPage.doctorReview.notesPlaceholder', 'Add your own assessment notes, treatment plan adjustments, or patient follow-up instructions here...')}
-                      value={reviewNote} 
-                      onChange={(event) => setReviewNote(event.target.value)} 
+                      value={reviewNote}
+                      onChange={(event) => setReviewNote(event.target.value)}
                     />
                   </label>
 
                   <div className="rounded-xl border border-rose-100 bg-rose-50 p-4 dark:border-rose-900/30 dark:bg-rose-900/10">
                     <label className="flex items-center gap-3">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         className="h-5 w-5 rounded border-rose-300 text-rose-600 focus:ring-rose-600"
-                        checked={isUrgent} 
-                        onChange={(event) => setIsUrgent(event.target.checked)} 
+                        checked={isUrgent}
+                        onChange={(event) => setIsUrgent(event.target.checked)}
                       />
                       <span className="font-semibold text-rose-800 dark:text-rose-400">{t('reviewPage.doctorReview.urgentFlag', 'Flag as Urgent Case')}</span>
                     </label>
-                    
+
                     {isUrgent && (
-                      <div className="mt-3 pl-8">
-                        <textarea 
-                          className="input-base border-rose-200 focus:border-rose-400 focus:ring-rose-400 text-sm bg-white dark:bg-[#050816]" 
+                      <div className="mt-3 sm:pl-8">
+                        <textarea
+                          className="input-base border-rose-200 focus:border-rose-400 focus:ring-rose-400 text-sm bg-white dark:bg-[#050816]"
                           placeholder={t('reviewPage.doctorReview.urgentReasonPlaceholder', 'Why is this urgent? (Required)')}
-                          rows={4} 
-                          value={urgentReason} 
-                          onChange={(event) => setUrgentReason(event.target.value)} 
+                          rows={4}
+                          value={urgentReason}
+                          onChange={(event) => setUrgentReason(event.target.value)}
                         />
                       </div>
                     )}
@@ -404,7 +402,7 @@ export function ReviewPage() {
 
               </div>
             </div>
-            
+
           </div>
         )}
       </div>

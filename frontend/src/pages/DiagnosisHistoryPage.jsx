@@ -121,7 +121,7 @@ export function DiagnosisHistoryPage() {
             )}
           />
         ) : (
-          <div className="grid gap-4 lg:grid-cols-[1.7fr_1fr_1fr]">
+          <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)_minmax(0,1fr)]">
             <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${getConfidenceBarClass(latestPercent)} p-6 text-white shadow-lg`}>
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.14),transparent_32%)]" />
               <div className="relative">
@@ -149,12 +149,12 @@ export function DiagnosisHistoryPage() {
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
                       {t('myResults.columns.time')}
                     </p>
-                    <p className="mt-1 text-sm font-medium text-white">
+                    <p className="mt-1 break-words text-sm font-medium text-white">
                       {formatDateTime(latest.created_at, language, t('common.notAvailable'))}
                     </p>
                   </div>
 
-                  <div className="text-right">
+                  <div className="text-left sm:text-right">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
                       {t('diagnosisResult.overallScore', 'Overall Score')}
                     </p>

@@ -230,7 +230,7 @@ export function RolePermissionsPage() {
 
       <ErrorAlert message={error} />
 
-      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
         <SectionCard
           title={t('rolesPage.list.title')}
           description={t('rolesPage.list.description')}
@@ -315,7 +315,7 @@ export function RolePermissionsPage() {
               {!groupedPermissions.length ? (
                 <EmptyState title={t('rolesPage.form.noPermissionsTitle')} description={t('rolesPage.form.noPermissionsDesc')} />
               ) : (
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-6 lg:grid-cols-2">
                   {groupedPermissions.map((group) => (
                     <div key={group.key}>
                       <h4 className="text-sm font-semibold text-slate-500 dark:text-slate-400">{group.label}</h4>

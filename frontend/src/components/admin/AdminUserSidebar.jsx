@@ -26,7 +26,7 @@ export function AdminUserSidebar({ user, permissions = [], className }) {
   const primaryRole = user?.role || user?.roles?.[0] || 'patient'
 
   return (
-    <aside className={cn('surface h-fit overflow-hidden p-0 xl:sticky xl:top-24', className)}>
+    <aside className={cn('surface h-fit min-w-0 overflow-hidden p-0 xl:sticky xl:top-24', className)}>
       <div className="border-b border-slate-200 px-5 py-5 dark:border-slate-800">
         <div className="flex items-center gap-4">
           <Avatar className="h-16 w-16">
@@ -90,7 +90,7 @@ export function AdminUserSidebar({ user, permissions = [], className }) {
               permissions.map((permission) => (
                 <span
                   key={permission}
-                  className="inline-flex rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-300"
+                  className="inline-flex max-w-full break-all rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-300"
                 >
                   {permission}
                 </span>

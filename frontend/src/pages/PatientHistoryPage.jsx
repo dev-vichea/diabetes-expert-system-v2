@@ -143,7 +143,7 @@ export function PatientHistoryPage() {
             <h2 className="section-title">{t('historyPage.profile.title', 'Patient Profile')}</h2>
             <p className="section-subtitle mt-1">{t('historyPage.profile.desc', 'Manage demographics and monitor case history over time.')}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Link to="/patients" className="btn-secondary">{t('historyPage.profile.back', 'Back to List')}</Link>
             <Link to={`/diagnosis?patient_id=${patientId}`} className="btn-primary">{t('historyPage.profile.assess', 'Run Assessment')}</Link>
           </div>
@@ -202,7 +202,7 @@ export function PatientHistoryPage() {
           </label>
 
           <div className="md:col-span-2">
-            <button type="submit" className="btn-primary" disabled={savingProfile || loading || !patient}>
+            <button type="submit" className="btn-primary w-full sm:w-auto" disabled={savingProfile || loading || !patient}>
               {savingProfile ? t('historyPage.profile.saving', 'Saving...') : t('historyPage.profile.updateProfile', 'Update Profile')}
             </button>
           </div>
@@ -252,7 +252,7 @@ export function PatientHistoryPage() {
               value={symptomForm.notes}
               onChange={(event) => setSymptomForm({ ...symptomForm, notes: event.target.value })}
             />
-            <button type="submit" className="btn-primary" disabled={savingSymptom || !patient}>
+            <button type="submit" className="btn-primary w-full sm:w-auto" disabled={savingSymptom || !patient}>
               {savingSymptom ? t('historyPage.profile.saving', 'Saving...') : t('historyPage.symptomForm.add', 'Add Symptom')}
             </button>
           </form>
@@ -308,7 +308,7 @@ export function PatientHistoryPage() {
               onChange={(event) => setLabForm({ ...labForm, reference_range: event.target.value })}
             />
             <textarea className="input-base" rows={2} placeholder={t('historyPage.labForm.notes', 'Notes')} value={labForm.notes} onChange={(event) => setLabForm({ ...labForm, notes: event.target.value })} />
-            <button type="submit" className="btn-primary" disabled={savingLab || !patient}>
+            <button type="submit" className="btn-primary w-full sm:w-auto" disabled={savingLab || !patient}>
               {savingLab ? t('historyPage.profile.saving', 'Saving...') : t('historyPage.labForm.add', 'Add Lab Result')}
             </button>
           </form>

@@ -27,6 +27,14 @@
     @apply box-border;
   }
 
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   body {
     @apply m-0 min-h-screen bg-background text-slate-800 antialiased;
     font-family: var(--app-font-sans), ui-sans-serif, system-ui, sans-serif;
@@ -80,6 +88,7 @@
       opacity: 0;
       transform: translateY(8px);
     }
+
     100% {
       opacity: 1;
       transform: translateY(0);
@@ -97,6 +106,7 @@
       opacity: 0;
       transform: translateY(10px);
     }
+
     100% {
       opacity: 1;
       transform: translateY(0);
@@ -108,6 +118,7 @@
       opacity: 0;
       transform: translateY(12px);
     }
+
     100% {
       opacity: 1;
       transform: translateY(0);
@@ -118,9 +129,11 @@
     0% {
       transform: scale(0.9);
     }
+
     60% {
       transform: scale(1.06);
     }
+
     100% {
       transform: scale(1);
     }
@@ -131,6 +144,7 @@
       opacity: 0;
       transform: translateY(12px);
     }
+
     100% {
       opacity: 1;
       transform: translateY(0);
@@ -141,31 +155,31 @@
     animation: assessmentStepEnter 260ms ease-out both;
   }
 
-  .assessment-step-list > .assessment-card-enter {
+  .assessment-step-list>.assessment-card-enter {
     animation: assessmentCardEnter 340ms ease-out both;
   }
 
-  .assessment-step-list > .assessment-card-enter:nth-child(1) {
+  .assessment-step-list>.assessment-card-enter:nth-child(1) {
     animation-delay: 40ms;
   }
 
-  .assessment-step-list > .assessment-card-enter:nth-child(2) {
+  .assessment-step-list>.assessment-card-enter:nth-child(2) {
     animation-delay: 80ms;
   }
 
-  .assessment-step-list > .assessment-card-enter:nth-child(3) {
+  .assessment-step-list>.assessment-card-enter:nth-child(3) {
     animation-delay: 120ms;
   }
 
-  .assessment-step-list > .assessment-card-enter:nth-child(4) {
+  .assessment-step-list>.assessment-card-enter:nth-child(4) {
     animation-delay: 160ms;
   }
 
-  .assessment-step-list > .assessment-card-enter:nth-child(5) {
+  .assessment-step-list>.assessment-card-enter:nth-child(5) {
     animation-delay: 200ms;
   }
 
-  .assessment-step-list > .assessment-card-enter:nth-child(6) {
+  .assessment-step-list>.assessment-card-enter:nth-child(6) {
     animation-delay: 240ms;
   }
 
@@ -183,55 +197,70 @@
 
   /* ── Toggle Pill Cards ─────────────────────────────── */
   .toggle-pill {
-    @apply relative flex cursor-pointer select-none items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200;
+    @apply relative flex min-w-0 cursor-pointer select-none items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200;
   }
+
   .toggle-pill:hover {
     @apply border-slate-300 shadow-md -translate-y-px;
   }
+
   .toggle-pill.active {
     @apply border-cyan-400 bg-gradient-to-br from-cyan-50 to-sky-50 text-cyan-800 shadow-md ring-2 ring-cyan-200/60;
   }
+
   .toggle-pill .pill-emoji {
     @apply text-xl leading-none;
   }
+
   .toggle-pill .pill-check {
     @apply ml-auto flex h-5 w-5 items-center justify-center rounded-full border-2 border-slate-300 transition-all duration-200;
   }
+
   .toggle-pill.active .pill-check {
     @apply border-cyan-500 bg-cyan-500 text-white;
   }
+
   html.dark .toggle-pill {
     border-color: var(--dark-border);
     background-color: var(--dark-surface);
     color: rgb(203 213 225);
   }
-  html.dark .toggle-pill:hover { border-color: var(--dark-border-hover); }
+
+  html.dark .toggle-pill:hover {
+    border-color: var(--dark-border-hover);
+  }
+
   html.dark .toggle-pill.active {
     border-color: rgb(8 145 178);
-    background: linear-gradient(135deg, rgba(8,145,178,0.12) 0%, rgba(14,116,144,0.08) 100%);
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.12) 0%, rgba(14, 116, 144, 0.08) 100%);
     color: rgb(165 243 252);
-    --tw-ring-color: rgba(8,145,178,0.25);
+    --tw-ring-color: rgba(8, 145, 178, 0.25);
   }
 
   /* ── Segment Selector ──────────────────────────────── */
   .segment-group {
     @apply flex flex-wrap gap-2;
   }
+
   .segment-btn {
-    @apply relative flex-1 cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-3 text-center text-sm font-semibold text-slate-600 shadow-sm transition-all duration-200;
-    min-width: 5.5rem;
+    @apply relative min-h-11 flex-1 cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-3 text-center text-sm font-semibold text-slate-600 shadow-sm transition-all duration-200;
+    min-width: min(8.5rem, 100%);
   }
+
   .segment-btn:hover {
     @apply border-slate-300 bg-slate-50 -translate-y-px shadow-md;
   }
+
   .segment-btn.active {
     @apply border-cyan-400 bg-gradient-to-b from-cyan-500 to-cyan-600 text-white shadow-lg;
   }
+
   html.dark .segment-btn {
     border-color: var(--dark-border);
     background-color: var(--dark-surface);
     color: rgb(203 213 225);
   }
+
   html.dark .segment-btn.active {
     border-color: rgb(8 145 178);
     background: linear-gradient(to bottom, rgb(8 145 178), rgb(14 116 144));
@@ -240,30 +269,48 @@
 
   /* ── Question Section Card ─────────────────────────── */
   .q-section {
-    @apply rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm;
+    @apply min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5;
   }
+
   html.dark .q-section {
     border-color: var(--dark-border);
     background-color: var(--dark-surface);
   }
+
   .q-section-title {
     @apply flex items-center gap-2.5 text-base font-bold text-slate-800;
   }
-  html.dark .q-section-title { @apply text-slate-100; }
+
+  html.dark .q-section-title {
+    @apply text-slate-100;
+  }
+
   .q-section-sub {
     @apply mt-1 text-xs text-slate-500;
   }
-  html.dark .q-section-sub { @apply text-slate-400; }
+
+  html.dark .q-section-sub {
+    @apply text-slate-400;
+  }
 
   /* ── Floating Progress Ring ────────────────────────── */
   @keyframes progressPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(14,116,144,0.18); }
-    50% { box-shadow: 0 0 0 8px rgba(14,116,144,0); }
+
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(14, 116, 144, 0.18);
+    }
+
+    50% {
+      box-shadow: 0 0 0 8px rgba(14, 116, 144, 0);
+    }
   }
+
   .progress-ring-wrap {
-    @apply fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-xl border border-slate-200;
+    @apply fixed bottom-4 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-xl border border-slate-200 sm:bottom-6 sm:right-6 sm:h-14 sm:w-14;
     animation: progressPulse 2.5s ease-in-out infinite;
   }
+
   html.dark .progress-ring-wrap {
     background-color: var(--dark-elevated);
     border-color: var(--dark-border);
@@ -302,7 +349,7 @@
   }
 
   .input-base {
-    @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition duration-200 placeholder:text-slate-400 focus:border-slate-500 focus:ring-4 focus:ring-slate-200;
+    @apply min-h-11 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition duration-200 placeholder:text-slate-400 focus:border-slate-500 focus:ring-4 focus:ring-slate-200;
   }
 
   .input-base:hover {
@@ -332,11 +379,11 @@
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-xl border border-cyan-700 bg-gradient-to-b from-sky-600 to-cyan-700 px-4 py-2.5 text-sm font-semibold text-cyan-50 shadow-sm transition duration-200 hover:-translate-y-px hover:from-sky-700 hover:to-cyan-800 hover:shadow-md disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex min-h-11 items-center justify-center rounded-xl border border-cyan-700 bg-gradient-to-b from-sky-600 to-cyan-700 px-4 py-2.5 text-sm font-semibold text-cyan-50 shadow-sm transition duration-200 hover:-translate-y-px hover:from-sky-700 hover:to-cyan-800 hover:shadow-md disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition duration-200 hover:-translate-y-px hover:bg-slate-100 hover:text-slate-900 hover:shadow-md disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition duration-200 hover:-translate-y-px hover:bg-slate-100 hover:text-slate-900 hover:shadow-md disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   html.dark .btn-secondary {
@@ -353,7 +400,7 @@
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:-translate-y-px hover:bg-rose-700 hover:shadow-md disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex min-h-11 items-center justify-center rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition duration-200 hover:-translate-y-px hover:bg-rose-700 hover:shadow-md disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .btn-primary:focus-visible,
@@ -369,7 +416,8 @@
   }
 
   .table-wrap {
-    @apply overflow-x-auto rounded-xl border border-slate-200 bg-white;
+    @apply max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white;
+    -webkit-overflow-scrolling: touch;
   }
 
   html.dark .table-wrap {
@@ -384,7 +432,7 @@
   }
 
   .table-base {
-    @apply min-w-full border-collapse text-sm;
+    @apply w-full min-w-[720px] border-collapse text-sm;
   }
 
   .table-base thead {
@@ -406,6 +454,7 @@
 
   .table-base td {
     @apply border-b border-slate-100 px-3 py-3 align-top text-slate-700;
+    overflow-wrap: anywhere;
   }
 
   html.dark .table-base td {
@@ -522,6 +571,7 @@
       opacity: 0;
       transform: translateX(68px) scale(0.985);
     }
+
     100% {
       opacity: 1;
       transform: translateX(0) scale(1);
@@ -533,6 +583,7 @@
       opacity: 0;
       transform: translateX(-68px) scale(0.985);
     }
+
     100% {
       opacity: 1;
       transform: translateX(0) scale(1);
@@ -544,6 +595,7 @@
       opacity: 0;
       transform: translateX(48px);
     }
+
     100% {
       opacity: 1;
       transform: translateX(0);
@@ -555,6 +607,7 @@
       opacity: 0;
       transform: translateX(-48px);
     }
+
     100% {
       opacity: 1;
       transform: translateX(0);
@@ -566,6 +619,7 @@
       opacity: 0;
       transform: translateX(-38px) scale(0.98);
     }
+
     100% {
       opacity: 1;
       transform: translateX(0) scale(1);
@@ -577,6 +631,7 @@
       opacity: 0;
       transform: translateX(38px) scale(0.98);
     }
+
     100% {
       opacity: 1;
       transform: translateX(0) scale(1);
@@ -751,14 +806,21 @@
     color: #64748b;
     line-height: 1.6;
   }
-  
+
   /* ── Language-Specific Overrides (Khmer Vertical Breathing Room) ── */
-  html[lang='km'] .auth-accent-title { 
-    line-height: 1.5; 
-    font-size: clamp(1.8rem, 3.5vw, 2.8rem); 
+  html[lang='km'] .auth-accent-title {
+    line-height: 1.5;
+    font-size: clamp(1.8rem, 3.5vw, 2.8rem);
   }
-  html[lang='km'] .auth-accent-copy { line-height: 1.9; }
-  html[lang='km'] .auth-accent-content { padding-top: 32px; padding-bottom: 32px; }
+
+  html[lang='km'] .auth-accent-copy {
+    line-height: 1.9;
+  }
+
+  html[lang='km'] .auth-accent-content {
+    padding-top: 32px;
+    padding-bottom: 32px;
+  }
 
   .auth-form {
     display: flex;
@@ -889,7 +951,7 @@
     box-shadow: 0 18px 30px rgba(15, 118, 110, 0.24);
     transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
   }
-  
+
   .auth-submit-button:hover {
     transform: translateY(-1px);
     box-shadow: 0 22px 34px rgba(15, 118, 110, 0.28);
@@ -952,6 +1014,7 @@
   }
 
   @media (max-width: 960px) {
+
     .auth-card,
     .auth-card--reverse {
       min-height: 0;
@@ -1131,11 +1194,31 @@
     }
 
     .assessment-step-enter,
-    .assessment-step-list > .assessment-card-enter,
+    .assessment-step-list>.assessment-card-enter,
     .assessment-step-dot-active,
     .assessment-result-enter {
       animation: none !important;
     }
   }
 }
-@media print { body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } nav, header, aside, .sidebar, .topbar { display: none !important; } main { width: 100% !important; margin: 0 !important; padding: 0 !important; } }
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  nav,
+  header,
+  aside,
+  .sidebar,
+  .topbar {
+    display: none !important;
+  }
+
+  main {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}

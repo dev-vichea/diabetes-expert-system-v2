@@ -7,7 +7,7 @@ export function MobileSidebarDrawer({ open, navItems, user, onLogout, onClose })
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-xl transition-transform duration-300 dark:bg-[#030309] lg:hidden ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed inset-y-0 left-0 z-40 w-[min(18rem,calc(100vw-2rem))] bg-white shadow-xl transition-transform duration-300 dark:bg-[#030309] lg:hidden ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <Sidebar
           navItems={navItems}

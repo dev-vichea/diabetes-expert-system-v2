@@ -139,16 +139,16 @@ export function ClinicalDashboard({ activeRole }) {
     <div className="w-full space-y-6">
       {/* ── Hero banner ────────────────────────────────────────── */}
       <section className="surface overflow-hidden p-0">
-        <div className="relative h-64 bg-cover bg-top bg-no-repeat sm:h-72" style={{ backgroundImage: 'url(/images/banner.png)' }}>
+        <div className="relative min-h-[18rem] bg-cover bg-center bg-no-repeat sm:min-h-[18rem]" style={{ backgroundImage: 'url(/images/banner.png)' }}>
           <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/50 to-transparent" />
-          <div className="relative z-10 flex h-full items-center p-6 sm:p-8">
+          <div className="relative z-10 flex min-h-[18rem] items-center p-4 sm:p-8">
             <div className="max-w-xl">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">{t('dashboard.hero.dashboardTitle', `${activeRole} dashboard`, { role: activeRole })}</p>
-              <h2 className="mt-3 text-2xl font-bold text-white sm:text-3xl">{t('dashboard.hero.title', 'Build Better Diabetes Care Pathways')}</h2>
+              <h2 className="mt-3 text-2xl font-bold leading-tight text-white sm:text-3xl">{t('dashboard.hero.title', 'Build Better Diabetes Care Pathways')}</h2>
               <p className="mt-3 text-sm leading-relaxed text-slate-200">
                 {t('dashboard.hero.desc', 'Monitor screening trends, review rule-driven outcomes, and coordinate medical follow-ups from one unified clinical dashboard.')}
               </p>
-              <div className="mt-5 flex flex-wrap gap-3">
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link to="/diagnosis" className="btn-primary">{t('dashboard.hero.startAssessment', 'Start Assessment')}</Link>
                 <Link to="/patients" className="btn-secondary">{t('dashboard.hero.openPatients', 'Open Patients')}</Link>
               </div>
@@ -158,23 +158,22 @@ export function ClinicalDashboard({ activeRole }) {
       </section>
 
       {/* ── Date range toolbar ─────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2">
           <CalendarDays className="h-4 w-4 text-slate-500" />
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('dashboard.toolbar.dateRange', 'Date Range')}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="inline-flex items-center overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-[#1b2342] dark:bg-[#0c1024]">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex max-w-full items-center overflow-x-auto rounded-lg border border-slate-200 bg-white dark:border-[#1b2342] dark:bg-[#0c1024]">
             {DATE_RANGES.map((range) => (
               <button
                 key={range.label}
                 type="button"
                 onClick={() => setSelectedRange(range.value)}
-                className={`px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-                  selectedRange === range.value
+                className={`min-h-10 shrink-0 px-3 py-1.5 text-xs font-medium transition-all duration-200 ${selectedRange === range.value
                     ? 'bg-cyan-600 text-white shadow-inner'
                     : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-[#131a33]'
-                }`}
+                  }`}
               >
                 {range.label}
               </button>
@@ -184,7 +183,7 @@ export function ClinicalDashboard({ activeRole }) {
             type="button"
             onClick={() => fetchStats(selectedRange)}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 dark:border-[#1b2342] dark:bg-[#0c1024] dark:text-slate-400 dark:hover:bg-[#131a33] disabled:opacity-50"
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 dark:border-[#1b2342] dark:bg-[#0c1024] dark:text-slate-400 dark:hover:bg-[#131a33] disabled:opacity-50"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
             {t('dashboard.toolbar.refresh', 'Refresh')}
@@ -234,17 +233,17 @@ export function ClinicalDashboard({ activeRole }) {
 
           {/* Recent Cases table */}
           <section className="surface overflow-hidden p-0">
-            <header className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-[#1b2342]">
-              <div>
+            <header className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 dark:border-[#1b2342] sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <div className="min-w-0">
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('dashboard.recent.title', 'Recent Cases')}</h3>
                 <p className="mt-1 text-sm text-slate-500">{t('dashboard.recent.desc', `Latest ${stats?.recent_cases?.length || 0} diagnoses awaiting review or recently completed.`, { count: stats?.recent_cases?.length || 0 })}</p>
               </div>
-              <Link to="/patients" className="btn-secondary text-xs px-3 py-1.5 h-8">
+              <Link to="/patients" className="btn-secondary px-3 py-1.5 text-xs sm:h-8 sm:min-h-0">
                 {t('dashboard.recent.viewAll', 'View All')} <ArrowRight className="ml-1.5 h-3 w-3" />
               </Link>
             </header>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+              <table className="w-full min-w-[760px] text-sm">
                 <thead className="bg-slate-50 dark:bg-[#0c1024]">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.recent.columns.patient', 'Patient')}</th>
@@ -262,16 +261,15 @@ export function ClinicalDashboard({ activeRole }) {
                       <tr
                         key={caseItem.id}
                         onClick={() => navigate(`/diagnosis/result?diagnosis_result_id=${caseItem.id}`)}
-                        className={`transition-colors cursor-pointer ${
-                          index % 2 === 0 ? 'bg-slate-50/70 dark:bg-[#070b1b]' : 'bg-white dark:bg-[#050816]'
-                        } hover:bg-cyan-50 dark:hover:bg-cyan-900/10`}
+                        className={`transition-colors cursor-pointer ${index % 2 === 0 ? 'bg-slate-50/70 dark:bg-[#070b1b]' : 'bg-white dark:bg-[#050816]'
+                          } hover:bg-cyan-50 dark:hover:bg-cyan-900/10`}
                       >
                         <td className="whitespace-nowrap px-6 py-4">
                           <span className="font-medium text-slate-900 dark:text-slate-200">{caseItem.patient_name}</span>
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <span className="text-slate-700 dark:text-slate-300">{tExact(caseItem.diagnosis)}</span>
+                        <td className="px-6 py-4">
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            <span className="min-w-0 break-words text-slate-700 dark:text-slate-300">{tExact(caseItem.diagnosis)}</span>
                             {caseItem.is_urgent && (
                               <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
                                 {t('dashboard.recent.urgent', 'Urgent')}
@@ -281,11 +279,10 @@ export function ClinicalDashboard({ activeRole }) {
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-slate-700 dark:text-slate-400">{caseItem.assessed_by}</td>
                         <td className="whitespace-nowrap px-6 py-4">
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                            caseItem.status === 'Reviewed'
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${caseItem.status === 'Reviewed'
                               ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                               : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                          }`}>
+                            }`}>
                             {caseItem.status === 'Reviewed' ? t('dashboard.recent.reviewed', 'Reviewed') : t('dashboard.recent.pending', 'Pending')}
                           </span>
                         </td>
