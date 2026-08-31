@@ -62,8 +62,8 @@ export function Topbar({
       className={cn(
         'sticky top-0 z-20 px-3 py-3 backdrop-blur sm:px-6',
         isDark
-          ? 'border-b border-[#17384b] bg-[linear-gradient(90deg,rgba(7,20,31,0.98),rgba(10,30,41,0.96),rgba(7,20,31,0.98))] shadow-[0_12px_28px_rgba(0,0,0,0.28)]'
-          : 'border-b border-[#dbeef7] bg-[#f8fdff]/95'
+          ? 'border-b border-[#1e2234] bg-[rgba(7,7,18,0.88)] shadow-[0_10px_24px_rgba(0,0,0,0.24)]'
+          : 'border-b border-slate-200/80 bg-white/85'
       )}
     >
       <div className="flex min-w-0 items-start justify-between gap-2 sm:items-center sm:gap-3">
@@ -71,7 +71,7 @@ export function Topbar({
           <button
             type="button"
             onClick={onToggleDesktopSidebar}
-            className="dark-hover-border hidden rounded-xl border border-[#d7eaf4] bg-white p-2 text-[#5a7487] transition-colors hover:bg-[#ecf8ff] hover:text-[#0f4c81] dark:border-[#1d3b4d] dark:bg-[#0d1a28] dark:text-[#9eb5c8] dark:hover:bg-[#112335] dark:hover:text-[#dff8ff] lg:inline-flex"
+            className="dark-hover-border hidden rounded-xl border border-slate-200 bg-white p-2 text-slate-500 transition-colors hover:border-slate-300 hover:bg-primary-50 hover:text-primary-700 dark:border-[#1e2234] dark:bg-[#101020] dark:text-slate-400 dark:hover:bg-[#181830] dark:hover:text-primary-300 lg:inline-flex"
             aria-label={isSidebarCollapsed ? t('topbar.expandSidebar') : t('topbar.collapseSidebar')}
           >
             <PanelLeft className={cn('h-4 w-4 transition-transform duration-200', isSidebarCollapsed ? 'rotate-180' : 'rotate-0')} />
@@ -80,29 +80,29 @@ export function Topbar({
           <button
             type="button"
             onClick={onOpenMobileNav}
-            className="dark-hover-border inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#d7eaf4] bg-white p-2 text-[#5a7487] transition-colors hover:bg-[#ecf8ff] hover:text-[#0f4c81] dark:border-[#1d3b4d] dark:bg-[#0d1a28] dark:text-[#9eb5c8] dark:hover:bg-[#112335] dark:hover:text-[#dff8ff] lg:hidden"
+            className="dark-hover-border inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-slate-500 transition-colors hover:border-slate-300 hover:bg-primary-50 hover:text-primary-700 dark:border-[#1e2234] dark:bg-[#101020] dark:text-slate-400 dark:hover:bg-[#181830] dark:hover:text-primary-300 lg:hidden"
             aria-label={t('topbar.openMenu')}
           >
             <Menu className="h-4 w-4" />
           </button>
 
           <div className="min-w-0 flex-1">
-            <nav aria-label={t('topbar.breadcrumb')} className="mb-0.5 hidden flex-wrap items-center gap-1 text-[11px] text-[#6d889a] dark:text-[#8ea7ba] lg:flex">
+            <nav aria-label={t('topbar.breadcrumb')} className="mb-0.5 hidden flex-wrap items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 lg:flex">
               {breadcrumbs.map((crumb, index) => (
                 <div key={`${crumb.label}-${index}`} className="flex items-center gap-1">
-                  {index > 0 ? <ChevronRight className="h-3 w-3 text-[#9bb2c2]" /> : null}
+                  {index > 0 ? <ChevronRight className="h-3 w-3 text-slate-400" /> : null}
                   {crumb.to ? (
-                    <Link to={crumb.to} className="max-w-[9rem] truncate rounded px-1 py-0.5 hover:bg-[#e9f7ff] hover:text-[#0f4c81] dark:hover:bg-[#102234] dark:hover:text-[#dff8ff]">
+                    <Link to={crumb.to} className="max-w-[9rem] truncate rounded px-1 py-0.5 hover:bg-slate-100 hover:text-primary-700 dark:hover:bg-[#181830] dark:hover:text-primary-300">
                       {crumb.label}
                     </Link>
                   ) : (
-                    <span className="max-w-[10rem] truncate px-1 py-0.5 font-semibold text-[#193f59] dark:text-[#eaf8ff]">{crumb.label}</span>
+                    <span className="max-w-[10rem] truncate px-1 py-0.5 font-semibold text-slate-800 dark:text-slate-100">{crumb.label}</span>
                   )}
                 </div>
               ))}
             </nav>
-            <h2 className="hidden truncate text-xl font-semibold text-[#17384f] dark:text-[#eefbff] lg:block">{page.title}</h2>
-            <p className="hidden truncate text-sm text-[#678197] dark:text-[#8ea7ba] lg:block">{page.subtitle}</p>
+            <h2 className="hidden truncate text-xl font-semibold text-slate-900 dark:text-slate-50 lg:block">{page.title}</h2>
+            <p className="hidden truncate text-sm text-slate-500 dark:text-slate-400 lg:block">{page.subtitle}</p>
           </div>
         </div>
 
@@ -118,21 +118,21 @@ export function Topbar({
                   },
                 })
               }}
-              className="hidden min-h-12 items-center gap-2.5 rounded-2xl bg-gradient-to-r from-[#1098c7] to-[#13b6a5] px-5 py-3 text-[15px] font-semibold text-white shadow-[0_12px_28px_rgba(19,182,165,0.22)] transition-transform hover:-translate-y-0.5 sm:inline-flex"
+              className="hidden min-h-10 items-center gap-2 rounded-full bg-primary-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-700 sm:inline-flex"
             >
-              <Plus className="h-4.5 w-4.5" />
+              <Plus className="h-4 w-4" />
               {t('topbar.newAssessment')}
             </button>
           )}
 
           <HeaderClock theme={theme} language={language} />
 
-          <div className="hidden h-7 w-px bg-[#d9edf7] dark:bg-[#1d3b4d] sm:block" />
+          <div className="hidden h-7 w-px bg-slate-200 dark:bg-[#1e2234] sm:block" />
 
           <button
             type="button"
             onClick={() => setLanguage(nextLanguage)}
-            className="hidden min-h-10 items-center gap-2 rounded-full border border-[#d7eaf4] bg-white px-3 py-2 text-xs font-semibold text-[#365167] transition-colors hover:bg-[#ecf8ff] hover:text-[#0f4c81] dark:border-[#1d3b4d] dark:bg-[#0d1a28] dark:text-[#dff8ff] dark:hover:bg-[#112335] sm:inline-flex"
+            className="hidden min-h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-primary-50 hover:text-primary-700 dark:border-[#1e2234] dark:bg-[#101020] dark:text-slate-300 dark:hover:bg-[#181830] dark:hover:text-primary-300 sm:inline-flex"
             aria-label={t('topbar.languageSwitcher')}
             title={t('topbar.languageSwitcher')}
           >
@@ -143,7 +143,7 @@ export function Topbar({
           <button
             type="button"
             onClick={onToggleTheme}
-            className="dark-hover-border inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#d7eaf4] bg-white text-[#5a7487] transition-colors hover:bg-[#ecf8ff] hover:text-[#0f4c81] dark:border-[#1d3b4d] dark:bg-[#0d1a28] dark:text-[#9eb5c8] dark:hover:bg-[#112335] dark:hover:text-[#dff8ff]"
+            className="dark-hover-border inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:bg-primary-50 hover:text-primary-700 dark:border-[#1e2234] dark:bg-[#101020] dark:text-slate-400 dark:hover:bg-[#181830] dark:hover:text-primary-300"
             aria-label={isDark ? t('topbar.switchToLightTheme') : t('topbar.switchToDarkTheme')}
             title={isDark ? t('topbar.switchToLightTheme') : t('topbar.switchToDarkTheme')}
           >
@@ -152,7 +152,7 @@ export function Topbar({
 
           <button
             type="button"
-            className="relative hidden h-11 w-11 items-center justify-center rounded-full border border-[#d7eaf4] bg-white text-[#5a7487] transition-colors hover:bg-[#ecf8ff] hover:text-[#0f4c81] dark:border-[#1d3b4d] dark:bg-[#0d1a28] dark:text-[#9eb5c8] dark:hover:bg-[#112335] dark:hover:text-[#dff8ff] md:inline-flex"
+            className="relative hidden h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:bg-primary-50 hover:text-primary-700 dark:border-[#1e2234] dark:bg-[#101020] dark:text-slate-400 dark:hover:bg-[#181830] dark:hover:text-primary-300 md:inline-flex"
             aria-label={t('topbar.notifications')}
           >
             <Bell className="h-4 w-4" />
@@ -162,10 +162,10 @@ export function Topbar({
           <div className="relative" ref={menuRef}>
             <button
               type="button"
-              className="dark-hover-border flex min-h-11 items-center gap-1 rounded-full border border-[#d7eaf4] bg-white px-1.5 py-1.5 text-[#365167] shadow-sm transition-colors hover:bg-[#ecf8ff] dark:border-[#1d3b4d] dark:bg-[#0d1a28] dark:text-[#e3f7ff] dark:hover:bg-[#112335] sm:gap-2 sm:px-2"
+              className="dark-hover-border flex min-h-11 items-center gap-1 rounded-full border border-slate-200 bg-white px-1.5 py-1.5 text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-primary-50 dark:border-[#1e2234] dark:bg-[#101020] dark:text-slate-200 dark:hover:bg-[#181830] sm:gap-2 sm:px-2"
               onClick={() => setMenuOpen((prev) => !prev)}
             >
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-[#1098c7] to-[#13b6a5] text-xs font-bold text-white">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-primary-500 to-sky-500 text-xs font-bold text-white">
                 {initials}
               </span>
               <span className="hidden max-w-32 truncate text-sm font-semibold md:inline">{user?.name || t('common.user')}</span>
@@ -173,31 +173,31 @@ export function Topbar({
             </button>
 
             {menuOpen ? (
-              <div className="dark-hover-border absolute right-0 z-30 mt-2 w-[min(16rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-[#d7eaf4] bg-white shadow-lg dark:border-[#1d3b4d] dark:bg-[#0d1a28]">
-                <div className="border-b border-[#d7eaf4] bg-[#f3fbff] px-4 py-3 dark:border-[#1d3b4d] dark:bg-[#112335]">
-                  <p className="text-sm font-semibold text-[#17384f] dark:text-[#eefbff]">{user?.name || t('common.unknownUser')}</p>
-                  <p className="text-xs text-[#678197] dark:text-[#8ea7ba]">{user?.email || t('common.noEmail')}</p>
-                  <p className="mt-1 inline-flex rounded-full bg-[#daf6ff] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#0b6b86] dark:bg-[#143246] dark:text-[#82e8f7]">
+              <div className="dark-hover-border absolute right-0 z-30 mt-2 w-[min(16rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-[#1e2234] dark:bg-[#0d0d1c]">
+                <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-[#1e2234] dark:bg-[#101020]">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{user?.name || t('common.unknownUser')}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{user?.email || t('common.noEmail')}</p>
+                  <p className="mt-1 inline-flex rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-700 dark:bg-primary-500/10 dark:text-primary-300">
                     {t(`roles.${activeRole}`)}
                   </p>
                 </div>
 
                 <button
                   type="button"
-                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-[#365167] transition-colors hover:bg-[#f3fbff] dark:text-[#e3f7ff] dark:hover:bg-[#112335]"
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-[#181830]"
                 >
                   <Settings className="h-4 w-4" />
                   {t('topbar.profileSettings')}
                 </button>
                 <button
                   type="button"
-                  className="flex w-full items-center justify-between gap-2 border-b border-[#d7eaf4] px-4 py-3 text-left text-sm font-medium text-[#365167] transition-colors hover:bg-[#f3fbff] dark:border-[#1d3b4d] dark:text-[#e3f7ff] dark:hover:bg-[#112335]"
+                  className="flex w-full items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-[#1e2234] dark:text-slate-200 dark:hover:bg-[#181830]"
                 >
                   <span className="inline-flex items-center gap-2">
                     <Bell className="h-4 w-4" />
                     {t('topbar.notifications')}
                   </span>
-                  <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#daf6ff] px-1 text-[11px] font-semibold text-[#0b6b86] dark:bg-[#143246] dark:text-[#82e8f7]">
+                  <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-100 px-1 text-[11px] font-semibold text-primary-700 dark:bg-primary-500/10 dark:text-primary-300">
                     4
                   </span>
                 </button>

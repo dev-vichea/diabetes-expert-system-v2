@@ -260,6 +260,7 @@ export function DiagnosisPage() {
   const hasHydratedRef = useRef(false)
   const isHydratingRef = useRef(false)
   const handledRestartRef = useRef(null)
+  const profilePrefilledRef = useRef(false)
 
   const userRoles = useMemo(() => new Set(user?.roles || (user?.role ? [user.role] : [])), [user])
   const needsPatient = userRoles.has('doctor') || userRoles.has('admin') || userRoles.has('super_admin')
@@ -337,6 +338,51 @@ export function DiagnosisPage() {
       form, qcm, extraLabs, result, savedAt: new Date().toISOString(),
     }))
   }, [storageKey, step, maxReached, form, qcm, extraLabs, result, draftReady, isDraftPristine])
+
+  /* ── Profile prefill (self-assessment): fill empty fields from the saved health profile ── */
+  useEffect(() => {
+    if (!draftReady || profilePrefilledRef.current) return
+    if (needsPatient || !user?.patient_id) return
+    profilePrefilledRef.current = true
+    let cancelled = false
+
+    async function prefillFromProfile() {
+      try {
+        const response = await api.get('/patients/mine')
+        const profileData = getApiData(response)
+        if (!profileData || cancelled) return
+
+        setForm((prev) => {
+          const next = { ...prev }
+          const birth = profileData.date_of_birth ? new Date(profileData.date_of_birth) : null
+          if (birth && !Number.isNaN(birth.getTime()) && !next.age) {
+            const now = new Date()
+            let ageYears = now.getFullYear() - birth.getFullYear()
+            const monthDiff = now.getMonth() - birth.getMonth()
+            if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) ageYears -= 1
+            if (ageYears >= 1 && ageYears < 130) next.age = String(ageYears)
+          }
+          if (!next.height_cm && profileData.height_cm != null) next.height_cm = String(profileData.height_cm)
+          if (!next.weight_kg && profileData.weight_kg != null) next.weight_kg = String(profileData.weight_kg)
+          if (!next.waist_circumference && profileData.waist_circumference != null) next.waist_circumference = String(profileData.waist_circumference)
+          for (const riskKey of ['family_history', 'hypertension', 'high_cholesterol', 'smoking', 'sedentary_lifestyle']) {
+            if (profileData[riskKey] === true) next[riskKey] = true
+          }
+          return next
+        })
+
+        // Derive BMI (+ its QCM group) from the prefilled body metrics.
+        if (profileData.height_cm && profileData.weight_kg) {
+          calculateBmi(profileData.weight_kg, profileData.height_cm)
+        }
+      } catch {
+        /* Profile prefill is best-effort — never block the assessment form. */
+      }
+    }
+
+    prefillFromProfile()
+    return () => { cancelled = true }
+  }, [draftReady, needsPatient, user?.patient_id])
 
   useEffect(() => {
     if (!draftReady || (!restartRequested && !forceRestart && !keepData)) return

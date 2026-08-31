@@ -1,10 +1,24 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.errors import NotFoundError, ValidationError
 
 
 class PatientService:
     ALLOWED_GENDERS = {"male", "female", "other", "unknown"}
+
+    SELF_PROFILE_FIELDS = (
+        "gender",
+        "date_of_birth",
+        "phone",
+        "height_cm",
+        "weight_kg",
+        "waist_circumference",
+        "smoking",
+        "sedentary_lifestyle",
+        "family_history",
+        "hypertension",
+        "high_cholesterol",
+    )
 
     def __init__(self, patient_repository, audit_log_repository=None):
         self.patient_repository = patient_repository
@@ -86,12 +100,53 @@ class PatientService:
         }
 
     def get_my_profile(self, current_user: dict) -> dict:
+
         user_id = self._current_user_id(current_user)
         patient = self.patient_repository.get_patient_by_user_id(user_id)
         if not patient:
             raise NotFoundError("Patient profile not found.")
 
         return self.patient_repository.serialize_patient(patient)
+
+    def update_my_profile(self, current_user: dict, payload: dict) -> dict:
+        user_id = self._current_user_id(current_user)
+        patient = self.patient_repository.get_patient_by_user_id(user_id)
+        if not patient:
+            raise NotFoundError("Patient profile not found.")
+
+        if not isinstance(payload, dict):
+            raise ValidationError("A JSON object is required.")
+
+        # Self-service updates are restricted to the patient's own profile fields.
+        normalized = {key: payload[key] for key in self.SELF_PROFILE_FIELDS if key in payload}
+
+        if "gender" in normalized and normalized["gender"] not in self.ALLOWED_GENDERS:
+            raise ValidationError("Gender must be one of: male, female, other, unknown.")
+        if "date_of_birth" in normalized:
+            raw_dob = normalized["date_of_birth"]
+            if raw_dob:
+                try:
+                    normalized["date_of_birth"] = datetime.fromisoformat(str(raw_dob)).date()
+                except ValueError as exc:
+                    raise ValidationError("date_of_birth must be an ISO date (YYYY-MM-DD).") from exc
+            else:
+                normalized["date_of_birth"] = None
+
+        if payload.get("profile_complete"):
+            normalized["profile_completed_at"] = datetime.now(timezone.utc)
+
+        updated_patient = self.patient_repository.update_patient(patient, normalized)
+
+        if self.audit_log_repository:
+            self.audit_log_repository.create(
+                action="patient.update_self",
+                entity_type="patient",
+                entity_id=str(updated_patient.id),
+                actor_user_id=user_id,
+                metadata={"fields": sorted(normalized.keys())},
+            )
+
+        return self.patient_repository.serialize_patient(updated_patient)
 
     def get_my_history(self, current_user: dict) -> dict:
         user_id = self._current_user_id(current_user)

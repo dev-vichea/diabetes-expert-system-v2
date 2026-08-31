@@ -2,12 +2,12 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 
-// ── Ultra-Premium Medical White Tokens
+// ── Ultra-Premium Medical White Tokens (healthcare blue family — legacy key names kept)
 const C = {
   bg:         '#f4f7f9', // Slightly cooler, premium medical off-white
-  teal:       '#0f766e',
-  tealLight:  '#14b8a6',
-  tealBright: '#06b6d4',
+  teal:       '#1f76e8',
+  tealLight:  '#2f8cff',
+  tealBright: '#0ea5e9',
   blue:       '#3b82f6',
   purple:     '#8b5cf6',
   sky:        '#0ea5e9',
@@ -23,7 +23,7 @@ const C = {
   // Glassmorphism specific
   glassBg:      'rgba(255, 255, 255, 0.65)',
   glassBorder:  'rgba(255, 255, 255, 0.9)',
-  glassShadow:  '0 8px 32px rgba(15, 118, 110, 0.06)',
+  glassShadow:  '0 8px 32px rgba(31, 118, 232, 0.06)',
 }
 
 const BRAND_LOGO_SRC = '/images/logo.png'
@@ -71,7 +71,7 @@ export function LandingPage() {
         if (p.x < 0 || p.x > W) p.vx *= -1
         if (p.y < 0 || p.y > H) p.vy *= -1
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(20, 184, 166, ${p.a})`; ctx.fill()
+        ctx.fillStyle = `rgba(47, 140, 255, ${p.a})`; ctx.fill()
       })
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
@@ -80,7 +80,7 @@ export function LandingPage() {
           const dist = Math.sqrt(dx * dx + dy * dy)
           if (dist < MAX_DIST) {
             ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y)
-            ctx.strokeStyle = `rgba(20, 184, 166, ${(1 - dist / MAX_DIST) * 0.12})`; ctx.stroke()
+            ctx.strokeStyle = `rgba(47, 140, 255, ${(1 - dist / MAX_DIST) * 0.12})`; ctx.stroke()
           }
         }
       }
@@ -279,7 +279,7 @@ export function LandingPage() {
 
         /* Premium Text Gradient */
         .gradient-text {
-          background: linear-gradient(135deg, #0f172a 0%, #0f766e 50%, #0284c7 100%);
+          background: linear-gradient(135deg, #0f172a 0%, #175bb7 50%, #0284c7 100%);
           background-size: 200% auto;
           color: transparent;
           -webkit-background-clip: text;
@@ -301,7 +301,7 @@ export function LandingPage() {
           gap: 0.8rem;
           padding: 1.1rem 2.8rem;
           border-radius: 50px;
-          background: linear-gradient(135deg, #0f766e, #14b8a6);
+          background: linear-gradient(135deg, #1f76e8, #2f8cff);
           color: #fff;
           border: none;
           font-family: 'Outfit', sans-serif;

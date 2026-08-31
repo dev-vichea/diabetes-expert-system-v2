@@ -1,24 +1,36 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { ProtectedRoute } from '../components/guards/ProtectedRoute'
 import { RoleGuard } from '../components/guards/RoleGuard'
+import { ProfileGate } from '../components/guards/ProfileGate'
 import { AppLayout } from '../components/layout/AppLayout'
-import { LoginPage } from '../pages/LoginPage'
-import { SignUpPage } from '../pages/SignUpPage'
-import { DashboardPage } from '../pages/DashboardPage'
-import { DiagnosisPage } from '../pages/DiagnosisPage'
-import { DiagnosisResultPage } from '../pages/DiagnosisResultPage'
-import { PatientsPage } from '../pages/PatientsPage'
-import { PatientHistoryPage } from '../pages/PatientHistoryPage'
-import { RulesPage } from '../pages/RulesPage'
-import { ReviewPage } from '../pages/ReviewPage'
-import { DiagnosisHistoryPage } from '../pages/DiagnosisHistoryPage'
-import { AdminPage } from '../pages/AdminPage'
-import { AdminUserEditPage } from '../pages/AdminUserEditPage'
-import { RolePermissionsPage } from '../pages/RolePermissionsPage'
+import { RouteLoading } from '../components/RouteLoading'
 import { UnauthorizedPage } from '../pages/public/UnauthorizedPage'
 import { NotFoundPage } from '../pages/public/NotFoundPage'
-import { LandingPage } from '../pages/LandingPage'
+
+/*
+ * Route-level code splitting: each page ships as its own chunk and is fetched
+ * on first navigation, keeping the initial bundle small (the landing/login
+ * screens no longer download admin, chart, or rule-editor code). Tiny shared
+ * pages (404 / unauthorized) stay eagerly imported to avoid extra chunks.
+ */
+const LandingPage = lazy(() => import('../pages/LandingPage').then((m) => ({ default: m.LandingPage })))
+const LoginPage = lazy(() => import('../pages/LoginPage').then((m) => ({ default: m.LoginPage })))
+const SignUpPage = lazy(() => import('../pages/SignUpPage').then((m) => ({ default: m.SignUpPage })))
+const DashboardPage = lazy(() => import('../pages/DashboardPage').then((m) => ({ default: m.DashboardPage })))
+const DiagnosisPage = lazy(() => import('../pages/DiagnosisPage').then((m) => ({ default: m.DiagnosisPage })))
+const DiagnosisResultPage = lazy(() => import('../pages/DiagnosisResultPage').then((m) => ({ default: m.DiagnosisResultPage })))
+const PatientsPage = lazy(() => import('../pages/PatientsPage').then((m) => ({ default: m.PatientsPage })))
+const PatientHistoryPage = lazy(() => import('../pages/PatientHistoryPage').then((m) => ({ default: m.PatientHistoryPage })))
+const RulesPage = lazy(() => import('../pages/RulesPage').then((m) => ({ default: m.RulesPage })))
+const ReviewPage = lazy(() => import('../pages/ReviewPage').then((m) => ({ default: m.ReviewPage })))
+const DiagnosisHistoryPage = lazy(() => import('../pages/DiagnosisHistoryPage').then((m) => ({ default: m.DiagnosisHistoryPage })))
+const CarePlanPage = lazy(() => import('../pages/CarePlanPage').then((m) => ({ default: m.CarePlanPage })))
+const ProfileSetupPage = lazy(() => import('../pages/ProfileSetupPage').then((m) => ({ default: m.ProfileSetupPage })))
+const AdminPage = lazy(() => import('../pages/AdminPage').then((m) => ({ default: m.AdminPage })))
+const AdminUserEditPage = lazy(() => import('../pages/AdminUserEditPage').then((m) => ({ default: m.AdminUserEditPage })))
+const RolePermissionsPage = lazy(() => import('../pages/RolePermissionsPage').then((m) => ({ default: m.RolePermissionsPage })))
 
 function AuthenticatedRoutes() {
   const { user, logout } = useAuth()
@@ -31,13 +43,15 @@ function AuthenticatedRoutes() {
       <Route path="/auth/sign-in" element={<Navigate to="/dashboard" replace />} />
       <Route path="/auth/sign-up" element={<Navigate to="/dashboard" replace />} />
 
-      <Route
-        element={(
-          <ProtectedRoute user={user}>
-            <AppLayout />
-          </ProtectedRoute>
-        )}
-      >
+      {/* ProfileGate is a pathless layout route: patients with an incomplete
+          health profile are redirected to the wizard; everyone else passes
+          through to the standalone setup page or the app shell below. */}
+      <Route element={<ProtectedRoute user={user}><ProfileGate /></ProtectedRoute>}>
+        {/* First-login health profile wizard — standalone page, no app chrome */}
+        <Route path="/profile-setup" element={<ProfileSetupPage />} />
+
+        {/* App shell (sidebar + topbar) around every other authenticated page */}
+        <Route element={<AppLayout />}>
         {/* Dashboard is no longer at root, but at /dashboard */}
         <Route path="/dashboard" element={<DashboardPage />} />
         
@@ -110,6 +124,15 @@ function AuthenticatedRoutes() {
         <Route path="/admin" element={<Navigate to="/users" replace />} />
 
         <Route
+          path="/care-plan"
+          element={
+            <RoleGuard user={user} permissions={['diagnosis.view_own']}>
+              <CarePlanPage />
+            </RoleGuard>
+          }
+        />
+
+        <Route
           path="/users"
           element={(
             <RoleGuard user={user} permissions={['user.view', 'permission.view']} permissionMode="any">
@@ -136,9 +159,10 @@ function AuthenticatedRoutes() {
           )}
         />
 
-        <Route path="/unauthorized" element={<UnauthorizedPage isAuthenticated />} />
-        <Route path="/not-found" element={<NotFoundPage isAuthenticated />} />
-        <Route path="*" element={<Navigate to="/not-found" replace />} />
+          <Route path="/unauthorized" element={<UnauthorizedPage isAuthenticated />} />
+          <Route path="/not-found" element={<NotFoundPage isAuthenticated />} />
+          <Route path="*" element={<Navigate to="/not-found" replace />} />
+        </Route>
       </Route>
     </Routes>
   )
@@ -146,15 +170,17 @@ function AuthenticatedRoutes() {
 
 function PublicRoutes() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/sign-up" element={<SignUpPage />} />
-      <Route path="/auth/sign-in" element={<Navigate to="/login" replace />} />
-      <Route path="/auth/sign-up" element={<Navigate to="/sign-up" replace />} />
-      <Route path="/unauthorized" element={<UnauthorizedPage isAuthenticated={false} />} />
-      <Route path="/not-found" element={<NotFoundPage isAuthenticated={false} />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <Suspense fallback={<RouteLoading />}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/sign-up" element={<SignUpPage />} />
+        <Route path="/auth/sign-in" element={<Navigate to="/login" replace />} />
+        <Route path="/auth/sign-up" element={<Navigate to="/sign-up" replace />} />
+        <Route path="/unauthorized" element={<UnauthorizedPage isAuthenticated={false} />} />
+        <Route path="/not-found" element={<NotFoundPage isAuthenticated={false} />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   )
 }
 
@@ -164,7 +190,14 @@ export function AppRouter() {
   return (
     <Routes>
       {/* Root is ALWAYS the Landing Page */}
-      <Route path="/" element={<LandingPage />} />
+      <Route
+        path="/"
+        element={(
+          <Suspense fallback={<RouteLoading />}>
+            <LandingPage />
+          </Suspense>
+        )}
+      />
 
       {/* Wildcard to sub-routers */}
       <Route path="/*" element={user ? <AuthenticatedRoutes /> : <PublicRoutes />} />

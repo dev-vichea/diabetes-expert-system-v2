@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Combobox as ComboboxPrimitive } from '@base-ui/react'
+import { Combobox as ComboboxPrimitive } from '@base-ui/react/combobox'
 import { Check, ChevronDown, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -113,14 +113,14 @@ function ComboboxItem({ className, children, ...props }) {
     <ComboboxPrimitive.Item
       data-slot="combobox-item"
       className={cn(
-        'group relative flex w-full cursor-default items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 outline-none select-none transition data-[highlighted]:bg-slate-50 data-[highlighted]:text-slate-950 data-[selected]:bg-cyan-50 data-[selected]:text-cyan-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 dark:text-slate-200 dark:data-[highlighted]:bg-slate-800/80 dark:data-[highlighted]:text-slate-50 dark:data-[selected]:bg-cyan-500/10 dark:data-[selected]:text-cyan-100',
+        'group relative flex w-full cursor-default items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 outline-none select-none transition data-[highlighted]:bg-slate-50 data-[highlighted]:text-slate-950 data-[selected]:bg-primary-50 data-[selected]:text-primary-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 dark:text-slate-200 dark:data-[highlighted]:bg-slate-800/80 dark:data-[highlighted]:text-slate-50 dark:data-[selected]:bg-primary-500/10 dark:data-[selected]:text-primary-100',
         className
       )}
       {...props}
     >
       <div className="min-w-0 flex-1">{children}</div>
       <ComboboxPrimitive.ItemIndicator data-slot="combobox-item-indicator">
-        <Check className="h-4 w-4 shrink-0 text-cyan-600 dark:text-cyan-300" />
+        <Check className="h-4 w-4 shrink-0 text-primary-600 dark:text-primary-300" />
       </ComboboxPrimitive.ItemIndicator>
     </ComboboxPrimitive.Item>
   )

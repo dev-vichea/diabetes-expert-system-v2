@@ -19,6 +19,15 @@ class PatientRepository:
             date_of_birth=payload.get("date_of_birth"),
             phone=payload.get("phone"),
             notes=payload.get("notes"),
+            height_cm=payload.get("height_cm"),
+            weight_kg=payload.get("weight_kg"),
+            waist_circumference=payload.get("waist_circumference"),
+            smoking=payload.get("smoking"),
+            sedentary_lifestyle=payload.get("sedentary_lifestyle"),
+            family_history=payload.get("family_history"),
+            hypertension=payload.get("hypertension"),
+            high_cholesterol=payload.get("high_cholesterol"),
+            profile_completed_at=payload.get("profile_completed_at"),
         )
         db.session.add(patient)
         try:
@@ -53,6 +62,24 @@ class PatientRepository:
             patient.phone = payload["phone"]
         if "notes" in payload:
             patient.notes = payload["notes"]
+        if "height_cm" in payload:
+            patient.height_cm = payload["height_cm"]
+        if "weight_kg" in payload:
+            patient.weight_kg = payload["weight_kg"]
+        if "waist_circumference" in payload:
+            patient.waist_circumference = payload["waist_circumference"]
+        if "smoking" in payload:
+            patient.smoking = payload["smoking"]
+        if "sedentary_lifestyle" in payload:
+            patient.sedentary_lifestyle = payload["sedentary_lifestyle"]
+        if "family_history" in payload:
+            patient.family_history = payload["family_history"]
+        if "hypertension" in payload:
+            patient.hypertension = payload["hypertension"]
+        if "high_cholesterol" in payload:
+            patient.high_cholesterol = payload["high_cholesterol"]
+        if "profile_completed_at" in payload:
+            patient.profile_completed_at = payload["profile_completed_at"]
         try:
             db.session.commit()
         except IntegrityError as exc:
@@ -160,6 +187,16 @@ class PatientRepository:
             "date_of_birth": patient.date_of_birth.isoformat() if patient.date_of_birth else None,
             "phone": patient.phone,
             "notes": patient.notes,
+            "height_cm": patient.height_cm,
+            "weight_kg": patient.weight_kg,
+            "waist_circumference": patient.waist_circumference,
+            "smoking": patient.smoking,
+            "sedentary_lifestyle": patient.sedentary_lifestyle,
+            "family_history": patient.family_history,
+            "hypertension": patient.hypertension,
+            "high_cholesterol": patient.high_cholesterol,
+            "profile_completed_at": serialize_datetime(patient.profile_completed_at),
+            "profile_completed": patient.profile_completed_at is not None,
             "created_at": serialize_datetime(patient.created_at),
             "updated_at": serialize_datetime(patient.updated_at),
             "symptom_count": len(patient.symptoms),

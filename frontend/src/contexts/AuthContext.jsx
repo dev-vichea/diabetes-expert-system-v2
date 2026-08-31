@@ -23,6 +23,21 @@ export function AuthProvider({ children }) {
     else localStorage.removeItem('user')
   }, [user])
 
+  // Keep the cached user in sync (e.g. profile_completed flips after onboarding,
+  // or the cached copy predates that field existing).
+  useEffect(() => {
+    if (!getAccessToken()) return
+    let cancelled = false
+    api.get('/auth/me')
+      .then((response) => {
+        const data = getApiData(response)
+        const nextUser = data?.user || data
+        if (!cancelled && nextUser?.email) setUser((current) => ({ ...current, ...nextUser }))
+      })
+      .catch(() => { /* offline or token refresh in flight — cached user stays */ })
+    return () => { cancelled = true }
+  }, [])
+
   const logout = async () => {
     try {
       await api.post('/auth/logout', { refresh_token: getRefreshToken() })
@@ -34,10 +49,19 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const refreshUser = async () => {
+    const response = await api.get('/auth/me')
+    const data = getApiData(response)
+    const nextUser = data?.user || data
+    if (nextUser?.email) setUser((current) => ({ ...current, ...nextUser }))
+    return nextUser
+  }
+
   const value = useMemo(() => ({
     user,
     setUser,
     logout,
+    refreshUser,
   }), [user])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

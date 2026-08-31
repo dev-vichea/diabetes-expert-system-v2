@@ -1,8 +1,9 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { Sidebar } from './Sidebar'
 import { MobileSidebarDrawer } from './MobileSidebarDrawer'
 import { Topbar } from './Topbar'
+import { RouteLoading } from '../RouteLoading'
 import { getBreadcrumbs, getPageInfo, getVisibleNavItems } from '../../lib/nav-config'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -43,7 +44,7 @@ export function AppLayout() {
   const sidebarWidth = desktopSidebarCollapsed ? 'lg:grid-cols-[5rem_1fr]' : 'lg:grid-cols-[15rem_1fr]'
 
   return (
-    <div className={`h-[100dvh] min-w-0 overflow-hidden bg-white dark:bg-[#030309] lg:grid ${sidebarWidth}`}>
+    <div className={`h-[100dvh] min-w-0 overflow-hidden bg-[#f5f8fc] dark:bg-[#030309] lg:grid ${sidebarWidth}`}>
       <aside className="hidden h-[100dvh] min-h-0 overflow-hidden border-r border-slate-200 bg-white dark:border-[#161b31] dark:bg-[#030309] lg:static lg:block lg:w-auto">
         <Sidebar
           navItems={navItems}
@@ -77,7 +78,12 @@ export function AppLayout() {
         />
 
         <main key={location.pathname} className="custom-scrollbar page-open-motion min-w-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6">
-          <Outlet />
+          <div className="mx-auto w-full max-w-[100rem]">
+            {/* Suspense here keeps the sidebar/topbar shell mounted while a lazy page chunk loads */}
+            <Suspense fallback={<RouteLoading />}>
+              <Outlet />
+            </Suspense>
+          </div>
         </main>
       </div>
     </div>

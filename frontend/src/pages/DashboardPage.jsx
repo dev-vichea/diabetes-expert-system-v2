@@ -1,7 +1,11 @@
-import { useMemo } from 'react'
+import { lazy, Suspense, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { ClinicalDashboardPage } from '@/pages/dashboard/ClinicalDashboardPage'
-import { PatientDashboardPage } from '@/pages/dashboard/PatientDashboardPage'
+import { RouteLoading } from '@/components/RouteLoading'
+
+// Split dashboards so patient users don't download the chart-heavy clinical
+// dashboard (recharts) and clinical users don't download the patient panel.
+const ClinicalDashboardPage = lazy(() => import('@/pages/dashboard/ClinicalDashboardPage').then((m) => ({ default: m.ClinicalDashboardPage })))
+const PatientDashboardPage = lazy(() => import('@/pages/dashboard/PatientDashboardPage').then((m) => ({ default: m.PatientDashboardPage })))
 
 export function DashboardPage() {
   const { user } = useAuth()
@@ -12,8 +16,16 @@ export function DashboardPage() {
   const activeRole = user?.roles?.[0] || user?.role || 'user'
 
   if (isPatientExperience) {
-    return <PatientDashboardPage />
+    return (
+      <Suspense fallback={<RouteLoading />}>
+        <PatientDashboardPage />
+      </Suspense>
+    )
   }
 
-  return <ClinicalDashboardPage activeRole={activeRole} />
+  return (
+    <Suspense fallback={<RouteLoading />}>
+      <ClinicalDashboardPage activeRole={activeRole} />
+    </Suspense>
+  )
 }

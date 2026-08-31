@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Search, BookOpen } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
 import { RuleSimulator } from '@/components/knowledge-base/RuleSimulator'
 import { KnowledgeBaseDashboard } from '@/components/knowledge-base/KnowledgeBaseDashboard'
-import { VisualLogicMap } from '@/components/knowledge-base/VisualLogicMap'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { LoadingState } from '@/components/ui/LoadingState'
 import {
   AppSelect,
   Combobox,
@@ -22,6 +22,10 @@ import {
   StatusBadge,
   Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@/components/ui'
+
+// The @xyflow graph editor is heavy (~127 kB min / 41 kB gzipped with deps) —
+// fetch it only when the user opens the "Visual Graph" tab.
+const VisualLogicMap = lazy(() => import('@/components/knowledge-base/VisualLogicMap').then((m) => ({ default: m.VisualLogicMap })))
 
 const DEFAULT_FACT_KEYS = [
   'age',
@@ -483,7 +487,9 @@ export function RulesPage() {
             ) : null}
           </div>
           <div className="flex-1 w-full relative min-h-0 bg-slate-50 dark:bg-slate-900/20">
-            <VisualLogicMap form={form} />
+            <Suspense fallback={<div className="flex h-full items-center justify-center"><LoadingState /></div>}>
+              <VisualLogicMap form={form} />
+            </Suspense>
           </div>
         </SectionCard>
       </TabsContent>

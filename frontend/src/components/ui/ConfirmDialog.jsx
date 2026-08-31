@@ -59,7 +59,7 @@ export function ConfirmDialog({
             <span
               className={cn(
                 'mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-full',
-                isDanger ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/45 dark:text-rose-300' : 'bg-sky-100 text-sky-700 dark:bg-sky-950/45 dark:text-sky-300'
+                isDanger ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/45 dark:text-rose-300' : 'bg-primary-100 text-primary-700 dark:bg-primary-950/45 dark:text-primary-300'
               )}
             >
               <AlertTriangle className="h-5 w-5" aria-hidden />

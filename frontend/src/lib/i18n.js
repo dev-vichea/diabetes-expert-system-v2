@@ -103,6 +103,7 @@ export const messages = {
       "knowledgeBase": "Knowledge Base",
       "patientReview": "Patient Review",
       "myResults": "My Results",
+      "carePlan": "Care Plan",
       "users": "Users",
       "roles": "Roles",
       "workspace": "Workspace",
@@ -142,6 +143,10 @@ export const messages = {
       "myDiagnosisResults": {
         "title": "My Diagnosis Results",
         "subtitle": "Track your diagnosis history and feedback"
+      },
+      "carePlan": {
+        "title": "My Care Plan",
+        "subtitle": "Your follow-up plan, doctor's notes, and progress in one place"
       },
       "users": {
         "title": "Users",
@@ -362,6 +367,54 @@ export const messages = {
       "profileSettings": "Settings",
       "logOut": "Log out"
     },
+    "profileSetup": {
+      "stepProgress": "Step {{current}} of {{total}}",
+      "stepLabel": "Step {{current}}/{{total}}",
+      "welcome": "Hi {{name}} — let’s set up your health profile.",
+      "footnote": "These answers replace the profile questions inside every assessment — less typing, more accuracy.",
+      "step1": {
+        "title": "About you",
+        "description": "Two quick details so your assessments start pre-filled."
+      },
+      "step2": {
+        "title": "Your body",
+        "description": "Used to calculate your BMI automatically — no need to type it later."
+      },
+      "step3": {
+        "title": "Health background",
+        "description": "Optional — these feed the risk analysis only if they apply to you."
+      },
+      "genderLabel": "Gender",
+      "genderMale": "Male",
+      "genderFemale": "Female",
+      "genderOther": "Other",
+      "dobLabel": "Date of birth",
+      "agePreview": "{{age}} years old",
+      "heightLabel": "Height (cm)",
+      "weightLabel": "Weight (kg)",
+      "waistLabel": "Waist (cm)",
+      "optional": "optional",
+      "bmiPreview": "Your BMI: {{value}} — calculated automatically in every assessment.",
+      "riskFamily": "Family history of diabetes",
+      "riskHypertension": "High blood pressure",
+      "riskCholesterol": "High cholesterol",
+      "riskSmoking": "I smoke",
+      "riskSedentary": "Mostly sedentary lifestyle",
+      "privacyNote": "Only you and your care team can see this. You can change it anytime in your profile.",
+      "back": "Back",
+      "continue": "Continue",
+      "finish": "Finish setup",
+      "saving": "Saving...",
+      "errors": {
+        "gender": "Please choose a gender option.",
+        "dob": "Please enter your date of birth.",
+        "dobRange": "Please enter a valid date of birth.",
+        "height": "Please enter a height between 80 and 250 cm.",
+        "weight": "Please enter a weight between 20 and 400 kg.",
+        "waist": "Please enter a waist between 40 and 200 cm.",
+        "save": "Could not save your profile. Please try again."
+      }
+    },
     "patientDashboard": {
       "errors": {
         "loadFailed": "Failed to load your dashboard data"
@@ -381,7 +434,47 @@ export const messages = {
         "latestSnapshot": "Latest Snapshot",
         "noDiagnosisYet": "No diagnosis result yet",
         "snapshotFallback": "Complete an assessment to generate a diagnosis result and next-step guidance.",
-        "openFullResult": "Open full result"
+        "openFullResult": "Open full result",
+        "greetingMorning": "Good morning, {{name}}!",
+        "greetingAfternoon": "Good afternoon, {{name}}!",
+        "greetingEvening": "Good evening, {{name}}!",
+        "lastCheck": "Last check",
+        "lastCheckToday": "Today",
+        "lastCheckYesterday": "Yesterday",
+        "lastCheckDaysAgo": "{{count}} days ago",
+        "lastCheckNever": "No checks yet"
+      },
+      "situation": {
+        "title": "Your situation",
+        "newAssessment": "New assessment",
+        "viewResults": "View my results",
+        "stable": "Your latest assessment looks stable — keep up routine monitoring.",
+        "urgent": "Your latest assessment was flagged for urgent follow-up.",
+        "urgentReason": "Reason: {{reason}}",
+        "noResult": "You haven't completed an assessment yet. Start your first one to see your situation here.",
+        "ageLabel": "Age"
+      },
+      "health": {
+        "title": "Health snapshot",
+        "description": "Key body metrics from your latest assessment.",
+        "latestFrom": "From your assessment on {{date}}",
+        "bmi": "Body Mass Index (BMI)",
+        "fastingGlucose": "Fasting blood glucose",
+        "hba1c": "HbA1c",
+        "catUnderweight": "Underweight",
+        "catNormal": "Normal",
+        "catOverweight": "Overweight",
+        "catObese": "Obese",
+        "catPrediabetes": "Prediabetes range",
+        "catDiabetes": "Diabetes range",
+        "notProvided": "Not provided",
+        "bmiRangeHint": "Healthy: 18.5 – 24.9",
+        "glucoseRangeHint": "Healthy (fasting): below 100 mg/dL",
+        "a1cRangeHint": "Healthy: below 5.7%",
+        "mgdlUnit": "mg/dL",
+        "emptyTitle": "No health metrics yet",
+        "emptyDescription": "Complete an assessment with your height, weight and lab values to see your BMI, glucose and HbA1c here.",
+        "disclaimer": "Screening reference only — always confirm results with your clinician."
       },
       "recentAssessments": {
         "title": "Recent Assessments",
@@ -407,7 +500,139 @@ export const messages = {
         "noDiagnosisAvailable": "No diagnosis available",
         "confidence": "Confidence",
         "reviewNote": "Review Note",
-        "noDoctorNote": "No doctor note yet."
+        "noDoctorNote": "No doctor note yet.",
+        "reportedSymptoms": "Symptoms you reported",
+        "noSymptoms": "No symptoms reported in your latest assessment.",
+        "openFull": "Open care plan",
+        "moreSymptoms": "+{{count}} more"
+      },
+      "report": {
+        "title": "Health report",
+        "description": "What your assessments show over time.",
+        "activityTitle": "Assessment activity",
+        "activityHint": "Assessments completed per month — last 6 months",
+        "trendTitle": "Confidence trend",
+        "trendHint": "Expert-system confidence for each assessment",
+        "totalAssessments": "Total assessments",
+        "urgentFlags": "Urgent flags",
+        "lastCheck": "Last check",
+        "latestConfidence": "Latest confidence",
+        "emptyTitle": "Your report is waiting for data",
+        "emptyDescription": "Complete assessments and this report fills itself in — activity, confidence trends, and key numbers over time.",
+        "emptyCta": "Start my first assessment",
+        "noTrendData": "Confidence appears once an assessment produces a diagnosis.",
+        "confidenceUnit": "%"
+      },
+      "recommendations": {
+        "title": "Recommended for you",
+        "description": "Generated automatically from your latest assessment data.",
+        "basisPrefix": "Based on: {{reason}}",
+        "priorityNow": "Act now",
+        "prioritySoon": "This week",
+        "priorityHabit": "Daily habit",
+        "basisUrgentFlag": "urgent flag on your latest result",
+        "basisSymptoms": "your symptoms: {{symptoms}}",
+        "basisGlucose": "glucose {{value}} mg/dL",
+        "basisHba1c": "HbA1c {{value}}%",
+        "basisBmi": "BMI {{value}}",
+        "basisNoLabs": "no lab values on file",
+        "basisSmoking": "smoking",
+        "basisLastCheck": "last check {{days}} days ago",
+        "basisHypertension": "hypertension flag",
+        "basisRiskFactor": "your risk factors",
+        "basisAssessmentCount": "{{count}} assessments so far",
+        "urgentFollowUpTitle": "Contact a clinician promptly",
+        "urgentFollowUpText": "Your latest assessment was flagged urgent. Don't wait — follow the recommendation and speak to a clinician as soon as you can.",
+        "crisisSignsTitle": "Seek emergency care now",
+        "crisisSignsText": "You reported warning signs ({{symptoms}}). These can indicate a dangerous glucose crisis — get urgent medical help immediately.",
+        "hypoSignsTitle": "Know how to treat low blood sugar",
+        "hypoSignsText": "Shakiness, sweating or dizziness can mean low blood sugar. If it happens, take fast-acting sugar (juice, glucose tablets) and tell your clinician.",
+        "veryHighGlucoseTitle": "Your glucose is very high",
+        "veryHighGlucoseText": "A reading of {{value}} mg/dL needs medical attention soon. Contact your clinician, drink water, and avoid sugary drinks for now.",
+        "missingLabsTitle": "Add lab tests to unlock better insight",
+        "missingLabsText": "Your assessments have no lab values yet. A fasting glucose and HbA1c test would make your reports and these recommendations far more accurate.",
+        "diabetesRangeGlucoseTitle": "Discuss your glucose with a clinician",
+        "diabetesRangeGlucoseText": "Your fasting glucose of {{value}} mg/dL is in the diabetes range. Book an appointment to confirm the result and plan next steps.",
+        "prediabetesGlucoseTitle": "Reverse prediabetes with lifestyle",
+        "prediabetesGlucoseText": "Your glucose of {{value}} mg/dL is in the warning range. Diet changes and regular movement now can bring it back to normal.",
+        "a1cElevatedTitle": "Recheck your HbA1c every 3 months",
+        "a1cElevatedText": "Your HbA1c of {{value}}% is above target. A check every 3 months shows whether your plan is actually working.",
+        "weightManagementTitle": "Aim for gradual weight loss",
+        "weightManagementText": "A BMI of {{value}} responds well to small changes: balanced portions and a daily walk. Even a 5% weight loss measurably improves glucose.",
+        "underweightTitle": "Get nutrition support",
+        "underweightText": "A BMI of {{value}} is below the healthy range. Focus on nutrient-rich meals and ask a professional about a safe plan to gain weight.",
+        "symptomDiaryTitle": "Keep a symptom diary",
+        "symptomDiaryText": "You reported {{count}} symptoms ({{symptoms}}). Note when they appear and how strong they feel — it helps your clinician spot patterns.",
+        "quitSmokingTitle": "Quit smoking to protect your vessels",
+        "quitSmokingText": "Smoking sharply raises the risk of diabetes complications. Ask your clinician about cessation support — it's one of the highest-impact changes you can make.",
+        "reassessSoonTitle": "Time for a fresh assessment",
+        "reassessSoonText": "Your last check was {{days}} days ago. Re-run the assessment to keep your report and trends up to date.",
+        "bpMonitorTitle": "Check your blood pressure at home",
+        "bpMonitorText": "You flagged hypertension. Measure twice a week at rest and bring the readings to your appointments.",
+        "yearlyScreeningTitle": "Get screened every year",
+        "yearlyScreeningText": "Your risk factors make yearly glucose checks important — even when you feel completely fine.",
+        "buildHistoryTitle": "Build your health history",
+        "buildHistoryText": "You've completed {{count}} assessment(s). Repeating the assessment monthly reveals trends and makes every report smarter.",
+        "stayActiveTitle": "Move 150 minutes a week",
+        "stayActiveText": "Brisk walking, cycling or swimming lowers glucose and improves insulin sensitivity. Start with 10-minute walks after meals.",
+        "balancedDietTitle": "Keep your plate balanced",
+        "balancedDietText": "Half vegetables, a quarter protein, a quarter whole grains — and water instead of sweet drinks. Simple habits, big effect on glucose."
+      },
+      "carePlanPage": {
+        "loading": "Loading your care plan...",
+        "loadFailed": "Failed to load your care plan",
+        "hero": {
+          "eyebrow": "Your care plan",
+          "lastCheck": "Last check",
+          "confidence": "Confidence",
+          "assessments": "Assessments"
+        },
+        "onboarding": {
+          "title": "Let's build your care plan",
+          "description": "Three quick steps and everything below fills in with your own results.",
+          "step1": "Complete a health assessment",
+          "step1Text": "Answer questions about symptoms, lifestyle and lab values — it only takes a few minutes.",
+          "step2": "Get your instant result",
+          "step2Text": "The expert system analyses your answers and produces a readable diagnosis summary.",
+          "step3": "Follow your personal plan",
+          "step3Text": "Your checklist, doctor's notes and progress tracking appear here automatically.",
+          "cta": "Start my first assessment"
+        },
+        "checklist": {
+          "title": "Action checklist",
+          "description": "Practical next steps based on your latest assessment.",
+          "progress": "{{done}} of {{total}} completed",
+          "completedTitle": "All done for now!",
+          "completedText": "You've completed every step. Check back after your next assessment.",
+          "reset": "Reset",
+          "empty": "Complete an assessment to get your personal checklist."
+        },
+        "doctorNote": {
+          "title": "Doctor's note",
+          "empty": "No note from your doctor yet — notes appear here after a clinician reviews your result."
+        },
+        "watch": {
+          "title": "Numbers to watch",
+          "description": "Latest values from your assessments with healthy targets."
+        },
+        "safety": {
+          "title": "Seek care urgently if",
+          "item1": "You develop confusion, drowsiness or fainting",
+          "item2": "You have rapid breathing with fruity-smelling breath",
+          "item3": "Vomiting or diarrhoea stops you keeping fluids down",
+          "item4": "A wound is red, swollen, or not healing",
+          "item5": "Your symptoms suddenly get much worse",
+          "footnote": "This list doesn't replace medical advice. In an emergency, call your local emergency number."
+        },
+        "history": {
+          "title": "Assessment history",
+          "description": "Every assessment you've completed, newest first.",
+          "viewReport": "View report",
+          "reviewed": "Doctor reviewed"
+        },
+        "symptoms": {
+          "title": "Symptoms from your latest assessment"
+        }
       },
       "nextSteps": {
         "title": "Next Steps",
@@ -1348,6 +1573,7 @@ export const messages = {
       "knowledgeBase": "មូលដ្ឋានចំណេះដឹង",
       "patientReview": "ការពិនិត្យអ្នកជំងឺ",
       "myResults": "លទ្ធផលរបស់ខ្ញុំ",
+      "carePlan": "ផែនការថែទាំ",
       "users": "អ្នកប្រើប្រាស់",
       "roles": "តួនាទី",
       "workspace": "កន្លែងការងារ",
@@ -1387,6 +1613,10 @@ export const messages = {
       "myDiagnosisResults": {
         "title": "លទ្ធផលវិនិច្ឆ័យរបស់ខ្ញុំ",
         "subtitle": "តាមដានប្រវត្តិវិនិច្ឆ័យ និងមតិយោបល់របស់អ្នក"
+      },
+      "carePlan": {
+        "title": "ផែនការថែទាំរបស់ខ្ញុំ",
+        "subtitle": "ផែនការតាមដាន កំណត់ចំណាំពីវេជ្ជបណ្ឌិត និងវឌ្ឍនភាពរបស់អ្នកនៅកន្លែងតែមួយ"
       },
       "users": {
         "title": "អ្នកប្រើប្រាស់",
@@ -1607,6 +1837,54 @@ export const messages = {
       "profileSettings": "ការកំណត់",
       "logOut": "ចាកចេញ"
     },
+    "profileSetup": {
+      "stepProgress": "ជំហានទី {{current}} ក្នុងចំណោម {{total}}",
+      "stepLabel": "ជំហានទី {{current}}/{{total}}",
+      "welcome": "សួស្តី {{name}} — តោះបង្កើតប្រវត្តិរូបសុខភាពរបស់អ្នក។",
+      "footnote": "ចម្លើយទាំងនេះជំនួសសំណួរប្រវត្តិរូបក្នុងការវាយតម្លៃនីមួយៗ — បញ្ចូលតិច ជាក់លាក់ជាង។",
+      "step1": {
+        "title": "អំពីអ្នក",
+        "description": "ព័ត៌មានលម្អិតពីរបាយ ដើម្បីឱ្យការវាយតម្លៃរបស់អ្នកបំពេញដោយស្វ័យប្រវត្តិ។"
+      },
+      "step2": {
+        "title": "រាងកាយរបស់អ្នក",
+        "description": "ប្រើសម្រាប់គណនា BMI ដោយស្វ័យប្រវត្តិ — មិនចាំបាច់បញ្ចូលពេលក្រោយទេ។"
+      },
+      "step3": {
+        "title": "ប្រវត្តិសុខភាព",
+        "description": "ស្រេចចិត្ត — ទាំងនេះចូលរួមក្នុងការវិភាគហានិភ័យ ប៉ុណ្ណោះបើពាក់ព័ន្ធនឹងអ្នក។"
+      },
+      "genderLabel": "ភេទ",
+      "genderMale": "ប្រុស",
+      "genderFemale": "ស្រី",
+      "genderOther": "ផ្សេងៗ",
+      "dobLabel": "ថ្ងៃខែឆ្នាំកំណើត",
+      "agePreview": "អាយុ {{age}} ឆ្នាំ",
+      "heightLabel": "កម្ពស់ (សម)",
+      "weightLabel": "ទម្ងន់ (ក្រាំម)",
+      "waistLabel": "រង្វង់ចង្វេ주 (សម)",
+      "optional": "ស្រេចចិត្ត",
+      "bmiPreview": "BMI របស់អ្នក៖ {{value}} — គណនាដោយស្វ័យប្រវត្តិក្នុងការវាយតម្លៃនីមួយៗ។",
+      "riskFamily": "គ្រូបង្គាញជិតមានជំងឺទឹកនោមផ្អែម",
+      "riskHypertension": "ឈាមទុំ",
+      "riskCholesterol": "ជាតិខ្លាញ់ក្នុងឈាមខ្ពស់",
+      "riskSmoking": "ខ្ញុំជក់បារី",
+      "riskSedentary": "រស់នៅច្រំតែមិនសូវចលនា",
+      "privacyNote": "តែអ្នក និងក្រុមថែទាំរបស់អ្នកប៉ុណ្ណោះដែលអាចមើលឃើញ។ អ្នកអាចផ្លាស់ប្តូរពេលណាក៏បាន។",
+      "back": "ត្រឡប់",
+      "continue": "បន្ត",
+      "finish": "បញ្ចប់ការរៀបចំ",
+      "saving": "កំពុងរក្សាទុក...",
+      "errors": {
+        "gender": "សូមជ្រើសរើសភេទ។",
+        "dob": "សូមបញ្ចូលថ្ងៃខែឆ្នាំកំណើតរបស់អ្នក។",
+        "dobRange": "សូមបញ្ចូលថ្ងៃខែឆ្នាំកំណើតត្រឹមត្រូវ។",
+        "height": "សូមបញ្ចូលកម្ពស់ចាប់ពី 80 ដល់ 250 សម។",
+        "weight": "សូមបញ្ចូលទម្ងន់ចាប់ពី 20 ដល់ 400 ក្រាំម។",
+        "waist": "សូមបញ្ចូលរង្វង់ចង្វេ주ចាប់ពី 40 ដល់ 200 សម។",
+        "save": "មិនអាចរក្សាទុកប្រវត្តិរូបរបស់អ្នកបានទេ។ សូមព្យាយាមម្តងទៀត។"
+      }
+    },
     "patientDashboard": {
       "errors": {
         "loadFailed": "មិនអាចផ្ទុកទិន្នន័យផ្ទាំងគ្រប់គ្រងរបស់អ្នកបានទេ"
@@ -1626,7 +1904,47 @@ export const messages = {
         "latestSnapshot": "សេចក្តីសង្ខេបចុងក្រោយ",
         "noDiagnosisYet": "មិនទាន់មានលទ្ធផលវិនិច្ឆ័យនៅឡើយ",
         "snapshotFallback": "បំពេញការវាយតម្លៃមួយ ដើម្បីបង្កើតលទ្ធផលវិនិច្ឆ័យ និងការណែនាំជំហានបន្ទាប់។",
-        "openFullResult": "បើកលទ្ធផលពេញលេញ"
+        "openFullResult": "បើកលទ្ធផលពេញលេញ",
+        "greetingMorning": "អរុណសួស្តី, {{name}}!",
+        "greetingAfternoon": "ទិវាសួស្តី, {{name}}!",
+        "greetingEvening": "សាយណ្ហសួស្តី, {{name}}!",
+        "lastCheck": "ការពិនិត្យចុងក្រោយ",
+        "lastCheckToday": "ថ្ងៃនេះ",
+        "lastCheckYesterday": "ម្សិលមិញ",
+        "lastCheckDaysAgo": "កាលពី {{count}} ថ្ងៃមុន",
+        "lastCheckNever": "មិនទាន់មានការពិនិត្យ"
+      },
+      "situation": {
+        "title": "ស្ថានភាពរបស់អ្នក",
+        "newAssessment": "ការវាយតម្លៃថ្មី",
+        "viewResults": "មើលលទ្ធផលរបស់ខ្ញុំ",
+        "stable": "ការវាយតម្លៃចុងក្រោយរបស់អ្នកល្អ — សូមបន្តតាមដានជាប្រចាំ។",
+        "urgent": "ការវាយតម្លៃចុងក្រោយរបស់អ្នកត្រូវបានសម្គាល់ថាត្រូវការតាមដានបន្ទាន់។",
+        "urgentReason": "មូលហេតុ៖ {{reason}}",
+        "noResult": "អ្នកមិនទាន់បានបំពេញការវាយតម្លៃនៅឡើយទេ។ សូមចាប់ផ្តើមការវាយតម្លៃដំបូងរបស់អ្នកដើម្បីមើលស្ថានភាពរបស់អ្នកនៅទីនេះ។",
+        "ageLabel": "អាយុ"
+      },
+      "health": {
+        "title": "ស្ថានភាពសុខភាព",
+        "description": "តម្លៃសំខាន់ៗពីការវាយតម្លៃចុងក្រោយរបស់អ្នក។",
+        "latestFrom": "ពីការវាយតម្លៃថ្ងៃ {{date}}",
+        "bmi": "សន្ទស្សន៍ដុំសាច់ (BMI)",
+        "fastingGlucose": "ជាតិស្ករក្នុងឈាម (អត់ធ្មត់)",
+        "hba1c": "HbA1c",
+        "catUnderweight": "ទម្ងន់តិចជាងកម្រិត",
+        "catNormal": "ធម្មតា",
+        "catOverweight": "លើសទម្ងន់",
+        "catObese": "ធាត់",
+        "catPrediabetes": "កម្រិតមុនទឹកនោមផ្អែម",
+        "catDiabetes": "កម្រិតទឹកនោមផ្អែម",
+        "notProvided": "មិនបានផ្តល់",
+        "bmiRangeHint": "ល្អ៖ 18.5 – 24.9",
+        "glucoseRangeHint": "ល្អ (អត់ធ្មត់)៖ ក្រោម 100 mg/dL",
+        "a1cRangeHint": "ល្អ៖ ក្រោម 5.7%",
+        "mgdlUnit": "mg/dL",
+        "emptyTitle": "មិនទាន់មានតម្លៃសុខភាព",
+        "emptyDescription": "បំពេញការវាយតម្លៃជាមួយកម្ពស់ ទម្ងន់ និងតម្លៃមន្ទីរពិសោធន៍ ដើម្បីមើល BMI ជាតិស្ករ និង HbA1c របស់អ្នកនៅទីនេះ។",
+        "disclaimer": "សម្រាប់យោងប៉ុណ្ណោះ — សូមបញ្ជាក់ជាមួយវេជ្ជបណ្ឌិតជានិច្ច។"
       },
       "recentAssessments": {
         "title": "ការវាយតម្លៃថ្មីៗ",
@@ -1652,7 +1970,139 @@ export const messages = {
         "noDiagnosisAvailable": "មិនមានការវិនិច្ឆ័យទេ",
         "confidence": "កម្រិតទុកចិត្ត",
         "reviewNote": "កំណត់ចំណាំពិនិត្យ",
-        "noDoctorNote": "មិនទាន់មានកំណត់ចំណាំពីវេជ្ជបណ្ឌិតទេ។"
+        "noDoctorNote": "មិនទាន់មានកំណត់ចំណាំពីវេជ្ជបណ្ឌិតទេ។",
+        "reportedSymptoms": "អាការៈដែលអ្នកបានរាយការណ៍",
+        "noSymptoms": "មិនមានអាការៈរាយការណ៍នៅក្នុងការវាយតម្លៃចុងក្រោយរបស់អ្នកទេ។",
+        "openFull": "បើកផែនការថែទាំ",
+        "moreSymptoms": "+{{count}} ទៀត"
+      },
+      "report": {
+        "title": "របាយការណ៍សុខភាព",
+        "description": "អ្វីដែលការវាយតម្លៃរបស់អ្នកបង្ហាញតាមពេលវេលា។",
+        "activityTitle": "សកម្មភាពវាយតម្លៃ",
+        "activityHint": "ការវាយតម្លៃបានបញ្ចប់ក្នុងមួយខែ — ៦ ខែចុងក្រោយ",
+        "trendTitle": "និន្នាការកម្រិតទុកចិត្ត",
+        "trendHint": "កម្រិតទុកចិត្តរបស់ប្រព័ន្ធជំនាញសម្រាប់ការវាយតម្លៃនីមួយៗ",
+        "totalAssessments": "ការវាយតម្លៃសរុប",
+        "urgentFlags": "សញ្ញាបន្ទាន់",
+        "lastCheck": "ការពិនិត្យចុងក្រោយ",
+        "latestConfidence": "កម្រិតទុកចិត្តចុងក្រោយ",
+        "emptyTitle": "របាយការណ៍របស់អ្នកកំពុងរង់ចាំទិន្នន័យ",
+        "emptyDescription": "បំពេញការវាយតម្លៃ ហើយរបាយការណ៍នេះនឹងបំពេញដោយខ្លួនឯង — សកម្មភាព និន្នាការកម្រិតទុកចិត្ត និងតម្លៃសំខាន់ៗតាមពេលវេលា។",
+        "emptyCta": "ចាប់ផ្តើមការវាយតម្លៃដំបូងរបស់ខ្ញុំ",
+        "noTrendData": "កម្រិតទុកចិត្តនឹងបង្ហាញនៅពេលការវាយតម្លៃបង្កើតការវិនិច្ឆ័យ។",
+        "confidenceUnit": "%"
+      },
+      "recommendations": {
+        "title": "អនុសាសន៍សម្រាប់អ្នក",
+        "description": "បង្កើតដោយស្វ័យប្រវត្តិពីទិន្នន័យការវាយតម្លៃចុងក្រោយរបស់អ្នក។",
+        "basisPrefix": "ផ្អែកលើ៖ {{reason}}",
+        "priorityNow": "ធ្វើភ្លាមៗ",
+        "prioritySoon": "សប្តាហ៍នេះ",
+        "priorityHabit": "ទម្លាប់ប្រចាំថ្ងៃ",
+        "basisUrgentFlag": "សញ្ញាបន្ទាន់លើលទ្ធផលចុងក្រោយរបស់អ្នក",
+        "basisSymptoms": "អាការៈរបស់អ្នក៖ {{symptoms}}",
+        "basisGlucose": "ជាតិស្ករ {{value}} mg/dL",
+        "basisHba1c": "HbA1c {{value}}%",
+        "basisBmi": "BMI {{value}}",
+        "basisNoLabs": "មិនទាន់មានតម្លៃបន្ទប់ពិសោធន៍",
+        "basisSmoking": "ការជក់បារី",
+        "basisLastCheck": "ការពិនិត្យចុងក្រោយ {{days}} ថ្ងៃមុន",
+        "basisHypertension": "សញ្ញាឈាមទុំ",
+        "basisRiskFactor": "កត្តាប្រឈមរបស់អ្នក",
+        "basisAssessmentCount": "មានការវាយតម្លៃ {{count}} ដងរួចហើយ",
+        "urgentFollowUpTitle": "ទាក់ទងវេជ្ជបណ្ឌិតឱ្យបានឆាប់",
+        "urgentFollowUpText": "ការវាយតម្លៃចុងក្រោយរបស់អ្នកត្រូវបានសម្គាល់ថាបន្ទាន់។ កុំរង់ចាំ — អនុវត្តតាមអនុសាសន៍ និងនិយាយជាមួយវេជ្ជបណ្ឌិតឱ្យបានលឿនតាមដែលអាចធ្វើបាន។",
+        "crisisSignsTitle": "ស្វែងរកការព្យាបាលបន្ទាន់ឥឡូវនេះ",
+        "crisisSignsText": "អ្នកបានរាយការណ៍សញ្ញាព្រមាន ({{symptoms}})។ ទាំងនេះអាចបង្ហាញពីវិបត្តិជាតិស្ករធ្ងន់ធ្ងរ — សូមរកជំនួយវេជ្ជសាស្ត្រភ្លាមៗ។",
+        "hypoSignsTitle": "ដឹងវិធីព្យាបាលជាតិស្ករទាប",
+        "hypoSignsText": "រ័រ ញើស ឬមុខងងឹតអាចមានន័យថាជាតិស្ករក្នុងឈាមទាប។ បើវាកើតឡើង សូមទទួលទានជាតិស្កររហ័សស្រូប (ទឹកផ្លែឈើ ថ្នាំគ្រាប់គ្លុយកូស) និងប្រាប់វេជ្ជបណ្ឌិតរបស់អ្នក។",
+        "veryHighGlucoseTitle": "ជាតិស្កររបស់អ្នកខ្ពស់ខ្លាំង",
+        "veryHighGlucoseText": "តម្លៃ {{value}} mg/dL ត្រូវការការយកចិត្តទុកដាក់វេជ្ជសាស្ត្រក្នុងពេលឆាប់ៗ។ ទាក់ទងវេជ្ជបណ្ឌិត ផឹកទឹក និងៀរភេសជ្ជៈផ្អែមជាពេលបច្ចុប្បន្ន។",
+        "missingLabsTitle": "បន្ថែមការធ្វើតេស្តបន្ទប់ពិសោធន៍",
+        "missingLabsText": "ការវាយតម្លៃរបស់អ្នកមិនទាន់មានតម្លៃបន្ទប់ពិសោធន៍ទេ។ ការធ្វើតេស្តជាតិស្ករអត់ធ្មត់ និង HbA1c នឹងធ្វើឱ្យរបាយការណ៍ និងអនុសាសន៍ទាំងនេះជាក់លាក់ជាងមុន។",
+        "diabetesRangeGlucoseTitle": "ពិភាក្សាជាតិស្ករជាមួយវេជ្ជបណ្ឌិត",
+        "diabetesRangeGlucoseText": "ជាតិស្ករអត់ធ្មត់របស់អ្នក {{value}} mg/dL ស្ថិតក្នុងកម្រិតទឹកនោមផ្អែម។ កំណត់ពេលជួបវេជ្ជបណ្ឌិតដើម្បីបញ្ជាក់លទ្ធផល និងរៀបចំផែនការបន្ទាប់។",
+        "prediabetesGlucoseTitle": "កាត់បន្ថយភាពជាមុនទឹកនោមផ្អែមដោយរបៀបរស់នៅ",
+        "prediabetesGlucoseText": "ជាតិស្កររបស់អ្នក {{value}} mg/dL ស្ថិតក្នុងកម្រិតព្រមាន។ ការផ្លាស់ប្តូរអាហារូបត្ថម្ភ និងការចលនាជាប្រចាំឥឡូវនេះអាចនាំវាត្រឡប់មកធម្មតាវិញ។",
+        "a1cElevatedTitle": "ពិនិត្យ HbA1c រាល់ ៣ ខែ",
+        "a1cElevatedText": "HbA1c របស់អ្នក {{value}}% លើសពីគោលដៅ។ ការពិនិត្យរាល់ ៣ ខែបង្ហាញថាតើផែនការរបស់អ្នកដំណើរការពិតប្រាកដឬទេ។",
+        "weightManagementTitle": "គោលដៅបន្ថយទម្ងន់បណ្តើរៗ",
+        "weightManagementText": "BMI {{value}} ឆ្លើយតបល្យនឹងការផ្លាស់ប្តូរតូចៗ៖ អាហារមានតុល្យភាព និងដើមលេងប្រចាំថ្ងៃ។ ថែមទីឹងទម្ងន់ ៥% ក៏ធ្វើឱ្យជាតិស្ករប្រសើរដែរ។",
+        "underweightTitle": "សុំការគាំទ្រអាហារូបត្ថម្ភ",
+        "underweightText": "BMI {{value}} ទាបជាងកម្រិតសុខភាព។ ផ្តោតលើអាហារមានសារធាតុចិញ្ចឹម និងសួរអ្នកជំនាញអំពីផែនការឡើងទម្ងន់សុវត្ថិភាព។",
+        "symptomDiaryTitle": "កត់ត្រាអាការៈប្រចាំថ្ងៃ",
+        "symptomDiaryText": "អ្នកបានរាយការណ៍អាការៈ {{count}} ប្រភេទ ({{symptoms}})។ កត់ត្រាពេលវេលាដែលវាកើតឡើង — វាជួយវេជ្ជបណ្ឌិតរកឃើញទម្រង់។",
+        "quitSmokingTitle": "ឈប់ជក់បារីដើម្បីការពារសរសៃឈាម",
+        "quitSmokingText": "ការជក់បារីបង្កើនហានិភ័យជំងឺទឹកនោមផ្អែមខ្លាំង។ សួរវេជ្ជបណ្ឌិតអំពីជំនួយបោះបង់ — វាជាការផ្លាស់ប្តូរដែលមានប្រសិទ្ធភាពបំផុត។",
+        "reassessSoonTitle": "ពេលវេលាត្រូវវាយតម្លៃឡើងវិញ",
+        "reassessSoonText": "ការពិនិត្យចុងក្រោយរបស់អ្នកកាលពី {{days}} ថ្ងៃមុន។ ធ្វើការវាយតម្លៃឡើងវិញដើម្បីធ្វើឱ្យរបាយការណ៍ និងនិន្នាការរបស់អ្នកទាន់សម័យ។",
+        "bpMonitorTitle": "ពិនិត្យឈាមនៅផ្ទះ",
+        "bpMonitorText": "អ្នកបានសម្គាល់ថាមានឈាមទុំ។ វាស់រាល់ពីរដងក្នុងមួយសប្តាហ៍ពេលស្ងប់ និងយកលទ្ធផលទៅជួបវេជ្ជបណ្ឌិត។",
+        "yearlyScreeningTitle": "ពិនិត្យរាល់ឆ្នាំ",
+        "yearlyScreeningText": "កត្តាប្រឈមរបស់អ្នកធ្វើឱ្យការពិនិត្យជាតិស្កររាល់ឆ្នាំសំខាន់ — ទោះបីអ្នកមិនមានអាការៈក៏ដោយ។",
+        "buildHistoryTitle": "បង្កើតប្រវត្តិសុខភាពរបស់អ្នក",
+        "buildHistoryText": "អ្នកបានបញ្ចប់ការវាយតម្លៃ {{count}} ដង។ ធ្វើឡើងវិញរាល់ខែនឹងបង្ហាញនិន្នាការ និងធ្វើឱ្យរបាយការណ៍នីមួយៗឈ្លាសវៃជាងមុន។",
+        "stayActiveTitle": "ចលនា ១៥០ នាទីក្នុងមួយសប្តាហ៍",
+        "stayActiveText": "ដើមលឿន ជិះកង់ ឬហែលទឹកបន្ថយជាតិស្ករ និងបង្កើនភាពរស់រវើកនៃឥនសុលីន។ ចាប់ផ្តើមដើម ១០ នាទីបន្ទាប់ពីអាហារ។",
+        "balancedDietTitle": "រក្សាចានអាហារមានតុល្យភាព",
+        "balancedDietText": "ពាក់កណ្តាលបន្លែ ពាក់កណ្តាលប្រហុកស៊ីប៉ូវ ពាក់កណ្តាលគ្រាប់ធញ្ញជាតិ — និងទឹកជំនួសភេសជ្ជៈផ្អែម។ ទម្លាប់សាមញ្ញ ផលប៉ះពាល់ធំលើជាតិស្ករ។"
+      },
+      "carePlanPage": {
+        "loading": "កំពុងផ្ទុកផែនការថែទាំរបស់អ្នក...",
+        "loadFailed": "មិនអាចផ្ទុកផែនការថែទាំរបស់អ្នកបានទេ",
+        "hero": {
+          "eyebrow": "ផែនការថែទាំរបស់អ្នក",
+          "lastCheck": "ការពិនិត្យចុងក្រោយ",
+          "confidence": "កម្រិតទុកចិត្ត",
+          "assessments": "ការវាយតម្លៃ"
+        },
+        "onboarding": {
+          "title": "តោះបង្កើតផែនការថែទាំរបស់អ្នក",
+          "description": "ជំហានសាមញ្ញ ៣ ដំណាក់ ហើយអ្វីៗខាងក្រោមនឹងបំពេញដោយលទ្ធផលរបស់អ្នក។",
+          "step1": "បំពេញការវាយតម្លៃសុខភាព",
+          "step1Text": "ឆ្លើយសំណួរអំពីរោគសញ្ញា របៀបរស់នៅ និងតម្លៃបន្ទប់ពិសោធន៍ — ចំណាយពេលប៉ុន្មាននាទីប៉ុណ្ណោះ។",
+          "step2": "ទទួលបានលទ្ធផលភ្លាមៗ",
+          "step2Text": "ប្រព័ន្ធជំនាញវិភាគចម្លើយរបស់អ្នក ហើយបង្កើតសេចក្តីសង្ខេបវិនិច្ឆ័យដែលអាចអានបាន។",
+          "step3": "អនុវត្តផែនការផ្ទាល់ខ្លួនរបស់អ្នក",
+          "step3Text": "បញ្ជីជំហាន កំណត់ចំណាំពីវេជ្ជបណ្ឌិត និងការតាមដានវឌ្ឍនភាពនឹងបង្ហាញនៅទីនេះដោយស្វ័យប្រវត្តិ។",
+          "cta": "ចាប់ផ្តើមការវាយតម្លៃដំបូងរបស់ខ្ញុំ"
+        },
+        "checklist": {
+          "title": "បញ្ជីជំហានត្រូវធ្វើ",
+          "description": "ជំហានបន្ទាប់ជាក់ស្តែងផ្អែកលើការវាយតម្លៃចុងក្រោយរបស់អ្នក។",
+          "progress": "បានបញ្ចប់ {{done}} ក្នុងចំណោម {{total}}",
+          "completedTitle": "ធ្វើរួចរាល់ហើយ!",
+          "completedText": "អ្នកបានបញ្ចប់គ្រប់ជំហានហើយ។ ត្រឡប់មកមើលវិញបន្ទាប់ពីការវាយតម្លៃបន្ទាប់របស់អ្នក។",
+          "reset": "កំណត់ឡើងវិញ",
+          "empty": "បំពេញការវាយតម្លៃដើម្បីទទួលបានបញ្ជីជំហានផ្ទាល់ខ្លួនរបស់អ្នក។"
+        },
+        "doctorNote": {
+          "title": "កំណត់ចំណាំពីវេជ្ជបណ្ឌិត",
+          "empty": "មិនទាន់មានកំណត់ចំណាំពីវេជ្ជបណ្ឌិតទេ — កំណត់ចំណាំនឹងបង្ហាញនៅទីនេះបន្ទាប់ពីគ្លីនិកពិនិត្យលទ្ធផលរបស់អ្នក។"
+        },
+        "watch": {
+          "title": "តម្លៃដែលគួរតាមដាន",
+          "description": "តម្លៃចុងក្រោយពីការវាយតម្លៃរបស់អ្នក ជាមួយគោលដៅសុខភាព។"
+        },
+        "safety": {
+          "title": "សូមស្វែងរកការថែទាំបន្ទាន់ ប្រសិនបើ",
+          "item1": "អ្នកមានអាការៈច្រឡំ ងងឹតមុខ ឬស្គមស្គាយ",
+          "item2": "ដង្ហើមរហ័ស មានក្លិនស្ករជូរពីមាត់",
+          "item3": "ក្អួត ឬរាគធ្វើឱ្យអ្នកមិនអាចផឹកទឹកបាន",
+          "item4": "មានរបួមានភាពក្រហម ហើម ឬមិនជាសះស្បើយ",
+          "item5": "រោគសញ្ញារបស់អ្នកកាន់តែធ្ងន់ធ្ងរភ្លាមៗ",
+          "footnote": "បញ្ជីនេះមិនជំនួសការណែនាំវេជ្ជសាស្ត្រទេ។ ក្នុងករណីភាពបន្ទាន់ សូមទូរស័ព្ទទៅលេខភាពបន្ទាន់ក្នុងស្រុករបស់អ្នក។"
+        },
+        "history": {
+          "title": "ប្រវត្តិការវាយតម្លៃ",
+          "description": "ការវាយតម្លៃទាំងអស់ដែលអ្នកបានបញ្ចប់ ថ្មីបំផុតមុនគេ។",
+          "viewReport": "មើលរបាយការណ៍",
+          "reviewed": "វេជ្ជបណ្ឌិតបានពិនិត្យ"
+        },
+        "symptoms": {
+          "title": "អាការៈពីការវាយតម្លៃចុងក្រោយរបស់អ្នក"
+        }
       },
       "nextSteps": {
         "title": "ជំហានបន្ទាប់",
@@ -2655,7 +3105,7 @@ export function translateExact(language, exactEnglishText) {
   if (!exactEnglishText) return exactEnglishText;
   const rawText = String(exactEnglishText).trim()
   const normalized = normalizeLanguage(language)
-  
+
   if (normalized === 'km' && exactTextMap[rawText]) {
     return exactTextMap[rawText]
   }
@@ -2665,7 +3115,7 @@ export function translateExact(language, exactEnglishText) {
   if (normalized === 'km') {
     for (const [key, value] of Object.entries(exactTextMap)) {
       if (key.toLowerCase() === rawText.toLowerCase()) {
-         return value;
+        return value;
       }
     }
   }

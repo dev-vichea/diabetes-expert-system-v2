@@ -20,7 +20,7 @@ const TabsTrigger = React.forwardRef(({ className, ...props }, ref) => (
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      'inline-flex min-h-1 items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold text-slate-500 transition-[color,background-color,box-shadow,transform] duration-200 ease-out hover:bg-white/70 hover:text-slate-900 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50 data-[state=active]:-translate-y-0.5 data-[state=active]:bg-white data-[state=active]:text-slate-950 data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-slate-200 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-100 dark:data-[state=active]:bg-[#10182c] dark:data-[state=active]:text-slate-50 dark:data-[state=active]:ring-slate-700',
+      'inline-flex min-h-1 items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold text-slate-500 transition-[color,background-color,box-shadow,transform] duration-200 ease-out hover:bg-white/70 hover:text-slate-900 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50 data-[state=active]:-translate-y-0.5 data-[state=active]:bg-white data-[state=active]:text-slate-950 data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-slate-200 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-100 dark:data-[state=active]:bg-[#10182c] dark:data-[state=active]:text-slate-50 dark:data-[state=active]:ring-slate-700',
       className
     )}
     {...props}
@@ -32,7 +32,7 @@ const TabsContent = React.forwardRef(({ className, ...props }, ref) => (
   <TabsPrimitive.Content
     ref={ref}
     className={cn(
-      'mt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 data-[state=inactive]:animate-out data-[state=inactive]:fade-out-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:slide-in-from-bottom-1',
+      'mt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 data-[state=inactive]:animate-out data-[state=inactive]:fade-out-0 data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:slide-in-from-bottom-1',
       className
     )}
     {...props}

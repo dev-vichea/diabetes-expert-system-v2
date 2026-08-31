@@ -41,6 +41,14 @@ def get_my_profile():
     return success_response(data=patient)
 
 
+@patient_bp.patch("/mine")
+@require_auth(permissions=["patient.view_own"])
+def update_my_profile():
+    payload = request.get_json(silent=True) or {}
+    patient = get_patient_service().update_my_profile(g.current_user, payload)
+    return success_response(data=patient, message="Your profile has been saved.")
+
+
 @patient_bp.get("/mine/history")
 @require_auth(permissions=["patient.view_own", "diagnosis.view_own"])
 def get_my_history():

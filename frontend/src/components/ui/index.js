@@ -1,5 +1,6 @@
 export { PageHeader } from './PageHeader'
 export { StatCard } from './StatCard'
+export { Sparkline } from './Sparkline'
 export { SectionCard } from './SectionCard'
 export { EmptyState } from './EmptyState'
 export { LoadingState } from './LoadingState'

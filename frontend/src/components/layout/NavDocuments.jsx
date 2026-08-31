@@ -13,8 +13,8 @@ function getDocClass(isActive, collapsed) {
     'flex items-center rounded-2xl py-2.5 text-sm font-medium transition-colors duration-200',
     collapsed ? 'justify-center px-0' : 'items-center gap-2 px-3',
     isActive
-      ? 'bg-[#dff4ff] text-[#0b6b86] shadow-[inset_0_0_0_1px_rgba(71,176,214,0.18)] dark:bg-[#10273a] dark:text-[#76e4f7] dark:shadow-[inset_0_0_0_1px_rgba(99,225,247,0.14)]'
-      : 'text-[#496278] hover:bg-[#eaf8ff] hover:text-[#0f4c81] dark:text-[#9eb5c8] dark:hover:bg-[#102234] dark:hover:text-[#dcf7ff]'
+      ? 'bg-primary-100 text-primary-800 shadow-[inset_0_0_0_1px_rgba(47,140,255,0.18)] dark:bg-primary-500/10 dark:text-primary-200 dark:shadow-[inset_0_0_0_1px_rgba(99,160,247,0.14)]'
+      : 'text-slate-600 hover:bg-primary-50 hover:text-primary-800 dark:text-slate-400 dark:hover:bg-[#181830] dark:hover:text-slate-100'
   )
 }
 

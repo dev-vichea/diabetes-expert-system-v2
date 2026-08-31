@@ -660,7 +660,7 @@ export function AdminPage() {
             {!topActionData.length ? (
               <EmptyState title={t('usersPage.insights.noActionData')} description={t('usersPage.insights.noActionDataDesc')} />
             ) : (
-              <ChartContainer className="h-64 w-full" config={{ count: { label: t('usersPage.insights.eventsCount'), color: '#14b8a6' } }}>
+              <ChartContainer className="h-64 w-full" config={{ count: { label: t('usersPage.insights.eventsCount'), color: '#2f8cff' } }}>
                 <BarChart accessibilityLayer data={topActionData} layout="vertical" margin={{ left: 4, right: 4 }}>
                   <CartesianGrid horizontal={false} />
                   <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />

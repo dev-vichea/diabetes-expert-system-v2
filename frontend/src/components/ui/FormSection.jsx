@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 export function FormSection({ title, description, children, className, contentClassName }) {
   return (
     <section
-      className={cn('dark-hover-border space-y-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-[#070712]', className)}
+      className={cn('surface dark-hover-border space-y-3 p-4', className)}
     >
       {title || description ? (
         <div>

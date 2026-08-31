@@ -5,12 +5,12 @@ import api, { getApiData, getApiErrorMessage, setAuthTokens } from '../api/clien
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 
-// ── Medical White Tokens
+// ── Medical White Tokens (healthcare blue family — legacy key names kept) ──
 const C = {
   bg:         '#f4f7f9',
-  teal:       '#0f766e',
-  tealLight:  '#14b8a6',
-  tealBright: '#06b6d4',
+  teal:       '#1f76e8',
+  tealLight:  '#2f8cff',
+  tealBright: '#0ea5e9',
   blue:       '#3b82f6',
   sky:        '#0ea5e9',
 }
@@ -67,7 +67,7 @@ export function SignUpPage() {
         if (p.x < 0 || p.x > W) p.vx *= -1
         if (p.y < 0 || p.y > H) p.vy *= -1
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(20, 184, 166, ${p.a})`; ctx.fill()
+        ctx.fillStyle = `rgba(47, 140, 255, ${p.a})`; ctx.fill()
       })
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
@@ -76,7 +76,7 @@ export function SignUpPage() {
           const dist = Math.sqrt(dx * dx + dy * dy)
           if (dist < MAX_DIST) {
             ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y)
-            ctx.strokeStyle = `rgba(20, 184, 166, ${(1 - dist / MAX_DIST) * 0.1})`; ctx.stroke()
+            ctx.strokeStyle = `rgba(47, 140, 255, ${(1 - dist / MAX_DIST) * 0.1})`; ctx.stroke()
           }
         }
       }
@@ -111,7 +111,7 @@ export function SignUpPage() {
       const data = getApiData(response)
       setAuthTokens(data.access_token || data.token, data.refresh_token)
       setUser(data.user)
-      navigate('/dashboard')
+      navigate('/profile-setup')
     } catch (err) {
       setError(getApiErrorMessage(err, t('auth.errorRegistrationFailed', 'Registration failed')))
     } finally {

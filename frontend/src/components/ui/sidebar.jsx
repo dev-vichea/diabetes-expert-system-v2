@@ -30,7 +30,7 @@ const SidebarGroupLabel = React.forwardRef(({ className, ...props }, ref) => (
   <p
     ref={ref}
     data-slot="sidebar-group-label"
-    className={cn('px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#7a95a9] dark:text-[#6d88a0]', className)}
+    className={cn('px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400', className)}
     {...props}
   />
 ))
@@ -48,7 +48,7 @@ SidebarMenuItem.displayName = 'SidebarMenuItem'
 
 const SidebarMenuButton = React.forwardRef(({ className, asChild = false, children, ...props }, ref) => {
   const baseClassName = cn(
-    'flex w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-[#496278] transition-colors duration-200 hover:bg-[#e7f7fe] hover:text-[#0f4c81] dark:text-[#9eb5c8] dark:hover:bg-[#102234] dark:hover:text-[#d9f5ff]',
+    'flex w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition-colors duration-200 hover:bg-primary-50 hover:text-primary-800 dark:text-slate-400 dark:hover:bg-[#181830] dark:hover:text-slate-100',
     className
   )
 
@@ -67,7 +67,7 @@ const SidebarMenuButton = React.forwardRef(({ className, asChild = false, childr
 SidebarMenuButton.displayName = 'SidebarMenuButton'
 
 const SidebarSeparator = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} data-slot="sidebar-separator" className={cn('mx-2 my-2 h-px bg-[#d8ecf7] dark:bg-[#183041]', className)} {...props} />
+  <div ref={ref} data-slot="sidebar-separator" className={cn('mx-2 my-2 h-px bg-slate-200 dark:bg-[#1e2234]', className)} {...props} />
 ))
 SidebarSeparator.displayName = 'SidebarSeparator'
 

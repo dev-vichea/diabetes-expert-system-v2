@@ -39,7 +39,7 @@ const DATE_RANGES = [
 /*  Chart configs (static)                                             */
 /* ------------------------------------------------------------------ */
 const areaChartConfig = {
-  diagnosed: { label: 'Diagnosed', color: '#0891b2' },
+  diagnosed: { label: 'Diagnosed', color: '#1f76e8' },
   pending: { label: 'Pending', color: '#64748b' },
 }
 
@@ -92,8 +92,8 @@ export function ClinicalDashboard({ activeRole }) {
         value: stats.assessments.value,
         trend: stats.assessments.trend,
         icon: Microscope,
-        iconClass: 'bg-cyan-100/20 text-cyan-700 ring-1 ring-cyan-200 dark:bg-cyan-900/10 dark:text-cyan-300 dark:ring-cyan-500/30',
-        chartColor: '#0891b2',
+        iconClass: 'bg-primary-100/20 text-primary-700 ring-1 ring-primary-200 dark:bg-primary-900/10 dark:text-primary-300 dark:ring-primary-500/30',
+        chartColor: '#1f76e8',
         chartData: [{ value: 6 }, { value: 9 }, { value: 7 }, { value: 11 }, { value: 10 }, { value: Math.max(3, stats.assessments.value) }],
         href: '/my-results',
       },
@@ -143,7 +143,7 @@ export function ClinicalDashboard({ activeRole }) {
           <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/50 to-transparent" />
           <div className="relative z-10 flex min-h-[18rem] items-center p-4 sm:p-8">
             <div className="max-w-xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">{t('dashboard.hero.dashboardTitle', `${activeRole} dashboard`, { role: activeRole })}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-200">{t('dashboard.hero.dashboardTitle', `${activeRole} dashboard`, { role: activeRole })}</p>
               <h2 className="mt-3 text-2xl font-bold leading-tight text-white sm:text-3xl">{t('dashboard.hero.title', 'Build Better Diabetes Care Pathways')}</h2>
               <p className="mt-3 text-sm leading-relaxed text-slate-200">
                 {t('dashboard.hero.desc', 'Monitor screening trends, review rule-driven outcomes, and coordinate medical follow-ups from one unified clinical dashboard.')}
@@ -171,7 +171,7 @@ export function ClinicalDashboard({ activeRole }) {
                 type="button"
                 onClick={() => setSelectedRange(range.value)}
                 className={`min-h-10 shrink-0 px-3 py-1.5 text-xs font-medium transition-all duration-200 ${selectedRange === range.value
-                    ? 'bg-cyan-600 text-white shadow-inner'
+                    ? 'bg-primary-600 text-white shadow-inner'
                     : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-[#131a33]'
                   }`}
               >
@@ -231,72 +231,6 @@ export function ClinicalDashboard({ activeRole }) {
             })}
           </div>
 
-          {/* Recent Cases table */}
-          <section className="surface overflow-hidden p-0">
-            <header className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 dark:border-[#1b2342] sm:flex-row sm:items-center sm:justify-between sm:px-6">
-              <div className="min-w-0">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('dashboard.recent.title', 'Recent Cases')}</h3>
-                <p className="mt-1 text-sm text-slate-500">{t('dashboard.recent.desc', `Latest ${stats?.recent_cases?.length || 0} diagnoses awaiting review or recently completed.`, { count: stats?.recent_cases?.length || 0 })}</p>
-              </div>
-              <Link to="/patients" className="btn-secondary px-3 py-1.5 text-xs sm:h-8 sm:min-h-0">
-                {t('dashboard.recent.viewAll', 'View All')} <ArrowRight className="ml-1.5 h-3 w-3" />
-              </Link>
-            </header>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-sm">
-                <thead className="bg-slate-50 dark:bg-[#0c1024]">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.recent.columns.patient', 'Patient')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.recent.columns.diagnosis', 'Diagnosis')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.recent.columns.assessedBy', 'Assessed By')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.recent.columns.status', 'Status')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.recent.columns.date', 'Date')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white dark:divide-[#1b2342] dark:bg-[#050816]">
-                  {stats?.recent_cases?.length === 0 ? (
-                    <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">No diagnoses found for this period.</td></tr>
-                  ) : (
-                    stats?.recent_cases?.map((caseItem, index) => (
-                      <tr
-                        key={caseItem.id}
-                        onClick={() => navigate(`/diagnosis/result?diagnosis_result_id=${caseItem.id}`)}
-                        className={`transition-colors cursor-pointer ${index % 2 === 0 ? 'bg-slate-50/70 dark:bg-[#070b1b]' : 'bg-white dark:bg-[#050816]'
-                          } hover:bg-cyan-50 dark:hover:bg-cyan-900/10`}
-                      >
-                        <td className="whitespace-nowrap px-6 py-4">
-                          <span className="font-medium text-slate-900 dark:text-slate-200">{caseItem.patient_name}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex min-w-0 flex-wrap items-center gap-2">
-                            <span className="min-w-0 break-words text-slate-700 dark:text-slate-300">{tExact(caseItem.diagnosis)}</span>
-                            {caseItem.is_urgent && (
-                              <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
-                                {t('dashboard.recent.urgent', 'Urgent')}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-slate-700 dark:text-slate-400">{caseItem.assessed_by}</td>
-                        <td className="whitespace-nowrap px-6 py-4">
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${caseItem.status === 'Reviewed'
-                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                              : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                            }`}>
-                            {caseItem.status === 'Reviewed' ? t('dashboard.recent.reviewed', 'Reviewed') : t('dashboard.recent.pending', 'Pending')}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">
-                          {formatDateTime(caseItem.created_at)}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
-
           {/* Charts row */}
           <div className="grid items-stretch gap-5 xl:grid-cols-2">
             <SectionCard className="h-full" title={t('dashboard.charts.volume', 'Diagnosis Volume vs Pending')} description={t('dashboard.charts.volumeDesc', 'Monthly clinical throughput (live data).')}>
@@ -349,6 +283,73 @@ export function ClinicalDashboard({ activeRole }) {
               </ChartContainer>
             </SectionCard>
           </div>
+
+          {/* Recent Cases table */}
+          <section className="surface overflow-hidden p-0">
+            <header className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 dark:border-[#1b2342] sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <div className="min-w-0">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{t('dashboard.recent.title', 'Recent Cases')}</h3>
+                <p className="mt-1 text-sm text-slate-500">{t('dashboard.recent.desc', `Latest ${stats?.recent_cases?.length || 0} diagnoses awaiting review or recently completed.`, { count: stats?.recent_cases?.length || 0 })}</p>
+              </div>
+              <Link to="/patients" className="btn-secondary px-3 py-1.5 text-xs sm:h-8 sm:min-h-0">
+                {t('dashboard.recent.viewAll', 'View All')} <ArrowRight className="ml-1.5 h-3 w-3" />
+              </Link>
+            </header>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-sm">
+                <thead className="bg-slate-50 dark:bg-[#0c1024]">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.recent.columns.patient', 'Patient')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.recent.columns.diagnosis', 'Diagnosis')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.recent.columns.assessedBy', 'Assessed By')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.recent.columns.status', 'Status')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{t('dashboard.recent.columns.date', 'Date')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white dark:divide-[#1b2342] dark:bg-[#050816]">
+                  {stats?.recent_cases?.length === 0 ? (
+                    <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">No diagnoses found for this period.</td></tr>
+                  ) : (
+                    stats?.recent_cases?.map((caseItem, index) => (
+                      <tr
+                        key={caseItem.id}
+                        onClick={() => navigate(`/diagnosis/result?diagnosis_result_id=${caseItem.id}`)}
+                        className={`transition-colors cursor-pointer ${index % 2 === 0 ? 'bg-slate-50/70 dark:bg-[#070b1b]' : 'bg-white dark:bg-[#050816]'
+                          } hover:bg-primary-50 dark:hover:bg-primary-900/10`}
+                      >
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <span className="font-medium text-slate-900 dark:text-slate-200">{caseItem.patient_name}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            <span className="min-w-0 break-words text-slate-700 dark:text-slate-300">{tExact(caseItem.diagnosis)}</span>
+                            {caseItem.is_urgent && (
+                              <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+                                {t('dashboard.recent.urgent', 'Urgent')}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-slate-700 dark:text-slate-400">{caseItem.assessed_by}</td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${caseItem.status === 'Reviewed'
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                              : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                            }`}>
+                            {caseItem.status === 'Reviewed' ? t('dashboard.recent.reviewed', 'Reviewed') : t('dashboard.recent.pending', 'Pending')}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-slate-500 dark:text-slate-400 text-xs">
+                          {formatDateTime(caseItem.created_at)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
         </>
       )}
     </div>

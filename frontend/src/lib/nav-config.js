@@ -2,6 +2,7 @@ import {
   ActivitySquare,
   BookMarked,
   ClipboardList,
+  HeartPulse,
   LayoutDashboard,
   Microscope,
   ShieldCheck,
@@ -16,6 +17,7 @@ export const NAV_ITEMS = [
   { to: '/rules', labelKey: 'nav.knowledgeBase', icon: BookMarked, section: 'workspace', permissions: ['rule.view'] },
   { to: '/review', labelKey: 'nav.patientReview', icon: ClipboardList, section: 'workspace', permissions: ['diagnosis.review_any'] },
   { to: '/my-results', labelKey: 'nav.myResults', icon: ActivitySquare, section: 'workspace', permissions: ['diagnosis.view_own'] },
+  { to: '/care-plan', labelKey: 'nav.carePlan', icon: HeartPulse, section: 'workspace', permissions: ['diagnosis.view_own'] },
   { to: '/users', labelKey: 'nav.users', icon: ShieldCheck, section: 'system', permissions: ['user.view', 'permission.view'], permissionMode: 'any' },
   { to: '/roles-permissions', labelKey: 'nav.roles', icon: ShieldCheck, section: 'system', permissions: ['permission.view'] },
 ]
@@ -29,6 +31,7 @@ export const PAGE_TITLE_BY_PATH = [
   { pattern: '/rules', titleKey: 'page.knowledgeBase.title', subtitleKey: 'page.knowledgeBase.subtitle' },
   { pattern: '/review', titleKey: 'page.clinicalReview.title', subtitleKey: 'page.clinicalReview.subtitle' },
   { pattern: '/my-results', titleKey: 'page.myDiagnosisResults.title', subtitleKey: 'page.myDiagnosisResults.subtitle' },
+  { pattern: '/care-plan', titleKey: 'page.carePlan.title', subtitleKey: 'page.carePlan.subtitle' },
   { pattern: '/users', titleKey: 'page.users.title', subtitleKey: 'page.users.subtitle' },
   { pattern: '/roles-permissions', titleKey: 'page.rolesPermissions.title', subtitleKey: 'page.rolesPermissions.subtitle' },
   { pattern: '/dashboard', titleKey: 'page.dashboard.title', subtitleKey: 'page.dashboard.subtitle' },

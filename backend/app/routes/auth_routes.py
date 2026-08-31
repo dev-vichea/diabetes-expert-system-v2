@@ -56,4 +56,8 @@ def logout():
 @auth_bp.get("/me")
 @require_auth()
 def me():
-    return success_response(data=g.current_user)
+    # JWT claims can go stale (e.g. profile completed after the token was issued),
+    # so /me always re-serializes the current user from the database.
+    user_id = g.current_user.get("sub") or g.current_user.get("id")
+    fresh_user = get_auth_service().get_fresh_user(user_id)
+    return success_response(data=fresh_user or g.current_user)

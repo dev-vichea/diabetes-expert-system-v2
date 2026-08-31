@@ -210,6 +210,13 @@ class AuthService:
     def decode_access_token(self, token: str) -> dict:
         return self.decode_token(token, expected_type=self.ACCESS_TOKEN_TYPE)
 
+    def get_fresh_user(self, user_id) -> dict | None:
+        """Re-serialize the user from the DB so /auth/me never serves stale JWT claims."""
+        user = self.user_repository.get_by_id(user_id)
+        if not user:
+            return None
+        return self.user_repository.to_public_dict(user)
+
     def decode_token(
         self,
         token: str,

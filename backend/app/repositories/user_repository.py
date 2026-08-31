@@ -192,6 +192,7 @@ class UserRepository:
             "role": role_names[0] if role_names else "patient",
             "permissions": permissions,
             "patient_id": user.patient_profile.id if user.patient_profile else None,
+            "profile_completed": bool(user.patient_profile and user.patient_profile.profile_completed_at is not None),
             "created_at": serialize_datetime(user.created_at),
             "updated_at": serialize_datetime(user.updated_at),
         }
