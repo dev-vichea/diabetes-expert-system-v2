@@ -14,6 +14,7 @@ from .dependencies import init_dependencies
 from .errors import register_error_handlers
 from .extensions import db, limiter, migrate
 from .routes.admin_routes import admin_bp
+from .routes.assessment_routes import assessment_bp
 from .routes.auth_routes import auth_bp
 from .routes.diagnosis_routes import diagnosis_bp
 from .routes.patient_routes import patient_bp
@@ -130,6 +131,7 @@ def create_app(config_object=Config):
         return success_response(data={"status": "ok"})
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
+    app.register_blueprint(assessment_bp, url_prefix="/api/assessment")
     app.register_blueprint(diagnosis_bp, url_prefix="/api/diagnosis")
     app.register_blueprint(rule_bp, url_prefix="/api/rules")
     app.register_blueprint(patient_bp, url_prefix="/api/patients")

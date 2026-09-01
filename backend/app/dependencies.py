@@ -10,6 +10,7 @@ from app.repositories import (
     UserRepository,
 )
 from app.services.admin_service import AdminService
+from app.services.assessment_service import AssessmentService
 from app.services.auth_service import AuthService
 from app.services.diagnosis_service import DiagnosisService
 from app.services.patient_service import PatientService
@@ -18,6 +19,7 @@ from app.services.dashboard_service import DashboardService
 
 SERVICE_KEYS = {
     "auth": "auth_service",
+    "assessment": "assessment_service",
     "rule": "rule_service",
     "diagnosis": "diagnosis_service",
     "admin": "admin_service",
@@ -46,6 +48,7 @@ def init_dependencies(app):
             audit_log_repository=audit_log_repository,
             patient_repository=patient_repository,
         ),
+        SERVICE_KEYS["assessment"]: AssessmentService(),
         SERVICE_KEYS["rule"]: RuleService(
             rule_repository=rule_repository,
             audit_log_repository=audit_log_repository,
@@ -85,6 +88,10 @@ def get_auth_service() -> AuthService:
 
 def get_rule_service() -> RuleService:
     return _get_service(SERVICE_KEYS["rule"])
+
+
+def get_assessment_service() -> AssessmentService:
+    return _get_service(SERVICE_KEYS["assessment"])
 
 
 def get_diagnosis_service() -> DiagnosisService:

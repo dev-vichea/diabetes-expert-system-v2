@@ -3,6 +3,7 @@ import json
 from flask import current_app
 
 from app.errors import NotFoundError, ValidationError
+from app.expert_system.adaptive_assessment import generate_final_assessment
 from app.expert_system.inference_engine import run_inference
 from app.expert_system.patient_messaging import (
     COMPLETENESS_NOTE,
@@ -54,6 +55,15 @@ class DiagnosisService:
                     **(result.get("explanation_trace") or {}),
                     "suspected_type": result.get("suspected_type"),
                 }
+            # Adaptive final assessment (patterns / evidence / uncertainty /
+            # next step) rides along in the response AND the persisted
+            # explanation trace so saved results keep it.
+            adaptive = generate_final_assessment(normalized_payload)
+            result["adaptive_assessment"] = adaptive
+            result["explanation_trace"] = {
+                **(result.get("explanation_trace") or {}),
+                "adaptive_assessment": adaptive,
+            }
             is_urgent, urgent_reason = self._derive_urgency(normalized_payload, result)
 
             diagnosis_record = self.diagnosis_repository.create_result(
