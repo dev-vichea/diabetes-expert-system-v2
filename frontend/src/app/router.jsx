@@ -28,6 +28,7 @@ const ReviewPage = lazy(() => import('../pages/ReviewPage').then((m) => ({ defau
 const DiagnosisHistoryPage = lazy(() => import('../pages/DiagnosisHistoryPage').then((m) => ({ default: m.DiagnosisHistoryPage })))
 const CarePlanPage = lazy(() => import('../pages/CarePlanPage').then((m) => ({ default: m.CarePlanPage })))
 const ProfileSetupPage = lazy(() => import('../pages/ProfileSetupPage').then((m) => ({ default: m.ProfileSetupPage })))
+const ProfilePage = lazy(() => import('../pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
 const AdminPage = lazy(() => import('../pages/AdminPage').then((m) => ({ default: m.AdminPage })))
 const AdminUserEditPage = lazy(() => import('../pages/AdminUserEditPage').then((m) => ({ default: m.AdminUserEditPage })))
 const RolePermissionsPage = lazy(() => import('../pages/RolePermissionsPage').then((m) => ({ default: m.RolePermissionsPage })))
@@ -131,6 +132,10 @@ function AuthenticatedRoutes() {
             </RoleGuard>
           }
         />
+
+        {/* Profile page — available to every authenticated user; the page itself
+            adapts (health profile section renders for patient accounts only). */}
+        <Route path="/profile" element={<ProfilePage />} />
 
         <Route
           path="/users"

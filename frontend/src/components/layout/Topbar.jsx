@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Bell, ChevronDown, ChevronRight, Languages, LogOut, Menu, Moon, PanelLeft, Plus, Settings, Sun } from 'lucide-react'
+import { Bell, ChevronDown, ChevronRight, Languages, LogOut, Menu, Moon, PanelLeft, Plus, Settings, Sun, UserRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { HeaderClock } from './HeaderClock'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -185,9 +185,13 @@ export function Topbar({
                 <button
                   type="button"
                   className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-[#181830]"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    navigate('/profile')
+                  }}
                 >
-                  <Settings className="h-4 w-4" />
-                  {t('topbar.profileSettings')}
+                  <UserRound className="h-4 w-4" />
+                  {t('topbar.profile', 'Profile')}
                 </button>
                 <button
                   type="button"

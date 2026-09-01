@@ -98,7 +98,7 @@ def test_priority_weight_is_applied_in_certainty_combination():
 
     result = run_inference({"fasting_glucose": 130, "hba1c": 6.8}, rules)
 
-    assert result["diagnosis"] == "Possible Diabetes — Further Testing Needed"
+    assert result["diagnosis"] == "Possible Signs of Diabetes"
     assert result["certainty"] == 0.87
 
     confidence_trace = result["explanation_trace"]["confidence_calculation"]

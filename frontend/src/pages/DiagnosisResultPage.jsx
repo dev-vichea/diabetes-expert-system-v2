@@ -5,9 +5,11 @@ import {
   ArrowLeft,
   Beaker,
   ClipboardList,
+  Dna,
   FlaskConical,
   ShieldCheck,
   Droplet,
+  Info,
   TestTube,
   Heart,
   Zap,
@@ -18,6 +20,11 @@ import {
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
 import { EmptyState, StatusBadge, ConfirmDialog } from '@/components/ui'
+import { ConditionEducationPanel } from '@/components/diagnosis/ConditionEducationPanel'
+import { WhyThisResultPanel } from '@/components/diagnosis/WhyThisResultPanel'
+import { PlainSummaryStrip } from '@/components/diagnosis/PlainSummaryStrip'
+import { getSymptomGuideKey } from '@/lib/symptom-guide'
+import { TechnicalDetailsSection } from '@/components/diagnosis/TechnicalDetailsSection'
 import { readDiagnosisResultSnapshot, saveDiagnosisResultSnapshot } from '@/lib/diagnosis-result-storage'
 import { notify } from '@/lib/toast'
 import { useAuth } from '@/contexts/AuthContext'
@@ -127,6 +134,14 @@ function formatLabValue(labKey, rawValue) {
   if (Number.isNaN(numeric)) return 'N/A'
   if (labKey === 'hba1c') return `${numeric.toFixed(1)}%`
   return `${numeric.toFixed(1)} mg/dL`
+}
+
+function getTypeLabelKey(type) {
+  if (type === 'Type 1') return 'type1'
+  if (type === 'Type 2') return 'type2'
+  if (type === 'Gestational') return 'gestational'
+  if (type === 'Mixed features') return 'mixed'
+  return 'undetermined'
 }
 
 function getRiskGradient(percent) {
@@ -461,6 +476,9 @@ export function DiagnosisResultPage() {
   const fastingPointer = getScalePercent('fasting', fastingValue)
 
   const primaryHeadline = tExact(getPrimaryHeadline(result, certaintyPercent)).toUpperCase()
+  const suspectedType = result?.suspected_type
+    || result?.explanation_trace?.suspected_type
+    || null
   const patientName = context?.patient_name || t('diagnosisResult.currentPatient', 'Current patient')
   const reportTime = result?.created_at || snapshot?.savedAt
   const reportDownloadId = diagnosisResultId || result?.id || result?.diagnosis_result_id
@@ -547,6 +565,8 @@ export function DiagnosisResultPage() {
         onConfirm={handleRestartConfirm}
       />
 
+      <PlainSummaryStrip result={result} />
+
       <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-100 dark:bg-[#070b15] dark:ring-slate-800/60">
         <div className="grid lg:grid-cols-5">
           <article className={`relative overflow-hidden px-5 py-8 text-white sm:px-8 md:py-14 lg:col-span-3 ${getRiskGradient(certaintyPercent)}`}>
@@ -559,15 +579,46 @@ export function DiagnosisResultPage() {
                 {t('diagnosisResult.diagnosticOutput', 'Diagnostic Output')}
               </span>
               <h2 className="break-words text-3xl font-black uppercase leading-tight drop-shadow-sm sm:text-4xl md:text-5xl">{primaryHeadline}</h2>
+              {suspectedType?.type ? (
+                <div className="mt-4 w-fit max-w-md rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-md">
+                  <p className="flex flex-wrap items-center gap-2 text-sm font-bold text-white">
+                    <Dna className="h-4 w-4 shrink-0" />
+                    <span className="uppercase tracking-wide">{t('diagnosisResult.suspectedType', 'Suspected type')}:</span>
+                    <span className="rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-black">
+                      {tExact(t(`diagnosisResult.type.${getTypeLabelKey(suspectedType.type)}`, suspectedType.type))}
+                      {suspectedType.type !== 'Undetermined' && Number.isFinite(Number(suspectedType.certainty)) ? ` · ${Math.round(Number(suspectedType.certainty) * 100)}%` : ''}
+                    </span>
+                  </p>
+                  {suspectedType.note ? (
+                    <p className="mt-1.5 text-xs leading-relaxed text-white/85">{tExact(String(suspectedType.note))}</p>
+                  ) : null}
+                  {Array.isArray(suspectedType.candidates) && suspectedType.candidates.length ? (
+                    <p className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-white/90">
+                      {t('diagnosisResult.couldFit', 'Could fit:')}
+                      {suspectedType.candidates.slice(0, 3).map((candidate) => (
+                        <span key={candidate.type} className="rounded-full bg-white/20 px-2 py-0.5">
+                          {tExact(t(`diagnosisResult.type.${getTypeLabelKey(candidate.type)}`, candidate.type))} {Math.round(Number(candidate.certainty || 0) * 100)}%
+                        </span>
+                      ))}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               <p className="mt-4 max-w-md text-base font-medium leading-relaxed text-white/95 drop-shadow-sm sm:text-lg">
                 {t('diagnosisResult.probabilityBase', 'Based on comprehensive clinical data, the inference engine calculates a ')}<strong className="font-extrabold text-white">{certaintyPercent >= 85 ? t('diagnosisResult.probability.veryHigh', 'very high probability') : certaintyPercent >= 70 ? t('diagnosisResult.probability.high', 'high probability') : certaintyPercent >= 45 ? t('diagnosisResult.probability.moderate', 'moderate probability') : t('diagnosisResult.probability.low', 'low probability')}</strong>{t('diagnosisResult.probabilityOf', ' of this diagnosis.')}
               </p>
+              {result?.context_note ? (
+                <p className="mt-3 flex max-w-md items-start gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold leading-relaxed text-white/95 backdrop-blur-sm">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{tExact(String(result.context_note))}</span>
+                </p>
+              ) : null}
             </div>
           </article>
 
           <article className="relative flex flex-col items-center justify-center bg-slate-50 px-5 py-8 dark:bg-[#0a0f1c] sm:px-8 sm:py-10 lg:col-span-2">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-black/5 to-transparent dark:via-white/5"></div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-8 mt-2">{t('diagnosisResult.overallScore', 'Overall Score')}</p>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-8 mt-2">{t('diagnosisResult.overallScore', 'Screening Confidence')}</p>
 
             <div className="relative flex items-center justify-center">
               <CertaintyRing percent={certaintyPercent} size={180} stroke={14} />
@@ -586,9 +637,44 @@ export function DiagnosisResultPage() {
         </div>
       </div>
 
+      <SurfaceSection title={t('diagnosisResult.actionableRecommendations', 'What you should do next')} icon={ClipboardList}>
+        {recommendations.length ? (
+          <ol className="divide-y divide-slate-100 dark:divide-slate-800">
+            {recommendations.map((item, index) => {
+              const isUrgent = item.urgency === 'urgent' || item.urgency === 'emergency'
+              return (
+                <li
+                  key={`${item.text}-${index}`}
+                  className="flex items-start gap-3 py-3.5"
+                >
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-50 text-xs font-black text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
+                    {index + 1}
+                  </span>
+                  <p className="flex-1 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
+                    {tExact(item.text)}
+                  </p>
+                  {isUrgent ? (
+                    <span className="mt-0.5 shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-rose-600 ring-1 ring-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:ring-rose-900/50">
+                      {t('diagnosisResult.urgentTag', 'Urgent')}
+                    </span>
+                  ) : null}
+                </li>
+              )
+            })}
+          </ol>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+            <ClipboardList className="h-10 w-10 text-slate-300 dark:text-slate-700 mb-3" />
+            <p className="text-base font-medium text-slate-600 dark:text-slate-400">
+              {tExact(result.recommendation) || t('diagnosisResult.noSpecificRecommendations', 'No specific recommendations were generated. Please consult with a physician.')}
+            </p>
+          </div>
+        )}
+      </SurfaceSection>
+
       <div className="flex items-center gap-3 pt-6 pb-2">
         <Stethoscope className="h-6 w-6 text-slate-400" />
-        <h3 className="text-xl font-black tracking-tight text-slate-800 dark:text-slate-100">{t('diagnosisResult.clinicalEvidence', 'Clinical Evidence')}</h3>
+        <h3 className="text-xl font-black tracking-tight text-slate-800 dark:text-slate-100">{t('diagnosisResult.clinicalEvidence', 'The evidence behind this result')}</h3>
       </div>
 
       <div className="mt-3 grid min-w-0 gap-3 xl:grid-cols-12">
@@ -637,13 +723,27 @@ export function DiagnosisResultPage() {
             {matchedSymptoms.length ? (
               <div>
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('diagnosisResult.knownSymptoms', 'Known symptoms includes:')}</p>
-                <ul className="mt-3 space-y-2">
-                  {matchedSymptoms.map((symptom) => (
-                    <li key={symptom} className="text-sm text-slate-800 dark:text-slate-100 flex items-start gap-2">
-                      <span className="text-slate-400 dark:text-slate-600 mt-0.5">•</span>
-                      <span>{tExact(symptom)}</span>
-                    </li>
-                  ))}
+                <ul className="mt-3 space-y-2.5">
+                  {matchedSymptoms.map((symptom) => {
+                    const guideKey = getSymptomGuideKey(symptom)
+                    const guide = guideKey ? t(`diagnosisResult.symptomGuide.items.${guideKey}`, null) : null
+                    return (
+                      <li key={symptom} className="flex items-start gap-2 text-sm text-slate-800 dark:text-slate-100">
+                        <span className="mt-0.5 text-slate-400 dark:text-slate-600">•</span>
+                        <div className="min-w-0">
+                          <p className="font-semibold leading-snug">
+                            {tExact(symptom)}
+                            {guide && guide.term ? (
+                              <span className="ml-1.5 text-xs font-bold uppercase tracking-wide text-cyan-700 dark:text-cyan-400">{String(guide.term)}</span>
+                            ) : null}
+                          </p>
+                          {guide && guide.meaning ? (
+                            <p className="mt-0.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{String(guide.meaning)}</p>
+                          ) : null}
+                        </div>
+                      </li>
+                    )
+                  })}
                 </ul>
                 <p className="mt-4 pt-3 text-sm text-slate-700 dark:text-slate-300">
                   {t('diagnosisResult.symptomAlign', "The patient's reported symptoms align with the matched diabetes pattern shown by the inference engine.")}
@@ -676,6 +776,11 @@ export function DiagnosisResultPage() {
         </article>
       </div>
 
+      <WhyThisResultPanel result={result} />
+
+      <ConditionEducationPanel result={result} />
+
+      <TechnicalDetailsSection>
       <div className="grid gap-3 xl:grid-cols-2">
         <SurfaceSection title={t('diagnosisResult.reasoningKeyRules', 'Reasoning & Key Rules')} icon={ShieldCheck}>
           {sortedRules.length ? (
@@ -715,45 +820,6 @@ export function DiagnosisResultPage() {
         </SurfaceSection>
       </div>
 
-      <SurfaceSection title={t('diagnosisResult.actionableRecommendations', 'Actionable Recommendations')} icon={ClipboardList}>
-        {recommendations.length ? (
-          <div className="space-y-3">
-            {recommendations.map((item, index) => (
-              <div
-                key={`${item.text}-${index}`}
-                className="group flex flex-col sm:flex-row items-start gap-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-[#0a0f1c]"
-              >
-                <div className="shrink-0 rounded-full bg-slate-50 p-3 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                  <Activity className="h-5 w-5 text-cyan-600 dark:text-cyan-500 flex-shrink-0" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex flex-wrap items-center justify-between gap-3 mb-1.5">
-                    <StatusBadge tone={getUrgencyTone(item.urgency)} size="sm">
-                      {tExact(toReadableLabel(item.urgency || 'routine'))} {t('diagnosisResult.priority', 'Priority')}
-                    </StatusBadge>
-                    {item.source ? (
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                        {t('diagnosisResult.rule', 'Rule:')} {tExact(String(item.source).replace(/^rule:/, '').trim().toUpperCase())}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="text-base font-medium leading-relaxed text-slate-800 dark:text-slate-200">
-                    {tExact(item.text)}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-            <ClipboardList className="h-10 w-10 text-slate-300 dark:text-slate-700 mb-3" />
-            <p className="text-base font-medium text-slate-600 dark:text-slate-400">
-              {tExact(result.recommendation) || t('diagnosisResult.noSpecificRecommendations', 'No specific recommendations were generated. Please consult with a physician.')}
-            </p>
-          </div>
-        )}
-      </SurfaceSection>
-
       {result?.fact_preparation_trace?.length ? (
         <SurfaceSection title={t('diagnosisResult.factPreparation', 'Fact Preparation')} icon={FlaskConical}>
         <div className="table-wrap border-0">
@@ -778,6 +844,7 @@ export function DiagnosisResultPage() {
           </div>
         </SurfaceSection>
       ) : null}
+      </TechnicalDetailsSection>
 
       <div className="rounded-xl bg-white px-4 py-3 dark:bg-[#050912]">
         <div className="flex items-start gap-2">

@@ -44,6 +44,7 @@ BOOLEAN_FACT_KEYS = {
     "family_history",
     "physical_activity_low",
     "classic_hyperglycemia_symptoms",
+    "diabetes_evidence_base",
     "prediabetes_possible",
     "type2_risk_increased",
     "unequivocal_hyperglycemia_or_crisis",
@@ -62,6 +63,26 @@ BOOLEAN_FACT_KEYS = {
     "obesity",
     "pcos_history",
     "ethnicity_high_risk",
+    "currently_pregnant",
+    "gestational_diabetes_suspected",
+    "pregnancy_screening_recommended",
+    # ── Type-discrimination evidence (T1D vs T2D vs GDM) ──
+    "excessive_hunger",
+    "irritability",
+    "recurrent_uti_yeast",
+    "bed_wetting",
+    "fruity_breath",
+    "deep_rapid_breathing",
+    "dry_mouth",
+    "heat_exposure",
+    "intense_exercise",
+    "new_medication",
+    "rapid_onset",
+    "ketosis_signs_present",
+    "catabolic_pattern",
+    "type1_pattern_evidence",
+    "type2_pattern_evidence",
+    "mixed_type_features",
 }
 
 LAB_FACT_ALIASES = {
@@ -149,6 +170,7 @@ def derive_facts(facts: dict, set_fact: SetFactCallback) -> None:
     _derive_lab_availability(facts, set_fact)
     _derive_neuropathy_cluster(facts, set_fact)
     _derive_compound_risk_patterns(facts, set_fact)
+    _derive_type_discrimination_patterns(facts, set_fact)
 
 
 def coerce_optional_float(value: Any) -> float | None:
@@ -340,10 +362,12 @@ def _derive_classic_hyperglycemia_symptoms(facts: dict, set_fact: SetFactCallbac
     polyuria = _as_bool(facts.get("polyuria")) or _as_bool(facts.get("frequent_urination"))
     polydipsia = _as_bool(facts.get("polydipsia")) or _as_bool(facts.get("excessive_thirst"))
     weight_loss = _as_bool(facts.get("weight_loss")) or _as_bool(facts.get("unexplained_weight_loss"))
+    hunger = _as_bool(facts.get("excessive_hunger"))
 
     if polyuria and polydipsia:
         set_fact("classic_hyperglycemia_symptoms", True, "derived.classic_hyperglycemia_symptoms")
-    if polyuria and polydipsia and weight_loss:
+    # Classic triad: polyuria + polydipsia + (polyphagia or catabolic weight loss)
+    if polyuria and polydipsia and (weight_loss or hunger):
         set_fact("classic_symptom_cluster", True, "derived.classic_symptom_cluster")
         set_fact("symptom_strength", "high", "derived.symptom_strength")
 
@@ -463,6 +487,34 @@ def _derive_compound_risk_patterns(facts: dict, set_fact: SetFactCallback) -> No
         set_fact("pcos_obesity_risk", True, "derived.pcos_obesity_risk")
     if pcos and prediabetes:
         set_fact("pcos_prediabetes_risk", True, "derived.pcos_prediabetes_risk")
+
+
+def _derive_type_discrimination_patterns(facts: dict, set_fact: SetFactCallback) -> None:
+    """Pre-compute cross-symptom patterns that discriminate T1D vs T2D.
+
+    These give the classification rules a single stable fact to key off,
+    independent of how the individual symptoms were collected.
+    """
+    fruity_breath = _first_true(facts, "fruity_breath")
+    kussmaul = _first_true(facts, "deep_rapid_breathing")
+    if fruity_breath or kussmaul:
+        set_fact("ketosis_signs_present", True, "derived.ketosis_signs_present")
+
+    weight_loss = _first_true(facts, "weight_loss", "unexplained_weight_loss")
+    hunger = _first_true(facts, "excessive_hunger")
+    if weight_loss and hunger:
+        # Eating a lot while losing weight = catabolic state (insulin deficiency)
+        set_fact("catabolic_pattern", True, "derived.catabolic_pattern")
+
+    # Single gate for the type-pattern rules: any real diabetes evidence —
+    # the classic 3 Ps, a hidden-diabetes symptom cluster, or lab hyperglycemia.
+    # Without it, acanthosis/BMI/age alone must never assign a type.
+    if (
+        _first_true(facts, "classic_hyperglycemia_symptoms")
+        or _first_true(facts, "neuropathy_infection_cluster", "neuropathy_fatigue_cluster")
+        or _first_true(facts, "hyperglycemia_present", "unequivocal_hyperglycemia_or_crisis")
+    ):
+        set_fact("diabetes_evidence_base", True, "derived.diabetes_evidence_base")
 
 
 def _set_with_aliases(name: str, value: Any, source: str, set_fact: SetFactCallback) -> None:

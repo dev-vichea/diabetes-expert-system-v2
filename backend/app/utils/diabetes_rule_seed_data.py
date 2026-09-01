@@ -1273,5 +1273,491 @@ DIABETES_RULE_SEED = [
             },
         ],
     },
+
+    # ================================================================== #
+    #  PREGNANCY / GESTATIONAL DIABETES RULES                             #
+    #  Reference: ADA Standards of Care; IADPSG pregnancy thresholds      #
+    # ================================================================== #
+    {
+        "code": "classification-pregnancy-screening",
+        "name": "Classification: Pregnancy — Gestational Screening Pathway",
+        "description": "A currently pregnant patient is routed to the gestational diabetes screening pathway (OGTT 75g between weeks 24-28, or earlier with risk factors).",
+        "category": "classification",
+        "priority": "medium",
+        "certainty_factor": 0.75,
+        "status": "active",
+        "explanation_text": "Gestational diabetes mellitus (GDM) is usually symptomless and is screened with an oral glucose tolerance test, typically between weeks 24-28 of pregnancy. Blood-sugar thresholds during pregnancy are stricter than for the general population.",
+        "conditions": [
+            {"fact_key": "currently_pregnant", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "pregnancy_screening_recommended=true"},
+            {
+                "action_type": "diagnosis_conclusion",
+                "action_value": "gestational_screening",
+                "conclusion": "Gestational Diabetes Screening Pathway",
+            },
+            {
+                "action_type": "recommendation",
+                "action_value": "Pregnancy detected. Screen for gestational diabetes with a 75g OGTT (ideally between weeks 24-28; earlier if risk factors such as prior GDM, obesity, or family history are present). Pregnancy glucose thresholds are stricter: fasting >= 92 mg/dL, 1h >= 180 mg/dL, or 2h >= 153 mg/dL on OGTT indicates GDM (IADPSG criteria).",
+            },
+        ],
+    },
+    {
+        "code": "triage-pregnant-fasting-high",
+        "name": "Triage: Pregnancy with Elevated Fasting Glucose (IADPSG)",
+        "description": "Flags possible gestational diabetes when a pregnant patient has fasting glucose >= 92 mg/dL — urgent obstetric review per IADPSG.",
+        "category": "triage",
+        "priority": "high",
+        "certainty_factor": 0.9,
+        "status": "active",
+        "explanation_text": "During pregnancy, a fasting glucose of 92 mg/dL or higher meets IADPSG criteria for gestational diabetes and requires prompt obstetric review because unmanaged GDM risks both mother and baby.",
+        "conditions": [
+            {"fact_key": "currently_pregnant", "operator": "==", "expected_value": True},
+            {"fact_key": "fasting_glucose", "operator": ">=", "expected_value": 92, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "gestational_diabetes_suspected=true"},
+            {"action_type": "urgent_flag", "action_value": "true"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Fasting glucose meets pregnancy thresholds for gestational diabetes (>= 92 mg/dL per IADPSG). Schedule obstetric review within 1 week. Management starts with diet and glucose monitoring; insulin if targets are not met. Untreated GDM increases risks of macrosomia, pre-eclampsia, and neonatal hypoglycemia.",
+            },
+        ],
+    },
+    {
+        "code": "triage-pregnant-ogtt-high",
+        "name": "Triage: Pregnancy with Elevated OGTT (IADPSG)",
+        "description": "Flags possible gestational diabetes when a pregnant patient has 2-hour OGTT >= 153 mg/dL — urgent obstetric review per IADPSG.",
+        "category": "triage",
+        "priority": "high",
+        "certainty_factor": 0.9,
+        "status": "active",
+        "explanation_text": "During pregnancy, a 2-hour OGTT of 153 mg/dL or higher meets IADPSG criteria for gestational diabetes and requires prompt obstetric review.",
+        "conditions": [
+            {"fact_key": "currently_pregnant", "operator": "==", "expected_value": True},
+            {"fact_key": "2h_ogtt_75g", "operator": ">=", "expected_value": 153, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "gestational_diabetes_suspected=true"},
+            {"action_type": "urgent_flag", "action_value": "true"},
+            {
+                "action_type": "recommendation",
+                "action_value": "OGTT result meets pregnancy thresholds for gestational diabetes (2h >= 153 mg/dL per IADPSG). Schedule obstetric review within 1 week for confirmation and a management plan.",
+            },
+        ],
+    },
+    {
+        "code": "triage-pregnant-prior-gdm-early-test",
+        "name": "Triage: Pregnant with Prior GDM — Test Early",
+        "description": "Pregnant patient with previous gestational diabetes should be tested at the first prenatal visit, not only at weeks 24-28.",
+        "category": "triage",
+        "priority": "medium",
+        "certainty_factor": 0.82,
+        "status": "active",
+        "explanation_text": "A previous episode of gestational diabetes is one of the strongest risk factors for recurrence. ADA recommends early testing at the first prenatal visit in addition to routine week 24-28 screening.",
+        "conditions": [
+            {"fact_key": "currently_pregnant", "operator": "==", "expected_value": True},
+            {"fact_key": "gestational_history", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {
+                "action_type": "recommendation",
+                "action_value": "Prior gestational diabetes with current pregnancy: arrange glucose testing at the first prenatal visit (not only at weeks 24-28), plus lifestyle counselling. Recurrence risk is high (30-70%).",
+            },
+        ],
+    },
+
+    # ================================================================== #
+    #  TYPE-DISCRIMINATION RULES — T1D vs T2D vs GDM evidence patterns    #
+    #  Diabetes types share the same classic symptoms, so typing relies   #
+    #  on *discriminating* evidence: onset tempo, body habitus, age,      #
+    #  catabolism, ketosis signs, insulin-resistance markers.             #
+    #  Each rule contributes certainty to a type-pattern conclusion;      #
+    #  the engine ranks patterns and reports Mixed/Undetermined honestly. #
+    # ================================================================== #
+
+    {
+        "code": "triage-polyphagia-triad",
+        "name": "Triage: Classic Triad with Polyphagia",
+        "description": "Excessive hunger (polyphagia) with frequent urination and thirst forms the classic hyperglycemic triad — strengthens the classic symptom cluster.",
+        "category": "triage",
+        "priority": "medium",
+        "certainty_factor": 0.78,
+        "status": "active",
+        "explanation_text": "Polyphagia together with polyuria and polydipsia is the classic hyperglycemic triad: the body is starved of glucose at the cellular level while blood glucose rises.",
+        "conditions": [
+            {"fact_key": "excessive_hunger", "operator": "==", "expected_value": True},
+            {"fact_key": "frequent_urination", "operator": "==", "expected_value": True, "logical_operator": "and"},
+            {"fact_key": "excessive_thirst", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "classic_hyperglycemia_symptoms=true"},
+            {"action_type": "assert_fact", "action_value": "symptom_strength=high"},
+        ],
+    },
+    {
+        "code": "triage-child-bedwetting-red-flag",
+        "name": "Triage: Child with New Bed-Wetting",
+        "description": "New-onset bed-wetting in a child with frequent urination is a pediatric diabetes red flag requiring prompt clinical review.",
+        "category": "triage",
+        "priority": "high",
+        "certainty_factor": 0.85,
+        "status": "active",
+        "explanation_text": "In children, new bed-wetting after previous dryness with increased urination is a classic Type 1 diabetes warning sign. Children progress to DKA faster than adults — same-day clinical review is advised.",
+        "conditions": [
+            {"fact_key": "age", "operator": "<", "expected_value": 18},
+            {"fact_key": "bed_wetting", "operator": "==", "expected_value": True, "logical_operator": "and"},
+            {"fact_key": "frequent_urination", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "urgent_flag", "action_value": "true"},
+            {
+                "action_type": "recommendation",
+                "action_value": "New bed-wetting with increased urination in a child is a diabetes red flag. Arrange same-day clinical review with a finger-prick glucose test.",
+            },
+        ],
+    },
+    {
+        "code": "triage-irritability-hypoglycemia",
+        "name": "Triage: Irritability with Hypoglycemia",
+        "description": "Irritability is a neuroglycopenic symptom that strengthens hypoglycemia evidence.",
+        "category": "triage",
+        "priority": "medium",
+        "certainty_factor": 0.7,
+        "status": "active",
+        "explanation_text": "Irritability and mood changes accompany low blood glucose as the brain responds to fuel shortage.",
+        "conditions": [
+            {"fact_key": "hypoglycemia", "operator": "==", "expected_value": True},
+            {"fact_key": "irritability", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "symptomatic_hypoglycemia=true"},
+        ],
+    },
+    {
+        "code": "triage-infection-glucose-link",
+        "name": "Triage: Recurrent UTI/Yeast Infections with Hyperglycemia",
+        "description": "Recurrent genitourinary infections in the presence of hyperglycemia suggest glucose-driven infection risk (CDC recognized sign).",
+        "category": "triage",
+        "priority": "medium",
+        "certainty_factor": 0.75,
+        "status": "active",
+        "explanation_text": "High glucose in urine feeds bacterial and yeast growth. Recurrent UTIs or yeast infections are a recognized diabetes sign (CDC) and often precede diagnosis in adults with Type 2.",
+        "conditions": [
+            {"fact_key": "recurrent_uti_yeast", "operator": "==", "expected_value": True},
+            {"fact_key": "hyperglycemia_present", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "infection_glucose_link=true"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Recurrent infections with elevated glucose suggest glucose-driven infection risk. Treat the infection and improve glycemic control — discuss with the clinical team.",
+            },
+        ],
+    },
+
+    # ── Type 1 pattern: insulin-deficiency / autoimmune presentation ── #
+    {
+        "code": "classification-type1-sudden-onset",
+        "name": "Type 1 Pattern: Sudden Symptom Onset with Catabolism",
+        "description": "Classic symptoms that appeared suddenly (days to weeks) with unexplained weight loss fits the Type 1 insulin-deficiency tempo.",
+        "category": "classification",
+        "priority": "high",
+        "certainty_factor": 0.75,
+        "status": "active",
+        "explanation_text": "Type 1 diabetes usually presents abruptly: symptoms appear over days to weeks as autoimmune beta-cell destruction crosses the insulin-deficiency threshold, and weight is lost despite normal eating. Type 2 develops gradually over years.",
+        "conditions": [
+            {"fact_key": "classic_hyperglycemia_symptoms", "operator": "==", "expected_value": True},
+            {"fact_key": "rapid_onset", "operator": "==", "expected_value": True, "logical_operator": "and"},
+            {"fact_key": "weight_loss", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "type1_pattern_evidence=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "type1_pattern_likely"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Sudden onset with weight loss fits a Type 1 pattern. This can progress to diabetic ketoacidosis quickly — urgent same-week medical review is required, do not wait for routine appointments.",
+            },
+        ],
+    },
+    {
+        "code": "classification-type1-young-catabolic",
+        "name": "Type 1 Pattern: Young Age with Catabolic Features",
+        "description": "Age ≤35 with classic symptoms and weight loss raises Type 1 probability — T1D incidence peaks in childhood and young adulthood.",
+        "category": "classification",
+        "priority": "high",
+        "certainty_factor": 0.7,
+        "status": "active",
+        "explanation_text": "Although Type 2 is common in adults, new classic symptoms with weight loss under age 35 warrant considering Type 1 diabetes and prompt full workup.",
+        "conditions": [
+            {"fact_key": "classic_hyperglycemia_symptoms", "operator": "==", "expected_value": True},
+            {"fact_key": "age", "operator": "<=", "expected_value": 35, "logical_operator": "and"},
+            {"fact_key": "weight_loss", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "type1_pattern_evidence=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "type1_pattern_likely"},
+        ],
+    },
+    {
+        "code": "classification-type1-child-presentation",
+        "name": "Type 1 Pattern: Pediatric Presentation",
+        "description": "Classic symptoms in a child under 18 — especially with bed-wetting — is the most common Type 1 presentation.",
+        "category": "classification",
+        "priority": "high",
+        "certainty_factor": 0.78,
+        "status": "active",
+        "explanation_text": "Type 1 is the dominant diabetes type in children. New polyuria/polydipsia (±bed-wetting) in a child requires same-day glucose testing — children decompensate into DKA faster than adults.",
+        "conditions": [
+            {"fact_key": "age", "operator": "<", "expected_value": 18},
+            {"fact_key": "classic_hyperglycemia_symptoms", "operator": "==", "expected_value": True, "logical_operator": "and"},
+            {"fact_key": "bed_wetting", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "type1_pattern_evidence=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "type1_pattern_likely"},
+        ],
+    },
+    {
+        "code": "classification-type1-ketosis-with-hyperglycemia",
+        "name": "Type 1 Pattern: Ketosis Signs with Hyperglycemia",
+        "description": "Fruity breath or deep rapid breathing with documented hyperglycemia signals ketosis — strongly associated with Type 1 / insulin deficiency.",
+        "category": "classification",
+        "priority": "high",
+        "certainty_factor": 0.8,
+        "status": "active",
+        "explanation_text": "Fruity (acetone) breath and deep, rapid breathing (Kussmaul respiration) occur when the body burns fat for fuel because insulin is absent. With high glucose this may be evolving DKA — an emergency.",
+        "conditions": [
+            {"fact_key": "ketosis_signs_present", "operator": "==", "expected_value": True},
+            {"fact_key": "hyperglycemia_present", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "type1_pattern_evidence=true"},
+            {"action_type": "urgent_flag", "action_value": "true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "type1_pattern_likely"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Ketosis signs with high blood glucose can indicate DKA. Seek emergency care now — do not wait for lab confirmation.",
+            },
+        ],
+    },
+    {
+        "code": "classification-type1-ketosis-symptom-only",
+        "name": "Type 1 Pattern: Ketosis Signs without Lab Values",
+        "description": "Ketosis signs reported alongside classic symptoms, even without labs, fit the Type 1 insulin-deficiency pattern.",
+        "category": "classification",
+        "priority": "high",
+        "certainty_factor": 0.7,
+        "status": "active",
+        "explanation_text": "Acetone breath or deep rapid breathing together with classic symptoms suggests significant insulin deficiency even before labs are available.",
+        "conditions": [
+            {"fact_key": "ketosis_signs_present", "operator": "==", "expected_value": True},
+            {"fact_key": "classic_hyperglycemia_symptoms", "operator": "==", "expected_value": True, "logical_operator": "and"},
+            {"fact_key": "no_lab_values_available", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "type1_pattern_evidence=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "type1_pattern_likely"},
+        ],
+    },
+    {
+        "code": "classification-type1-lean-catabolic",
+        "name": "Type 1 Pattern: Lean Adult with Catabolic State",
+        "description": "Confirmed hyperglycemia in a lean adult (BMI <25) who is eating normally but losing weight fits insulin deficiency rather than insulin resistance.",
+        "category": "classification",
+        "priority": "medium",
+        "certainty_factor": 0.72,
+        "status": "active",
+        "explanation_text": "Type 2 usually accompanies overweight/obesity. Diabetes in a lean adult with catabolic weight loss (eating normally while losing) is atypical for Type 2 and suggests insulin deficiency — consider T1D, LADA, or other specific types.",
+        "conditions": [
+            {"fact_key": "diabetes_evidence_base", "operator": "==", "expected_value": True},
+            {"fact_key": "catabolic_pattern", "operator": "==", "expected_value": True, "logical_operator": "and"},
+            {"fact_key": "bmi", "operator": "<", "expected_value": 25, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "type1_pattern_evidence=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "type1_pattern_likely"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Lean body habitus with catabolic weight loss is atypical for Type 2. Ask the clinician about autoantibody (GAD) and C-peptide testing to distinguish Type 1 / LADA.",
+            },
+        ],
+    },
+
+    # ── Type 2 pattern: insulin-resistance / gradual metabolic presentation ── #
+    {
+        "code": "classification-type2-acanthosis",
+        "name": "Type 2 Pattern: Acanthosis Nigricans (Insulin-Resistance Marker)",
+        "description": "Dark velvety skin patches with confirmed hyperglycemia are a near-direct marker of insulin resistance — the mechanism behind Type 2.",
+        "category": "classification",
+        "priority": "high",
+        "certainty_factor": 0.7,
+        "status": "active",
+        "explanation_text": "Acanthosis nigricans is a visible skin marker of long-standing insulin resistance and is strongly associated with Type 2 diabetes, not Type 1.",
+        "conditions": [
+            {"fact_key": "diabetes_evidence_base", "operator": "==", "expected_value": True},
+            {"fact_key": "acanthosis_nigricans", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "type2_pattern_evidence=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "type2_pattern_likely"},
+        ],
+    },
+    {
+        "code": "classification-type2-metabolic-cluster",
+        "name": "Type 2 Pattern: Metabolic Cluster",
+        "description": "Hypertension + high cholesterol + overweight BMI alongside confirmed hyperglycemia forms the classic Type 2 metabolic profile.",
+        "category": "classification",
+        "priority": "medium",
+        "certainty_factor": 0.68,
+        "status": "active",
+        "explanation_text": "Type 2 diabetes rarely travels alone: elevated blood pressure, dyslipidemia and excess weight share the same insulin-resistance root. This cluster is typical of Type 2 and drives cardiovascular risk management.",
+        "conditions": [
+            {"fact_key": "diabetes_evidence_base", "operator": "==", "expected_value": True},
+            {"fact_key": "hypertension", "operator": "==", "expected_value": True, "logical_operator": "and"},
+            {"fact_key": "high_cholesterol", "operator": "==", "expected_value": True, "logical_operator": "and"},
+            {"fact_key": "bmi", "operator": ">=", "expected_value": 25, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "type2_pattern_evidence=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "type2_pattern_likely"},
+        ],
+    },
+    {
+        "code": "classification-type2-gradual-adult",
+        "name": "Type 2 Pattern: Gradual Onset in Middle Age",
+        "description": "Confirmed hyperglycemia at age ≥40 with overweight BMI fits the slow, metabolic Type 2 tempo.",
+        "category": "classification",
+        "priority": "medium",
+        "certainty_factor": 0.6,
+        "status": "active",
+        "explanation_text": "Type 2 diabetes typically develops silently over years and is most often diagnosed from middle age onwards, usually alongside overweight. Sudden catabolic onset would point away from this pattern.",
+        "conditions": [
+            {"fact_key": "diabetes_evidence_base", "operator": "==", "expected_value": True},
+            {"fact_key": "age", "operator": ">=", "expected_value": 40, "logical_operator": "and"},
+            {"fact_key": "bmi", "operator": ">=", "expected_value": 25, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "type2_pattern_evidence=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "type2_pattern_likely"},
+        ],
+    },
+    {
+        "code": "classification-type2-explicit-gradual",
+        "name": "Type 2 Pattern: Explicitly Gradual Symptom Build-Up",
+        "description": "When the patient reports symptoms built up gradually over months to years, that tempo supports Type 2 over Type 1.",
+        "category": "classification",
+        "priority": "medium",
+        "certainty_factor": 0.55,
+        "status": "active",
+        "explanation_text": "A slow, months-to-years build-up of symptoms is the natural history of insulin resistance (Type 2). Type 1, by contrast, appears within days to weeks.",
+        "conditions": [
+            {"fact_key": "diabetes_evidence_base", "operator": "==", "expected_value": True},
+            {"fact_key": "rapid_onset", "operator": "==", "expected_value": False, "logical_operator": "and"},
+            {"fact_key": "age", "operator": ">=", "expected_value": 30, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "type2_pattern_evidence=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "type2_pattern_likely"},
+        ],
+    },
+    {
+        "code": "classification-type2-complications-herald",
+        "name": "Type 2 Pattern: Complication Herald Signs",
+        "description": "Tingling/numbness with slow-healing wounds alongside confirmed hyperglycemia suggests years of silent hyperglycemia — the typical Type 2 discovery pattern.",
+        "category": "classification",
+        "priority": "medium",
+        "certainty_factor": 0.66,
+        "status": "active",
+        "explanation_text": "Neuropathy and delayed wound healing take months to years of high glucose to develop. Finding them at first diagnosis implies long-standing undetected hyperglycemia — a hallmark of silently progressing Type 2.",
+        "conditions": [
+            {"fact_key": "diabetes_evidence_base", "operator": "==", "expected_value": True},
+            {"fact_key": "tingling_hands_feet", "operator": "==", "expected_value": True, "logical_operator": "and"},
+            {"fact_key": "slow_healing", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "type2_pattern_evidence=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "type2_pattern_likely"},
+        ],
+    },
+    {
+        "code": "classification-type2-recurrent-infections",
+        "name": "Type 2 Pattern: Recurrent Genitourinary Infections",
+        "description": "Recurrent UTIs or yeast infections with confirmed hyperglycemia commonly accompany Type 2 presentations in adults.",
+        "category": "classification",
+        "priority": "low",
+        "certainty_factor": 0.6,
+        "status": "active",
+        "explanation_text": "Recurrent genitourinary infections are a recognized CDC diabetes sign and are frequently part of the Type 2 presentation in adults, driven by glucosuria and immune impairment.",
+        "conditions": [
+            {"fact_key": "diabetes_evidence_base", "operator": "==", "expected_value": True},
+            {"fact_key": "recurrent_uti_yeast", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "type2_pattern_evidence=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "type2_pattern_likely"},
+        ],
+    },
+
+    # ── Gestational pattern ── #
+    {
+        "code": "classification-gdm-pattern",
+        "name": "Gestational Pattern: Diagnostic Criteria Met During Pregnancy",
+        "description": "Any ADA diagnostic glucose criterion met during pregnancy fits gestational diabetes (or pre-existing diabetes unmasked by pregnancy).",
+        "category": "classification",
+        "priority": "high",
+        "certainty_factor": 0.78,
+        "status": "active",
+        "explanation_text": "Glucose criteria met during pregnancy follow the gestational diabetes pathway. Very high values in the first trimester may instead reflect previously undiagnosed Type 2 — the obstetric team will distinguish.",
+        "conditions": [
+            {"fact_key": "currently_pregnant", "operator": "==", "expected_value": True},
+            {"fact_key": "diabetes_diagnostic_criterion_met", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "gestational_diabetes_suspected=true"},
+            {"action_type": "diagnosis_conclusion", "action_value": "gestational_diabetes_likely"},
+        ],
+    },
+    {
+        "code": "classification-gdm-screen-positive",
+        "name": "Gestational Pattern: Pregnancy Threshold Breached",
+        "description": "Pregnancy-specific triage thresholds breached (e.g. fasting ≥92 mg/dL) fit the gestational diabetes pattern even below general diabetes criteria.",
+        "category": "classification",
+        "priority": "high",
+        "certainty_factor": 0.72,
+        "status": "active",
+        "explanation_text": "Pregnancy uses stricter glucose thresholds (IADPSG): fasting ≥92 mg/dL already meets the gestational diabetes range even though it is normal outside pregnancy.",
+        "conditions": [
+            {"fact_key": "currently_pregnant", "operator": "==", "expected_value": True},
+            {"fact_key": "gestational_diabetes_suspected", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "diagnosis_conclusion", "action_value": "gestational_diabetes_likely"},
+        ],
+    },
+
+    # ── Mixed-type features ── #
+    {
+        "code": "classification-mixed-type-features",
+        "name": "Mixed Pattern: Evidence Fits More Than One Type",
+        "description": "Both Type 1 and Type 2 pattern evidence present — screening alone cannot assign a type; specialist typing required.",
+        "category": "classification",
+        "priority": "medium",
+        "certainty_factor": 0.8,
+        "status": "active",
+        "explanation_text": "The evidence contains features of more than one diabetes type (e.g. young onset AND insulin-resistance signs). This is seen in LADA and other overlapping presentations — only clinical typing (autoantibodies, C-peptide) can resolve it.",
+        "conditions": [
+            {"fact_key": "type1_pattern_evidence", "operator": "==", "expected_value": True},
+            {"fact_key": "type2_pattern_evidence", "operator": "==", "expected_value": True, "logical_operator": "and"},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "mixed_type_features=true"},
+            {
+                "action_type": "recommendation",
+                "action_value": "The evidence pattern mixes features of Type 1 and Type 2. Ask about autoantibody (GAD) and C-peptide testing — overlapping presentations such as LADA are easily missed and are treated differently.",
+            },
+        ],
+    },
 ]
 

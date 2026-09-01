@@ -4,6 +4,11 @@ from flask import current_app
 
 from app.errors import NotFoundError, ValidationError
 from app.expert_system.inference_engine import run_inference
+from app.expert_system.patient_messaging import (
+    COMPLETENESS_NOTE,
+    URGENT_SAFETY_NOTE,
+    rewrite_recommendation,
+)
 from app.models.entities import utc_now
 from app.services.diagnosis_report_service import render_diagnosis_report_pdf
 
@@ -42,6 +47,13 @@ class DiagnosisService:
         try:
             result = run_inference(normalized_payload, self.rule_repository.list_rules())
             result = self._enrich_inference_result(result, normalized_payload)
+            # Persist the type pattern inside the explanation trace so saved
+            # results keep it (the DB has no dedicated suspected_type column).
+            if result.get("suspected_type") is not None:
+                result["explanation_trace"] = {
+                    **(result.get("explanation_trace") or {}),
+                    "suspected_type": result.get("suspected_type"),
+                }
             is_urgent, urgent_reason = self._derive_urgency(normalized_payload, result)
 
             diagnosis_record = self.diagnosis_repository.create_result(
@@ -101,7 +113,46 @@ class DiagnosisService:
         result = self.diagnosis_repository.get_result(diagnosis_result_id)
         if not result:
             raise NotFoundError("Diagnosis result not found.")
-        return self.diagnosis_repository.serialize_result(result)
+        serialized = self.diagnosis_repository.serialize_result(result)
+        return self._normalize_persisted_texts(serialized)
+
+    def _normalize_persisted_texts(self, payload: dict) -> dict:
+        """Rewrite clinical recommendation strings stored in older results so
+        history records display with the same patient-friendly bilingual text
+        as fresh assessments."""
+        data = dict(payload or {})
+        if data.get("recommendation"):
+            data["recommendation"] = rewrite_recommendation(str(data["recommendation"]))
+
+        if not data.get("recommendations"):
+            trace_recommendations = ((data.get("explanation_trace") or {}).get("recommendations") or [])
+            if isinstance(trace_recommendations, list) and trace_recommendations:
+                data["recommendations"] = trace_recommendations
+
+        recs = data.get("recommendations")
+        if isinstance(recs, list):
+            data["recommendations"] = [
+                {**item, "text": rewrite_recommendation(str(item.get("text") or ""))}
+                if isinstance(item, dict)
+                else rewrite_recommendation(str(item))
+                if isinstance(item, str)
+                else item
+                for item in recs
+            ]
+
+        trace = data.get("explanation_trace")
+        if isinstance(trace, dict) and isinstance(trace.get("recommendations"), list):
+            trace = dict(trace)
+            trace["recommendations"] = [
+                {**item, "text": rewrite_recommendation(str(item.get("text") or ""))}
+                if isinstance(item, dict)
+                else rewrite_recommendation(str(item))
+                if isinstance(item, str)
+                else item
+                for item in trace["recommendations"]
+            ]
+            data["explanation_trace"] = trace
+        return data
 
     def generate_report_pdf(self, diagnosis_result_id: int) -> tuple[bytes, str]:
         result = self.diagnosis_repository.get_result(diagnosis_result_id)
@@ -259,6 +310,18 @@ class DiagnosisService:
             "obesity",
             "pcos_history",
             "ethnicity_high_risk",
+            "currently_pregnant",
+            "excessive_hunger",
+            "irritability",
+            "recurrent_uti_yeast",
+            "bed_wetting",
+            "fruity_breath",
+            "deep_rapid_breathing",
+            "dry_mouth",
+            "heat_exposure",
+            "intense_exercise",
+            "new_medication",
+            "rapid_onset",
         }:
             if key in payload and payload.get(key) not in (None, ""):
                 normalized[key] = self._as_bool(payload.get(key))
@@ -637,6 +700,13 @@ class DiagnosisService:
             reasons.append("Symptoms may indicate urgent metabolic complication")
         if diagnosis == "Likely Diabetes" and certainty >= 0.9:
             reasons.append("High-certainty likely diabetes")
+        suspected_type = str((result.get("suspected_type") or {}).get("type") or "") if isinstance(result.get("suspected_type"), dict) else ""
+        if suspected_type == "Type 1":
+            reasons.append("Pattern consistent with Type 1 diabetes — rapid progression risk")
+        if suspected_type == "Gestational":
+            reasons.append("Glucose criteria met during pregnancy — obstetric review needed")
+        if bool((result.get("facts") or {}).get("ketosis_signs_present")):
+            reasons.append("Possible ketosis signs reported")
         if bool((result.get("facts") or {}).get("urgent_flag")):
             reasons.append("Urgency asserted by rule action")
 
@@ -685,7 +755,7 @@ class DiagnosisService:
 
         summary = "Assessment completed using symptoms, risk factors, and laboratory information."
         if missing_inputs:
-            summary = "Assessment completed with limited laboratory evidence. Please add fasting glucose and HbA1c for a more reliable conclusion."
+            summary = "Completed with symptoms and risk factors only — that already gives a useful screening signal. A simple blood test (fasting glucose or HbA1c) anytime will make the result more certain."
         if confidence_status == "insufficient_evidence" and not missing_inputs:
             summary = "Assessment completed, but there is not enough matching evidence to produce a reliable diabetes confidence score."
 
@@ -729,11 +799,26 @@ class DiagnosisService:
             "hypoglycemia_present",
             "high_type2_risk_pattern",
             "urgent_flag",
+            "ketosis_signs_present",
+            "catabolic_pattern",
+            "type1_pattern_evidence",
+            "type2_pattern_evidence",
+            "mixed_type_features",
         }:
             if facts.get(flag) is True:
                 derived_flags.append(flag)
 
         recommendations = list(result.get("recommendations") or [])
+
+        # Dedupe identical advice (same sentence rendered twice looked broken)
+        _seen = set()
+        _deduped = []
+        for _rec in recommendations:
+            _key = " ".join(str(_rec.get("text") if isinstance(_rec, dict) else _rec).lower().split())
+            if _key and _key not in _seen:
+                _seen.add(_key)
+                _deduped.append(_rec)
+        recommendations = _deduped
 
         return {
             "primary_assessment": {
@@ -743,6 +828,7 @@ class DiagnosisService:
                 "confidence": result.get("confidence_level"),
                 "confidence_status": result.get("confidence_status"),
                 "confidence_reason": result.get("confidence_reason"),
+                "suspected_type": result.get("suspected_type"),
             },
             "triggered_rules": triggered_rules,
             "key_findings": {
@@ -868,7 +954,7 @@ class DiagnosisService:
         seen = set()
 
         def add(text: str, urgency: str, source: str):
-            normalized_text = str(text or "").strip()
+            normalized_text = rewrite_recommendation(str(text or "").strip())
             if not normalized_text:
                 return
             key = normalized_text.lower()
@@ -898,18 +984,13 @@ class DiagnosisService:
                 add(str(value), urgency, f"rule:{stage}")
 
         if urgency := ("urgent" if urgent_priority else None):
-            add(
-                "Seek urgent in-person medical evaluation now. If severe symptoms worsen, go to emergency care immediately.",
-                urgency,
-                "safety",
-            )
+            add(URGENT_SAFETY_NOTE, urgency, "safety")
 
-        if completeness.get("level") != "high":
-            add(
-                "Assessment confidence is limited because laboratory data is incomplete. Complete fasting glucose and HbA1c testing.",
-                "high" if urgent_priority else "routine",
-                "completeness",
-            )
+        lab_keys = ("fasting_glucose", "fasting_plasma_glucose", "hba1c", "2h_ogtt_75g", "random_plasma_glucose")
+        has_any_lab = any(key in normalized_payload for key in lab_keys)
+        if not has_any_lab:
+            # Gentle, non-alarming nudge — symptoms alone already give a signal.
+            add(COMPLETENESS_NOTE, "routine", "completeness")
 
         urgency_rank = {"urgent": 0, "high": 1, "routine": 2}
         candidates.sort(key=lambda item: (urgency_rank.get(item["urgency"], 9), item["text"]))
@@ -917,7 +998,7 @@ class DiagnosisService:
         if urgent_priority:
             candidates = [item for item in candidates if item["urgency"] in {"urgent", "high"}]
 
-        return candidates[:5]
+        return candidates[:4]
 
     def _collect_matched_symptoms(self, normalized_payload: dict) -> list[str]:
         labels = []

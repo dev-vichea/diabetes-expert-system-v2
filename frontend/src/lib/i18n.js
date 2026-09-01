@@ -365,6 +365,7 @@ export const messages = {
       "notifications": "Notifications",
       "languageSwitcher": "Switch language",
       "profileSettings": "Settings",
+      "profile": "Profile",
       "logOut": "Log out"
     },
     "profileSetup": {
@@ -414,6 +415,17 @@ export const messages = {
         "waist": "Please enter a waist between 40 and 200 cm.",
         "save": "Could not save your profile. Please try again."
       }
+    },
+    "profilePage": {
+      "title": "Your profile",
+      "subtitle": "Account details and the health profile your assessments pre-fill from.",
+      "accountTitle": "Account",
+      "healthTitle": "Health profile",
+      "healthSubtitle": "Keep this up to date — every new assessment starts pre-filled from here.",
+      "save": "Save changes",
+      "saved": "Saved",
+      "staffNote": "You are signed in as staff — the health profile section is only shown for patient accounts.",
+      "loadFailed": "Could not load your health profile."
     },
     "patientDashboard": {
       "errors": {
@@ -692,6 +704,10 @@ export const messages = {
       "valueMgDl": "Value (mg/dL)",
       "extraPlaceholderText": "e.g. tingling feet, dry mouth, frequent infections...",
       "steps": {
+        "interview": {
+          "title": "Evidence Interview",
+          "description": "One question at a time — adapts to your answers"
+        },
         "profile": {
           "title": "Profile",
           "description": "Basic patient information"
@@ -712,6 +728,94 @@ export const messages = {
           "title": "Review & Submit",
           "description": "Check details and run diagnosis"
         }
+      },
+      "interview": {
+        "seeResult": "Get my result",
+        "thirstAltTitle": "Could something else explain the thirst?",
+        "thirstAltHelper": "Thirst without extra urination often has other causes — heat, heavy exercise or a new medication. Your answers tell me where to look next.",
+        "focusBaseline": "Building your baseline picture",
+        "focusGlucose": "Glucose-related pattern — telling the types apart",
+        "focusT1": "Classic pattern with sudden onset — checking the type 1 profile",
+        "focusT2": "Classic pattern, slow build-up — checking the type 2 profile",
+        "focusThirst": "Thirst without extra urination — checking other causes",
+        "focusAlternative": "Another cause looks likely — narrowing it down",
+        "focusUrgent": "Warning signs detected — safety first",
+        "patientTitle": "Who is this assessment for?",
+        "patientHelper": "Select the patient — answers we already know will be pre-filled.",
+        "ageTitle": "How old are you?",
+        "ageHelper": "Age changes the thresholds we screen with.",
+        "agePlaceholder": "e.g. 42",
+        "sexTitle": "What is your sex?",
+        "sexHelper": "Biological sex — it decides which questions and thresholds apply.",
+        "sexMale": "Male",
+        "sexFemale": "Female",
+        "sexOther": "Other",
+        "pregnantTitle": "Are you currently pregnant?",
+        "pregnantHelper": "Pregnancy uses stricter blood-sugar thresholds — I will adjust if so.",
+        "stageTitle": "How far along are you?",
+        "stageHelper": "Gestational diabetes is usually screened between weeks 24–28.",
+        "stageFirst": "1st trimester (0–13 weeks)",
+        "stageSecond": "2nd trimester (14–27 weeks)",
+        "stageThird": "3rd trimester (28+ weeks)",
+        "stageUnsure": "Not sure",
+        "gdmPrevTitle": "Have you had gestational diabetes in a previous pregnancy?",
+        "gdmPrevHelper": "A previous episode raises lifetime risk and means earlier testing this time.",
+        "onsetTitle": "Did these symptoms come on suddenly?",
+        "onsetHelper": "Sudden onset (days to weeks) points to type 1 diabetes; a slow build-up over months or years points to type 2.",
+        "coreSymptomsTitle": "Which of these have you noticed recently?",
+        "coreSymptomsHelper": "Select all that apply — or tap \"None of these\" if you feel fine.",
+        "otherSymptomsTitle": "Any of these as well?",
+        "otherSymptomsHelper": "Select all that apply — or tap \"None of these\".",
+        "warningTitle": "Any of these warning signs right now?",
+        "warningHelper": "These help detect low blood sugar or emergencies.",
+        "riskTitle": "Do any of these apply to you?",
+        "riskHelper": "Answers already known from your health profile are pre-ticked — you can change them.",
+        "bodyTitle": "Height & weight",
+        "bodyHelper": "I will calculate BMI automatically — or enter it directly if you know it.",
+        "bmiIs": "Your BMI:",
+        "orExactBmi": "Or enter BMI directly",
+        "hasLabsTitle": "Do you have recent lab results?",
+        "hasLabsHelper": "Lab values sharpen accuracy a lot — but the interview works without them.",
+        "labsTitle": "Enter the lab values you have",
+        "labsHelper": "Any one of these helps — everything is optional, and ranges work too.",
+        "extraTitle": "Anything else to tell the clinician?",
+        "extraHelper": "Something the questions did not cover — optional.",
+        "noneOfThese": "None of these",
+        "selectedCount": "selected",
+        "answerYes": "Yes",
+        "answerNo": "No",
+        "skip": "Skip",
+        "doneEditing": "Done",
+        "insightPregnantTitle": "Pregnancy noted — adjusting what I check",
+        "insightPregnantText": "Gestational diabetes is screened with stricter thresholds. A couple of pregnancy questions follow, and your labs will be read against pregnancy ranges.",
+        "insightT1dTitle": "This pattern gets my attention",
+        "insightT1dText": "Weight loss together with intense thirst and frequent urination can point to type 1 diabetes, which can develop quickly. This will be flagged for clinician review.",
+        "insightTriadTitle": "The classic diabetes pattern",
+        "insightTriadText": "Intense thirst, frequent urination and constant hunger together are the classic trio (polydipsia, polyuria, polyphagia) — high blood sugar pulls water out of your body. The next questions help me tell which type fits.",
+        "insightT2Title": "Slow build-up — type 2 pattern",
+        "insightT2Text": "Symptoms that build up over months usually point to type 2 diabetes, where the body still makes insulin but resists it. Signs like dark skin patches, tingling and slow healing matter most here.",
+        "insightChildTitle": "In children this pattern is urgent",
+        "insightChildText": "Sudden thirst and urination in a child — especially with new bed-wetting — is a strong type 1 signal. A finger-prick glucose check today is the fastest way to know.",
+        "insightDkaTitle": "Possible emergency — please read",
+        "insightKetosisTitle": "Ketone warning signs",
+        "insightKetosisText": "Fruity breath or deep, rapid breathing can mean ketones are building up — a sign of insulin shortage. Combined with feeling unwell, this needs urgent medical attention.",
+        "insightDkaText": "Vomiting or stomach pain with high blood sugar can signal diabetic ketoacidosis (DKA) — a medical emergency. If you feel very unwell right now, seek urgent care first; this assessment can wait.",
+        "insightHypoTitle": "Possible low blood sugar signs",
+        "insightHypoText": "Shakiness, sweating or dizziness can mean low blood sugar. If you have a glucose meter, a reading taken now would be valuable evidence.",
+        "childProbeTitle": "Any new bed-wetting at night?",
+        "childProbeHelper": "In children, new bed-wetting with extra thirst or urination is the strongest type 1 signal.",
+        "t2ProbeTitle": "Any of these insulin-resistance signs?",
+        "t2ProbeHelper": "With a slow build-up, these signs strongly point to the type 2 pattern.",
+        "insightShortcutTitle": "Skipping the lab questions — here is why",
+        "insightShortcutText": "With the signs you reported, the next step is the same no matter what a lab would say: get checked by a doctor today. I skipped the lab questions to save you time — finish the rest so your report is complete for the clinician.",
+        "answeredLabel": "Answered:",
+        "questionN": "Question",
+        "allAnsweredTitle": "All questions answered",
+        "allAnsweredText": "Review your evidence, then run the assessment.",
+        "goReview": "Review & Run",
+        "editAnswers": "Edit interview answers",
+        "pregnantShort": "Pregnant",
+        "notPregnant": "Not pregnant"
       },
       "options": {
         "age": {
@@ -741,6 +845,10 @@ export const messages = {
       "fields": {
         "symptoms": {
           "frequentUrination": "Frequent urination",
+          "dryMouth": "Dry mouth",
+          "heatExposure": "Recent hot weather / heat exposure",
+          "intenseExercise": "Intense exercise or heavy physical work",
+          "newMedication": "Started a new medication recently",
           "excessiveThirst": "Excessive thirst",
           "fatigue": "Constant tiredness",
           "blurredVision": "Blurred vision",
@@ -749,14 +857,20 @@ export const messages = {
           "nausea": "Nausea",
           "tinglingHandsFeet": "Tingling hands / feet",
           "frequentInfections": "Frequent infections",
-          "acanthosisNigricans": "Dark skin patches"
+          "acanthosisNigricans": "Dark skin patches",
+          "excessiveHunger": "Feeling very hungry",
+          "irritability": "Irritability / mood changes",
+          "recurrentUtiYeast": "Recurring UTIs / yeast infections",
+          "bedWetting": "New bed-wetting (children)"
         },
         "safetySymptoms": {
           "sweating": "Sweating episodes",
           "shaking": "Shaking / tremor",
           "dizziness": "Dizziness",
           "vomiting": "Vomiting",
-          "abdominalPain": "Stomach pain"
+          "abdominalPain": "Stomach pain",
+          "fruityBreath": "Fruity / acetone breath",
+          "deepRapidBreathing": "Deep, rapid breathing"
         },
         "hypoglycemia": {
           "confusion": "Confusion or trouble focusing",
@@ -889,6 +1003,7 @@ export const messages = {
         "submitHint": "Submit this assessment to generate diagnosis output.",
         "overview": "Assessment Overview",
         "profile": "Age / BMI / Waist",
+        "sexPregnancy": "Sex / Pregnancy",
         "glucose": "Glucose Tests",
         "symptoms": "Symptoms",
         "risks": "Risk Factors",
@@ -1033,7 +1148,15 @@ export const messages = {
       "restartConfirmDesc": "This will clear the current assessment result and take you back to start a new assessment. Are you sure?",
       "restart": "Restart",
       "cancel": "Cancel",
-      "diagnosticOutput": "Diagnostic Output",
+      "diagnosticOutput": "Assessment result",
+      "suspectedType": "Suspected type",
+      "type": {
+        "type1": "Type 1 pattern",
+        "type2": "Type 2 pattern",
+        "gestational": "Gestational pattern",
+        "mixed": "Mixed features",
+        "undetermined": "Undetermined"
+      },
       "probabilityBase": "Based on comprehensive clinical data, the inference engine calculates a ",
       "probabilityOf": " of this diagnosis.",
       "probability": {
@@ -1042,25 +1165,25 @@ export const messages = {
         "moderate": "moderate probability",
         "low": "low probability"
       },
-      "overallScore": "Overall Score",
-      "clinicalEvidence": "Clinical Evidence",
-      "keyDiagnosticIndicators": "Key Diagnostic Indicators",
-      "hba1cIndicator": "HbA1c Level Indicator",
+      "overallScore": "Screening Confidence",
+      "clinicalEvidence": "The evidence behind this result",
+      "keyDiagnosticIndicators": "Your lab results",
+      "hba1cIndicator": "HbA1c — 3-month average",
       "hba1cSubtitle": "A key marker of long-term glucose control.",
-      "fastingIndicator": "Fasting Glucose Indicator",
+      "fastingIndicator": "Fasting glucose — after an 8-hour fast",
       "fastingSubtitle": "Indicates glucose level after an 8-hour fast.",
-      "evidenceCompleteness": "Evidence Completeness",
-      "availableLabs": "available labs:",
-      "missing": "missing:",
+      "evidenceCompleteness": "How complete is this information?",
+      "availableLabs": "Provided:",
+      "missing": "Not provided:",
       "none": "none",
-      "relevantHistory": "Relevant History & Symptoms",
-      "knownSymptoms": "Known symptoms includes:",
+      "relevantHistory": "Your symptoms",
+      "knownSymptoms": "You reported:",
       "symptomAlign": "The patient's reported symptoms align with the matched diabetes pattern shown by the inference engine.",
       "noSymptom": "No prominent symptom pattern was selected.",
-      "riskFactors": "Risk Factors",
-      "knownHistory": "Known history includes:",
+      "riskFactors": "Your risk factors",
+      "knownHistory": "Your history:",
       "noRisk": "No risk factors were flagged in this submission.",
-      "reasoningKeyRules": "Reasoning & Key Rules",
+      "reasoningKeyRules": "Matched rules — technical",
       "matchedRule": "Matched Rule",
       "ruleConditionMatched": "Rule condition matched.",
       "contribution": "Contribution",
@@ -1069,7 +1192,8 @@ export const messages = {
       "diagnosticReasoningP1": "The system compares this assessment against structured diabetes rules from symptom, laboratory, and risk-factor evidence.",
       "diagnosticReasoningP2": "Confidence is calculated from the strength and priority of matched rules, then adjusted by evidence completeness.",
       "diagnosticReasoningP3": "This output is a decision-support summary and should be reviewed with a qualified healthcare professional.",
-      "actionableRecommendations": "Actionable Recommendations",
+      "actionableRecommendations": "What you should do next",
+      "urgentTag": "Urgent",
       "priority": "Priority",
       "rule": "Rule:",
       "noSpecificRecommendations": "No specific recommendations were generated. Please consult with a physician.",
@@ -1085,10 +1209,179 @@ export const messages = {
       "assessmentComplete": "Assessment complete! Your results have been saved.",
       "viewReport": "View Report →",
       "reviewBeforeSubmit": "Review your answers above, then click \"Run Assessment\" to get your results.",
+      "couldFit": "Could fit:",
+      "plainSummary": {
+        "title": "In short",
+        "whatThisIs": "This report compares your answers with common patterns of diabetes. It is a screening — not a final diagnosis. A doctor and a simple test can confirm.",
+        "matchedMany": "Your answers matched {{count}} common sign(s) associated with high blood sugar.",
+        "matchedFew": "This run included little direct evidence — the result leans on general risk patterns.",
+        "typeFit": "The pattern fits {{type}}.",
+        "couldFitTwo": "The signs could fit {{first}} ({{firstPercent}}%) or {{second}} ({{secondPercent}}%) — the first steps are the same either way.",
+        "noType": "No single diabetes type pattern stood out yet.",
+        "nextStep": "Next step:"
+      },
+      "symptomGuide": {
+        "items": {
+          "excessiveThirst": { "term": "Polydipsia", "meaning": "Can occur when blood glucose is high — the body pulls water to dilute the sugar." },
+          "frequentUrination": { "term": "Polyuria", "meaning": "Often accompanies high blood glucose — the kidneys flush out the extra sugar." },
+          "excessiveHunger": { "term": "Polyphagia", "meaning": "Can occur when glucose cannot effectively enter cells." },
+          "weightLoss": { "term": "Catabolic weight loss", "meaning": "The body burns fat and muscle for energy when glucose can't enter cells." },
+          "fatigue": { "term": "Asthenia", "meaning": "Cells don't get enough glucose for energy." },
+          "blurredVision": { "term": "Lens swelling", "meaning": "High glucose draws water into the eye's lens, blurring focus." },
+          "slowHealing": { "term": "Impaired wound healing", "meaning": "High glucose slows blood flow and weakens immune repair." },
+          "tingling": { "term": "Peripheral neuropathy", "meaning": "High glucose can irritate small nerve fibres over time." },
+          "frequentInfections": { "term": "Recurrent infections", "meaning": "High glucose weakens the immune system's defences." },
+          "acanthosisNigricans": { "term": "Acanthosis nigricans", "meaning": "Dark, velvety skin patches — commonly linked with insulin resistance." },
+          "irritability": { "term": "Mood changes", "meaning": "Blood sugar swings can affect mood and concentration." },
+          "recurrentInfections": { "term": "Recurrent UTI / yeast infections", "meaning": "Glucose in urine feeds bacteria and yeast." },
+          "bedWetting": { "term": "Nocturnal enuresis", "meaning": "Extra glucose pulls more water — a classic Type 1 sign in children." },
+          "fruityBreath": { "term": "Ketone breath", "meaning": "Possible diabetic ketoacidosis (DKA) — seek care urgently." },
+          "deepRapidBreathing": { "term": "Kussmaul breathing", "meaning": "The body tries to release ketone acids — seek care urgently." },
+          "nausea": { "term": "Nausea", "meaning": "Can occur when blood glucose or ketones are very high." },
+          "vomiting": { "term": "Vomiting", "meaning": "With very high glucose this can signal DKA — seek care urgently." },
+          "abdominalPain": { "term": "Abdominal pain", "meaning": "With very high glucose this can signal DKA — seek care urgently." },
+          "sweating": { "term": "Diaphoresis", "meaning": "Can be a warning sign of low blood sugar (hypoglycemia)." },
+          "shaking": { "term": "Tremor", "meaning": "Common warning sign of low blood sugar (hypoglycemia)." },
+          "dizziness": { "term": "Dizziness", "meaning": "Can come from low — or very high — blood sugar." }
+        }
+      },
+      "whyResult": {
+        "title": "Why this result?",
+        "toldUs": "What you told us",
+        "measured": "Lab values you provided",
+        "missingTitle": "Checks that would help most",
+        "noSymptoms": "No symptoms or risk factors were reported in this assessment.",
+        "noLabs": "No lab values were provided — the result is based on your reported answers only.",
+        "allProvided": "All recommended checks were provided.",
+        "summaryPrefix": "The system matched",
+        "summarySuffix": "piece(s) of information from your assessment.",
+        "limitedNote": "This result is based on limited information — the missing checks above would make it noticeably more reliable."
+      },
+      "technical": {
+        "title": "Technical details — clinician view",
+        "subtitle": "Raw rule-matching trace used by the inference engine. Patients can safely ignore this section."
+      },
       "labStatusHigh": "High",
       "labStatusElevated": "Elevated",
       "labStatusNormal": "Normal",
-      "labStatusUnknown": "Unknown"
+      "labStatusUnknown": "Unknown",
+      "education": {
+        "titlePrefix": "Understanding",
+        "whatTitle": "What is it?",
+        "symptomsTitle": "Common symptoms",
+        "careTitle": "Treatment & care",
+        "learnMore": "Full guide on MedlinePlus",
+        "disclaimer": "Educational background only — always follow your healthcare provider's advice.",
+        "conditions": {
+          "general": {
+            "name": "diabetes",
+            "tagline": "Blood sugar stays too high when the body can't make or use insulin well.",
+            "what": [
+              "Insulin moves glucose (sugar) from your blood into your cells for energy.",
+              "With diabetes, the body makes little or no insulin, can't use it well, or both — so glucose builds up in the blood.",
+              "Over time, high blood glucose can harm the heart, kidneys, eyes, and nerves.",
+              "It can be managed — early treatment lowers the risk of complications."
+            ],
+            "symptoms": [
+              "Feeling very thirsty or very hungry",
+              "Urinating more often, including at night",
+              "Tired all the time; blurry vision",
+              "Tingling or numb feet; sores that heal slowly"
+            ],
+            "care": [
+              "Confirm with lab tests: A1C, fasting glucose, or an oral glucose tolerance test.",
+              "Eat well, stay physically active, and keep a healthy weight.",
+              "Take prescribed medicines and monitor blood sugar as directed.",
+              "Get regular checkups for eyes, kidneys, nerves, and feet."
+            ]
+          },
+          "type1": {
+            "name": "Type 1 diabetes",
+            "tagline": "An autoimmune condition — the body makes little or no insulin.",
+            "what": [
+              "The immune system mistakenly attacks the pancreas cells that make insulin.",
+              "Without insulin, glucose builds up in the blood instead of feeding your cells.",
+              "It often starts in children, teens, or young adults — but can appear at any age.",
+              "It is not caused by lifestyle, and it cannot be prevented."
+            ],
+            "symptoms": [
+              "Very thirsty, very hungry, urinating often (including at night)",
+              "Losing weight without trying; tired all the time",
+              "Blurry vision; tingling in feet or hands",
+              "Emergency signs: deep rapid breathing, fruity breath, vomiting, stomach pain — seek care immediately"
+            ],
+            "care": [
+              "Daily insulin for life, by injection or an insulin pump.",
+              "Check blood glucose regularly (fingerstick or a wearable sensor).",
+              "Match insulin to food (carbohydrate counting) and activity.",
+              "Regular clinic visits to adjust doses and screen for complications."
+            ]
+          },
+          "type2": {
+            "name": "Type 2 diabetes",
+            "tagline": "The most common type — the body resists insulin.",
+            "what": [
+              "Cells don't respond to insulin normally (insulin resistance), so glucose stays in the blood.",
+              "It develops slowly over years — many people feel fine at first.",
+              "Risk rises with excess weight, low activity, age over 35–45, and family history.",
+              "Healthy habits can control it — and sometimes prevent or delay it."
+            ],
+            "symptoms": [
+              "Often no early symptoms — screening matters.",
+              "Increased thirst, urination, and hunger",
+              "Feeling tired; blurred vision",
+              "Numb or tingling hands and feet; sores that heal slowly"
+            ],
+            "care": [
+              "Healthy eating, regular activity, and weight management come first.",
+              "Medicines such as metformin are common; insulin can be added later.",
+              "Monitor blood glucose and A1C as your provider advises.",
+              "Yearly checks of eyes, kidneys, nerves, feet, and heart."
+            ]
+          },
+          "gestational": {
+            "name": "gestational diabetes",
+            "tagline": "High blood sugar that develops during pregnancy.",
+            "what": [
+              "Pregnancy hormones can block insulin, so blood sugar rises.",
+              "It usually appears midway through pregnancy and is found by screening at 24–28 weeks.",
+              "Most women feel no symptoms — that is why testing matters.",
+              "It often goes away after delivery, but it raises the chance of type 2 diabetes later."
+            ],
+            "symptoms": [
+              "Usually none — detected by routine prenatal testing",
+              "Mild increased thirst or shakiness",
+              "Sometimes fatigue, blurred vision, or frequent infections"
+            ],
+            "care": [
+              "A healthy meal plan and regular gentle activity.",
+              "Check blood sugar at home as your provider directs.",
+              "Insulin or safe medicines if diet alone isn't enough.",
+              "Extra monitoring of the baby, and a glucose test after delivery."
+            ]
+          },
+          "prediabetes": {
+            "name": "prediabetes",
+            "tagline": "Blood sugar is above normal — but not diabetes yet.",
+            "what": [
+              "Glucose is higher than normal (A1C 5.7–6.4% or fasting 100–125 mg/dL).",
+              "Usually there are no clear symptoms — it is found through testing.",
+              "Without changes, it often progresses to type 2 diabetes.",
+              "Acting now can delay or even prevent type 2 diabetes."
+            ],
+            "symptoms": [
+              "Most people feel completely normal",
+              "Some notice darkened, velvety skin patches on the neck or under the arms"
+            ],
+            "care": [
+              "Losing 5–7% of body weight greatly lowers the risk.",
+              "Aim for about 150 minutes of brisk activity each week.",
+              "Choose more vegetables, whole grains, and lean protein.",
+              "Recheck blood sugar at least once a year."
+            ]
+          }
+        }
+      }
     },
 
     "sidebar": {
@@ -1835,6 +2128,7 @@ export const messages = {
       "notifications": "ការជូនដំណឹង",
       "languageSwitcher": "ប្តូរភាសា",
       "profileSettings": "ការកំណត់",
+      "profile": "ប្រវត្តិរូប",
       "logOut": "ចាកចេញ"
     },
     "profileSetup": {
@@ -1884,6 +2178,17 @@ export const messages = {
         "waist": "សូមបញ្ចូលរង្វង់ចង្វេ주ចាប់ពី 40 ដល់ 200 សម។",
         "save": "មិនអាចរក្សាទុកប្រវត្តិរូបរបស់អ្នកបានទេ។ សូមព្យាយាមម្តងទៀត។"
       }
+    },
+    "profilePage": {
+      "title": "ប្រវត្តិរូបរបស់អ្នក",
+      "subtitle": "ព័ត៌មានគណនី និងប្រវត្តិសុខភាពដែលការវាយតម្លៃរបស់អ្នកបំពេញស្វ័យប្រវត្តិពី។",
+      "accountTitle": "គណនី",
+      "healthTitle": "ប្រវត្តិសុខភាព",
+      "healthSubtitle": "រក្សាព័ត៌មានទាន់ពេល — ការវាយតម្លៃថ្មីនីមួយៗនឹងបំពេញដោយស្វ័យប្រវត្តិពីទីនេះ។",
+      "save": "រក្សាទុកការផ្លាស់ប្ដូរ",
+      "saved": "បានរក្សាទុក",
+      "staffNote": "អ្នកបានចូលជាបុគ្គលិក — ផ្នែកប្រវត្តិសុខភាពបង្ហាញសម្រាប់គណនីអ្នកជំងឺតែប៉ុណ្ណោះ។",
+      "loadFailed": "មិនអាចផ្ទុកប្រវត្តិសុខភាពរបស់អ្នកបានទេ។"
     },
     "patientDashboard": {
       "errors": {
@@ -2162,6 +2467,10 @@ export const messages = {
       "valueMgDl": "តម្លៃ (mg/dL)",
       "extraPlaceholderText": "ឧ. រមួលជើង មាត់ស្ងួត ការឆ្លងរោគញឹកញាប់...",
       "steps": {
+        "interview": {
+          "title": "ការសម្ភាសន៍ប្រមូលហេតុផល",
+          "description": "សំណួរម្តងមួយ — ប្រែប្រួលតាមចម្លើយរបស់អ្នក"
+        },
         "profile": {
           "title": "ប្រវត្តិរូប",
           "description": "ព័ត៌មានមូលដ្ឋានរបស់អ្នកជំងឺ"
@@ -2182,6 +2491,94 @@ export const messages = {
           "title": "ពិនិត្យ និងបញ្ជូន",
           "description": "ពិនិត្យព័ត៌មាន និងដំណើរការវិភាគ"
         }
+      },
+      "interview": {
+        "seeResult": "មើលលទ្ធផលរបស់អ្នក",
+        "thirstAltTitle": "តើមានអ្វីផ្សេងទៀតពន្យល់ពីភាពស្រេចទឹកបានទេ?",
+        "thirstAltHelper": "ភាពស្រេចទឹកដោយមិននោមច្រើន ច្រើនមានមូលហេតុផ្សេង — អាកាសធាតុក្តៅ លំហាត់យ៉ាងខ្លាំង ឬថ្នាំថ្មី។ ចម្លើយរបស់អ្នកប្រាប់ខ្ញុំពីអ្វីដែលត្រូវពិនិត្យបន្ទាប់។",
+        "focusBaseline": "កំពុងបង្កើតរូបភាពមូលដ្ឋានរបស់អ្នក",
+        "focusGlucose": "រូបភាពទាក់ទងនឹងស្ករស — កំពុងកំណត់ប្រភេទ",
+        "focusT1": "រូបភាពជាក់លាក់ ចាប់ផ្តើមភ្លាមៗ — កំពុងពិនិត្យប្រភេទទី ១",
+        "focusT2": "រូបភាពជាក់លាក់ បង្កើតបណ្តើរៗ — កំពុងពិនិត្យប្រភេទទី ២",
+        "focusThirst": "ស្រេចទឹកដោយមិននោមច្រើន — កំពុងពិនិត្យមូលហេតុផ្សេង",
+        "focusAlternative": "មូលហេតុផ្សេងទៀតទំនងជាមាន — កំពុងចុះការពិនិត្យ",
+        "focusUrgent": "រកឃើញសញ្ញាប្រឈម — សុវត្ថិភាពមុនគេ",
+        "patientTitle": "ការវាយតម្លៃនេះសម្រាប់អ្នកណា?",
+        "patientHelper": "ជ្រើសរើសអ្នកជំងឺ — ចម្លើយដែលយើងដឹងរួចហើយនឹងបំពេញដោយស្វ័យប្រវត្តិ។",
+        "ageTitle": "តើអ្នកអាយុប៉ុន្មាន?",
+        "ageHelper": "អាយុផ្លាស់ប្តូរកម្រិតនៃការត្រួតពិនិត្យ។",
+        "agePlaceholder": "ឧ. 42",
+        "sexTitle": "តើអ្នកជាប្រុស ឬស្រី?",
+        "sexHelper": "ភេទកំណត់សំណួរ និងកម្រិតដែលអនុវត្តចំពោះអ្នក។",
+        "sexMale": "ប្រុស",
+        "sexFemale": "ស្រី",
+        "sexOther": "ផ្សេងៗ",
+        "pregnantTitle": "តើអ្នកមានផ្ទៃពោះបច្ចុប្បន្នឬ?",
+        "pregnantHelper": "ពេលមានផ្ទៃពោះ កម្រិតស្ករត្រូវបានធ្វើឱ្យច្បាស់ជាង — ខ្ញុំនឹងកែតម្រូវប្រសិនបើមាន។",
+        "stageTitle": "តើអ្នកមានផ្ទៃពោះប៉ុន្មានសប្តាហ៍ហើយ?",
+        "stageHelper": "ជាទូទៅ ការពិនិត្យជាតិស្ករពេលមានផ្ទៃពោះធ្វើនៅសប្តាហ៍ 24–28។",
+        "stageFirst": "ត្រីមាសទី 1 (0–13 សប្តាហ៍)",
+        "stageSecond": "ត្រីមាសទី 2 (14–27 សប្តាហ៍)",
+        "stageThird": "ត្រីមាសទី 3 (28+ សប្តាហ៍)",
+        "stageUnsure": "មិនប្រាកដ",
+        "gdmPrevTitle": "តើអ្នកធ្លាប់មានជាតិស្ករខ្ពស់ពេលមានផ្ទៃពោះពីមុនឬ?",
+        "gdmPrevHelper": "ករណីពីមុនធ្វើឱ្យហានិភ័យកើនឡើង ហើយត្រូវពិនិត្យទាន់ពេលជាង។",
+        "onsetTitle": "តើរោគសញ្ញាបានលេចឡើងយ៉ាងលឿនឬ?",
+        "onsetHelper": "លេចឡើងលឿន (ចាប់ពីមួយថ្ងៃដល់មួយសប្តាហ៍) ចង្អុលបង្ហាញទឹកនោមផ្អែមប្រភេទទី 1; បើបណ្តើរៗច្បាស់ជាងនេះទៅទៀត ជាប្រភេទទី 2។",
+        "coreSymptomsTitle": "តើអ្នកសម្គាល់ឃើញអ្វីខ្លះថ្មីៗនេះ?",
+        "coreSymptomsHelper": "ជ្រើសរើសទាំងអស់ដែលមាន — ឬចុច \"មិនមានទាំងអស់\" ប្រសិនបើអ្នកស្រួលល្អ។",
+        "otherSymptomsTitle": "តើមានទាំងនេះដែរឬ?",
+        "otherSymptomsHelper": "ជ្រើសរើសទាំងអស់ដែលមាន — ឬចុច \"មិនមានទាំងអស់\"។",
+        "warningTitle": "តើមានសញ្ញាព្រមានទាំងនេះឥឡូវនេះឬ?",
+        "warningHelper": "ទាំងនេះជួយរកឃើញស្ករទាប ឬអាសន្ន។",
+        "riskTitle": "តើទាំងនេះអនុវត្តចំពោះអ្នកឬ?",
+        "riskHelper": "ចម្លើយដែលដឹងរួចពីប្រវត្តិសុខភាពរបស់អ្នកត្រូវដាក់ជាមុន — អ្នកអាចផ្លាស់ប្តូរបាន។",
+        "bodyTitle": "កម្ពស់ និងទម្ងន់",
+        "bodyHelper": "ខ្ញុំនឹងគណនា BMI ដោយស្វ័យប្រវត្តិ — ឬបញ្ចូលផ្ទាល់ប្រសិនបើអ្នកដឹង។",
+        "bmiIs": "BMI របស់អ្នក:",
+        "orExactBmi": "ឬបញ្ចូល BMI ផ្ទាល់",
+        "hasLabsTitle": "តើអ្នកមានលទ្ធផល Lab ថ្មីៗឬ?",
+        "hasLabsHelper": "តម្លៃ Lab ធ្វើឱ្យលទ្ធផលត្រឹមត្រូវជាង — ប៉ុន្តែគ្មានវាក៏ដំណើរការដែរ។",
+        "labsTitle": "បញ្ចូលតម្លៃ Lab ដែលអ្នកមាន",
+        "labsHelper": "មួយក្នុងចំណោមទាំងនេះជួយបាន — អ្វីៗទាំងអស់ស្រេចចិត្ត។",
+        "extraTitle": "មានអ្វីទៀតដែលត្រូវប្រាប់វេជ្ជបណ្ឌិត?",
+        "extraHelper": "អ្វីដែលសំណួរមិនបានគ្របដណ្តប់ — ស្រេចចិត្ត។",
+        "noneOfThese": "មិនមានទាំងអស់",
+        "selectedCount": "ត្រូវបានជ្រើសរើស",
+        "answerYes": "មាន",
+        "answerNo": "គ្មាន",
+        "skip": "រំលង",
+        "doneEditing": "រួចរាល់",
+        "insightPregnantTitle": "កត្តសម្គាល់ការមានផ្ទៃពោះ — កែតម្រូវអ្វីដែលត្រូវពិនិត្យ",
+        "insightPregnantText": "ជាតិស្ករពេលមានផ្ទៃពោះប្រើកម្រិតច្បាស់ជាង។ សំណួរពាក់ព័ន្ធនឹងតាមមក ហើយ Lab របស់អ្នកនឹងត្រូវបកស្រាយតាមកម្រិតពេលមានផ្ទៃពោះ។",
+        "insightT1dTitle": "លំនាំនេះទាមទារការយកចិត្តទុកដាក់",
+        "insightT1dText": "ការស្រកទម្ងន់ជាមួយស្រេកទឹកខ្លាំង និងឡើងទឹកញឹកញាប់ អាចបង្ហាញជំងឺទ្រិយើស្ករប្រភេទទី 1 ដែលវិវត្តលឿន។ នេះនឹងត្រូវដាក់សញ្ញាសម្រាប់វេជ្ជបណ្ឌិតពិនិត្យ។",
+        "insightTriadTitle": "លំនាំសំខាន់នៃទឹកនោមផ្អែម",
+        "insightTriadText": "ស្រេកទឹកខ្លាំង ឡើងទឹកញឹកញាប់ និងឃ្លានខ្លាំងរួមគ្នា គឺជាក្រុមសំខាន់ (Polydipsia, Polyuria, Polyphagia) — ជាតិស្ករខ្ពស់ទាញទឹកចេញពីរាងកាយអ្នក។ សំណួរបន្ទាប់ជួយប្រាប់ថាប្រភេទណាស្របនឹងអ្នក។",
+        "insightT2Title": "កើតឡើងយឺតៗ — លំនាំប្រភេទទី 2",
+        "insightT2Text": "រោគសញ្ញាដែលកើតឡើងតាមរយៈពេលខ្ពស់ជាង 1 ខែ ច្រើនតែចង្អុលទៅប្រភេទទី 2 ដែលរាងកាយនៅតែផលិតអ៊ីនស៊ុលីន ប៉ុន្តែធន់នឹងវា។ សញ្ញាដូចជាស្បែកខ្មៅជ្រួញៗ ស្ពឹកចុងដៃចុងជើង និងរបួសជាយឺត សំខាន់បំផុតនៅទីនេះ។",
+        "insightChildTitle": "ក្នុងកុមារ លំនាំនេះមានលក្ខណៈបន្ទាន់",
+        "insightChildText": "ស្រេកទឹកខ្លាំង និងឡើងទឹកច្រើនភ្លាមៗក្នុងកុមារ — ជាពិសេសជាមួយការលូតកន្ទក់ថ្មី — គឺជាសញ្ញាខ្លាំងនៃប្រភេទទី 1។ ការវាស់ស្ករដោយចុបម្រាមដៃថ្ងៃនេះ លឿនបំផុតដើម្បីដឹង។",
+        "insightDkaTitle": "អាចជាអាសន្ន — សូមអាន",
+        "insightKetosisTitle": "សញ្ញាព្រមានគីតូន",
+        "insightKetosisText": "ដង្ហើមមានក្លិនផ្លែឈើ ឬដកដង្ហើមជ្រៅលឿន អាចមានន័យថាគីតូនកំពុងកើនឡើង — សញ្ញានៃការខ្វះអ៊ីនស៊ុលីន។ បើរួមជាមួយអារម្មណ៍មិនស្រួល ត្រូវទៅពេទ្យបន្ទាន់។",
+        "insightDkaText": "ក្អួត ឬឈឺក្បុនជាមួយស្ករខ្ពស់ អាចជាសញ្ញា DKA — អាសន្នវេជ្ជសាស្ត្រ។ ប្រសិនបើអ្នកមិនស្រួលខ្លាំងឥឡូវនេះ សូមទៅព្យាបាលបន្ទាន់ជាមុន; ការវាយតម្លៃនេះអាចរង់ចាំបាន។",
+        "insightHypoTitle": "សញ្ញាអាចជាស្ករទាប",
+        "insightHypoText": "រញ្ជួយ ញើស ឬវិលមុខ អាចមានន័យថាស្ករក្នុងឈាមទាប។ ប្រសិនបើអ្នកមានម៉ាស៊ីនវាស់ស្ករ ការវាស់ឥឡូវនេះនឹងមានតម្លៃខ្ពស់។",
+        "childProbeTitle": "មានលូតកន្ទក់ថ្មីពេលយប់ដែរឬទេ?",
+        "childProbeHelper": "ក្នុងកុមារ ការលូតកន្ទក់ថ្មីជាមួយការស្រេកទឹកខ្លាំង ឬឡើងទឹកច្រើន គឺជាសញ្ញាខ្លាំងបំផុតនៃប្រភេទទី 1។",
+        "t2ProbeTitle": "មានសញ្ញាប្រឆាំងអ៊ីនស៊ុលីនទាំងនេះដែរឬទេ?",
+        "t2ProbeHelper": "នៅពេលអាការៈកើតឡើងបណ្តើរៗ សញ្ញាទាំងនេះចង្អុលខ្លាំងទៅលំនាំប្រភេទទី 2។",
+        "insightShortcutTitle": "រំលងសំណួរពិសោធន៍ឈាម — នេះជាមូលហេតុ",
+        "insightShortcutText": "ជាមួយសញ្ញាដែលអ្នកបានរាយការណ៍ ជំហានបន្ទាប់ដូចគ្នាមិនថាលទ្ធផលពិសោធន៍ដូចម្តេចទេ៖ ទៅពិនិត្យជាមួយពេទ្យថ្ងៃនេះ។ ខ្ញុំរំលងសំណួរពិសោធន៍ឈាមដើម្បីសន្សំពេលអ្នក — បញ្ចប់សំណួរដែលនៅសល់ ដើម្បីឲ្យរបាយការណ៍របស់អ្នកពេញលេញសម្រាប់វេជ្ជបណ្ឌិត។",
+        "answeredLabel": "បានឆ្លើយ:",
+        "questionN": "សំណួរ",
+        "allAnsweredTitle": "សំណួរទាំងអស់ត្រូវបានឆ្លើយ",
+        "allAnsweredText": "ពិនិត្យហេតុផលរបស់អ្នក បន្ទាប់មកដំណើរការការវាយតម្លៃ។",
+        "goReview": "ពិនិត្យ និងដំណើរការ",
+        "editAnswers": "កែសម្រួលចម្លើយសម្ភាសន៍",
+        "pregnantShort": "មានផ្ទៃពោះ",
+        "notPregnant": "មិនមានផ្ទៃពោះ"
       },
       "options": {
         "age": {
@@ -2211,6 +2608,10 @@ export const messages = {
       "fields": {
         "symptoms": {
           "frequentUrination": "នោមញឹកញាប់",
+          "dryMouth": "មាត់ស្ងួត",
+          "heatExposure": "អាកាសធាតុក្តៅថ្មីៗ / ការប៉ះពាល់កម្តៅ",
+          "intenseExercise": "លំហាត់អប់រយ៉ាងខ្លាំង ឬការងាររាងកាយធ្ងន់",
+          "newMedication": "ចាប់ផ្តើមប្រើថ្នាំថ្មីថ្មីៗនេះ",
           "excessiveThirst": "ស្រេកទឹកខ្លាំង",
           "fatigue": "អស់កម្លាំងប្រចាំ",
           "blurredVision": "មើលមិនច្បាស់",
@@ -2219,14 +2620,20 @@ export const messages = {
           "nausea": "ចង់ក្អួត (Nausea)",
           "tinglingHandsFeet": "រមួលដៃឬជើង",
           "frequentInfections": "ឆ្លងរោគញឹកញាប់",
-          "acanthosisNigricans": "ស្នាមអុចខ្មៅលើស្បែក (Acanthosis Nigricans)"
+          "acanthosisNigricans": "ស្នាមអុចខ្មៅលើស្បែក (Acanthosis Nigricans)",
+          "excessiveHunger": "ហៀរស្រេកអាហារខ្លាំង",
+          "irritability": "អាក់អន់ចិត្ត / ប្រែប្រួលអារម្មណ៍",
+          "recurrentUtiYeast": "ឆ្លងទឹកនោម / ផ្សិតញឹកញាប់",
+          "bedWetting": "ក្រពៅលើគ្រែថ្មី (កុមារ)"
         },
         "safetySymptoms": {
           "sweating": "បែកញើសខ្លាំង",
           "shaking": "ញ័រដៃជើង",
           "dizziness": "វិលមុខ",
           "vomiting": "ក្អួត",
-          "abdominalPain": "ឈឺពោះ"
+          "abdominalPain": "ឈឺពោះ",
+          "fruityBreath": "ដង្ហើមមានក្លិនផ្លែឈើ",
+          "deepRapidBreathing": "ដកដង្ហើមជ្រៅ លឿន"
         },
         "hypoglycemia": {
           "confusion": "ស្រពិចស្រពិល ឬពិបាកផ្តោតអារម្មណ៍",
@@ -2346,6 +2753,7 @@ export const messages = {
         "notSelected": "មិនទាន់ជ្រើសរើស",
         "currentUser": "អ្នកប្រើប្រាស់បច្ចុប្បន្ន",
         "mode": "Mode",
+        "sexPregnancy": "ភេទ / ការមានផ្ទៃពោះ",
         "bodyMetrics": "អាយុ / ទម្ងន់រាងកាយ / រង្វង់ចង្កេះ",
         "glucoseTests": "ការធ្វើតេស្ត Glucose (Fasting / HbA1c / Random)",
         "counts": "រោគសញ្ញា / កត្តាហានិភ័យ",
@@ -2504,7 +2912,15 @@ export const messages = {
       "restartConfirmDesc": "វានឹងលុបលទ្ធផលវាយតម្លៃបច្ចុប្បន្ន ហើយនាំអ្នកត្រឡប់ទៅចាប់ផ្តើមការវាយតម្លៃថ្មី។ តើអ្នកប្រាកដទេ?",
       "restart": "ចាប់ផ្តើមឡើងវិញ",
       "cancel": "បោះបង់",
-      "diagnosticOutput": "លទ្ធផលនៃការធ្វើរោគវិនិច្ឆ័យ",
+      "diagnosticOutput": "លទ្ធផលនៃការវាយតម្លៃ",
+      "suspectedType": "ប្រភេទដែលសង្ស័យ",
+      "type": {
+        "type1": "លំនាំប្រភេទទី 1",
+        "type2": "លំនាំប្រភេទទី 2",
+        "gestational": "លំនាំពេលមានផ្ទៃពោះ",
+        "mixed": "លក្ខណៈលាយចម្រុះ",
+        "undetermined": "មិនអាចកំណត់បាន"
+      },
       "probabilityBase": "ផ្អែកលើទិន្នន័យគ្លីនិកទាំងអស់ ប្រព័ន្ធវិភាគបានគណនាថាមាន ",
       "probabilityOf": " នៃការវិនិច្ឆ័យនេះ។",
       "probability": {
@@ -2513,25 +2929,25 @@ export const messages = {
         "moderate": "ប្រូបាប៊ីលីតេមធ្យម (moderate probability)",
         "low": "ប្រូបាប៊ីលីតេទាប (low probability)"
       },
-      "overallScore": "ពិន្ទុសរុប",
-      "clinicalEvidence": "ភស្តុតាងគ្លីនិក",
-      "keyDiagnosticIndicators": "សូចនាករវិនិច្ឆ័យសំខាន់ៗ",
-      "hba1cIndicator": "សូចនាករ HbA1c",
+      "overallScore": "ទំនុកចិត្តនៃការស្កេន",
+      "clinicalEvidence": "ភស្តុតាងនៅខាងក្រោមលទ្ធផលនេះ",
+      "keyDiagnosticIndicators": "លទ្ធផលពិសោធន៍របស់អ្នក",
+      "hba1cIndicator": "HbA1c — មធ្យមភាគជាតិស្ករ 3 ខែ",
       "hba1cSubtitle": "សូចនាករសំខាន់នៃការគ្រប់គ្រងជាតិស្កររយៈពេលវែង។",
-      "fastingIndicator": "សូចនាករជាតិស្ករពេលអត់បាយ",
+      "fastingIndicator": "ជាតិស្ករអត់ភោជន៍ — អត់អាហារ 8 ម៉ោង",
       "fastingSubtitle": "បង្ហាញកម្រិតជាតិស្ករបន្ទាប់ពីអត់អាហារ ៨ ម៉ោង។",
-      "evidenceCompleteness": "កម្រិតភាពពេញលេញនៃភស្តុតាង",
-      "availableLabs": "លទ្ធផលពិសោធន៍ដែលមាន៖",
-      "missing": "ដែលខ្វះ៖",
+      "evidenceCompleteness": "តើព័ត៌មានពេញលេញប៉ុណ្ណា?",
+      "availableLabs": "បានផ្ដល់៖",
+      "missing": "មិនបានផ្ដល់៖",
       "none": "គ្មាន",
-      "relevantHistory": "ប្រវត្តិ និងរោគសញ្ញាដែលពាក់ព័ន្ធ",
-      "knownSymptoms": "រោគសញ្ញាដែលស្គាល់រួមមាន៖",
+      "relevantHistory": "រោគសញ្ញារបស់អ្នក",
+      "knownSymptoms": "អ្នកបានជម្រាប៖",
       "symptomAlign": "រោគសញ្ញាដែលអ្នកជំងឺបានរាយការណ៍ស្របនឹងលំនាំជំងឺទឹកនោមផ្អែមដែលបង្ហាញដោយប្រព័ន្ធវិភាគ។",
       "noSymptom": "មិនមានលំនាំរោគសញ្ញាលេចធ្លោត្រូវបានជ្រើសរើសទេ។",
-      "riskFactors": "កត្តាហានិភ័យ",
-      "knownHistory": "ប្រវត្តិដែលស្គាល់រួមមាន៖",
+      "riskFactors": "ហានិភ័យរបស់អ្នក",
+      "knownHistory": "ប្រវត្តិរបស់អ្នក៖",
       "noRisk": "មិនមានកត្តាហានិភ័យត្រូវបានកត់សម្គាល់ក្នុងការដាក់ស្នើនេះទេ។",
-      "reasoningKeyRules": "ការវិភាគ និងវិធានសំខាន់ៗ",
+      "reasoningKeyRules": "វិធានដែលផ្គូផ្គង (បច្ចេកទេស)",
       "matchedRule": "វិធានដែលត្រូវគ្នា",
       "ruleConditionMatched": "លក្ខខណ្ឌវិធានត្រូវគ្នា។",
       "contribution": "ការរួមចំណែក",
@@ -2540,7 +2956,8 @@ export const messages = {
       "diagnosticReasoningP1": "ប្រព័ន្ធប្រៀបធៀបការវាយតម្លៃនេះជាមួយវិធានជំងឺទឹកនោមផ្អែមដែលមានរចនាសម្ព័ន្ធ ពីភស្តុតាងរោគសញ្ញា មន្ទីរពិសោធន៍ និងកត្តាហានិភ័យ។",
       "diagnosticReasoningP2": "កម្រិតទុកចិត្តត្រូវបានគណនាពីកម្លាំង និងអាទិភាពនៃវិធានដែលត្រូវគ្នា រួចកែតម្រូវដោយភាពពេញលេញនៃភស្តុតាង។",
       "diagnosticReasoningP3": "លទ្ធផលនេះគឺជាសេចក្តីសង្ខេបជំនួយការសម្រេចចិត្ត ហើយគួរត្រូវបានពិនិត្យជាមួយអ្នកជំនាញសុខភាពមានសមត្ថភាព។",
-      "actionableRecommendations": "អនុសាសន៍ដែលអាចអនុវត្តបាន",
+      "actionableRecommendations": "អ្វីដែលអ្នកគួរធ្វើបន្ទាប់",
+      "urgentTag": "បន្ទាន់",
       "priority": "អាទិភាព",
       "rule": "វិធាន៖",
       "noSpecificRecommendations": "មិនមានអនុសាសន៍ជាក់លាក់ត្រូវបានបង្កើតទេ។ សូមពិគ្រោះជាមួយគ្រូពេទ្យ។",
@@ -2556,10 +2973,179 @@ export const messages = {
       "assessmentComplete": "ការវាយតម្លៃបានបញ្ចប់! លទ្ធផលរបស់អ្នកត្រូវបានរក្សាទុក។",
       "viewReport": "មើលរបាយការណ៍ →",
       "reviewBeforeSubmit": "ពិនិត្យចម្លើយរបស់អ្នកខាងលើ រួចចុច \"ដំណើរការវាយតម្លៃ\" ដើម្បីទទួលបានលទ្ធផល។",
+      "couldFit": "អាចស្របនឹង៖",
+      "plainSummary": {
+        "title": "សង្ខេប",
+        "whatThisIs": "របាយការណ៍នេះប្រៀបធៀបចម្លើយរបស់អ្នកជាមួយលំនាំទឹកនោមផ្អែមទូទៅ។ វាជាការត្រួតពិនិត្យ — មិនមែនជាការវិនិច្ឆ័យចប់ទេ។ គ្រូពេទ្យនិងតេស្តសាមញ្ញអាចបញ្ជាក់បាន។",
+        "matchedMany": "ចម្លើយរបស់អ្នកផ្គូផ្គងសញ្ញា {{count}} ចំណុចដែលទាក់ទងនឹងជាតិស្ករខ្ពស់។",
+        "matchedFew": "ការវាយតម្លៃនេះមានទិន្នន័យផ្ទាល់តិចតួច — លទ្ធផលផ្អែកលើលំនាំហានិភ័យទូទៅ។",
+        "typeFit": "លំនាំនេះស្របនឹង{{type}}។",
+        "couldFitTwo": "សញ្ញាអាចស្របនឹង{{first}} ({{firstPercent}}%) ឬ{{second}} ({{secondPercent}}%) — ជំហានដំបូងដូចគ្នាដែរ។",
+        "noType": "មិនទាន់មានលំនាំប្រភេទណាមួយលេចធ្លោទេ។",
+        "nextStep": "ជំហានបន្ទាប់៖"
+      },
+      "symptomGuide": {
+        "items": {
+          "excessiveThirst": { "term": "Polydipsia", "meaning": "អាចកើតឡើងពេលជាតិស្ករក្នុងឈាមខ្ពស់ — រាងកាយទាញទឹកដើម្បីបន្ថយប្រភេទស្ករ។" },
+          "frequentUrination": { "term": "Polyuria", "meaning": "ភាគច្រើនមកជាមួយជាតិស្ករខ្ពស់ — តណ្ហាប្រឹងប្រែងបញ្ចេញស្ករលើសទៅក្រៅ។" },
+          "excessiveHunger": { "term": "Polyphagia", "meaning": "អាចកើតឡើងពេលជាតិស្ករចូលទៅក្នុងក្រឡាក្រូបសាចមិនបាន។" },
+          "weightLoss": { "term": "ការស្គាត់ចុះ (catabolic)", "meaning": "រាងកាយដុតខ្លាញ់និងសាច់ដុំជំនួសថាមពល ពេលជាតិស្ករចូលក្រឡាក្រូបមិនបាន។" },
+          "fatigue": { "term": "អស់កម្លាំង", "meaning": "ក្រឡាក្រូបសាចមិនទទួលបានជាតិស្ករគ្រប់គ្រាន់ដើម្បីបង្កើតថាមពល។" },
+          "blurredVision": { "term": "ភ្នែកមុង", "meaning": "ជាតិស្ករខ្ពស់ទាញទឹកចូលត្រឡប់ភ្នែក ធ្វើឱ្យមើលមិនច្បាស់។" },
+          "slowHealing": { "term": "របួសយូរជាសះ", "meaning": "ជាតិស្ករខ្ពស់បន្ថយដំណើរឈាមវិញភាគ និងចុះខ្សោយភាពការពាររាងកាយ។" },
+          "tingling": { "term": "Neuropathy", "meaning": "ជាតិស្ករខ្ពស់អាចបំផ្លាញសរសៃប្រសាទតូចៗយូរៗទៅ។" },
+          "frequentInfections": { "term": "ងាយឆ្លង", "meaning": "ជាតិស្ករខ្ពស់ចុះខ្សោយប្រព័ន្ធភាពការពាររាងកាយ។" },
+          "acanthosisNigricans": { "term": "Acanthosis nigricans", "meaning": "ស្បែកខ្មៅជ្រួញៗ — ភាគច្រើនទាក់ទងនឹង insulin resistance។" },
+          "irritability": { "term": "អារម្មណ៍ប្រែប្រួល", "meaning": "ជាតិស្ករឡើងចុះអាចប៉ះពាល់អារម្មណ៍និងការផ្ចង់អារម្មណ៍។" },
+          "recurrentInfections": { "term": "ឆ្លងម្តងហើយម្តងទៀត", "meaning": "ជាតិស្ករក្នុងនោមធ្វើឱ្យបាកតេរី និងផ្សិតលូតលាស់។" },
+          "bedWetting": { "term": "នោមពេលយប់", "meaning": "ជាតិស្ករលើសទាញទឹកច្រើន — សញ្ញាសំខាន់នៃប្រភេទទី 1 ក្នុងកុមារ។" },
+          "fruityBreath": { "term": "ក្លិនផ្លែឈើខូច", "meaning": "អាចជា DKA (ketone ខ្ពស់) — ត្រូវទៅពេទ្យបន្ទាន់។" },
+          "deepRapidBreathing": { "term": "ដង្ហើម Kussmaul", "meaning": "រាងកាយប្រឹងប្រែងបញ្ចេញអាស៊ីត ketone — ត្រូវទៅពេទ្យបន្ទាន់។" },
+          "nausea": { "term": "ក្អួតចង្អោរ", "meaning": "អាចកើតពេលជាតិស្ករឬ ketone ខ្ពស់ខ្លាំង។" },
+          "vomiting": { "term": "ក្អួត", "meaning": "ពេលជាតិស្ករខ្ពស់ខ្លាំងអាចជាសញ្ញា DKA — ទៅពេទ្យបន្ទាន់។" },
+          "abdominalPain": { "term": "ចុកពោះ", "meaning": "ពេលជាតិស្ករខ្ពស់ខ្លាំងអាចជាសញ្ញា DKA — ទៅពេទ្យបន្ទាន់។" },
+          "sweating": { "term": "ញើសច្រើន", "meaning": "អាចជាសញ្ញាជាតិស្ករទាប (hypoglycemia)។" },
+          "shaking": { "term": "ញ័រ", "meaning": "សញ្ញាទូទៅនៃជាតិស្ករទាប (hypoglycemia)។" },
+          "dizziness": { "term": "វិលមុខ", "meaning": "អាចមកពីជាតិស្ករទាប — ឬខ្ពស់ខ្លាំង។" }
+        }
+      },
+      "whyResult": {
+        "title": "ហេតុអ្វីទិន្នន័យដូចនេះ?",
+        "toldUs": "អ្វីដែលអ្នកបានជម្រាប",
+        "measured": "តម្លៃមន្ទីរពិសោធន៍ដែលអ្នកបានផ្ដល់",
+        "missingTitle": "ការពិនិត្យដែលនឹងជួយបានច្រើនបំផុត",
+        "noSymptoms": "ក្នុងការវាយតម្លៃនេះ មិនមានរោគសញ្ញាឬហានិភ័យត្រូវបានជម្រាបទេ។",
+        "noLabs": "មិនមានតម្លៃមន្ទីរពិសោធន៍ទេ — លទ្ធផលផ្អែកលើចម្លើយរបស់អ្នកតែប៉ុណ្ណោះ។",
+        "allProvided": "ការពិនិត្យដែលបានណែនាំទាំងអស់ត្រូវបានផ្ដល់រួចហើយ។",
+        "summaryPrefix": "ប្រព័ន្ធបានផ្គូផ្គងព័ត៌មាន",
+        "summarySuffix": "ចំណុចពីការវាយតម្លៃរបស់អ្នក។",
+        "limitedNote": "លទ្ធផលនេះផ្អែកលើព័ត៌មានមិនពេញលេញ — ការពិនិត្យដែលខ្វះខាតខាងលើនឹងធ្វើឱ្យលទ្ធផលជឿជាក់ជាងមុន។"
+      },
+      "technical": {
+        "title": "ព័ត៌មានបច្ចេកទេស — សម្រាប់គ្រូពេទ្យ",
+        "subtitle": "ដានវិធានដែលប្រព័ន្ធប្រើដើម្បីសម្រេចលទ្ធផល។ អ្នកជំងឺអាចមិនត្រូវការផ្នែកនេះទេ។"
+      },
       "labStatusHigh": "ខ្ពស់",
       "labStatusElevated": "ខ្ពស់ជាងធម្មតា",
       "labStatusNormal": "ធម្មតា",
-      "labStatusUnknown": "មិនស្គាល់"
+      "labStatusUnknown": "មិនស្គាល់",
+      "education": {
+        "titlePrefix": "ស្វែងយល់អំពី",
+        "whatTitle": "តើវាជាអ្វី?",
+        "symptomsTitle": "រោគសញ្ញាទូទៅ",
+        "careTitle": "ការព្យាបាល និងការថែរក្សា",
+        "learnMore": "អានព័ត៌មានពេញលេញនៅ MedlinePlus",
+        "disclaimer": "ព័ត៌មានសម្រាប់បញ្ជាក់បន្ថែមតែប៉ុណ្ណោះ — សូមអនុវត្តតាមដំបូន្មានរបស់គ្រូពេទ្យជានិច្ច។",
+        "conditions": {
+          "general": {
+            "name": "ជំងឺទឹកនោមផ្អែម",
+            "tagline": "ជាតិស្ករក្នុងឈាមនៅខ្ពស់ ព្រោះរាងកាយបង្កើត ឬប្រើអ៊ីនស៊ុលីនមិនបានល្អ។",
+            "what": [
+              "អ៊ីនស៊ុលីនជួយបញ្ជូនជាតិស្ករពីឈាមទៅក្នុងក្រឡាក្រូបសាច ដើម្បីប្រើជាថាមពល។",
+              "នៅពេលមានទឹកនោមផ្អែម រាងកាយបង្កើតអ៊ីនស៊ុលីនបានតិចតួច ឬប្រើវាមិនបានល្អ ធ្វើឱ្យជាតិស្ករកករក្នុងឈាម។",
+              "ជាតិស្ករខ្ពស់យូរអង្វែងអាចបំផ្លាញបេះដូង ខ្នែង ភ្នែក និងសរសៃប្រសាទ។",
+              "ជំងឺនេះអាចគ្រប់គ្រងបាន — ការព្យាបាលទាន់ពេលកាត់បន្ថយហានិភ័យផលប៉ះពាល់។"
+            ],
+            "symptoms": [
+              "ស្រេកទឹកខ្លាំង ឬស្រេកចង្ហាន់ខ្លាំង",
+              "នោមញឹកញាប់ រួមទាំងពេលយប់",
+              "អស់កម្លាំងជានិច្ច; ភ្នែកមុង",
+              "ម្រាមជើងស្ពឹកញ័រ; របួសយូរជាសះ"
+            ],
+            "care": [
+              "បញ្ជាក់ដោយតេស្តមន្ទីរពិសោធន៍៖ A1C ជាតិស្ករអត់ភោជន៍ ឬតេស្តទ្រទ្រង់ជាតិស្ករ (OGTT)។",
+              "ញ៉ាំអាហារមានប្រយោជន៍ ធ្វើកាយសម្ព័ន្ធជាប្រចាំ និងរក្សាទម្ងន់សមស្រប។",
+              "ប្រើថ្នាំតាមបញ្ជាគ្រូពេទ្យ និងវាស់ជាតិស្ករតាមការណែនាំ។",
+              "ពិនិត្យសុខភាពភ្នែក ខ្នែង សរសៃប្រសាទ និងជើងជាប្រចាំ។"
+            ]
+          },
+          "type1": {
+            "name": "ទឹកនោមផ្អែមប្រភេទទី 1",
+            "tagline": "ជំងឺអូតូអ៊ីមមូន — រាងកាយបង្កើតអ៊ីនស៊ុលីនបានតិចតួច ឬមិនបានទាល់តែសោះ។",
+            "what": [
+              "ប្រព័ន្ធភាពការពាររាងកាយច្រឡំ ចូលវាយប្រហារក្រឡាក្រូបក្នុងក្រពេញប៉ាន់ក្រីយ៉ាស (pancreas) ដែលបង្កើតអ៊ីនស៊ុលីន។",
+              "ដោយគ្មានអ៊ីនស៊ុលីនគ្រប់គ្រាន់ ជាតិស្ករកករក្នុងឈាមជំនួសឱ្យចូលផ្តល់ថាមពលដល់ក្រឡាក្រូបសាច។",
+              "ជាទូទៅចាប់ផ្តើមក្នុងកុមារ មនុស្សវ័យជំទង់ ឬវ័យក្មេង — ប៉ុន្តែអាចកើតក្នុងវ័យណាក៏បាន។",
+              "ជំងឺនេះមិនកើតចេញពីរបៀបរស់នៅទេ ហើយមិនអាចការពារបានទេ។"
+            ],
+            "symptoms": [
+              "ស្រេកទឹកខ្លាំង ស្រេកចង្ហាន់ខ្លាំង និងនោមញឹកញាប់ (រួមទាំងពេលយប់)",
+              "ស្គាត់ដោយមិនដឹងខ្លួន; អស់កម្លាំងជានិច្ច",
+              "ភ្នែកមុង; ម្រាមជើងឬដៃស្ពឹកញ័រ",
+              "សញ្ញាអាសន្ន៖ ដកដង្ហើមរហ័សធំ មានក្លិនផ្លែឈើខូច ក្អួត ចុកពោះ — ត្រូវទៅពេទ្យបន្ទាន់"
+            ],
+            "care": [
+              "ត្រូវប្រើអ៊ីនស៊ុលីនពេញមួយជីវិត ដោយការចាក់ ឬម៉ាស៊ីនជ្រុតអ៊ីនស៊ុលីន (insulin pump)។",
+              "វាស់ជាតិស្ករជាប្រចាំ (ចាក់ម្រាមដៃ ឬឧបករណ៍វាស់ជាប់រហូត)។",
+              "គណនាកម្រិតអ៊ីនស៊ុលីនតាមចំនួនស្ករក្នុងអាហារ និងសកម្មភាពកាយសម្ព័ន្ធ។",
+              "ជួបគ្រូពេទ្យជាប្រចាំ ដើម្បីកែកំរិតថ្នាំ និងពិនិត្យផលប៉ះពាល់។"
+            ]
+          },
+          "type2": {
+            "name": "ទឹកនោមផ្អែមប្រភេទទី 2",
+            "tagline": "ប្រភេទរកឃើញច្រើនជាងគេ — រាងកាយធន់នឹងអ៊ីនស៊ុលីន។",
+            "what": [
+              "ក្រឡាក្រូបសាចមិនឆ្លើយតបនឹងអ៊ីនស៊ុលីនល្អ (insulin resistance) ធ្វើឱ្យជាតិស្ករនៅគង់ក្នុងឈាម។",
+              "វិវឌ្ឍន៍យឺតៗក្នុងរយៈពេលច្រើនឆ្នាំ — មនុស្សជាច្រើនមិនដឹងខ្លួននៅដំបូង។",
+              "ហានិភ័យកើនឡើងនៅពេលធាត់ គ្មានសកម្មភាព អាយុលើ 35–45 ឆ្នាំ និងមានប្រវត្តិក្នុងគ្រួសារ។",
+              "ទម្លាប់សុខភាពល្អអាចគ្រប់គ្រងជំងឺនេះ ហើយនៅអាចការពារឬពន្យារវាបានទៀត។"
+            ],
+            "symptoms": [
+              "ភាគច្រើនគ្មានរោគសញ្ញាដំបូង — ការពិនិត្យជាប្រចាំសំខាន់ណាស់។",
+              "ស្រេកទឹក នោម និងស្រេកចង្ហាន់ច្រើនឡើង",
+              "អស់កម្លាំង; ភ្នែកមុង",
+              "ដៃជើងស្ពឹកញ័រ; របួសយូរជាសះ"
+            ],
+            "care": [
+              "អាហារសុខភាព សកម្មភាពកាយសម្ព័ន្ធជាប្រចាំ និងគ្រប់គ្រងទម្ងន់ គឺមកដំបូង។",
+              "ថ្នាំដូចជា Metformin ត្រូវប្រើច្រើន; អាចបន្ថែមអ៊ីនស៊ុលីននៅពេលក្រោយ។",
+              "វាស់ជាតិស្ករ និង A1C តាមការណែនាំរបស់គ្រូពេទ្យ។",
+              "ពិនិត្យភ្នែក ខ្នែង សរសៃប្រសាទ ជើង និងបេះដូងរាល់ឆ្នាំ។"
+            ]
+          },
+          "gestational": {
+            "name": "ទឹកនោមផ្អែមពេលមានផ្ទៃពោះ",
+            "tagline": "ជាតិស្ករខ្ពស់ដែលកើតឡើងក្នុងអំឡុងពេលមានផ្ទៃពោះ។",
+            "what": [
+              "អ័រម៉ូនពេលមានផ្ទៃពោះអាចទប់ស្កាត់ការធ្វើការរបស់អ៊ីនស៊ុលីន ធ្វើឱ្យជាតិស្ករឡើងខ្ពស់។",
+              "ភាគច្រើនបង្ហាញនៅកណ្តាលអំឡុងពោះ ហើយរកឃើញដោយការពិនិត្យចន្លោះសប្តាហ៍ទី 24–28។",
+              "ស្ត្រីភាគច្រើនគ្មានរោគសញ្ញាទេ — ដូច្នេះការត្រួតពិនិត្យមានសារៈសំខាន់។",
+              "ភាគច្រើនបាត់វិញក្រោយសម្រាល ប៉ុន្តែបង្កើនហានិភ័យទឹកនោមផ្អែមប្រភេទទី 2 នៅពេលក្រោយ។"
+            ],
+            "symptoms": [
+              "ភាគច្រើនគ្មាន — រកឃើញតាមការពិនិត្យពោះជាប្រចាំ",
+              "ស្រេកទឹកបន្តិចបន្តួច ឬមានអារម្មណ៍ញ័រ",
+              "ខ្លះមានអស់កម្លាំង ភ្នែកមុង ឬងាយឆ្លងញឹកញាប់"
+            ],
+            "care": [
+              "ផែនការអាហារសុខភាព និងសកម្មភាពស្រាលៗជាប្រចាំ។",
+              "វាស់ជាតិស្ករនៅផ្ទះតាមការណែនាំគ្រូពេទ្យ។",
+              "ប្រើអ៊ីនស៊ុលីនឬថ្នាំដែលមានសុវត្ថិភាព ប្រសិនបើអាហារតែមួយមិនគ្រប់គ្រងបាន។",
+              "តាមដានទារកបន្ថែម និងពិនិត្យជាតិស្ករម្តងទៀតក្រោយសម្រាល។"
+            ]
+          },
+          "prediabetes": {
+            "name": "មុនទឹកនោមផ្អែម",
+            "tagline": "ជាតិស្ករខ្ពស់ជាងធម្មតា — ប៉ុន្តែមិនទាន់ជាទឹកនោមផ្អែមនៅឡើយទេ។",
+            "what": [
+              "ជាតិស្ករខ្ពស់ជាងធម្មតា (A1C 5.7–6.4% ឬអត់ភោជន៍ 100–125 mg/dL)។",
+              "ភាគច្រើនគ្មានរោគសញ្ញាច្បាស់លាស់ — រកឃើញតាមការធ្វើតេស្ត។",
+              "បើគ្មានការផ្លាស់ប្តូរ ភាគច្រើនវិវឌ្ឍទៅជាទឹកនោមផ្អែមប្រភេទទី 2។",
+              "ដំណើរការឥឡូវនេះអាចពន្យារ ឬការពារទឹកនោមផ្អែមប្រភេទទី 2 បាន។"
+            ],
+            "symptoms": [
+              "មនុស្សភាគច្រើនមិនមានអារម្មណ៍អ្វីប្លែកទេ",
+              "ខ្លះឃើញស្បែកខ្មៅជ្រួញៗនៅក ឬក្រោមក្រាវដៃ"
+            ],
+            "care": [
+              "បន្ថយទម្ងន់ 5–7% កាត់បន្ថយហានិភ័យយ៉ាងខ្លាំង។",
+              "ខិតខំសកម្មភាពប្រមាណ 150 នាទីក្នុងមួយសប្តាហ៍។",
+              "ជ្រើសបន្លែ គ្រាប់ធញ្ញជាតិ និងប្រូតេអ៊ីនស្ដើងឱ្យបានច្រើន។",
+              "ពិនិត្យជាតិស្ករម្តងក្នុងមួយឆ្នាំ។"
+            ]
+          }
+        }
+      }
     },
 
     "sidebar": {
@@ -2982,6 +3568,17 @@ export function translate(language, key, valuesOrFallback, maybeValues) {
 
 export const exactTextMap = {
   // Headlines
+  'Possible Signs of Diabetes': 'មានសញ្ញានៃជំងឺទឹកនោមផ្អែម',
+  'Possible Early Signs of Diabetes': 'មានសញ្ញាដំបូងនៃជំងឺទឹកនោមផ្អែម',
+  'Suspected Diabetes (Classic Symptoms)': 'សង្ស័យទឹកនោមផ្អែម (រោគសញ្ញាសំខាន់ៗ)',
+  'Possible Nerve Signs (Diabetic Neuropathy)': 'សញ្ញាសរសៃប្រសាទ (Neuropathy)',
+  'Metabolic Syndrome Pattern — Heart Check Advised': 'លំនាំ Metabolic Syndrome — គួរពិនិត្យសុខភាពបេះដូង',
+  'Possible Diabetes in Pregnancy (Gestational Pattern)': 'ទឹកនោមផ្អែមពេលមានផ្ទៃពោះ (Gestational)',
+  'Prediabetes — Act Early to Prevent Type 2': 'មុនទឹកនោមផ្អែម — ដោះស្រាយតាមដើម្បីការពារប្រភេទទី 2',
+  // Suspected-type notes
+  'Pattern match from your answers — not a final diagnosis. A simple blood test can confirm the type, and the first steps are the same either way.': 'លំនាំពីចម្លើយរបស់អ្នក — មិនមែនជាការវិនិច្ឆ័យចប់ទេ។ តេស្តឈាមសាមញ្ញអាចបញ្ជាក់ប្រភេទបាន ហើយជំហានដំបូងដូចគ្នាដែរ។',
+  'Your signs could fit more than one type. The first steps are the same either way — see a doctor soon; simple tests can tell the types apart.': 'សញ្ញារបស់អ្នកអាចស្របនឹងប្រភេទច្រើនជាងមួយ។ ជំហានដំបូងដូចគ្នាដែរ — គួរជួបគ្រូពេទ្យឆាប់ៗ គ្រូពេទ្យអាចបែងចែកប្រភេទដោយតេស្តសាមញ្ញ។',
+  "Diabetes signs are present, but they don't clearly point to one type yet. Type 1 and Type 2 share the same first steps — a doctor can tell them apart with simple tests.": 'សញ្ញាទឹកនោមផ្អែមមាន ប៉ុន្តែមិនច្បាស់ជាប្រភេទណានៅឡើយទេ។ ប្រភេទទី 1 និងទី 2 មានជំហានដំបូងដូចគ្នា — គ្រូពេទ្យអាចបែងចែកដោយតេស្តសាមញ្ញ។',
   'ELEVATED TYPE 2 DIABETES RISK — PREVENTIVE ACTION RECOMMENDED': 'ហានិភ័យកើនឡើងនៃជំងឺទឹកនោមផ្អែមប្រភេទទី 2 — ការណែនាំគឺអោយមានវិធានការការពារ',
   'TYPE 2 DIABETES HIGHLY LIKELY — MEDICAL CONFIRMATION REQUIRED': 'ប្រហែលជាមានជំងឺទឹកនោមផ្អែមប្រភេទទី 2 ខ្លាំង — តម្រូវអោយមានការបញ្ជាក់ពីគ្រូពេទ្យ',
   'TYPE 2 DIABETES UNLIKELY — NORMAL PARAMETERS': 'ប្រហែលជាគ្មានជំងឺទឹកនោមផ្អែមប្រភេទទី 2 ទេ — លទ្ធផលធម្មតា',
@@ -3047,6 +3644,64 @@ export const exactTextMap = {
   'Assessment confidence is limited because laboratory data is incomplete. Complete fasting glucose and HbA1c testing.': 'កម្រិតជឿជាក់លើការវាយតម្លៃមានកំណត់ ដោយសារទិន្នន័យមន្ទីរពិសោធន៍ (Lab) មិនពេញលេញ។ សូមស្នើអោយអ្នកធ្វើតេស្តជាតិស្ករ (Fasting Glucose) និងតេស្ត HbA1c ដើម្បីបញ្ជាក់លទ្ធផលអោយបានច្បាស់។',
   'Assessment lacks laboratory data. A definitive diabetes diagnosis requires at least one of: (1) Fasting plasma glucose (≥8h fast). (2) HbA1c (NGSP-certified lab). (3) 75-g oral glucose tolerance test (2-hour value). Complete these tests to improve assessment reliability.': 'ការវាយតម្លៃអវត្តមានទិន្នន័យមន្ទីរពិសោធន៍ (Lab)។ ការធ្វើរោគវិនិច្ឆ័យជំងឺទឹកនោមផ្អែមអោយបានច្បាស់លាស់តម្រូវអោយមានយ៉ាងហោចណាស់មួយក្នុងចំណោមយុទ្ធសាស្រ្តទាំងនេះ៖ (1) ជាតិស្ករពេលតមអាហារ (តមអាហារ ≥8h)។ (2) តេស្ត HbA1c (មន្ទីរពិសោធន៍ដែលបានបញ្ជាក់ដោយ NGSP)។ (3) តេស្តជាតិស្ករក្នុងឈាម 75-g OGTT (រយៈពេល 2 ម៉ោង)។ សូមចូលរួមការធ្វើតេស្តទាំងនេះ ដើម្បីបង្កើននូវកម្រិតជឿជាក់លើការវាយតម្លៃរុក្ខវិនិច្ឆ័យ។',
   'Patient has a history of Gestational Diabetes. ADA mandates lifelong screening for Type 2 Diabetes at least every 3 years, regardless of other risk factors.': 'អ្នកជំងឺមានប្រវត្តិមានជំងឺទឹកនោមផ្អែមប្រភេទពពោះ។ ការណែនាំរបស់ ADA តម្រូវអោយមានការពិនិត្យលើជំងឺទឹកនោមផ្អែមប្រភេទទី 2 ដែលមានជាប្រចាំរៀងរាល់ 3 ឆ្នាំម្ដង ទោះបីជាមានកត្តាហានិភ័យផ្សេងៗមិនត្រូវអោយមើលជុំវិញ។',
+
+  // ── Patient-friendly recommendations (rewritten at the service boundary —
+  // see backend patient_messaging.py; every canonical string needs Khmer) ──
+  'A great time to prevent: keep BMI under 25, move 150–300 minutes a week, limit sugary and ultra-processed food, and check sugars yearly.': 'ពេលវេលាល្អដើម្បីការពារ៖ រក្សា BMI ក្រោម 25 ហាត់ប្រាណ 150–300 នាទី/សប្តាហ៍ កាត់បន្ថយចំណីស្ករ និងម្ហូបកែច្នៃខ្លាំង ហើយពិនិត្យស្ករជាប្រចាំរៀងរាល់ឆ្នាំ។',
+  'A lean body with rapid weight loss is unusual for type 2. Ask about GAD-antibody and C-peptide tests — they separate type 1/LADA from type 2.': 'រាងកាយស្គាំងជាមួយការស្រកទម្ងន់លឿន មិនសូវស្របនឹងប្រភេទទី 2 ទេ។ សូមសួរពីតេស្ត GAD-antibody និង C-peptide — វាបែងចែកប្រភេទទី 1/LADA ពីប្រភេទទី 2 បាន។',
+  'All three lab criteria confirm diabetes. Book a clinic visit within 1–2 weeks to start treatment and complication screening.': 'លក្ខខណ្ឌ Lab ទាំងបីបញ្ជាក់ថាមានទឹកនោមផ្អែម។ កោះចូលគ្លីនិកក្នុងរយៈពេល 1–2 សប្តាហ៍ ដើម្បីចាប់ផ្តើមព្យាបាល និងពិនិត្យផលប៉ះពាល់។',
+  'Both blood tests are normal — no diabetes detected today. Keep your healthy habits and re-screen as your doctor advises.': 'តេស្តឈាមទាំងពីរធម្មតា — ថ្ងៃនេះរកមិនឃើញទឹកនោមផ្អែមទេ។ រក្សាទម្លាប់ល្អរបស់អ្នក ហើយពិនិត្យស្ករតាមដែលគ្រូពេទ្យណែនាំ។',
+  'Dangerously high blood sugar. Seek emergency medical care now — watch for confusion, severe dehydration or fainting.': 'ស្ករក្នុងឈាមខ្ពស់គាប់ជាងកម្រិតអន្តរាយ។ សូមទៅព្យាបាលបន្ទាន់ឥឡូវនេះ — ប្រយ័ត្នអាការៈវង្វេងស្មារតី រាងកាយស្ងួតខ្លាំង ឬស្គាំងស្ពឹត។',
+  'Diabetes confirmed. Your care plan: sugar targets, metformin first (usually), eye and foot checks, blood pressure and cholesterol care, and diabetes education — start within 1–2 weeks.': 'បញ្ជាក់ថាមានទឹកនោមផ្អែម។ ផែនការថែទាំ៖ គោលដៅស្ករ ថ្នាំ Metformin ជាដំបូង (ភាគច្រើន) ពិនិត្យភ្នែក និងជើង ថែសម្ពាធឈាម និងខ្លាញ់ ហើយរៀនគ្រប់គ្រងទឹកនោមផ្អែម — ចាប់ផ្តើមក្នុង 1–2 សប្តាហ៍។',
+  'Diabetes is confirmed by two matching tests. Book your doctor within 1–2 weeks: sugar targets, metformin first (usually), plus eye and foot checks.': 'តេស្តពីរដូចគ្នាបញ្ជាក់ថាមានទឹកនោមផ្អែម។ កោះជួបគ្រូពេទ្យក្នុង 1–2 សប្តាហ៍៖ កំណត់គោលដៅស្ករ ថ្នាំ Metformin ជាដំបូង (ភាគច្រើន) ហើយពិនិត្យភ្នែក និងជើងផង។',
+  'EMERGENCY: severe low blood sugar. Call emergency services now. If unconscious, never give food or drink by mouth.': 'អាសន្ន៖ ស្ករក្នុងឈាមទាបធ្ងន់ធ្ងរ។ ហៅសង្គ្រោះបន្ទាន់ឥឡូវនេះ។ បើដកហ៊ុតស្មារតី កុំបង្ខំអោយទទួលទានអាហារ ឬទឹកតាមមាត់ដាច់ខាត។',
+  'Good news — no signs of diabetes today. Keep your habits, re-screen routinely, and come back if new symptoms appear.': 'ដំណឹងល្អ — ថ្ងៃនេះគ្មានសញ្ញាទឹកនោមផ្អែមទេ។ រក្សាទម្លាប់របស់អ្នក ពិនិត្យជាប្រចាំ ហើយត្រឡប់មកពិនិត្យវិញបើមានសញ្ញាថ្មី។',
+  'High risk of progressing to type 2 diabetes. Losing about 7% of body weight, 150 minutes of activity a week, and a prevention talk with your doctor dramatically cut the risk.': 'ហានិភ័យខ្ពស់ក្នុងការវិវត្តទៅជាទឹកនោមផ្អែមប្រភេទទី 2។ បន្ថយទម្ងន់ប្រហែល 7% ហាត់ប្រាណ 150 នាទី/សប្តាហ៍ ហើយពិភាក្សាការការពារជាមួយគ្រូពេទ្យ កាត់បន្ថយហានិភ័យខ្លាំងណាស់។',
+  'High sugar feeds infections. Treating the infection and lowering sugar work together — discuss both with your care team.': 'ស្ករខ្ពស់ចំណីមេរោគ។ ការព្យាបាលមេរោគ និងបន្ថយស្ករទៅតាមគ្នា — សូមពិភាក្សាទាំងពីរជាមួយក្រុមថែទាំសុខភាព។',
+  'Ketone signs with high blood sugar can mean DKA. Seek emergency care now — do not wait for lab confirmation.': 'សញ្ញាគីតូនជាមួយស្ករខ្ពស់ អាចមានន័យថា DKA។ ទៅព្យាបាលបន្ទាន់ឥឡូវនេះ — កុំរង់ចាំលទ្ធផល Lab ដាច់ខាត។',
+  'Low blood sugar right now. Take 15–20 g of fast sugar (glucose tablets or juice), then recheck in 15 minutes — repeat if still under 70.': 'ស្ករក្នុងឈាមទាបឥឡូវនេះ។ ទទួលទានស្ករលឿន 15–20 ក្រាម (គ្រាប់ Glucose ឬទឹកផ្លែឈើ) ហើយវាស់ម្តងទៀតក្នុង 15 នាទី — ធ្វើម្តងទៀតបើនៅតែក្រោម 70។',
+  'Nerve signs with confirmed high sugar mean early diabetic neuropathy. You need a foot exam and steadier sugar control — see your doctor within 2 weeks.': 'សញ្ញាសរសៃប្រសាទជាមួយស្ករខ្ពស់ច្បាស់ មានន័យថាសរសៃប្រសាទពិការដំបូង។ អ្នកត្រូវពិនិត្យជើង និងគ្រប់គ្រងស្ករអោយនឹងជើង — ជួបគ្រូពេទ្យក្នុង 2 សប្តាហ៍។',
+  'Nerve tingling plus repeated infections suggests long-standing high sugar. Do an HbA1c and fasting glucose test within 1 week.': 'ស្ពឹកចុងដៃចុងជើង រួមជាមួយមេរោគច្រើនដង បង្ហាញថាស្ករខ្ពស់យូរមកហើយ។ ធ្វើតេស្ត HbA1c និងស្ករពេលតមអាហារក្នុង 1 សប្តាហ៍។',
+  'New bed-wetting with extra urination in a child is a red flag for type 1 diabetes. Get a finger-prick glucose check today.': 'ការលូតកន្ទក់ថ្មីជាមួយការឡើងទឹកច្រើនក្នុងកុមារ គឺជាសញ្ញាព្រមាននៃទឹកនោមផ្អែមប្រភេទទី 1។ សូមវាស់ស្ករដោយចុបម្រាមដៃថ្ងៃនេះ។',
+  'No blood test yet — that is OK for a screening. Your answers already give a useful signal; a simple fasting glucose or HbA1c test anytime will sharpen it.': 'មិនទាន់មានតេស្តឈាមទេ — មិនអីទេសម្រាប់ការរុករក។ ចម្លើយរបស់អ្នកផ្តល់សញ្ញាមានប្រយោជន៍រួចហើយ។ តេស្តស្ករពេលតមអាហារ ឬ HbA1c សាមញ្ញនៅពេលណាមួយនឹងធ្វើអោយលទ្ធផលច្បាស់ជាង។',
+  'No blood test yet — that is fine for a first screening. A simple fasting glucose or HbA1c test at any lab will make the result far more certain.': 'មិនទាន់មានតេស្តឈាមទេ — មិនអីទេសម្រាប់ការរុករកដំបូង។ តេស្តស្ករពេលតមអាហារ ឬ HbA1c សាមញ្ញនៅ Lab ណាមួយ នឹងធ្វើអោយលទ្ធផលច្បាស់លាស់ជាងខ្លាំង។',
+  'No strong diabetes signs in this assessment. Keep healthy routines and re-check if anything changes.': 'ក្នុងការវាយតម្លៃនេះ គ្មានសញ្ញាទឹកនោមផ្អែមខ្លាំងទេ។ រក្សាទម្លាប់សុខភាពល្អ ហើយពិនិត្យម្តងទៀតបើមានអ្វីផ្លាស់ប្តូរ។',
+  'PCOS with prediabetes speeds up diabetes risk. Metformin helps both; recheck HbA1c every 6 months and ask for a PCOS care plan.': 'PCOS រួមជាមួយមុនទឹកនោមផ្អែម ធ្វើអោយហានិភ័យលឿនជាង។ ថ្នាំ Metformin ជួយទាំងពីរ។ ពិនិត្យ HbA1c រៀងរាល់ 6 ខែ ហើយសុំផែនការថែទាំ PCOS។',
+  'Past gestational diabetes raises type 2 risk for life. A quick glucose or HbA1c check every 1–3 years keeps you ahead of it.': 'ទឹកនោមផ្អែមពេលមានផ្ទៃពោះកន្លងមក បង្កើនហានិភ័យប្រភេទទី 2 ពេញជីវិត។ វាស់ស្ករ ឬ HbA1c រៀងរាល់ 1–3 ឆ្នាំ ជួយអ្នកនៅមុនគេ។',
+  'Prediabetes plus symptoms means faster progression risk. Re-test in 1–3 months instead of 6, and start lifestyle changes now.': 'មុនទឹកនោមផ្អែមរួមជាមួយរោគសញ្ញា មានន័យថាហានិភ័យវិវត្តលឿន។ តេស្តម្តងទៀតក្នុង 1–3 ខែ (មិនមែន 6 ខែ) ហើយចាប់ផ្តើមផ្លាស់ប្តូរទម្លាប់ជីវិតឥឡូវនេះ។',
+  'Prediabetes with extra risk factors — act now: structured lifestyle change, ask your doctor about metformin, and re-check every 6 months.': 'មុនទឹកនោមផ្អែមជាមួយកត្តាហានិភ័យបន្ថែម — ដំណើរការឥឡូវនេះ៖ ផ្លាស់ប្តូរទម្លាប់ជីវិតជាប្រព័ន្ធ សួរគ្រូពេទ្យអំពីថ្នាំ Metformin ហើយពិនិត្យរៀងរាល់ 6 ខែ។',
+  'Prediabetes — a warning stage you can reverse. Lose about 7% of body weight, move 150 minutes a week, cut sugary drinks, and re-test in 3–6 months.': 'មុនទឹកនោមផ្អែម — ដំណាក់កាលព្រមានដែលអ្នកអាចត្រឡប់វិញបាន។ បន្ថយទម្ងន់ប្រហែល 7% ហាត់ប្រាណ 150 នាទី/សប្តាហ៍ កាត់បន្ថយភេសជ្ជៈមានស្ករ ហើយតេស្តម្តងទៀតក្នុង 3–6 ខែ។',
+  'Pregnancy detected. Gestational diabetes screening with a 75 g OGTT is advised — ideally between weeks 24–28, earlier if you have risk factors.': 'រកឃើញថាមានផ្ទៃពោះ។ គួរធ្វើតេស្តរុករកទឹកនោមផ្អែមពេលមានផ្ទៃពោះដោយ OGTT 75 ក្រាម — ល្អបំផុតចន្លោះសប្តាហ៍ 24–28 ឬមុននោះបើមានកត្តាហានិភ័យ។',
+  'Prior gestational diabetes in this pregnancy: glucose testing at the first prenatal visit (not only weeks 24–28) — recurrence risk is high.': 'ធ្លាប់មានទឹកនោមផ្អែមពេលមានផ្ទៃពោះ ក្នុងការមានផ្ទៃពោះលើកនេះ៖ តេស្តស្ករតាំងពីការពិនិត្យផ្ទៃពោះលើកដំបូង (មិនមែនត្រឹមសប្តាហ៍ 24–28 ទេ) — ហានិភ័យកើតឡើងវិញខ្ពស់។',
+  'Prior gestational diabetes with overweight is a high-risk combination. Annual sugar checks, about 7% weight loss and regular movement strongly cut the risk.': 'ទឹកនោមផ្អែមពេលមានផ្ទៃពោះកន្លងមក រួមជាមួយលើសទម្ងន់ គឺជាការរួមបញ្ចូលហានិភ័យខ្ពស់។ ពិនិត្យស្កររៀងរាល់ឆ្នាំ បន្ថយទម្ងន់ប្រហែល 7% ហើយហាត់ប្រាណជាប្រចាំ កាត់បន្ថយហានិភ័យខ្លាំង។',
+  'Routine check: one fasting glucose or HbA1c test now — repeat every 3 years if normal.': 'ពិនិត្យជាប្រចាំ៖ តេស្តស្ករពេលតមអាហារ ឬ HbA1c ម្តងឥឡូវនេះ — ធ្វើម្តងទៀតរៀងរាល់ 3 ឆ្នាំ បើធម្មតា។',
+  'Seek urgent in-person medical care now. If symptoms are severe or getting worse, go straight to emergency care.': 'សូមទៅជួបគ្រូពេទ្យបន្ទាន់ឥឡូវនេះ។ បើរោគសញ្ញាធ្ងន់ធ្ងរ ឬកាន់តែអាក្រក់ ទៅត្រង់ជំពូកសង្គ្រោះបន្ទាន់។',
+  'Signs of diabetic ketoacidosis (DKA) — a medical emergency. Go to emergency care now; do not wait for test results.': 'សញ្ញានៃ DKA (គីតូអាស៊ីត) — អាសន្នវេជ្ជសាស្ត្រ។ ទៅជំពូកសង្គ្រោះបន្ទាន់ឥឡូវនេះ។ កុំរង់ចាំលទ្ធផលតេស្ត។',
+  "Smoking, weight and family history multiply each other's risk. Quitting smoking is the single biggest step — then weight, movement and yearly checks.": 'បំពក់បារី ទម្ងន់ និងប្រវត្តិគ្រួសារ ធ្វើអោយហានិភ័យខ្ពស់ដូចគុណគ្នា។ ការឈប់បំពក់បារីគឺជាជំហានធំបំផុត — បន្ទាប់មកទម្ងន់ ការហាត់ប្រាណ និងការពិនិត្យជាប្រចាំ។',
+  'Some results suggest possible diabetes. A fasting glucose or HbA1c test within 2–4 weeks will settle it.': 'លទ្ធផលខ្លះបង្ហាញថាអាចមានទឹកនោមផ្អែម។ តេស្តស្ករពេលតមអាហារ ឬ HbA1c ក្នុងរយៈពេល 2–4 សប្តាហ៍ នឹងសំរេចបាន។',
+  'Sudden symptoms with weight loss fit the type 1 pattern — it can worsen within days. Get a medical review this week; do not wait for a routine appointment.': 'រោគសញ្ញាឡើងលឿនជាមួយការស្រកទម្ងន់ ស្របនឹងលំនាំប្រភេទទី 1 — អាចកាន់តែអាក្រក់ក្នុងរយៈពេលប៉ុន្មានថ្ងៃ។ សូមអោយគ្រូពេទ្យពិនិត្យក្នុងសប្តាហ៍នេះ។ កុំរង់ចាំការកោះជួបធម្មតា។',
+  'The glucose test plus classic symptoms strongly indicates diabetes. Book a full diabetes evaluation within 1–2 weeks — treatment should not wait.': 'តេស្តស្កររួមជាមួយរោគសញ្ញាសំខាន់ៗ ចង្អុលខ្លាំងទៅទឹកនោមផ្អែម។ កោះធ្វើការវាយតម្លៃពេញលេញក្នុង 1–2 សប្តាហ៍ — ការព្យាបាលកុំរង់ចាំ។',
+  'Tingling in hands or feet can mean nerves are irritated by years of high sugar. Tell your doctor, and check your feet daily for numbness or sores.': 'ស្ពឹកចុងដៃ ឬចុងជើង អាចមានន័យថាសរសៃប្រសាទរំខានដោយស្ករខ្ពស់រាប់ឆ្នាំ។ ប្រាប់គ្រូពេទ្យរបស់អ្នក ហើយពិនិត្យជើងរបស់អ្នករៀងរាល់ថ្ងៃថាមានអារម្មណ៍ស្ពឹក ឬរបួសអត់។',
+  'Tingling, infections and fatigue together can hide long-standing high sugar. Get HbA1c, fasting glucose and a basic check-up soon.': 'ស្ពឹកចុងដៃ មេរោគ និងអស់កម្លាំងរួមគ្នា អាចបិទបាំងស្ករខ្ពស់យូរឆ្នាំ។ សូមធ្វើ HbA1c ស្ករពេលតមអាហារ និងត្រួតពិនិត្យសុខភាពទូទៅឆាប់ៗ។',
+  'Very low blood sugar. Take fast-acting sugar immediately. If swallowing is not safe, that is an emergency — call for medical help.': 'ស្ករក្នុងឈាមទាបខ្លាំង។ ទទួលទានស្ករលឿនភ្លាម។ បើលេបមិនបានសុវត្ថិភាព នោះជាអាសន្ន — ហៅជំនួយវេជ្ជសាស្ត្រ។',
+  'Weight is the biggest lever you control — a 5–10% loss lowers sugar, blood pressure and cholesterol together. A dietitian can help you build the plan.': 'ទម្ងន់គឺជាកត្តាធំបំផុតដែលអ្នកគ្រប់គ្រងបាន — បន្ថយ 5–10% ធ្វើអោយស្ករ សម្ពាធឈាម និងខ្លាញ់ទាបទៅដូចគ្នា។ អ្នកជំនាញអាហារូបត្ថម្ភជួយបង្កើតផែនការអោយអ្នកបាន។',
+  'With PCOS and overweight, aim for 5–10% weight loss and yearly glucose checks — an OGTT is often preferred with PCOS.': 'នឹង PCOS និងលើសទម្ងន់ គោលដៅបន្ថយទម្ងន់ 5–10% ហើយពិនិត្យស្កររៀងរាល់ឆ្នាំ — គេនិយមប្រើតេស្ត OGTT សម្រាប់អ្នកមាន PCOS។',
+  'You carry type 2 risk factors. Keep a healthy weight, move 150 minutes a week, eat more whole foods, and screen every 1–3 years.': 'អ្នកមានកត្តាហានិភ័យប្រភេទទី 2។ រក្សាទម្ងន់សុខភាពល្អ ហាត់ប្រាណ 150 នាទី/សប្តាហ៍ ទទួលទានម្ហូបធម្មជាតិច្រើន ហើយពិនិត្យរៀងរាល់ 1–3 ឆ្នាំ។',
+  'You had a low blood sugar episode. Use the 15/15 rule: 15 g of fast sugar, wait 15 minutes, recheck. Ask your doctor if any medication doses need adjusting.': 'អ្នកមានភាពស្ករទាបម្តង។ ប្រើច្បាប់ 15/15៖ ស្ករលឿន 15 ក្រាម រង់ចាំ 15 នាទី វាស់ម្តងទៀត។ សួរគ្រូពេទ្យថាតើត្រូវកែកម្រិតថ្នាំអត់។',
+  'Young with overweight plus risk factors still deserves a check. A fasting glucose or HbA1c test now sets your baseline.': 'វ័យក្មេងលើសទម្ងន់ រួមជាមួយកត្តាហានិភ័យ ក៏គួរពិនិត្យដែរ។ តេស្តស្ករពេលតមអាហារ ឬ HbA1c ឥឡូវនេះ កំណត់ចំណុចចាប់ផ្តើមរបស់អ្នក។',
+  'Your OGTT crosses the pregnancy threshold for gestational diabetes. See your obstetric team within 1 week to confirm and plan.': 'លទ្ធផល OGTT របស់អ្នកកន្លងកម្រិតទឹកនោមផ្អែមពេលមានផ្ទៃពោះ។ ជួបពេទ្យស្ត្រីរបស់អ្នកក្នុង 1 សប្តាហ៍ ដើម្បីបញ្ជាក់ និងធ្វើផែនការ។',
+  'Your answers match common diabetes signs. A simple blood test (fasting glucose or HbA1c) will confirm — any lab, results usually the same day.': 'ចម្លើយរបស់អ្នកដូចនឹងសញ្ញាទឹកនោមផ្អែមទូទៅ។ តេស្តឈាមសាមញ្ញ (ស្ករពេលតមអាហារ ឬ HbA1c) នឹងបញ្ជាក់ — Lab ណាមួយក៏បាន លទ្ធផលច្រើនតែមានថ្ងៃដូចគ្នា។',
+  'Your average blood sugar (HbA1c) is severely elevated. See a doctor urgently — treatment and a safety plan should start now.': 'ស្ករមធ្យមក្នុងឈាម (HbA1c) របស់អ្នកខ្ពស់ខ្លាំង។ ជួបគ្រូពេទ្យបន្ទាន់ — ការព្យាបាល និងផែនការសុវត្ថិភាពគួរចាប់ផ្តើមឥឡូវនេះ។',
+  'Your blood pressure, weight and cholesterol pattern raise heart and diabetes risk. Move more, eat plainer, and treat blood pressure and cholesterol with your doctor.': 'សម្ពាធឈាម ទម្ងន់ និងខ្លាញ់របស់អ្នក បង្កើនហានិភ័យបេះដូង និងទឹកនោមផ្អែម។ ហាត់ប្រាណច្រើនជាង ទទួលទានម្ហូបសាមញ្ញ ហើយព្យាបាលសម្ពាធឈាម និងខ្លាញ់តាមគ្រូពេទ្យ។',
+  'Your blood tests look normal today, but your symptoms are still classic diabetes signs — symptoms can appear before blood sugar rises. Keep watching them and re-test in 1–3 months.': 'តេស្តឈាមរបស់អ្នកថ្ងៃនេះធម្មតា ប៉ុន្តែរោគសញ្ញារបស់អ្នកនៅតែជាសញ្ញាទឹកនោមផ្អែមសំខាន់ៗ — រោគសញ្ញាអាចបង្ហាញមុនពេលជាតិស្ករកើន។ តាមដានវាបន្តទៀត ហើយតេស្តម្តងទៀតក្នុង 1–3 ខែ។',
+  'Your fasting glucose crosses the stricter pregnancy threshold. See your obstetric team within 1 week — diet and glucose monitoring come first, insulin only if needed.': 'ស្ករពេលតមអាហាររបស់អ្នកកន្លងកម្រិតច្បាស់ពេលមានផ្ទៃពោះ។ ជួបពេទ្យស្ត្រីក្នុង 1 សប្តាហ៍ — ចាប់អាហារូបត្ថម្ភ និងតាមដានស្ករមុនគេ ប្រើអ៊ីនស៊ុលីនតែបើចាំបាច់។',
+  'Your fasting glucose is in the upper-normal range (95–99) — close to the prediabetes line. A lower-sugar diet, regular movement, and a re-test in 6–12 months will track the trend.': 'ស្ករពេលតមអាហាររបស់អ្នកនៅកម្រិតធម្មតាផ្នែកខ្ពស់ (95–99) — ជិតបន្ទាត់មុនទឹកនោមផ្អែម។ អាហារតិចស្ករ ហាត់ប្រាណជាប្រចាំ ហើយតេស្តម្តងទៀតក្នុង 6–12 ខែ ដើម្បីតាមដានទិសដៅ។',
+  'Your fasting glucose is normal. Keep your lifestyle, and if you carry risk factors an HbA1c test adds a fuller picture.': 'ស្ករពេលតមអាហាររបស់អ្នកធម្មតា។ រក្សាទម្លាប់ជីវិត ហើយបើអ្នកមានកត្តាហានិភ័យ តេស្ត HbA1c នឹងបង្ហាញរូបភាពពេញលេញជាង។',
+  'Your results fit diabetes. A quick confirmatory test plus a doctor visit within 1–2 weeks settles it and starts treatment.': 'លទ្ធផលរបស់អ្នកស្របនឹងទឹកនោមផ្អែម។ តេស្តបញ្ជាក់រហ័សម្តង រួមជាមួយការជួបគ្រូពេទ្យក្នុង 1–2 សប្តាហ៍ នឹងសំរេច និងចាប់ផ្តើមព្យាបាល។',
+  'Your results meet the diabetes criteria. Book a clinic visit within 1–2 weeks to confirm, set targets and start treatment.': 'លទ្ធផលរបស់អ្នកបំពេញលក្ខខណ្ឌទឹកនោមផ្អែម។ កោះចូលគ្លីនិកក្នុង 1–2 សប្តាហ៍ ដើម្បីបញ្ជាក់ កំណត់គោលដៅ និងចាប់ផ្តើមព្យាបាល។',
+  'Your signs mix type 1 and type 2 features. Ask about GAD-antibody and C-peptide testing — overlapping patterns are treated differently.': 'សញ្ញារបស់អ្នកលាយលំនាំប្រភេទទី 1 និងទី 2។ សូមសួរអំពីតេស្ត GAD-antibody និង C-peptide — លំនាំដែលដូចគ្នាត្រូវព្យាបាលខុសគ្នា។',
+  'Your symptoms are the classic diabetes signs, but a blood test is still needed to confirm. Book one this week — it takes minutes.': 'រោគសញ្ញារបស់អ្នកគឺជាសញ្ញាទឹកនោមផ្អែមសំខាន់ៗ ប៉ុន្តែនៅតែត្រូវការតេស្តឈាមដើម្បីបញ្ជាក់។ កោះធ្វើក្នុងសប្តាហ៍នេះ — ចំណាយពេលប៉ុន្មាននាទីប៉ុណ្ណោះ។',
+  'Completed with symptoms and risk factors only — that already gives a useful screening signal. A simple blood test (fasting glucose or HbA1c) anytime will make the result more certain.': 'បានបញ្ចប់ដោយប្រើតែរោគសញ្ញា និងកត្តាហានិភ័យ — នេះផ្តល់សញ្ញារុករកមានប្រយោជន៍រួចហើយ។ តេស្តឈាមសាមញ្ញ (ស្ករពេលតមអាហារ ឬ HbA1c) នៅពេលណាមួយនឹងធ្វើអោយលទ្ធផលច្បាស់ជាង។',
 
   // Rules - Knowledge Base Rule Names (Medical terms kept in English)
   'Triage: Hypoglycemia Threshold': 'ការសង្គ្រោះបឋម: កម្រិត Hypoglycemia',

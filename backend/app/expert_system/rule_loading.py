@@ -53,12 +53,17 @@ class RuleLoader:
         compiled_rules = []
         skipped_rules = []
 
-        for raw_rule in raw_rules:
+        for index, raw_rule in enumerate(raw_rules):
             status = str(raw_rule.get("status", "active")).strip().lower()
             if status != "active":
                 continue
 
-            rule_id = int(raw_rule.get("id") or 0)
+            # DB-backed rules carry a real id; raw/in-memory rules (e.g. the
+            # seed list) have none — WITHOUT a unique fallback every rule
+            # would share rule_id=0 and the chainer's fired-rule dedup would
+            # block all rules after the first firing in each stage.
+            raw_id = raw_rule.get("id")
+            rule_id = int(raw_id) if raw_id not in (None, "", 0) else -(index + 1)
             code = str(raw_rule.get("code") or f"rule_{rule_id}").strip() or f"rule_{rule_id}"
             name = str(raw_rule.get("name") or f"rule_{rule_id}")
             condition_expression = str(raw_rule.get("condition") or "").strip()
