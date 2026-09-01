@@ -15,9 +15,6 @@ export const SYMPTOM_CORE_FIELDS = ['frequent_urination', 'excessive_thirst', 'e
 export const SYMPTOM_OTHER_FIELDS = ['fatigue', 'blurred_vision', 'slow_healing', 'nausea', 'tingling_hands_feet', 'frequent_infections', 'acanthosis_nigricans', 'irritability', 'recurrent_uti_yeast', 'bed_wetting']
 export const SYMPTOM_ALL_FIELDS = [...SYMPTOM_CORE_FIELDS, ...SYMPTOM_OTHER_FIELDS]
 export const SAFETY_FIELDS = ['sweating', 'shaking', 'dizziness', 'vomiting', 'abdominal_pain', 'fruity_breath', 'deep_rapid_breathing']
-/* Alternative-cause probes: NOT diabetes symptoms — the engine uses them to
-   test differential explanations (e.g. thirst without extra urination). */
-export const CONTEXT_FIELDS = ['dry_mouth', 'heat_exposure', 'intense_exercise', 'new_medication']
 export const RISK_FIELDS = ['family_history', 'obesity', 'hypertension', 'sedentary_lifestyle', 'gestational_history', 'smoking', 'high_cholesterol', 'pcos_history', 'ethnicity_high_risk']
 
 /* i18n group for each boolean field: assessment.fields.<group>.<camelKey> */
@@ -26,7 +23,6 @@ export const FIELD_GROUPS = {
   fatigue: 'symptoms', blurred_vision: 'symptoms', slow_healing: 'symptoms', nausea: 'symptoms',
   tingling_hands_feet: 'symptoms', frequent_infections: 'symptoms', acanthosis_nigricans: 'symptoms',
   excessive_hunger: 'symptoms', irritability: 'symptoms', recurrent_uti_yeast: 'symptoms', bed_wetting: 'symptoms',
-  dry_mouth: 'symptoms', heat_exposure: 'symptoms', intense_exercise: 'symptoms', new_medication: 'symptoms',
   sweating: 'safetySymptoms', shaking: 'safetySymptoms', dizziness: 'safetySymptoms',
   vomiting: 'safetySymptoms', abdominal_pain: 'safetySymptoms',
   fruity_breath: 'safetySymptoms', deep_rapid_breathing: 'safetySymptoms',
@@ -43,8 +39,6 @@ export const FIELD_FALLBACKS = {
   acanthosis_nigricans: 'Dark skin patches',
   excessive_hunger: 'Feeling very hungry', irritability: 'Irritability / mood changes',
   recurrent_uti_yeast: 'Recurring UTIs / yeast infections', bed_wetting: 'New bed-wetting (children)',
-  dry_mouth: 'Dry mouth', heat_exposure: 'Recent hot weather / heat exposure',
-  intense_exercise: 'Intense exercise or heavy physical work', new_medication: 'Started a new medication recently',
   sweating: 'Sweating episodes', shaking: 'Shaking / tremor', dizziness: 'Dizziness',
   vomiting: 'Vomiting', abdominal_pain: 'Stomach pain',
   fruity_breath: 'Fruity / acetone breath', deep_rapid_breathing: 'Deep, rapid breathing',
@@ -263,41 +257,14 @@ export const INTERVIEW_NODES = [
     kind: 'yesno',
     field: 'rapid_onset',
     icon: 'Timer',
-    /* Onset is the sharpest type discriminator, so it jumps the queue the
-       moment a pattern (2+ core symptoms) exists — unless an alternative
-       cause already explains the picture. */
-    priority: (ctx) => {
-      const m = buildEvidenceModel(ctx.form)
-      if (m.alternativesExplain) return 18
-      return m.coreCount >= 2 ? 11 : 13
-    },
+    priority: () => 13,
     titleKey: 'assessment.interview.onsetTitle',
     titleFallback: 'Did these symptoms come on suddenly?',
     helperKey: 'assessment.interview.onsetHelper',
     helperFallback: 'Sudden onset (days to weeks) points to type 1 diabetes; a slow build-up over months or years points to type 2.',
-    applies: ({ form }) => {
-      const m = buildEvidenceModel(form)
-      return (m.coreCount > 0 || m.otherTrue.length > 0) && !m.alternativesExplain
-    },
-  },
-  {
-    /* Differential probe — the engine's "wait, is this even diabetes?" moment.
-       Thirst WITHOUT extra urination often has another cause (heat, exertion,
-       medication). Answering this decides whether the diabetes work-up
-       continues at all or the interview wraps up early. */
-    id: 'thirst_alternatives',
-    kind: 'multi',
-    fields: CONTEXT_FIELDS,
-    icon: 'GlassWater',
-    priority: (ctx) => (buildEvidenceModel(ctx.form).thirstWithoutUrination ? 11 : 16),
-    applies: ({ form }) => {
-      const m = buildEvidenceModel(form)
-      return m.thirstWithoutUrination && !m.emergency
-    },
-    titleKey: 'assessment.interview.thirstAltTitle',
-    titleFallback: 'Could something else explain the thirst?',
-    helperKey: 'assessment.interview.thirstAltHelper',
-    helperFallback: 'Thirst without extra urination often has other causes — heat, heavy exercise or a new medication. Your answers tell me where to look next.',
+    applies: ({ form }) =>
+      SYMPTOM_CORE_FIELDS.some((key) => form[key] === true) ||
+      SYMPTOM_OTHER_FIELDS.some((key) => form[key] === true),
   },
   {
     /* Type 1 in children: the single strongest signal — asked the moment the
@@ -306,11 +273,7 @@ export const INTERVIEW_NODES = [
     kind: 'yesno',
     field: 'bed_wetting',
     icon: 'Baby',
-    /* A sudden-onset child is the highest-priority type 1 signal there is. */
-    priority: (ctx) => {
-      const m = buildEvidenceModel(ctx.form)
-      return m.sudden && m.age > 0 && m.age < 18 ? 11 : 14
-    },
+    priority: () => 14,
     titleKey: 'assessment.interview.childProbeTitle',
     titleFallback: 'Any new bed-wetting at night?',
     helperKey: 'assessment.interview.childProbeHelper',
@@ -327,7 +290,7 @@ export const INTERVIEW_NODES = [
     kind: 'multi',
     fields: ['acanthosis_nigricans', 'slow_healing', 'tingling_hands_feet', 'frequent_infections'],
     icon: 'Contrast',
-    priority: (ctx) => (buildEvidenceModel(ctx.form).gradual ? 12 : 14),
+    priority: () => 14,
     titleKey: 'assessment.interview.t2ProbeTitle',
     titleFallback: 'Any of these insulin-resistance signs?',
     helperKey: 'assessment.interview.t2ProbeHelper',
@@ -339,14 +302,8 @@ export const INTERVIEW_NODES = [
     kind: 'multi',
     /* Shrink: fields answered by a probe are hidden so nothing is asked twice */
     fields: ({ form }) => SYMPTOM_OTHER_FIELDS.filter((key) => typeof form[key] !== 'boolean'),
-    /* The long-tail symptom grid only earns its place when the engine is
-       actively working a diabetes pattern — an emergency short-circuits it,
-       and a confirmed alternative cause closes it. */
-    applies: ({ form }) => {
-      const m = buildEvidenceModel(form)
-      if (m.emergency || m.alternativesExplain || !m.hasSignal) return false
-      return SYMPTOM_OTHER_FIELDS.some((key) => typeof form[key] !== 'boolean')
-    },
+    applies: ({ form }) =>
+      SYMPTOM_OTHER_FIELDS.some((key) => typeof form[key] !== 'boolean'),
     icon: 'Stethoscope',
     priority: () => 17,
     titleKey: 'assessment.interview.otherSymptomsTitle',
@@ -373,13 +330,6 @@ export const INTERVIEW_NODES = [
     kind: 'multi',
     fields: RISK_FIELDS,
     icon: 'ClipboardList',
-    /* Emergency pattern → the advice is "seek care now"; and when an
-       alternative cause explains the picture, the whole diabetes work-up
-       (risks, BMI, labs) de-escalates — the engine stops asking. */
-    applies: ({ form }) => {
-      const m = buildEvidenceModel(form)
-      return !m.emergency && !m.alternativesExplain
-    },
     priority: () => 20,
     titleKey: 'assessment.interview.riskTitle',
     titleFallback: 'Do any of these apply to you?',
@@ -390,12 +340,6 @@ export const INTERVIEW_NODES = [
     id: 'body',
     kind: 'body',
     icon: 'Scale',
-    /* BMI only feeds the type priors — with no signal to type, or with the
-       picture explained by something else, there is nothing for it to change. */
-    applies: ({ form }) => {
-      const m = buildEvidenceModel(form)
-      return m.hasSignal && !m.emergency && !m.alternativesExplain
-    },
     priority: () => 22,
     titleKey: 'assessment.interview.bodyTitle',
     titleFallback: 'Height & weight',
@@ -409,12 +353,8 @@ export const INTERVIEW_NODES = [
     field: 'has_labs',
     icon: 'TestTube2',
     priority: () => 24,
-    /* Emergency signs → lab questions are pointless; the advice is go now.
-       A confirmed alternative cause also closes the glucose work-up. */
-    applies: ({ form }) => {
-      const m = buildEvidenceModel(form)
-      return !m.emergency && !m.alternativesExplain
-    },
+    /* Emergency signs → lab questions are pointless; the advice is go now. */
+    applies: ({ form }) => !hasEmergencySigns(form),
     titleKey: 'assessment.interview.hasLabsTitle',
     titleFallback: 'Do you have recent lab results?',
     helperKey: 'assessment.interview.hasLabsHelper',
@@ -430,20 +370,13 @@ export const INTERVIEW_NODES = [
     helperKey: 'assessment.interview.labsHelper',
     helperFallback: 'Any one of these helps — everything is optional, and ranges work too.',
     skippable: true,
-    applies: ({ form }) => {
-      const m = buildEvidenceModel(form)
-      return form.no_labs_available !== true && !m.emergency && !m.alternativesExplain
-    },
+    applies: ({ form }) => form.no_labs_available !== true && !hasEmergencySigns(form),
   },
   {
     id: 'extra',
     kind: 'text',
     field: 'extra_symptoms',
     icon: 'PenTool',
-    applies: ({ form }) => {
-      const m = buildEvidenceModel(form)
-      return m.hasSignal && !m.alternativesExplain
-    },
     priority: () => 30,
     titleKey: 'assessment.interview.extraTitle',
     titleFallback: 'Anything else to tell the clinician?',
@@ -513,60 +446,13 @@ export function buildFactsFromAnswers(answers) {
   return facts;
 }
 
-/* ── The evidence model: the interview's live belief state ──
-   ONE declarative function computes what the engine currently "believes"
-   from the answers so far. Every node's relevance (priority) and every
-   gate (applies) reads from this model, so after each answer the engine
-   re-ranks the remaining questions and drops the ones that can no longer
-   change the result. No fixed question list, no hardcoded order. */
-export function buildEvidenceModel(form) {
-  const coreTrue = SYMPTOM_CORE_FIELDS.filter((key) => form[key] === true)
-  const otherTrue = SYMPTOM_OTHER_FIELDS.filter((key) => form[key] === true)
-  const altTrue = CONTEXT_FIELDS.filter((key) => form[key] === true)
-  const emergency = hasEmergencySigns(form)
-  const age = Number(form.age) || 0
-  const bmi = Number(form.bmi) || 0
-  /* Thirst but normal urination — the classic trio is broken, so the
-     engine pivots to differential causes before continuing. */
-  const thirstWithoutUrination = form.excessive_thirst === true && form.frequent_urination === false
-  const anyRisk = RISK_FIELDS.some((key) => form[key] === true)
-  const hasSignal = coreTrue.length > 0 || otherTrue.length > 0 || emergency || anyRisk
-  /* A second core symptom turns "a symptom" into "a pattern". */
-  const glucosePattern = coreTrue.length >= 2
-  /* A credible alternative cause (heat, medication, exertion, 2+ markers)
-     de-escalates the diabetes work-up when the classic pattern is broken. */
-  const alternativesExplain = thirstWithoutUrination && coreTrue.length <= 1 &&
-    (altTrue.length >= 2 || form.heat_exposure === true || form.new_medication === true)
-  return {
-    coreTrue, coreCount: coreTrue.length, otherTrue, altTrue,
-    emergency, age, bmi,
-    thirstWithoutUrination, anyRisk, hasSignal,
-    glucosePattern, alternativesExplain,
-    sudden: form.rapid_onset === true,
-    gradual: form.rapid_onset === false,
-  }
-}
+/* ── Stop rule ──
+   Once this many questions have been answered (or consciously skipped),
+   the user may finish early and run the assessment. */
+export const CORE_QUESTIONS_FOR_SIGNAL = 6
 
-/* One-line "what the engine is investigating" chip — makes the adaptive
-   selection visible to the user instead of magical. */
-export function interviewFocus(ctx) {
-  const m = buildEvidenceModel(ctx.form)
-  if (m.emergency) return { key: 'assessment.interview.focusUrgent', fallback: 'Warning signs detected — safety first' }
-  if (m.alternativesExplain) return { key: 'assessment.interview.focusAlternative', fallback: 'Another cause looks likely — narrowing it down' }
-  if (m.glucosePattern && m.sudden) return { key: 'assessment.interview.focusT1', fallback: 'Classic pattern with sudden onset — checking the type 1 profile' }
-  if (m.glucosePattern && m.gradual) return { key: 'assessment.interview.focusT2', fallback: 'Classic pattern, slow build-up — checking the type 2 profile' }
-  if (m.glucosePattern) return { key: 'assessment.interview.focusGlucose', fallback: 'Glucose-related pattern — telling the types apart' }
-  if (m.thirstWithoutUrination) return { key: 'assessment.interview.focusThirst', fallback: 'Thirst without extra urination — checking other causes' }
-  return { key: 'assessment.interview.focusBaseline', fallback: 'Building your baseline picture' }
-}
-
-/* The loop's exit rule, engine-side: after `answeredId` is confirmed (or
-   skipped), these are the questions the engine STILL wants. An empty list
-   means the evidence is sufficient — the result can be produced. There is
-   no fixed question count anywhere: the interview simply ends when the
-   engine runs out of relevant questions. */
-export function remainingOpenNodes(nodes, ctx, doneIds, skippedIds, answeredId) {
-  return applicableNodes(nodes, ctx)
-    .filter((n) => n.id !== answeredId)
-    .filter((n) => !isNodeDone(n, ctx, doneIds, skippedIds))
+export function hasEnoughEvidence(nodes, ctx, doneIds, skippedIds) {
+  const applicable = applicableNodes(nodes, ctx)
+  const settled = applicable.filter((n) => isNodeDone(n, ctx, doneIds, skippedIds)).length
+  return settled >= CORE_QUESTIONS_FOR_SIGNAL
 }

@@ -730,16 +730,7 @@ export const messages = {
         }
       },
       "interview": {
-        "seeResult": "Get my result",
-        "thirstAltTitle": "Could something else explain the thirst?",
-        "thirstAltHelper": "Thirst without extra urination often has other causes — heat, heavy exercise or a new medication. Your answers tell me where to look next.",
-        "focusBaseline": "Building your baseline picture",
-        "focusGlucose": "Glucose-related pattern — telling the types apart",
-        "focusT1": "Classic pattern with sudden onset — checking the type 1 profile",
-        "focusT2": "Classic pattern, slow build-up — checking the type 2 profile",
-        "focusThirst": "Thirst without extra urination — checking other causes",
-        "focusAlternative": "Another cause looks likely — narrowing it down",
-        "focusUrgent": "Warning signs detected — safety first",
+        "finishNow": "Enough — see my result",
         "patientTitle": "Who is this assessment for?",
         "patientHelper": "Select the patient — answers we already know will be pre-filled.",
         "ageTitle": "How old are you?",
@@ -845,10 +836,6 @@ export const messages = {
       "fields": {
         "symptoms": {
           "frequentUrination": "Frequent urination",
-          "dryMouth": "Dry mouth",
-          "heatExposure": "Recent hot weather / heat exposure",
-          "intenseExercise": "Intense exercise or heavy physical work",
-          "newMedication": "Started a new medication recently",
           "excessiveThirst": "Excessive thirst",
           "fatigue": "Constant tiredness",
           "blurredVision": "Blurred vision",
@@ -2493,16 +2480,7 @@ export const messages = {
         }
       },
       "interview": {
-        "seeResult": "មើលលទ្ធផលរបស់អ្នក",
-        "thirstAltTitle": "តើមានអ្វីផ្សេងទៀតពន្យល់ពីភាពស្រេចទឹកបានទេ?",
-        "thirstAltHelper": "ភាពស្រេចទឹកដោយមិននោមច្រើន ច្រើនមានមូលហេតុផ្សេង — អាកាសធាតុក្តៅ លំហាត់យ៉ាងខ្លាំង ឬថ្នាំថ្មី។ ចម្លើយរបស់អ្នកប្រាប់ខ្ញុំពីអ្វីដែលត្រូវពិនិត្យបន្ទាប់។",
-        "focusBaseline": "កំពុងបង្កើតរូបភាពមូលដ្ឋានរបស់អ្នក",
-        "focusGlucose": "រូបភាពទាក់ទងនឹងស្ករស — កំពុងកំណត់ប្រភេទ",
-        "focusT1": "រូបភាពជាក់លាក់ ចាប់ផ្តើមភ្លាមៗ — កំពុងពិនិត្យប្រភេទទី ១",
-        "focusT2": "រូបភាពជាក់លាក់ បង្កើតបណ្តើរៗ — កំពុងពិនិត្យប្រភេទទី ២",
-        "focusThirst": "ស្រេចទឹកដោយមិននោមច្រើន — កំពុងពិនិត្យមូលហេតុផ្សេង",
-        "focusAlternative": "មូលហេតុផ្សេងទៀតទំនងជាមាន — កំពុងចុះការពិនិត្យ",
-        "focusUrgent": "រកឃើញសញ្ញាប្រឈម — សុវត្ថិភាពមុនគេ",
+        "finishNow": "គ្រប់គ្រាន់ហើយ — មើលលទ្ធផល",
         "patientTitle": "ការវាយតម្លៃនេះសម្រាប់អ្នកណា?",
         "patientHelper": "ជ្រើសរើសអ្នកជំងឺ — ចម្លើយដែលយើងដឹងរួចហើយនឹងបំពេញដោយស្វ័យប្រវត្តិ។",
         "ageTitle": "តើអ្នកអាយុប៉ុន្មាន?",
@@ -2608,10 +2586,6 @@ export const messages = {
       "fields": {
         "symptoms": {
           "frequentUrination": "នោមញឹកញាប់",
-          "dryMouth": "មាត់ស្ងួត",
-          "heatExposure": "អាកាសធាតុក្តៅថ្មីៗ / ការប៉ះពាល់កម្តៅ",
-          "intenseExercise": "លំហាត់អប់រយ៉ាងខ្លាំង ឬការងាររាងកាយធ្ងន់",
-          "newMedication": "ចាប់ផ្តើមប្រើថ្នាំថ្មីថ្មីៗនេះ",
           "excessiveThirst": "ស្រេកទឹកខ្លាំង",
           "fatigue": "អស់កម្លាំងប្រចាំ",
           "blurredVision": "មើលមិនច្បាស់",

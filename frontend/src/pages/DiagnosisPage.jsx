@@ -40,7 +40,7 @@ import {
   SYMPTOM_ALL_FIELDS, SAFETY_FIELDS, RISK_FIELDS,
   FIELD_FALLBACKS, fieldLabelKey, nodeFields,
   firstOpenNode, interviewProgress, interviewPosition, applicableNodes,
-  remainingOpenNodes, interviewFocus, buildFactsFromAnswers,
+  hasEnoughEvidence, buildFactsFromAnswers,
 } from '@/components/assessment/interview-flow'
 
 /* ── Constants ────────────────────────── */
@@ -285,20 +285,12 @@ export function DiagnosisPage() {
     () => INTERVIEW_NODES.find((n) => n.id === currentNodeId) || null,
     [currentNodeId],
   )
-  /* Engine-driven loop stop: when the question on screen is the last one the
-     engine still wants, Continue becomes "Get my result" and routes straight
-     to review — the interview ends on evidence, not on a fixed count. */
-  const isLastQuestion = useMemo(
-    () => Boolean(currentNodeId) &&
-      remainingOpenNodes(INTERVIEW_NODES, interviewCtx, interviewDone, interviewSkipped, currentNodeId).length === 0,
-    [interviewCtx, interviewDone, interviewSkipped, currentNodeId],
+  /* Adaptive loop stop rule — once the highest-value core questions are
+     answered (or consciously skipped), the user may finish early. */
+  const canFinishEarly = useMemo(
+    () => hasEnoughEvidence(INTERVIEW_NODES, interviewCtx, interviewDone, interviewSkipped),
+    [interviewCtx, interviewDone, interviewSkipped],
   )
-  /* What the engine is investigating right now — shown as a chip on the card. */
-  const focusText = useMemo(() => {
-    const focus = interviewFocus(interviewCtx)
-    return t(focus.key, focus.fallback)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [interviewCtx, t])
   const activeBanners = useMemo(() => INSIGHT_BANNERS.filter((b) => b.when(form)), [form])
 
   const isDraftPristine = useMemo(() => {
@@ -589,7 +581,6 @@ export function DiagnosisPage() {
       up(node.field, value)
     }
     markNodeDone(node.id)
-    routeIfInterviewComplete(node.id)
     setCursorOverride(null)
   }
   function handleChoice(node, value) {
@@ -614,25 +605,12 @@ export function DiagnosisPage() {
     setInterviewSkipped(prev => prev.includes(node.id) ? prev : [...prev, node.id])
     setInterviewDone(prev => prev.filter(id => id !== node.id))
     if (node.id === 'labs') up('no_labs_available', true)
-    routeIfInterviewComplete(node.id)
     setCursorOverride(null)
-  }
-  /* The loop's exit: after an answer (or a skip), if no relevant question
-     remains the engine is done — go straight to the result. */
-  function routeIfInterviewComplete(answeredId) {
-    const doneNext = interviewDone.includes(answeredId) ? interviewDone : [...interviewDone, answeredId]
-    if (remainingOpenNodes(INTERVIEW_NODES, interviewCtx, doneNext, interviewSkipped, answeredId).length === 0) {
-      setStep(REVIEW_STEP)
-      setMaxReached(p => Math.max(p, REVIEW_STEP))
-    }
   }
   function handleInterviewContinue() {
     /* Confirm the node on screen (also when editing an earlier answer via a
        chip) and return to the natural flow position. */
-    if (currentNodeId) {
-      markNodeDone(currentNodeId)
-      routeIfInterviewComplete(currentNodeId)
-    }
+    if (currentNodeId) markNodeDone(currentNodeId)
     setCursorOverride(null)
   }
   function interviewBack() {
@@ -881,8 +859,8 @@ export function DiagnosisPage() {
                       onMultiNone={handleMultiNone}
                       onContinue={handleInterviewContinue}
                       onSkip={() => handleSkipNode(currentNode)}
-                      isLastQuestion={isLastQuestion}
-                      focusText={focusText}
+                      onFinish={() => { setStep(REVIEW_STEP); setMaxReached(p => Math.max(p, REVIEW_STEP)) }}
+                      canFinish={canFinishEarly}
                       editing={Boolean(cursorOverride)}
                     />
                   ) : (

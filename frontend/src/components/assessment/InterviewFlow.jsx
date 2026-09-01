@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import {
   Activity, AlertTriangle, Armchair, Baby, Bandage, BatteryLow, Bug, Building2, CalendarHeart,
-  Check, Cigarette, ClipboardList, Compass, Contrast, Droplet, Droplets, Egg, Eye, FlaskConical, Flower2,
+  Check, Cigarette, ClipboardList, Contrast, Droplet, Droplets, Egg, Eye, FlaskConical, Flower2,
   GlassWater, Globe, Hand, HeartCrack, HeartPulse, PenTool, Plus, RefreshCw, Scale, Soup,
   Stethoscope, TestTube2, Timer, TrendingDown, Trash2, UserRound, Users, Vibrate, Waves, Weight, X,
 } from 'lucide-react'
@@ -12,7 +12,7 @@ import { FIELD_FALLBACKS, camelField, fieldLabelKey, nodeFields } from './interv
 
 const NODE_ICONS = {
   Building2, UserRound, Baby, CalendarHeart, Droplets, Stethoscope, AlertTriangle,
-  ClipboardList, Scale, TestTube2, FlaskConical, PenTool, Timer, Compass, GlassWater,
+  ClipboardList, Scale, TestTube2, FlaskConical, PenTool, Timer,
 }
 
 const FIELD_ICONS = {
@@ -25,7 +25,7 @@ const FIELD_ICONS = {
   ethnicity_high_risk: Globe,
 }
 
-function QuestionCard({ node, title, helper, focus, children }) {
+function QuestionCard({ node, title, helper, children }) {
   const Icon = NODE_ICONS[node.icon] || ClipboardList
   return (
     <div className="assessment-card-enter surface min-w-0 p-5 sm:p-7">
@@ -36,11 +36,6 @@ function QuestionCard({ node, title, helper, focus, children }) {
         <div className="min-w-0">
           <h3 className="text-lg font-bold leading-snug text-slate-900 dark:text-slate-50 sm:text-xl">{title}</h3>
           {helper ? <p className="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">{helper}</p> : null}
-          {focus ? (
-            <p className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-cyan-50 px-2.5 py-1 text-[11px] font-semibold text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300">
-              <Compass className="h-3 w-3" strokeWidth={2.5} /> {focus}
-            </p>
-          ) : null}
         </div>
       </div>
       <div className="mt-5">{children}</div>
@@ -138,7 +133,7 @@ export function InterviewFlow(props) {
     extraLabs, onAddExtraLab, onRemoveExtraLab,
     onField, onPickSegment, onSetCustom, onCalculateBmi,
     onYesNo, onChoice, onToggleMulti, onMultiNone,
-    onContinue, onSkip, isLastQuestion, focusText, editing,
+    onContinue, onSkip, onFinish, canFinish, editing,
   } = props
 
   const inputRef = useRef(null)
@@ -148,11 +143,7 @@ export function InterviewFlow(props) {
 
   const title = t(node.titleKey, node.titleFallback)
   const helper = node.helperKey ? t(node.helperKey, node.helperFallback) : ''
-  const continueLabel = editing
-    ? t('assessment.interview.doneEditing', 'Done')
-    : isLastQuestion
-      ? t('assessment.interview.seeResult', 'Get my result')
-      : t('common.continue', 'Continue')
+  const continueLabel = editing ? t('assessment.interview.doneEditing', 'Done') : t('common.continue', 'Continue')
 
   let body = null
   let continueEnabled = true
@@ -276,7 +267,7 @@ export function InterviewFlow(props) {
 
   return (
     <div className="mx-auto w-full max-w-2xl">
-      <QuestionCard node={node} title={title} helper={helper} focus={focusText}>
+      <QuestionCard node={node} title={title} helper={helper}>
         {node.kind === 'labs' ? null : body}
       </QuestionCard>
 
@@ -292,6 +283,15 @@ export function InterviewFlow(props) {
       ) : null}
 
       <div className="mt-4 flex items-center justify-end gap-2 pb-2">
+        {canFinish && onFinish ? (
+          <button
+            type="button"
+            className="btn-primary gap-1.5 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+            onClick={onFinish}
+          >
+            {t('assessment.interview.finishNow', 'Enough — see my result')}
+          </button>
+        ) : null}
         {node.skippable ? (
           <button type="button" className="btn-secondary gap-1.5" onClick={onSkip}>
             {t('assessment.interview.skip', 'Skip')}
