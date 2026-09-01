@@ -133,7 +133,7 @@ export function InterviewFlow(props) {
     extraLabs, onAddExtraLab, onRemoveExtraLab,
     onField, onPickSegment, onSetCustom, onCalculateBmi,
     onYesNo, onChoice, onToggleMulti, onMultiNone,
-    onContinue, onSkip, onFinish, canFinish, editing,
+    onContinue, onSkip, onFinish, canFinish, analyzing, editing,
   } = props
 
   const inputRef = useRef(null)
@@ -298,8 +298,8 @@ export function InterviewFlow(props) {
           </button>
         ) : null}
         {node.kind !== 'patient' && node.kind !== 'yesno' && node.kind !== 'choice' ? (
-          <button type="button" className="btn-primary gap-1.5" disabled={!continueEnabled} onClick={onContinue}>
-            {continueLabel}
+          <button type="button" className="btn-primary gap-1.5" disabled={!continueEnabled || analyzing} onClick={onContinue}>
+            {analyzing ? t('assessment.status.analyzing', 'Analyzing...') : continueLabel}
           </button>
         ) : null}
       </div>

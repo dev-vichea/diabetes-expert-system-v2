@@ -22,6 +22,7 @@ import { formatDateTime } from '@/lib/datetime'
 import { EmptyState, StatusBadge, ConfirmDialog } from '@/components/ui'
 import { ConditionEducationPanel } from '@/components/diagnosis/ConditionEducationPanel'
 import { WhyThisResultPanel } from '@/components/diagnosis/WhyThisResultPanel'
+import { AdaptiveAssessmentPanel } from '@/components/diagnosis/AdaptiveAssessmentPanel'
 import { PlainSummaryStrip } from '@/components/diagnosis/PlainSummaryStrip'
 import { getSymptomGuideKey } from '@/lib/symptom-guide'
 import { TechnicalDetailsSection } from '@/components/diagnosis/TechnicalDetailsSection'
@@ -777,6 +778,7 @@ export function DiagnosisResultPage() {
       </div>
 
       <WhyThisResultPanel result={result} />
+      <AdaptiveAssessmentPanel result={result} />
 
       <ConditionEducationPanel result={result} />
 

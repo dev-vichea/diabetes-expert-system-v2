@@ -1232,6 +1232,68 @@ export const messages = {
           "dizziness": { "term": "Dizziness", "meaning": "Can come from low — or very high — blood sugar." }
         }
       },
+      "adaptive": {
+        "title": "Detected patterns & evidence",
+        "patternsTitle": "Pattern analysis",
+        "strongest": "Strongest match",
+        "strength": "Strength",
+        "supporting": "Supporting",
+        "conflicting": "Conflicting",
+        "noPatterns": "No diabetes-like pattern was detected from the answers provided.",
+        "uncertaintyTitle": "Uncertainty",
+        "uncertainty": {
+          "low": "Low — the evidence points clearly in one direction",
+          "moderate": "Moderate — some questions remain open",
+          "high": "High — the evidence is limited or mixed"
+        },
+        "reason": {
+          "no_lab_values": "No lab values were provided",
+          "no_dominant_pattern": "No single pattern dominates the evidence",
+          "competing_patterns": "Two patterns score too closely to separate",
+          "conflicting_evidence": "Some evidence points in different directions"
+        },
+        "explanationTitle": "Why these patterns",
+        "exp": {
+          "core_symptoms": "{count} classic diabetes symptom(s) reported",
+          "sudden_onset": "Symptoms came on suddenly (days to weeks)",
+          "gradual_onset": "Symptoms built up gradually (months to years)",
+          "risk_factors": "{count} risk factor(s) present",
+          "lab_evidence": "Lab evidence: {flag}",
+          "pregnancy": "Pregnancy — stricter screening thresholds apply",
+          "competing_patterns": "Two patterns score closely ({primary} vs {secondary})",
+          "not_a_diagnosis": "Screening only — these pattern names are not diagnoses."
+        },
+        "step": {
+          "seek_emergency_care": "Seek emergency care now",
+          "see_clinician_soon": "See a clinician soon",
+          "get_lab_tests": "Get lab tests (fasting glucose / HbA1c)",
+          "retest_confirm": "Repeat the test to confirm",
+          "routine_screening": "Routine screening is enough for now"
+        },
+        "nextStepTitle": "Recommended next step",
+        "status": {
+          "sufficient": "Enough evidence was collected for a screening result.",
+          "insufficient": "Insufficient evidence — no result is forced; treat this as guidance only."
+        },
+        "not_a_diagnosis": "Pattern names are not diagnoses — only a clinician with lab tests can confirm anything.",
+        "evidence": {
+          "rapid_onset": "Sudden onset of symptoms",
+          "gradual_onset": "Gradual build-up of symptoms",
+          "age_under_18": "Age under 18",
+          "age_35_plus": "Age 35 or older",
+          "age_45_plus": "Age 45 or older",
+          "elevated_bmi": "Elevated BMI / overweight",
+          "lab_hyperglycemia": "Lab-elevated blood glucose",
+          "critical_lab_values": "Critically high lab values",
+          "crisis": "Critical condition reported"
+        },
+        "pattern": {
+          "insulin_deficiency_like": "Insulin-deficiency-like pattern (Type-1-like)",
+          "insulin_resistance_like": "Insulin-resistance-like pattern (Type-2-like)",
+          "gestational_risk": "Gestational diabetes risk",
+          "hyperglycemic_emergency_risk": "Hyperglycemic emergency risk"
+        }
+      },
       "whyResult": {
         "title": "Why this result?",
         "toldUs": "What you told us",
@@ -2981,6 +3043,68 @@ export const messages = {
           "sweating": { "term": "ញើសច្រើន", "meaning": "អាចជាសញ្ញាជាតិស្ករទាប (hypoglycemia)។" },
           "shaking": { "term": "ញ័រ", "meaning": "សញ្ញាទូទៅនៃជាតិស្ករទាប (hypoglycemia)។" },
           "dizziness": { "term": "វិលមុខ", "meaning": "អាចមកពីជាតិស្ករទាប — ឬខ្ពស់ខ្លាំង។" }
+        }
+      },
+      "adaptive": {
+        "title": "រូបភាព និងភស្តុតាងដែលរកឃើញ",
+        "patternsTitle": "ការវិភាគរូបភាព",
+        "strongest": "ផ្គូផ្គងខ្លាំងបំផុត",
+        "strength": "កម្រិតភាពខ្លាំង",
+        "supporting": "គាំទ្រ",
+        "conflicting": "ផ្ទុយគ្នា",
+        "noPatterns": "មិនរកឃើញរូបភាពប្រហែលទឹកនោមផ្អែមពីចម្លើយដែលបានផ្ដល់ទេ។",
+        "uncertaintyTitle": "ភាពមិនច្បាស់",
+        "uncertainty": {
+          "low": "ទាប — ភស្តុតាងចង្អុលច្បាស់មួយទិស",
+          "moderate": "មធ្យម — មានសំណួរមិនទាន់ចប់",
+          "high": "ខ្ពស់ — ភស្តុតាងមានកម្រិតឬច្របូកគ្នា"
+        },
+        "reason": {
+          "no_lab_values": "មិនបានផ្ដល់តម្លៃមន្ទីរពិសោធន៍",
+          "no_dominant_pattern": "គ្មានរូបភាពណាមួយឈរលេចឡើង",
+          "competing_patterns": "រូបភាពពីរមានពិន្ទុជិតគ្នាពេកពេកក្នុងការកំណត់",
+          "conflicting_evidence": "ភស្តុតាងមួយចំនួនចង្អុលទិសផ្សេងគ្នា"
+        },
+        "explanationTitle": "ហេតុអ្វីរូបភាពទាំងនេះ",
+        "exp": {
+          "core_symptoms": "មានអាការៈជាក់លាក់ទឹកនោមផ្អែម {count} យ៉ាង",
+          "sudden_onset": "អាការៈចាប់ផ្តើមភ្លាមៗ (ថ្ងៃដល់សប្តាហ៍)",
+          "gradual_onset": "អាការៈបង្កើតបណ្តើរៗ (ខែដល់ឆ្នាំ)",
+          "risk_factors": "មានហានិភ័យ {count} យ៉ាង",
+          "lab_evidence": "ភស្តុតាងមន្ទីរពិសោធន៍: {flag}",
+          "pregnancy": "កំពុងមានផ្ទៃពោះ — ប្រើកម្រិតពិនិត្យតឹងជាង",
+          "competing_patterns": "រូបភាពពីរមានពិន្ទុជិតគ្នា ({primary} ទល់ {secondary})",
+          "not_a_diagnosis": "តែការពិនិត្យប៉ុណ្ណោះ — ឈ្មោះរូបភាពទាំងនេះមិនមែនជាការធ្វើរោគវិនិច្ឆ័យទេ។"
+        },
+        "step": {
+          "seek_emergency_care": "សូមទៅពិភាន់ពេទ្យពេលនេះ",
+          "see_clinician_soon": "ទៅជួបគ្រូពេទ្យក្នុងពេលឆាប់ៗ",
+          "get_lab_tests": "ធ្វើតេស្តឈាម (ស្ករសអត់ធ្មេញ / HbA1c)",
+          "retest_confirm": "ធ្វើតេស្តម្តងទៀតដើម្បីបញ្ជាក់",
+          "routine_screening": "ការពិនិត្យធម្មតាគ្រប់គ្រាន់ហើយ"
+        },
+        "nextStepTitle": "ជំហានបន្ទាប់ដែលណែនាំ",
+        "status": {
+          "sufficient": "មានភស្តុតាងគ្រប់គ្រាន់សម្រាប់លទ្ធផលពិនិត្យ។",
+          "insufficient": "ភស្តុតាងមិនគ្រប់គ្រាន់ — មិនបង្ខំលទ្ធផល; សូមចាត់ទុកជាការណែនាំប៉ុណ្ណោះ។"
+        },
+        "not_a_diagnosis": "ឈ្មោះរូបភាពមិនមែនជាការធ្វើរោគវិនិច្ឆ័យទេ — មានតែគ្រូពេទ្យជាមួយតេស្តឈាមប៉ុណ្ណោះអាចបញ្ជាក់បាន។",
+        "evidence": {
+          "rapid_onset": "អាការៈចាប់ផ្តើមភ្លាមៗ",
+          "gradual_onset": "អាការៈបង្កើតបណ្តើរៗ",
+          "age_under_18": "អាយុក្រោម ១៨ ឆ្នាំ",
+          "age_35_plus": "អាយុ ៣៥ ឆ្នាំឡើងទៅ",
+          "age_45_plus": "អាយុ ៤៥ ឆ្នាំឡើងទៅ",
+          "elevated_bmi": "BMI ខ្ពស់ / លើសទម្ងន់",
+          "lab_hyperglycemia": "ស្ករសឈាមខ្ពស់តាមមន្ទីរពិសោធន៍",
+          "critical_lab_values": "តម្លៃមន្ទីរពិសោធន៍ខ្ពស់ខ្លាំង",
+          "crisis": "ស្ថានភាពអាសន្ន"
+        },
+        "pattern": {
+          "insulin_deficiency_like": "រូបភាពខ្វះអ៊ីនស៊ុយលីន (ស្រដៀងប្រភេទទី ១)",
+          "insulin_resistance_like": "រូបភាពទំនាំ់អ៊ីនស៊ុយលីន (ស្រដៀងប្រភេទទី ២)",
+          "gestational_risk": "ហានិភ័យទឹកនោមផ្អែមកំឡុងមានផ្ទៃពោះ",
+          "hyperglycemic_emergency_risk": "ហានិភ័យអាសន្នស្ករសឈាមខ្ពស់"
         }
       },
       "whyResult": {

@@ -269,6 +269,13 @@ export function DiagnosisPage() {
   const [interviewDone, setInterviewDone] = useState([])
   const [interviewSkipped, setInterviewSkipped] = useState([])
   const [cursorOverride, setCursorOverride] = useState(null)
+  /* ── Backend-driven adaptive loop state ──
+     Ask → Analyze → Choose the most useful next question → Re-evaluate.
+     The backend engine returns a question KEY; the question definitions
+     stay hardcoded here and render by key. If the engine cannot be
+     reached, the flow falls back to the local static order. */
+  const [engineState, setEngineState] = useState(null)
+  const [analyzing, setAnalyzing] = useState(false)
 
   const interviewCtx = useMemo(() => ({ form, needsPatient }), [form, needsPatient])
   const autoCursor = useMemo(
@@ -280,7 +287,7 @@ export function DiagnosisPage() {
     [interviewCtx, interviewDone, interviewSkipped],
   )
   const applicableCount = useMemo(() => applicableNodes(INTERVIEW_NODES, interviewCtx).length, [interviewCtx])
-  const currentNodeId = cursorOverride ?? autoCursor
+  const currentNodeId = cursorOverride ?? engineState?.next_question_key ?? autoCursor
   const currentNode = useMemo(
     () => INTERVIEW_NODES.find((n) => n.id === currentNodeId) || null,
     [currentNodeId],
@@ -560,6 +567,42 @@ export function DiagnosisPage() {
   function goBack() { setError(''); setStep(p => Math.max(1, p - 1)) }
   function jumpTo(s) { if (s <= maxReached) { setError(''); setStep(s) } }
 
+  /* ── Backend engine: Select Next Question ──
+     After every answer the whole evidence is re-evaluated server-side and
+     the next most useful question KEY comes back. When the engine runs out
+     of useful questions (or has enough evidence) it reports done and the
+     flow routes straight to review. */
+  const engineReqRef = useRef(0)
+  async function refreshEngineState(formOverride = null, skippedOverride = null) {
+    const reqId = ++engineReqRef.current
+    setAnalyzing(true)
+    try {
+      const res = await api.post('/assessment/next', {
+        answers: { ...form, ...(formOverride || {}) },
+        skipped: skippedOverride || interviewSkipped,
+        needs_patient: needsPatient,
+      })
+      const data = getApiData(res)
+      if (reqId !== engineReqRef.current) return // a newer answer superseded this request
+      setEngineState(data && typeof data === 'object' ? data : null)
+      if (data?.done) {
+        setStep(REVIEW_STEP)
+        setMaxReached(p => Math.max(p, REVIEW_STEP))
+      }
+    } catch {
+      /* Engine unreachable → keep the local static order as fallback. */
+      if (reqId === engineReqRef.current) setEngineState(null)
+    } finally {
+      if (reqId === engineReqRef.current) setAnalyzing(false)
+    }
+  }
+  /* Kick the engine whenever the interview (re)opens or the patient changes. */
+  useEffect(() => {
+    if (step !== 1 || result) return
+    refreshEngineState()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, needsPatient, form.patient_id, result])
+
   /* ── Evidence-interview handlers ── */
   function markNodeDone(nodeId) {
     setInterviewDone(prev => prev.includes(nodeId) ? prev : [...prev, nodeId])
@@ -582,6 +625,12 @@ export function DiagnosisPage() {
     }
     markNodeDone(node.id)
     setCursorOverride(null)
+    const override = node.id === 'has_labs'
+      ? { has_labs: value ? 'yes' : 'no', no_labs_available: !value }
+      : node.id === 'currently_pregnant'
+        ? { currently_pregnant: value }
+        : { [node.field]: value }
+    refreshEngineState(override)
   }
   function handleChoice(node, value) {
     if (node.id === 'sex' && value !== 'female') {
@@ -591,6 +640,9 @@ export function DiagnosisPage() {
     }
     markNodeDone(node.id)
     setCursorOverride(null)
+    refreshEngineState(node.id === 'sex' && value !== 'female'
+      ? { sex: value, currently_pregnant: false }
+      : { [node.field]: value })
   }
   function handleMultiNone(node) {
     setForm(p => {
@@ -600,18 +652,22 @@ export function DiagnosisPage() {
     })
     markNodeDone(node.id)
     setCursorOverride(null)
+    refreshEngineState(Object.fromEntries(nodeFields(node, interviewCtx).map(f => [f, false])))
   }
   function handleSkipNode(node) {
+    const nextSkipped = interviewSkipped.includes(node.id) ? interviewSkipped : [...interviewSkipped, node.id]
     setInterviewSkipped(prev => prev.includes(node.id) ? prev : [...prev, node.id])
     setInterviewDone(prev => prev.filter(id => id !== node.id))
     if (node.id === 'labs') up('no_labs_available', true)
     setCursorOverride(null)
+    refreshEngineState(node.id === 'labs' ? { no_labs_available: true } : null, nextSkipped)
   }
   function handleInterviewContinue() {
     /* Confirm the node on screen (also when editing an earlier answer via a
        chip) and return to the natural flow position. */
     if (currentNodeId) markNodeDone(currentNodeId)
     setCursorOverride(null)
+    refreshEngineState()
   }
   function interviewBack() {
     if (cursorOverride) { setCursorOverride(null); return }
@@ -704,6 +760,7 @@ export function DiagnosisPage() {
       if (String(form.random_plasma_glucose || '').trim()) payload.random_plasma_glucose = Number(form.random_plasma_glucose)
       if (String(form.ogtt_2h || '').trim()) payload['2h_ogtt_75g'] = Number(form.ogtt_2h)
       if (form.sex === 'female') payload.currently_pregnant = Boolean(form.currently_pregnant)
+      if (form.rapid_onset === true || form.rapid_onset === false) payload.rapid_onset = form.rapid_onset
       if (form.age) payload.age = Number(form.age)
       if (form.bmi) payload.bmi = Number(form.bmi)
       if (form.waist_circumference) payload.waist_circumference = Number(form.waist_circumference)
@@ -861,6 +918,7 @@ export function DiagnosisPage() {
                       onSkip={() => handleSkipNode(currentNode)}
                       onFinish={() => { setStep(REVIEW_STEP); setMaxReached(p => Math.max(p, REVIEW_STEP)) }}
                       canFinish={canFinishEarly}
+                      analyzing={analyzing}
                       editing={Boolean(cursorOverride)}
                     />
                   ) : (
