@@ -83,17 +83,19 @@ def _apply_answer(answers: dict, key: str):
 
 def walk(persona: dict, max_steps: int = 30):
     """Drive the real engine until it stops; answer each asked question with
-    the persona's value when present, else a neutral default."""
+    the persona's value when present, else a neutral default. Mirrors the
+    frontend contract: the answered-KEYS list is sent back on every step."""
     current = dict(persona)
-    order, seen = [], set()
+    answered, order, seen = [], [], set()
     for _ in range(max_steps):
-        state = build_interview_state(current)
+        state = build_interview_state(current, answered=answered)
         if state["done"]:
             return order, state
         key = state["next_question_key"]
         assert key, "engine asked for the next question but returned no key"
         assert key not in seen, f"engine re-asked an already answered question: {key}"
         seen.add(key)
+        answered.append(key)
         order.append(key)
         _apply_answer(current, key)
     raise AssertionError("interview did not terminate")
@@ -195,21 +197,33 @@ def test_onset_is_the_discriminator_once_pattern_exists():
     # strip rapid_onset so the onset question is genuinely unanswered
     persona = {k: v for k, v in BASE.items() if k != "rapid_onset"}
     persona.update({"excessive_thirst": True, "frequent_urination": True})
-    state = build_interview_state(persona)
+    state = build_interview_state(persona, answered=["symptoms_core"])
     assert state["next_question_key"] == "symptom_onset"
+    assert not state["done"]  # an unanswered interview must never start "done"
 
     # the branch follows the answer: gradual → T2-like probe, sudden → T1-like probing
     gradual = {k: v for k, v in persona.items() if k != "rapid_onset" and k not in T2_PROBE_FIELDS}
     gradual["rapid_onset"] = False
-    after_gradual = build_interview_state(gradual)
+    after_gradual = build_interview_state(gradual, answered=["symptoms_core", "symptom_onset"])
     assert after_gradual["next_question_key"] == "t2_probe"
     assert after_gradual["focus"] == "focus_t2_like"
 
     child_sudden = {k: v for k, v in persona.items() if k not in ("rapid_onset", "bed_wetting")}
     child_sudden.update({"rapid_onset": True, "age": 9})
-    after_sudden = build_interview_state(child_sudden)
+    after_sudden = build_interview_state(child_sudden, answered=["symptoms_core", "symptom_onset"])
     assert after_sudden["next_question_key"] in {"child_probe", "warning_signs"}
     assert after_sudden["focus"] == "focus_t1_like"
+
+
+# ── 6b. Default-false form values must never count as answers ──
+def test_default_false_values_do_not_settle_questions():
+    # A pristine form: every boolean present as False, nothing answered yet.
+    state = build_interview_state(dict(BASE))
+    assert not state["done"], "pristine form must not be reported as done"
+    open_keys = {state["next_question_key"]}
+    # the first question must be a real screening question, not a skip-to-end
+    assert open_keys == {"symptoms_core"}
+    assert state["answered_count"] < state["applicable_count"]
 
 
 # ── 7. Never a diagnosis — only *-like patterns + explicit note ──

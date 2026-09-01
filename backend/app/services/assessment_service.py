@@ -23,6 +23,7 @@ class AssessmentService:
             payload.get("answers"),
             skipped=payload.get("skipped"),
             needs_patient=bool(payload.get("needs_patient")),
+            answered=payload.get("answered"),
         )
 
     def final_assessment(self, payload: dict) -> dict:

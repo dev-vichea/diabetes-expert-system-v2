@@ -267,15 +267,16 @@ def analyze_patterns(evidence: dict) -> list:
 # ── end patterns ──
 
 # ── Question registry (keys only — text lives in the frontend) ──
-def _answered_any(keys):
-    return lambda a: any(_as_bool(a.get(k)) is not None for k in keys)
-
-
 def _question_registry() -> list:
     """Static registry: relevance + order per question KEY. The keys MUST
     match the frontend interview node ids — the frontend owns the question
     definitions and text; the backend owns relevance and ordering only.
-    Priorities mirror the original fixed interview order."""
+    Priorities mirror the original fixed interview order.
+
+    Grid / yes-no questions are LIST-DRIVEN: they settle only when the
+    frontend reports them answered (`answered`/`skipped` lists). Their form
+    values default to `false`, so value-based checks would wrongly treat
+    unanswered questions as answered."""
     return [
         {"key": "patient", "priority": 0,
          "applies": lambda ev, needs_patient: needs_patient,
@@ -288,34 +289,34 @@ def _question_registry() -> list:
          "answered": lambda a: str(a.get("sex") or "").strip().lower() in {"male", "female", "other"}},
         {"key": "currently_pregnant", "priority": 3,
          "applies": lambda ev, needs_patient: ev["sex"] == "female" and (ev["age"] is None or 10 <= ev["age"] <= 70),
-         "answered": lambda a: _as_bool(a.get("currently_pregnant")) is not None},
+         "answered": lambda a: False},  # list-driven (default false ≠ answered)
         {"key": "pregnancy_stage", "priority": 4,
          "applies": lambda ev, needs_patient: ev["pregnant"],
          "answered": lambda a: str(a.get("pregnancy_stage") or "").strip().lower() in {"first", "second", "third", "unsure"}},
         {"key": "gdm_previous", "priority": 5,
          "applies": lambda ev, needs_patient: ev["pregnant"],
-         "answered": lambda a: _as_bool(a.get("gestational_history")) is not None},
+         "answered": lambda a: False},  # list-driven (default false ≠ answered)
         {"key": "symptoms_core", "priority": 10,
          "applies": lambda ev, needs_patient: True,
-         "answered": _answered_any(CORE_SYMPTOMS)},
+         "answered": lambda a: False},  # list-driven (default false ≠ answered)
         {"key": "symptom_onset", "priority": 13,
          "applies": lambda ev, needs_patient: bool(ev["core_true"] or ev["other_true"]),
          "answered": lambda a: _as_bool(a.get("rapid_onset")) is not None},
         {"key": "t2_probe", "priority": 14,
          "applies": lambda ev, needs_patient: ev["gradual"] and bool(ev["core_true"]),
-         "answered": _answered_any(T2_PROBE_FIELDS)},
+         "answered": lambda a: False},  # list-driven (default false ≠ answered)
         {"key": "child_probe", "priority": 14,
          "applies": lambda ev, needs_patient: ev["age"] is not None and ev["age"] < 18 and bool(ev["core_true"]),
          "answered": lambda a: _as_bool(a.get("bed_wetting")) is not None},
         {"key": "warning_signs", "priority": 15,
          "applies": lambda ev, needs_patient: True,
-         "answered": _answered_any(SAFETY_FIELDS)},
+         "answered": lambda a: False},  # list-driven (default false ≠ answered)
         {"key": "symptoms_other", "priority": 17,
          "applies": lambda ev, needs_patient: any(_as_bool(ev["answers"].get(k)) is None for k in OTHER_SYMPTOMS),
-         "answered": _answered_any(OTHER_SYMPTOMS)},
+         "answered": lambda a: False},  # list-driven (default false ≠ answered)
         {"key": "risk_factors", "priority": 20,
          "applies": lambda ev, needs_patient: True,
-         "answered": _answered_any(RISK_FIELDS)},
+         "answered": lambda a: False},  # list-driven (default false ≠ answered)
         {"key": "body", "priority": 22,
          "applies": lambda ev, needs_patient: not ev["emergency"],
          "answered": lambda a: _as_float(a.get("bmi")) is not None},
@@ -355,15 +356,21 @@ def _focus_key(ev: dict, patterns: list) -> str:
     return "focus_baseline"
 
 
-def build_interview_state(answers, skipped=None, needs_patient=False) -> dict:
+def build_interview_state(answers, skipped=None, needs_patient=False, answered=None) -> dict:
     """One loop step: re-evaluate ALL evidence from scratch (Ask → Analyze →
     Choose → Re-evaluate) and return the next question KEY, or done.
 
     Nothing is cached between steps — every answer can strengthen, weaken or
     flip a pattern, so the remaining questions are re-ranked each time and no
-    patient is ever locked into one type."""
+    patient is ever locked into one type.
+
+    `answered` carries the frontend's authoritative list of question KEYS the
+    user actually completed. Grid/yes-no questions settle ONLY from it (plus
+    `skipped`) — the form's default `false` values must never count as
+    answers."""
     answers = normalize_answers(answers)
     skipped = {str(k) for k in (skipped or [])}
+    settled_keys = {str(k) for k in (answered or [])} | skipped
     ev = build_evidence(answers)
 
     applicable, open_items = [], []
@@ -371,7 +378,7 @@ def build_interview_state(answers, skipped=None, needs_patient=False) -> dict:
         if not q["applies"](ev, needs_patient):
             continue
         applicable.append(q["key"])
-        if not (q["answered"](answers) or q["key"] in skipped):
+        if not (q["answered"](answers) or q["key"] in settled_keys):
             open_items.append(q)
 
     warning_pending = any(q["key"] == "warning_signs" for q in open_items)

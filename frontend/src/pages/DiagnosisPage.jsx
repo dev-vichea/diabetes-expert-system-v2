@@ -287,7 +287,10 @@ export function DiagnosisPage() {
     [interviewCtx, interviewDone, interviewSkipped],
   )
   const applicableCount = useMemo(() => applicableNodes(INTERVIEW_NODES, interviewCtx).length, [interviewCtx])
-  const currentNodeId = cursorOverride ?? engineState?.next_question_key ?? autoCursor
+  /* When the engine has spoken, its verdict rules — including "done" (null
+     key → the all-answered panel). Only when the engine is unreachable do we
+     fall back to the local static order. */
+  const currentNodeId = cursorOverride ?? (engineState ? engineState.next_question_key : autoCursor)
   const currentNode = useMemo(
     () => INTERVIEW_NODES.find((n) => n.id === currentNodeId) || null,
     [currentNodeId],
@@ -573,19 +576,20 @@ export function DiagnosisPage() {
      of useful questions (or has enough evidence) it reports done and the
      flow routes straight to review. */
   const engineReqRef = useRef(0)
-  async function refreshEngineState(formOverride = null, skippedOverride = null) {
+  async function refreshEngineState({ form: formOverride = null, answered = interviewDone, skipped = interviewSkipped, routeOnDone = true } = {}) {
     const reqId = ++engineReqRef.current
     setAnalyzing(true)
     try {
       const res = await api.post('/assessment/next', {
         answers: { ...form, ...(formOverride || {}) },
-        skipped: skippedOverride || interviewSkipped,
+        answered,
+        skipped,
         needs_patient: needsPatient,
       })
       const data = getApiData(res)
       if (reqId !== engineReqRef.current) return // a newer answer superseded this request
       setEngineState(data && typeof data === 'object' ? data : null)
-      if (data?.done) {
+      if (data?.done && routeOnDone) {
         setStep(REVIEW_STEP)
         setMaxReached(p => Math.max(p, REVIEW_STEP))
       }
@@ -596,10 +600,12 @@ export function DiagnosisPage() {
       if (reqId === engineReqRef.current) setAnalyzing(false)
     }
   }
-  /* Kick the engine whenever the interview (re)opens or the patient changes. */
+  /* Kick the engine whenever the interview (re)opens or the patient changes.
+     Never auto-routes on load — a "Back" press must always land on the
+     interview, even when the engine has nothing left to ask. */
   useEffect(() => {
     if (step !== 1 || result) return
-    refreshEngineState()
+    refreshEngineState({ routeOnDone: false })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, needsPatient, form.patient_id, result])
 
@@ -630,7 +636,7 @@ export function DiagnosisPage() {
       : node.id === 'currently_pregnant'
         ? { currently_pregnant: value }
         : { [node.field]: value }
-    refreshEngineState(override)
+    refreshEngineState({ form: override })
   }
   function handleChoice(node, value) {
     if (node.id === 'sex' && value !== 'female') {
@@ -640,9 +646,11 @@ export function DiagnosisPage() {
     }
     markNodeDone(node.id)
     setCursorOverride(null)
-    refreshEngineState(node.id === 'sex' && value !== 'female'
-      ? { sex: value, currently_pregnant: false }
-      : { [node.field]: value })
+    refreshEngineState({
+      form: node.id === 'sex' && value !== 'female'
+        ? { sex: value, currently_pregnant: false }
+        : { [node.field]: value },
+    })
   }
   function handleMultiNone(node) {
     setForm(p => {
@@ -652,15 +660,20 @@ export function DiagnosisPage() {
     })
     markNodeDone(node.id)
     setCursorOverride(null)
-    refreshEngineState(Object.fromEntries(nodeFields(node, interviewCtx).map(f => [f, false])))
+    refreshEngineState({ form: Object.fromEntries(nodeFields(node, interviewCtx).map(f => [f, false])) })
   }
   function handleSkipNode(node) {
     const nextSkipped = interviewSkipped.includes(node.id) ? interviewSkipped : [...interviewSkipped, node.id]
+    const nextDone = interviewDone.filter(id => id !== node.id)
     setInterviewSkipped(prev => prev.includes(node.id) ? prev : [...prev, node.id])
     setInterviewDone(prev => prev.filter(id => id !== node.id))
     if (node.id === 'labs') up('no_labs_available', true)
     setCursorOverride(null)
-    refreshEngineState(node.id === 'labs' ? { no_labs_available: true } : null, nextSkipped)
+    refreshEngineState({
+      form: node.id === 'labs' ? { no_labs_available: true } : null,
+      answered: nextDone,
+      skipped: nextSkipped,
+    })
   }
   function handleInterviewContinue() {
     /* Confirm the node on screen (also when editing an earlier answer via a

@@ -145,7 +145,6 @@ export function AdaptiveAssessmentPanel({ result }) {
             )}
           </div>
         </div>
-// ── panel part 2 end ──
 
         <div className="flex flex-col gap-2 px-5 py-3.5 sm:flex-row sm:items-start sm:gap-5">
           <div className="flex w-full shrink-0 items-center gap-2 sm:w-48">
