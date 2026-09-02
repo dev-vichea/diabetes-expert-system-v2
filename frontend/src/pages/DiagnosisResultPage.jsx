@@ -459,13 +459,113 @@ export function DiagnosisResultPage() {
   // Prevention guidance appears once the matched pattern reaches medium
   // confidence (≥45, the app's "moderate" band) or above. Results without
   // adaptive pattern data fall back to the overall screening confidence.
-  const showPrevention = adaptiveAssessment
+  const preventionConfidenceOk = adaptiveAssessment
     ? adaptivePatterns.length > 0 && patternConfidence !== null && patternConfidence >= 45
     : certaintyPercent >= 45
   const triggeredRules = Array.isArray(result?.triggered_rules) ? result.triggered_rules : []
   const sortedRules = [...triggeredRules].sort(
     (left, right) => Number(right?.effective_certainty ?? right?.certainty_factor ?? 0) - Number(left?.effective_certainty ?? left?.certainty_factor ?? 0)
   )
+  // ── Dynamic prevention tier ──
+  // The advice adapts to the matched pattern/condition. First match wins —
+  // the strongest evidence class drives the content:
+  //   type1       → hidden (autoimmune; "prevention" does not apply, the
+  //                 urgent-referral advice already leads the card)
+  //   gestational → pregnancy-specific care & prevention
+  //   diabetes    → early-management next steps
+  //   prediabetes → the classic prevention lifestyle block
+  //   risk        → risk-reduction for elevated type 2 risk
+  const triggeredConclusions = new Set(
+    sortedRules.flatMap((rule) => (Array.isArray(rule?.conclusions) ? rule.conclusions : []).map(String))
+  )
+  const topPatternId = adaptivePatterns[0]?.id ? String(adaptivePatterns[0].id) : ''
+  const suspectedTypeLabel = result?.suspected_type?.type ? String(result.suspected_type.type) : ''
+  const preventionTier = (() => {
+    if (
+      suspectedTypeLabel === 'Type 1' ||
+      triggeredConclusions.has('type1_pattern_likely') ||
+      (!suspectedTypeLabel && topPatternId === 'insulin_deficiency_like')
+    ) {
+      return null
+    }
+    if (
+      suspectedTypeLabel === 'Gestational' ||
+      triggeredConclusions.has('gestational_diabetes_likely') ||
+      topPatternId === 'gestational_risk'
+    ) {
+      return 'gestational'
+    }
+    if (
+      suspectedTypeLabel === 'Type 2' ||
+      ['diabetes_confirmed', 'diabetes_likely', 'diabetes_possible', 'classic_symptoms', 'symptom_only_screening']
+        .some((name) => triggeredConclusions.has(name))
+    ) {
+      return 'diabetes'
+    }
+    if (triggeredConclusions.has('prediabetes_possible')) return 'prediabetes'
+    if (triggeredConclusions.has('type2_risk_increased') || topPatternId === 'insulin_resistance_like') return 'risk'
+    return null
+  })()
+  const showPrevention = preventionConfidenceOk && preventionTier !== null
+
+  const preventionContent = (() => {
+    switch (preventionTier) {
+      case 'prediabetes':
+        return {
+          title: t('diagnosisResult.preventionTitle', 'Prevention'),
+          intro: t('diagnosisResult.preventionIntro', 'Healthy lifestyle choices can help prevent type 2 diabetes. If you have prediabetes, lifestyle changes may slow the condition or keep it from becoming diabetes.'),
+          listIntro: t('diagnosisResult.preventionListIntro', 'A healthy lifestyle includes the following:'),
+          items: [
+            { lead: t('diagnosisResult.preventionEatLead', 'Eat healthy foods.'), text: t('diagnosisResult.preventionEatText', 'Choose foods lower in fat and calories and higher in fiber. Focus on fruits, vegetables and whole grains.') },
+            { lead: t('diagnosisResult.preventionActiveLead', 'Be active.'), text: t('diagnosisResult.preventionActiveText', 'Aim for 150 or more minutes a week of moderate to vigorous aerobic activity, such as brisk walking, bicycling, running or swimming.') },
+            { lead: t('diagnosisResult.preventionWeightLead', 'Lose weight.'), text: t('diagnosisResult.preventionWeightText', 'If you are overweight, losing some weight and keeping it off may slow prediabetes from becoming type 2 diabetes. If you have prediabetes, losing 7% to 10% of your body weight may lower the risk of diabetes.') },
+            { lead: t('diagnosisResult.preventionSitLead', "Don't sit for long."), text: t('diagnosisResult.preventionSitText', 'Sitting for long periods can raise the risk of type 2 diabetes. Get up every 30 minutes and move around for at least a few minutes.') },
+          ],
+          note: t('diagnosisResult.preventionMetformin', "People with prediabetes may take metformin (Fortamet, Glumetza, others), a diabetes medicine, to lower the risk of type 2 diabetes. This is most often prescribed for older adults who are obese and who can't lower blood sugar levels with lifestyle changes."),
+        }
+      case 'gestational':
+        return {
+          title: t('diagnosisResult.preventionGdmTitle', 'Gestational diabetes — care & prevention'),
+          intro: t('diagnosisResult.preventionGdmIntro', 'During pregnancy your blood-sugar targets are stricter. Gestational diabetes can usually be managed well — and its risks greatly reduced — with early care.'),
+          listIntro: null,
+          items: [
+            { lead: t('diagnosisResult.preventionGdmWatchLead', 'Watch your blood sugar.'), text: t('diagnosisResult.preventionGdmWatchText', 'Test as your obstetric team advises. The 75g OGTT around weeks 24–28 confirms or rules out gestational diabetes — earlier if you have risk factors.') },
+            { lead: t('diagnosisResult.preventionGdmEatLead', 'Eat for steady glucose.'), text: t('diagnosisResult.preventionGdmEatText', 'Smaller, regular meals built on whole grains, vegetables and protein help avoid sugar spikes. Ask for a dietitian referral.') },
+            { lead: t('diagnosisResult.preventionGdmActiveLead', 'Stay active.'), text: t('diagnosisResult.preventionGdmActiveText', 'A short walk after meals lowers glucose spikes. Keep to the activity level your doctor approves for your pregnancy.') },
+            { lead: t('diagnosisResult.preventionGdmFollowUpLead', 'Follow up after birth.'), text: t('diagnosisResult.preventionGdmFollowUpText', 'Gestational diabetes raises your lifetime type 2 risk. Re-test 4–12 weeks after delivery, then every 1–3 years.') },
+          ],
+          note: t('diagnosisResult.preventionGdmNote', 'Any diabetes treatment during pregnancy needs obstetric supervision — never start or stop medication on your own.'),
+        }
+      case 'diabetes':
+        return {
+          title: t('diagnosisResult.preventionDiabetesTitle', 'Diabetes — protect yourself starting today'),
+          intro: t('diagnosisResult.preventionDiabetesIntro', 'Your results meet diabetes-level evidence. These steps protect your eyes, kidneys, nerves and heart — the earlier you start, the better.'),
+          listIntro: null,
+          items: [
+            { lead: t('diagnosisResult.preventionDiabetesDoctorLead', 'See a doctor promptly.'), text: t('diagnosisResult.preventionDiabetesDoctorText', 'Bring these results with you. Diabetes treatment works best when it starts early — your doctor will set targets and a monitoring plan with you.') },
+            { lead: t('diagnosisResult.preventionDiabetesLabsLead', 'Confirm with lab tests.'), text: t('diagnosisResult.preventionDiabetesLabsText', 'If you have not had one yet, a fasting glucose or HbA1c test confirms the result and becomes your baseline for tracking.') },
+            { lead: t('diagnosisResult.preventionDiabetesBasicsLead', 'Start the basics now.'), text: t('diagnosisResult.preventionDiabetesBasicsText', 'The same lifestyle that prevents diabetes also treats it: healthy food, 150 minutes of activity a week, and a steady weight.') },
+            { lead: t('diagnosisResult.preventionDiabetesCheckLead', 'Check for complications.'), text: t('diagnosisResult.preventionDiabetesCheckText', 'Ask your doctor about eye, kidney, foot and blood-pressure checks — catching problems early prevents lasting damage.') },
+          ],
+          note: t('diagnosisResult.preventionDiabetesNote', 'Urgent warning signs — vomiting, fruity breath, deep rapid breathing, or confusion — need emergency care straight away.'),
+        }
+      case 'risk':
+        return {
+          title: t('diagnosisResult.preventionRiskTitle', 'Lower your risk now'),
+          intro: t('diagnosisResult.preventionRiskIntro', 'No diabetes yet — but your risk factors make prevention worthwhile. Small, steady changes cut the risk sharply.'),
+          listIntro: null,
+          items: [
+            { lead: t('diagnosisResult.preventionRiskMoveLead', 'Move 150 minutes a week.'), text: t('diagnosisResult.preventionRiskMoveText', 'Brisk walking, cycling or swimming — anything that raises your breathing — is the single most effective habit.') },
+            { lead: t('diagnosisResult.preventionRiskWeightLead', 'Keep a healthy weight.'), text: t('diagnosisResult.preventionRiskWeightText', 'If you are overweight, losing 5–10% of your body weight measurably improves blood sugar and blood pressure.') },
+            { lead: t('diagnosisResult.preventionRiskFoodLead', 'Eat more whole foods.'), text: t('diagnosisResult.preventionRiskFoodText', 'Build meals around vegetables, whole grains and lean protein; go easy on sugary drinks and processed snacks.') },
+            { lead: t('diagnosisResult.preventionRiskScreenLead', 'Re-screen on schedule.'), text: t('diagnosisResult.preventionRiskScreenText', 'With risk factors, screen for diabetes every 1–3 years — sooner if prediabetes is ever found.') },
+          ],
+          note: null,
+        }
+      default:
+        return null
+    }
+  })()
 
   const explanation = result?.explanation && typeof result.explanation === 'object' ? result.explanation : {}
   const keyFindings = explanation?.key_findings && typeof explanation.key_findings === 'object' ? explanation.key_findings : {}
@@ -678,25 +778,22 @@ export function DiagnosisResultPage() {
             </p>
           </div>
         )}
-        {showPrevention ? (
+        {showPrevention && preventionContent ? (
           <div className="mt-6 rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-900/15 sm:p-5">
             <h4 className="flex items-center gap-2 text-lg font-black tracking-tight text-slate-900 dark:text-slate-100">
               <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-              {t('diagnosisResult.preventionTitle', 'Prevention')}
+              {preventionContent.title}
             </h4>
             <p className="mt-2 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
-              {t('diagnosisResult.preventionIntro', 'Healthy lifestyle choices can help prevent type 2 diabetes. If you have prediabetes, lifestyle changes may slow the condition or keep it from becoming diabetes.')}
+              {preventionContent.intro}
             </p>
-            <p className="mt-3 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
-              {t('diagnosisResult.preventionListIntro', 'A healthy lifestyle includes the following:')}
-            </p>
+            {preventionContent.listIntro ? (
+              <p className="mt-3 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
+                {preventionContent.listIntro}
+              </p>
+            ) : null}
             <ul className="mt-2 space-y-2.5">
-              {[
-                { lead: t('diagnosisResult.preventionEatLead', 'Eat healthy foods.'), text: t('diagnosisResult.preventionEatText', 'Choose foods lower in fat and calories and higher in fiber. Focus on fruits, vegetables and whole grains.') },
-                { lead: t('diagnosisResult.preventionActiveLead', 'Be active.'), text: t('diagnosisResult.preventionActiveText', 'Aim for 150 or more minutes a week of moderate to vigorous aerobic activity, such as brisk walking, bicycling, running or swimming.') },
-                { lead: t('diagnosisResult.preventionWeightLead', 'Lose weight.'), text: t('diagnosisResult.preventionWeightText', 'If you are overweight, losing some weight and keeping it off may slow prediabetes from becoming type 2 diabetes. If you have prediabetes, losing 7% to 10% of your body weight may lower the risk of diabetes.') },
-                { lead: t('diagnosisResult.preventionSitLead', "Don't sit for long."), text: t('diagnosisResult.preventionSitText', 'Sitting for long periods can raise the risk of type 2 diabetes. Get up every 30 minutes and move around for at least a few minutes.') },
-              ].map((item) => (
+              {preventionContent.items.map((item) => (
                 <li key={item.lead} className="flex items-start gap-2.5 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
                   <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 dark:bg-emerald-400" />
                   <span>
@@ -706,9 +803,11 @@ export function DiagnosisResultPage() {
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
-              {t('diagnosisResult.preventionMetformin', "People with prediabetes may take metformin (Fortamet, Glumetza, others), a diabetes medicine, to lower the risk of type 2 diabetes. This is most often prescribed for older adults who are obese and who can't lower blood sugar levels with lifestyle changes.")}
-            </p>
+            {preventionContent.note ? (
+              <p className="mt-3 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
+                {preventionContent.note}
+              </p>
+            ) : null}
           </div>
         ) : null}
       </SurfaceSection>

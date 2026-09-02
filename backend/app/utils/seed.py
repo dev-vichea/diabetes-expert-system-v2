@@ -1,10 +1,19 @@
 import json
 
+from flask import current_app
+
 from werkzeug.security import generate_password_hash
 
 from app.extensions import db
 from app.models import Permission, Patient, Role, Rule, RuleAction, RuleCategory, RuleCondition, User
 from app.utils.diabetes_rule_seed_data import DIABETES_RULE_SEED
+from app.utils.diabetes_rule_seed_data_v2 import DIABETES_RULE_SEED_V2
+
+# Structured seed versions. v1 = full historical rule set; v2 = minimal rule
+# set whose thresholds and clusters mirror the adaptive assessment engine
+# (see app.utils.diabetes_rule_seed_data_v2). Select via the RULES_SEED_VERSION
+# config value; v1 remains the default so existing deployments are unchanged.
+STRUCTURED_RULE_SEEDS = {"v1": DIABETES_RULE_SEED, "v2": DIABETES_RULE_SEED_V2}
 
 DEFAULT_PERMISSIONS = [
     {"code": "user.view", "description": "View users"},
@@ -118,9 +127,23 @@ def seed_demo_data():
     _seed_rule_categories()
     _seed_permissions_roles_users()
     _seed_patient_profile()
-    _archive_legacy_seed_rules()
-    _seed_structured_rules()
+    active_seed = _active_structured_seed()
+    _archive_legacy_seed_rules(
+        active_codes={str(rule["code"]).strip().lower() for rule in active_seed}
+    )
+    _seed_structured_rules(active_seed)
     db.session.commit()
+
+
+def _active_structured_seed() -> list:
+    """The structured rule seed selected by RULES_SEED_VERSION (default v1)."""
+    version = str(current_app.config.get("RULES_SEED_VERSION") or "v1").strip().lower() or "v1"
+    seed = STRUCTURED_RULE_SEEDS.get(version)
+    if seed is None:
+        raise ValueError(
+            f"Unknown RULES_SEED_VERSION {version!r} (expected one of {sorted(STRUCTURED_RULE_SEEDS)})"
+        )
+    return seed
 
 
 def _seed_rule_categories() -> None:
@@ -190,10 +213,12 @@ def _seed_patient_profile() -> None:
         )
 
 
-def _seed_structured_rules() -> None:
+def _seed_structured_rules(active_seed=None) -> None:
+    if active_seed is None:
+        active_seed = _active_structured_seed()
     categories = {row.code: row for row in RuleCategory.query.all()}
 
-    for rule_data in DIABETES_RULE_SEED:
+    for rule_data in active_seed:
         code = str(rule_data["code"]).strip().lower()
         rule = Rule.query.filter_by(code=code).first()
         if not rule:
@@ -257,10 +282,22 @@ def _seed_structured_rules() -> None:
             )
 
 
-def _archive_legacy_seed_rules() -> None:
+def _archive_legacy_seed_rules(active_codes=None) -> None:
     for code in LEGACY_DEMO_RULE_CODES:
         row = Rule.query.filter_by(code=code).first()
         if row and row.status != "archived":
+            row.status = "archived"
+
+    if active_codes is None:
+        return
+
+    # Version switch: archive rules seeded by the OTHER seed version so exactly
+    # one seed's rules run at a time. Only seeded prefixes are touched —
+    # clinician-authored rules keep whatever status they have.
+    seeded_prefixes = ("triage-", "diagnosis-", "classification-", "recommendation-", "v2-")
+    for row in Rule.query.filter(Rule.status != "archived"):
+        code = str(row.code or "").strip().lower()
+        if code.startswith(seeded_prefixes) and code not in active_codes:
             row.status = "archived"
 
 

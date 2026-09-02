@@ -77,6 +77,8 @@ RECOMMENDATION_REWRITES: dict[str, str] = {
     "Based on your age and demographic profile, routine diabetes screening is recommended. \" \"Please schedule: Fasting glucose or HbA1c test. \" \"If results are normal, repeat every 3 years.": "Routine check: one fasting glucose or HbA1c test now — repeat every 3 years if normal.",
     "Good news — your assessment shows no indication of diabetes or prediabetes at this time. \" \"To maintain your health: \" \"(1) Continue a balanced diet and regular physical activity. \" \"(2) Schedule routine health check-ups as recommended by your doctor. \" \"(3) If you develop new symptoms (excessive thirst, frequent urination, unexplained weight loss), \" \"seek medical evaluation promptly.": "Good news — no signs of diabetes today. Keep your habits, re-screen routinely, and come back if new symptoms appear.",
     "Your assessment did not reveal strong indicators of diabetes. \" \"Continue routine health monitoring and maintain a healthy lifestyle. \" \"If new symptoms develop, consult your healthcare provider.": "No strong diabetes signs in this assessment. Keep healthy routines and re-check if anything changes.",
+    # v2 rule seed (app.utils.diabetes_rule_seed_data_v2)
+    "Test results meet the diabetes diagnostic threshold. See a healthcare provider promptly to start treatment and a monitoring plan — bring these results with you.": "Your test results meet the diabetes threshold. See a doctor soon to start treatment and a monitoring plan — bring these results with you.",
 }
 
 
