@@ -21,8 +21,6 @@ import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
 import { EmptyState, StatusBadge, ConfirmDialog } from '@/components/ui'
 import { ConditionEducationPanel } from '@/components/diagnosis/ConditionEducationPanel'
-import { WhyThisResultPanel } from '@/components/diagnosis/WhyThisResultPanel'
-import { AdaptiveAssessmentPanel } from '@/components/diagnosis/AdaptiveAssessmentPanel'
 import { PlainSummaryStrip } from '@/components/diagnosis/PlainSummaryStrip'
 import { getSymptomGuideKey } from '@/lib/symptom-guide'
 import { TechnicalDetailsSection } from '@/components/diagnosis/TechnicalDetailsSection'
@@ -678,8 +676,8 @@ export function DiagnosisResultPage() {
         <h3 className="text-xl font-black tracking-tight text-slate-800 dark:text-slate-100">{t('diagnosisResult.clinicalEvidence', 'The evidence behind this result')}</h3>
       </div>
 
-      <div className="mt-3 grid min-w-0 gap-3 xl:grid-cols-12">
-        <article className="xl:col-span-6">
+      <div className="mt-3 grid min-w-0 gap-3">
+        <article>
           <SurfaceSection title={t('diagnosisResult.keyDiagnosticIndicators', 'Key Diagnostic Indicators')} icon={FlaskConical}>
             <div className="grid gap-2 sm:grid-cols-2">
               <LabIndicatorCard
@@ -719,7 +717,7 @@ export function DiagnosisResultPage() {
           </SurfaceSection>
         </article>
 
-        <article className="xl:col-span-4">
+        <article>
           <SurfaceSection title={t('diagnosisResult.relevantHistory', 'Relevant History & Symptoms')} icon={Heart}>
             {matchedSymptoms.length ? (
               <div>
@@ -756,7 +754,7 @@ export function DiagnosisResultPage() {
           </SurfaceSection>
         </article>
 
-        <article className="xl:col-span-2">
+        <article>
           <SurfaceSection title={t('diagnosisResult.riskFactors', 'Risk Factors')} icon={Zap}>
             {matchedRiskFactors.length ? (
               <div>
@@ -776,9 +774,6 @@ export function DiagnosisResultPage() {
           </SurfaceSection>
         </article>
       </div>
-
-      <WhyThisResultPanel result={result} />
-      <AdaptiveAssessmentPanel result={result} />
 
       <ConditionEducationPanel result={result} />
 
