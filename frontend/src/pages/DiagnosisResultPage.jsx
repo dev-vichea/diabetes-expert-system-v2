@@ -453,6 +453,15 @@ export function DiagnosisResultPage() {
   const matchedSymptoms = Array.isArray(result?.matched_symptoms) ? result.matched_symptoms : []
   const matchedRiskFactors = Array.isArray(result?.matched_risk_factors) ? result.matched_risk_factors : []
   const recommendations = Array.isArray(result?.recommendations) ? result.recommendations : []
+  const adaptiveAssessment = result?.adaptive_assessment && typeof result.adaptive_assessment === 'object' ? result.adaptive_assessment : null
+  const adaptivePatterns = Array.isArray(adaptiveAssessment?.patterns) ? adaptiveAssessment.patterns : []
+  const patternConfidence = Number.isFinite(Number(adaptiveAssessment?.screening_confidence)) ? Number(adaptiveAssessment?.screening_confidence) : null
+  // Prevention guidance appears once the matched pattern reaches medium
+  // confidence (≥45, the app's "moderate" band) or above. Results without
+  // adaptive pattern data fall back to the overall screening confidence.
+  const showPrevention = adaptiveAssessment
+    ? adaptivePatterns.length > 0 && patternConfidence !== null && patternConfidence >= 45
+    : certaintyPercent >= 45
   const triggeredRules = Array.isArray(result?.triggered_rules) ? result.triggered_rules : []
   const sortedRules = [...triggeredRules].sort(
     (left, right) => Number(right?.effective_certainty ?? right?.certainty_factor ?? 0) - Number(left?.effective_certainty ?? left?.certainty_factor ?? 0)
@@ -669,6 +678,39 @@ export function DiagnosisResultPage() {
             </p>
           </div>
         )}
+        {showPrevention ? (
+          <div className="mt-6 rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-900/15 sm:p-5">
+            <h4 className="flex items-center gap-2 text-lg font-black tracking-tight text-slate-900 dark:text-slate-100">
+              <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              {t('diagnosisResult.preventionTitle', 'Prevention')}
+            </h4>
+            <p className="mt-2 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
+              {t('diagnosisResult.preventionIntro', 'Healthy lifestyle choices can help prevent type 2 diabetes. If you have prediabetes, lifestyle changes may slow the condition or keep it from becoming diabetes.')}
+            </p>
+            <p className="mt-3 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
+              {t('diagnosisResult.preventionListIntro', 'A healthy lifestyle includes the following:')}
+            </p>
+            <ul className="mt-2 space-y-2.5">
+              {[
+                { lead: t('diagnosisResult.preventionEatLead', 'Eat healthy foods.'), text: t('diagnosisResult.preventionEatText', 'Choose foods lower in fat and calories and higher in fiber. Focus on fruits, vegetables and whole grains.') },
+                { lead: t('diagnosisResult.preventionActiveLead', 'Be active.'), text: t('diagnosisResult.preventionActiveText', 'Aim for 150 or more minutes a week of moderate to vigorous aerobic activity, such as brisk walking, bicycling, running or swimming.') },
+                { lead: t('diagnosisResult.preventionWeightLead', 'Lose weight.'), text: t('diagnosisResult.preventionWeightText', 'If you are overweight, losing some weight and keeping it off may slow prediabetes from becoming type 2 diabetes. If you have prediabetes, losing 7% to 10% of your body weight may lower the risk of diabetes.') },
+                { lead: t('diagnosisResult.preventionSitLead', "Don't sit for long."), text: t('diagnosisResult.preventionSitText', 'Sitting for long periods can raise the risk of type 2 diabetes. Get up every 30 minutes and move around for at least a few minutes.') },
+              ].map((item) => (
+                <li key={item.lead} className="flex items-start gap-2.5 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 dark:bg-emerald-400" />
+                  <span>
+                    <strong className="font-bold text-slate-900 dark:text-slate-100">{item.lead}</strong>{' '}
+                    {item.text}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
+              {t('diagnosisResult.preventionMetformin', "People with prediabetes may take metformin (Fortamet, Glumetza, others), a diabetes medicine, to lower the risk of type 2 diabetes. This is most often prescribed for older adults who are obese and who can't lower blood sugar levels with lifestyle changes.")}
+            </p>
+          </div>
+        ) : null}
       </SurfaceSection>
 
       <div className="flex items-center gap-3 pt-6 pb-2">
