@@ -632,6 +632,22 @@ export function DiagnosisPage() {
     setInterviewDone(prev => prev.includes(nodeId) ? prev : [...prev, nodeId])
     setInterviewSkipped(prev => prev.filter(id => id !== nodeId))
   }
+  /* Like markNodeDone, but RETURNS the fresh done/skipped lists. React state
+     updates are asynchronous — the engine call that follows an answer must
+     carry these lists explicitly. Sending the render-time list instead made
+     the backend see the question the user had JUST confirmed as still open
+     and re-ask it: the answer got noted (the chip renders from state) yet
+     the card only moved on the SECOND Continue click. Each handler settles
+     at most one node per event, so the render-time lists here are safe to
+     read; the prefill effects keep using markNodeDone (they never consult
+     the engine immediately after). */
+  function settleNode(nodeId) {
+    const nextDone = interviewDone.includes(nodeId) ? interviewDone : [...interviewDone, nodeId]
+    const nextSkipped = interviewSkipped.filter(id => id !== nodeId)
+    setInterviewDone(nextDone)
+    setInterviewSkipped(nextSkipped)
+    return { nextDone, nextSkipped }
+  }
   function handleYesNo(node, value) {
     if (!beginAdvance()) return
     if (node.id === 'has_labs') {
@@ -648,14 +664,14 @@ export function DiagnosisPage() {
     } else {
       up(node.field, value)
     }
-    markNodeDone(node.id)
+    const { nextDone, nextSkipped } = settleNode(node.id)
     setCursorOverride(null)
     const override = node.id === 'has_labs'
       ? { has_labs: value ? 'yes' : 'no', no_labs_available: !value }
       : node.id === 'currently_pregnant'
         ? { currently_pregnant: value }
         : { [node.field]: value }
-    refreshEngineState({ form: override })
+    refreshEngineState({ form: override, answered: nextDone, skipped: nextSkipped })
   }
   function handleChoice(node, value) {
     if (!beginAdvance()) return
@@ -664,12 +680,14 @@ export function DiagnosisPage() {
     } else {
       up(node.field, value)
     }
-    markNodeDone(node.id)
+    const { nextDone, nextSkipped } = settleNode(node.id)
     setCursorOverride(null)
     refreshEngineState({
       form: node.id === 'sex' && value !== 'female'
         ? { sex: value, currently_pregnant: false }
         : { [node.field]: value },
+      answered: nextDone,
+      skipped: nextSkipped,
     })
   }
   function handleMultiNone(node) {
@@ -679,9 +697,13 @@ export function DiagnosisPage() {
       for (const f of nodeFields(node, interviewCtx)) next[f] = false
       return next
     })
-    markNodeDone(node.id)
+    const { nextDone, nextSkipped } = settleNode(node.id)
     setCursorOverride(null)
-    refreshEngineState({ form: Object.fromEntries(nodeFields(node, interviewCtx).map(f => [f, false])) })
+    refreshEngineState({
+      form: Object.fromEntries(nodeFields(node, interviewCtx).map(f => [f, false])),
+      answered: nextDone,
+      skipped: nextSkipped,
+    })
   }
   function handleSkipNode(node) {
     if (!beginAdvance()) return
@@ -701,9 +723,14 @@ export function DiagnosisPage() {
     /* Confirm the node on screen (also when editing an earlier answer via a
        chip) and return to the natural flow position. */
     if (!beginAdvance()) return
-    if (currentNodeId) markNodeDone(currentNodeId)
-    setCursorOverride(null)
-    refreshEngineState()
+    if (currentNodeId) {
+      const { nextDone, nextSkipped } = settleNode(currentNodeId)
+      setCursorOverride(null)
+      refreshEngineState({ answered: nextDone, skipped: nextSkipped })
+    } else {
+      setCursorOverride(null)
+      refreshEngineState()
+    }
   }
   function interviewBack() {
     if (cursorOverride) { setCursorOverride(null); return }
