@@ -97,7 +97,19 @@ def build_evidence(answers) -> dict:
     safety_true = trues(SAFETY_FIELDS)
     risk_true = trues(RISK_FIELDS)
 
-    emergency = any(k in safety_true for k in EMERGENCY_FIELDS) or _as_bool(answers.get("crisis")) is True
+    # Emergency = a DKA-like CLUSTER, never one nonspecific symptom: a lone
+    # stomach ache (very common, non-specific) must not flip the session into
+    # "emergency" and end the interview instantly. Meaningful combinations only:
+    #   keto sign + GI sign        (fruity breath / Kussmaul breathing + vomiting or pain)
+    #   vomiting + abdominal pain  (two distinct emergency-type signs)
+    # plus the explicit user-flagged crisis and critical lab values.
+    keto_signs = [k for k in ("fruity_breath", "deep_rapid_breathing") if k in safety_true]
+    gi_signs = [k for k in ("vomiting", "abdominal_pain") if k in safety_true]
+    emergency = (
+        _as_bool(answers.get("crisis")) is True
+        or (bool(keto_signs) and bool(gi_signs))
+        or ("vomiting" in gi_signs and "abdominal_pain" in gi_signs)
+    )
 
     age = _as_float(answers.get("age"))
     bmi = _as_float(answers.get("bmi"))
@@ -137,6 +149,11 @@ def build_evidence(answers) -> dict:
         "safety_true": safety_true,
         "risk_true": risk_true,
         "emergency": emergency,
+        "keto_signs": keto_signs,
+        "gi_signs": gi_signs,
+        # Some emergency-type sign present but no full cluster yet — a pattern
+        # under investigation, not a verdict.
+        "emergency_partial": bool(keto_signs or gi_signs) and not emergency,
         "age": age,
         "bmi": bmi,
         "sex": sex,
@@ -388,10 +405,15 @@ def build_interview_state(answers, skipped=None, needs_patient=False, answered=N
         or (ev["emergency"] and not warning_pending)
     )
     if done and open_items:
-        # The evidence floor never suppresses the differential probes — they
-        # are exactly the questions that tell competing patterns apart.
-        probe_keys = {"symptom_onset", "child_probe", "t2_probe"}
-        if any(q["key"] in probe_keys for q in open_items):
+        # "Almost enough" rule: the evidence floor never stops the interview
+        # while an essential screen is still open — the onset/child/T2 probes
+        # that tell competing patterns apart, plus the safety and risk
+        # screens. A partial emergency picture (e.g. stomach pain without any
+        # ketone sign) is a pattern to investigate, not a verdict, so the
+        # interview continues by the same rule.
+        essential_keys = {"symptom_onset", "child_probe", "t2_probe",
+                          "warning_signs", "risk_factors"}
+        if any(q["key"] in essential_keys for q in open_items):
             done = False
 
     next_key = None

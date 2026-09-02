@@ -70,8 +70,10 @@ function YesNoButtons({ value, onPick, noLabel, yesLabel, t }) {
   )
 }
 
-function MultiGrid({ node, form, t, onToggle, onNone }) {
-  const fields = nodeFields(node, { form })
+function MultiGrid({ node, form, ctx, t, onToggle, onNone }) {
+  /* ctx carries the settled probe ids so the shrink filter can't mistake a
+     just-tapped choice for "already asked" — choices must stay visible. */
+  const fields = nodeFields(node, ctx || { form })
   const selectedCount = fields.filter((f) => form[f]).length
   return (
     <div>
@@ -134,6 +136,7 @@ export function InterviewFlow(props) {
     onField, onPickSegment, onSetCustom, onCalculateBmi,
     onYesNo, onChoice, onToggleMulti, onMultiNone,
     onContinue, onSkip, onFinish, canFinish, analyzing, editing,
+    doneIds = [], skippedIds = [],
   } = props
 
   const inputRef = useRef(null)
@@ -220,7 +223,7 @@ export function InterviewFlow(props) {
       />
     )
   } else if (node.kind === 'multi') {
-    body = <MultiGrid node={node} form={form} t={t} onToggle={onToggleMulti} onNone={onMultiNone} />
+    body = <MultiGrid node={node} form={form} ctx={{ form, doneIds, skippedIds }} t={t} onToggle={onToggleMulti} onNone={onMultiNone} />
   } else if (node.kind === 'text') {
     body = (
       <textarea

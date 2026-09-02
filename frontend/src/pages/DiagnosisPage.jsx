@@ -277,7 +277,12 @@ export function DiagnosisPage() {
   const [engineState, setEngineState] = useState(null)
   const [analyzing, setAnalyzing] = useState(false)
 
-  const interviewCtx = useMemo(() => ({ form, needsPatient }), [form, needsPatient])
+  /* Settled node ids ride along so grids can shrink by "already asked by a
+     probe" (node id) instead of by form values. */
+  const interviewCtx = useMemo(
+    () => ({ form, needsPatient, doneIds: interviewDone, skippedIds: interviewSkipped }),
+    [form, needsPatient, interviewDone, interviewSkipped],
+  )
   const autoCursor = useMemo(
     () => firstOpenNode(INTERVIEW_NODES, interviewCtx, interviewDone, interviewSkipped),
     [interviewCtx, interviewDone, interviewSkipped],
@@ -576,6 +581,18 @@ export function DiagnosisPage() {
      of useful questions (or has enough evidence) it reports done and the
      flow routes straight to review. */
   const engineReqRef = useRef(0)
+  /* ── Double-click guard ──
+     Advancing actions (answer / continue / skip) are ignored for a short
+     window after the previous one AND after a new card renders. Without it,
+     the second click of a double-click lands on the NEXT question's button
+     (same screen position) and silently skips that question. */
+  const ADVANCE_COOLDOWN_MS = 450
+  const advanceLockRef = useRef(0)
+  function beginAdvance() {
+    if (Date.now() - advanceLockRef.current < ADVANCE_COOLDOWN_MS) return false
+    advanceLockRef.current = Date.now()
+    return true
+  }
   async function refreshEngineState({ form: formOverride = null, answered = interviewDone, skipped = interviewSkipped, routeOnDone = true } = {}) {
     const reqId = ++engineReqRef.current
     setAnalyzing(true)
@@ -588,6 +605,7 @@ export function DiagnosisPage() {
       })
       const data = getApiData(res)
       if (reqId !== engineReqRef.current) return // a newer answer superseded this request
+      advanceLockRef.current = Date.now() // new card about to render — restart the cooldown from "card visible"
       setEngineState(data && typeof data === 'object' ? data : null)
       if (data?.done && routeOnDone) {
         setStep(REVIEW_STEP)
@@ -615,6 +633,7 @@ export function DiagnosisPage() {
     setInterviewSkipped(prev => prev.filter(id => id !== nodeId))
   }
   function handleYesNo(node, value) {
+    if (!beginAdvance()) return
     if (node.id === 'has_labs') {
       up('has_labs', value ? 'yes' : 'no')
       if (value) {
@@ -639,6 +658,7 @@ export function DiagnosisPage() {
     refreshEngineState({ form: override })
   }
   function handleChoice(node, value) {
+    if (!beginAdvance()) return
     if (node.id === 'sex' && value !== 'female') {
       setForm(p => ({ ...p, sex: value, currently_pregnant: false, pregnancy_stage: '', gestational_history: false }))
     } else {
@@ -653,6 +673,7 @@ export function DiagnosisPage() {
     })
   }
   function handleMultiNone(node) {
+    if (!beginAdvance()) return
     setForm(p => {
       const next = { ...p }
       for (const f of nodeFields(node, interviewCtx)) next[f] = false
@@ -663,6 +684,7 @@ export function DiagnosisPage() {
     refreshEngineState({ form: Object.fromEntries(nodeFields(node, interviewCtx).map(f => [f, false])) })
   }
   function handleSkipNode(node) {
+    if (!beginAdvance()) return
     const nextSkipped = interviewSkipped.includes(node.id) ? interviewSkipped : [...interviewSkipped, node.id]
     const nextDone = interviewDone.filter(id => id !== node.id)
     setInterviewSkipped(prev => prev.includes(node.id) ? prev : [...prev, node.id])
@@ -678,6 +700,7 @@ export function DiagnosisPage() {
   function handleInterviewContinue() {
     /* Confirm the node on screen (also when editing an earlier answer via a
        chip) and return to the natural flow position. */
+    if (!beginAdvance()) return
     if (currentNodeId) markNodeDone(currentNodeId)
     setCursorOverride(null)
     refreshEngineState()
@@ -933,6 +956,8 @@ export function DiagnosisPage() {
                       canFinish={canFinishEarly}
                       analyzing={analyzing}
                       editing={Boolean(cursorOverride)}
+                      doneIds={interviewDone}
+                      skippedIds={interviewSkipped}
                     />
                   ) : (
                     <div className="surface mx-auto w-full max-w-2xl p-8 text-center">

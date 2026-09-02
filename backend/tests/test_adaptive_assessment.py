@@ -191,6 +191,64 @@ def test_emergency_short_circuits_workup():
     assert final["patterns"][0]["id"] == "hyperglycemic_emergency_risk"
     assert final["recommended_next_step"] == "seek_emergency_care"
 
+    # A keto sign + a GI sign is also a genuine cluster.
+    keto_gi = dict(BASE)
+    keto_gi.update({"fruity_breath": True, "abdominal_pain": True,
+                    "frequent_urination": True, "excessive_thirst": True})
+    order2, _state2 = walk(keto_gi)
+    assert "has_labs" not in order2 and "labs" not in order2
+    assert "body" not in order2
+    final2 = generate_final_assessment(keto_gi)
+    assert final2["patterns"][0]["id"] == "hyperglycemic_emergency_risk"
+    assert final2["recommended_next_step"] == "seek_emergency_care"
+
+
+# ── 5b. ONE nonspecific sign is a pattern to investigate, not a verdict ──
+def test_single_nonspecific_sign_keeps_the_interview_going():
+    """The reported bug: Excessive Thirst + Abdominal Pain ended the interview
+    instantly. A lone stomach ache must not flip the session into "emergency"
+    — the engine keeps asking until enough evidence is collected."""
+    persona = {k: v for k, v in BASE.items() if k != "rapid_onset"}
+    persona.update({"excessive_thirst": True, "abdominal_pain": True})
+
+    ev = build_evidence(persona)
+    assert ev["emergency"] is False           # thirst + stomach pain ≠ emergency
+    assert ev["emergency_partial"] is True    # …but it IS under investigation
+
+    state = build_interview_state(persona, answered=["symptoms_core", "warning_signs"])
+    assert not state["done"]
+    assert state["next_question_key"] == "symptom_onset"
+
+    order, final_state = walk(persona)
+    assert "symptom_onset" in order
+    assert "warning_signs" in order and "risk_factors" in order
+    assert final_state["patterns"][0]["id"] != "hyperglycemic_emergency_risk"
+
+    final = generate_final_assessment(persona)
+    assert final["patterns"][0]["id"] != "hyperglycemic_emergency_risk"
+    assert final["recommended_next_step"] != "seek_emergency_care"
+
+
+def test_single_keto_sign_investigates_before_verdict():
+    """A lone ketone sign raises the T1-like pattern (and keeps the interview
+    going) without short-circuiting to an emergency verdict."""
+    persona = dict(BASE)
+    persona.update({"excessive_thirst": True, "fruity_breath": True})
+    ev = build_evidence(persona)
+    assert ev["emergency"] is False
+
+    final = generate_final_assessment(persona)
+    assert final["patterns"][0]["id"] != "hyperglycemic_emergency_risk"
+    t1 = next(p for p in final["patterns"] if p["id"] == "insulin_deficiency_like")
+    assert "fruity_breath" in t1["supporting"]
+
+
+# ── 5c. The evidence floor never skips the safety / risk screens ──
+def test_evidence_floor_never_skips_safety_and_risk_screens():
+    order, _state = walk(dict(BASE))
+    assert "warning_signs" in order
+    assert "risk_factors" in order
+
 
 # ── 6. Differential selection: onset jumps the queue once a pattern exists ──
 def test_onset_is_the_discriminator_once_pattern_exists():

@@ -100,9 +100,20 @@ export const INSIGHT_BANNERS = [
     textFallback: 'Sudden thirst and urination in a child — especially with new bed-wetting — is a strong type 1 signal. A finger-prick glucose check today is the fastest way to know.',
   },
   {
+    /* One emergency-type sign on its own is a pattern to investigate, not a
+       verdict — keep asking instead of screaming "emergency". */
+    id: 'urgent-check',
+    tone: 'warn',
+    when: (f) => EMERGENCY_FIELDS.some((key) => f[key] === true) && !hasEmergencySigns(f),
+    titleKey: 'assessment.interview.insightCheckTitle',
+    titleFallback: 'Sign noted — the assessment keeps going',
+    textKey: 'assessment.interview.insightCheckText',
+    textFallback: 'Stomach pain, vomiting, fruity breath or deep breathing can have many causes, and one sign on its own is not an emergency. The next questions help me tell whether this fits a pattern that needs urgent care.',
+  },
+  {
     id: 'dka-urgent',
     tone: 'urgent',
-    when: (f) => Boolean(f.vomiting || f.abdominal_pain),
+    when: (f) => hasEmergencySigns(f) && Boolean(f.vomiting || f.abdominal_pain),
     titleKey: 'assessment.interview.insightDkaTitle',
     titleFallback: 'Possible emergency — please read',
     textKey: 'assessment.interview.insightDkaText',
@@ -143,13 +154,44 @@ export const INSIGHT_BANNERS = [
    applies(ctx):   whether the question is relevant (ctx = { form, needsPatient })
    autoDone(ctx):  question can be skipped — the fact is already known
                    (from the saved health profile or a previous answer)       */
-/* DKA-pattern emergency signs — when present, the rest of the interview is
-   short-circuited: lab questions are skipped because the recommendation is
-   urgent care either way. */
-const EMERGENCY_FIELDS = ['vomiting', 'abdominal_pain', 'fruity_breath', 'deep_rapid_breathing']
+/* DKA-pattern emergency signs — the interview is only short-circuited (lab
+   questions skipped) for a CLUSTER of signs, never for one nonspecific
+   symptom: a lone stomach ache must not end the interview instantly.
+   Mirrors the backend engine rule:
+     crisis flag, or a keto sign + a GI sign, or vomiting + abdominal pain. */
+const KETO_SIGN_FIELDS = ['fruity_breath', 'deep_rapid_breathing']
+const GI_SIGN_FIELDS = ['vomiting', 'abdominal_pain']
+const EMERGENCY_FIELDS = [...KETO_SIGN_FIELDS, ...GI_SIGN_FIELDS]
 
 export function hasEmergencySigns(form) {
-  return EMERGENCY_FIELDS.some((key) => form[key] === true)
+  if (form.crisis === true) return true
+  const keto = KETO_SIGN_FIELDS.some((key) => form[key] === true)
+  const gi = GI_SIGN_FIELDS.some((key) => form[key] === true)
+  if (keto && gi) return true
+  return form.vomiting === true && form.abdominal_pain === true
+}
+
+/* ── Grid shrink: fields owned by probe nodes ──
+   When a probe question has been settled (answered OR consciously skipped)
+   its fields count as "already asked" and must not reappear in the
+   symptoms_other grid. Keyed by NODE ID on purpose: an earlier version
+   filtered by form VALUES (`typeof form[key] !== 'boolean'`), so the moment
+   a user tapped a choice in the grid the field turned boolean and the
+   choice deleted itself mid-question. */
+export const PROBE_CLAIMED_FIELDS = {
+  child_probe: ['bed_wetting'],
+  t2_probe: ['acanthosis_nigricans', 'slow_healing', 'tingling_hands_feet', 'frequent_infections'],
+}
+
+/* ctx = { form, doneIds, skippedIds } — doneIds/skippedIds are the settled node ids */
+export function claimedProbeFields(ctx = {}) {
+  const done = ctx.doneIds || []
+  const skipped = ctx.skippedIds || []
+  const claimed = []
+  for (const [nodeId, fields] of Object.entries(PROBE_CLAIMED_FIELDS)) {
+    if (done.includes(nodeId) || skipped.includes(nodeId)) claimed.push(...fields)
+  }
+  return claimed
 }
 
 export const INTERVIEW_NODES = [
@@ -300,10 +342,17 @@ export const INTERVIEW_NODES = [
   {
     id: 'symptoms_other',
     kind: 'multi',
-    /* Shrink: fields answered by a probe are hidden so nothing is asked twice */
-    fields: ({ form }) => SYMPTOM_OTHER_FIELDS.filter((key) => typeof form[key] !== 'boolean'),
-    applies: ({ form }) =>
-      SYMPTOM_OTHER_FIELDS.some((key) => typeof form[key] !== 'boolean'),
+    /* Shrink: fields already settled by a probe (answered or skipped) are
+       hidden so nothing is asked twice. MUST NOT depend on form values —
+       a value-based check made every tapped choice vanish mid-question. */
+    fields: (ctx) => {
+      const claimed = claimedProbeFields(ctx)
+      return SYMPTOM_OTHER_FIELDS.filter((key) => !claimed.includes(key))
+    },
+    applies: (ctx) => {
+      const claimed = claimedProbeFields(ctx)
+      return SYMPTOM_OTHER_FIELDS.some((key) => !claimed.includes(key))
+    },
     icon: 'Stethoscope',
     priority: () => 17,
     titleKey: 'assessment.interview.otherSymptomsTitle',
