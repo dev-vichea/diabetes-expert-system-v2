@@ -16,8 +16,9 @@ export const NAV_ITEMS = [
   { to: '/patients', labelKey: 'nav.patients', icon: Users, section: 'workspace', permissions: ['patient.view'] },
   { to: '/rules', labelKey: 'nav.knowledgeBase', icon: BookMarked, section: 'workspace', permissions: ['rule.view'] },
   { to: '/review', labelKey: 'nav.patientReview', icon: ClipboardList, section: 'workspace', permissions: ['diagnosis.review_any'] },
-  { to: '/my-results', labelKey: 'nav.myResults', icon: ActivitySquare, section: 'workspace', permissions: ['diagnosis.view_own'] },
-  { to: '/care-plan', labelKey: 'nav.carePlan', icon: HeartPulse, section: 'workspace', permissions: ['diagnosis.view_own'] },
+  { to: '/my-results', labelKey: 'nav.myResults', icon: ActivitySquare, section: 'workspace', roles: ['patient'], permissions: ['diagnosis.view_own'] },
+  { to: '/my-results', labelKey: 'nav.patientResults', icon: ActivitySquare, section: 'workspace', notRoles: ['patient'], permissions: ['diagnosis.view_own'] },
+  { to: '/care-plan', labelKey: 'nav.carePlan', icon: HeartPulse, section: 'workspace', roles: ['patient'], permissions: ['diagnosis.view_own'] },
   { to: '/users', labelKey: 'nav.users', icon: ShieldCheck, section: 'system', permissions: ['user.view', 'permission.view'], permissionMode: 'any' },
   { to: '/roles-permissions', labelKey: 'nav.roles', icon: ShieldCheck, section: 'system', permissions: ['permission.view'] },
 ]
@@ -30,22 +31,43 @@ export const PAGE_TITLE_BY_PATH = [
   { pattern: '/patients', titleKey: 'page.patientManagement.title', subtitleKey: 'page.patientManagement.subtitle' },
   { pattern: '/rules', titleKey: 'page.knowledgeBase.title', subtitleKey: 'page.knowledgeBase.subtitle' },
   { pattern: '/review', titleKey: 'page.clinicalReview.title', subtitleKey: 'page.clinicalReview.subtitle' },
-  { pattern: '/my-results', titleKey: 'page.myDiagnosisResults.title', subtitleKey: 'page.myDiagnosisResults.subtitle' },
+  {
+    pattern: '/my-results',
+    titleKey: 'page.myDiagnosisResults.title',
+    subtitleKey: 'page.myDiagnosisResults.subtitle',
+    staffTitleKey: 'page.patientResults.title',
+    staffSubtitleKey: 'page.patientResults.subtitle',
+  },
   { pattern: '/care-plan', titleKey: 'page.carePlan.title', subtitleKey: 'page.carePlan.subtitle' },
   { pattern: '/users', titleKey: 'page.users.title', subtitleKey: 'page.users.subtitle' },
   { pattern: '/roles-permissions', titleKey: 'page.rolesPermissions.title', subtitleKey: 'page.rolesPermissions.subtitle' },
   { pattern: '/dashboard', titleKey: 'page.dashboard.title', subtitleKey: 'page.dashboard.subtitle' },
 ]
 
-export function getPageInfo(pathname, language = 'en') {
+export function getPageInfo(pathname, language = 'en', user = null) {
   const matched = PAGE_TITLE_BY_PATH.find((item) => pathname === item.pattern || pathname.startsWith(`${item.pattern}/`))
   const page = matched || PAGE_TITLE_BY_PATH[PAGE_TITLE_BY_PATH.length - 1]
+  const isStaff = userHasStaffRole(user)
+
+  const titleKey = isStaff && page.staffTitleKey ? page.staffTitleKey : page.titleKey
+  const subtitleKey = isStaff && page.staffSubtitleKey ? page.staffSubtitleKey : page.subtitleKey
 
   return {
     ...page,
-    title: translate(language, page.titleKey),
-    subtitle: translate(language, page.subtitleKey),
+    title: translate(language, titleKey),
+    subtitle: translate(language, subtitleKey),
   }
+}
+
+
+/**
+ * Staff = signed-in user with at least one non-patient role (doctor, admin,
+ * super_admin, knowledge_manager, …). Patients (and role-less users) are not staff.
+ */
+export function userHasStaffRole(user) {
+  const roles = user?.roles || (user?.role ? [user.role] : [])
+  if (!roles.length) return false
+  return roles.some((role) => String(role).toLowerCase() !== 'patient')
 }
 
 function hasAccess(user, item) {
@@ -53,6 +75,10 @@ function hasAccess(user, item) {
   const userPermissions = new Set(user?.permissions || [])
 
   if (item.roles?.length && item.roles.every((role) => !userRoles.has(role))) {
+    return false
+  }
+
+  if (item.notRoles?.length && item.notRoles.some((role) => userRoles.has(role))) {
     return false
   }
 

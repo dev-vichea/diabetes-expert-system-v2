@@ -169,10 +169,47 @@ export const SYMPTOM_LABELS = [
   ['shaking', 'assessment.fields.safetySymptoms.shaking', 'Shaking / tremor'],
 ]
 
+// Mirrors the assessment form's risk-factor pills.
+export const RISK_FACTOR_LABELS = [
+  ['family_history', 'assessment.fields.riskFactors.familyHistory', 'Family history'],
+  ['obesity', 'assessment.fields.riskFactors.obesity', 'Obesity / overweight'],
+  ['hypertension', 'assessment.fields.riskFactors.hypertension', 'High blood pressure'],
+  ['sedentary_lifestyle', 'assessment.fields.riskFactors.sedentaryLifestyle', 'Inactive / sedentary'],
+  ['gestational_history', 'assessment.fields.riskFactors.gestationalHistory', 'Gestational diabetes history'],
+  ['smoking', 'assessment.fields.riskFactors.smoking', 'Current smoker'],
+  ['high_cholesterol', 'assessment.fields.riskFactors.highCholesterol', 'High cholesterol'],
+  ['pcos_history', 'assessment.fields.riskFactors.pcosHistory', 'PCOS History'],
+  ['ethnicity_high_risk', 'assessment.fields.riskFactors.ethnicityHighRisk', 'High-risk ethnicity'],
+]
+
 /** Translated labels for the symptoms reported in a result's `facts`. */
 export function getReportedSymptomLabels(result, t) {
   const facts = result?.facts && typeof result.facts === 'object' ? result.facts : {}
   return SYMPTOM_LABELS.filter(([key]) => facts[key]).map(([, key, fallback]) => t(key, fallback))
+}
+
+/** Translated labels for the risk factors recorded in a result's `facts`. */
+export function getRiskFactorLabels(result, t) {
+  const facts = result?.facts && typeof result.facts === 'object' ? result.facts : {}
+  return RISK_FACTOR_LABELS.filter(([key]) => facts[key]).map(([, key, fallback]) => t(key, fallback))
+}
+
+/**
+ * Picks the plain-language "Understanding your result" education key from the
+ * inference trace's top conclusion (with a keyword fallback on the diagnosis text).
+ * Returns a suffix of `patientDashboard.carePlan.<key>`.
+ */
+export function getUnderstandingKey(result) {
+  const conclusion = String(result?.explanation_trace?.confidence_calculation?.top_conclusion || '')
+  const text = `${conclusion} ${String(result?.diagnosis || '')}`.toLowerCase()
+  if (text.includes('gestational')) return 'understandingGestational'
+  if (text.includes('mixed')) return 'understandingMixed'
+  if (text.includes('type 1') || text.includes('type_1') || text.includes('type1') || text.includes('lada')) return 'understandingType1'
+  if (text.includes('prediabetes') || text.includes('pre-diabetes') || text.includes('borderline')) return 'understandingPrediabetes'
+  if (text.includes('confirmed')) return 'understandingConfirmed'
+  if (text.includes('no strong') || text.includes('no signs') || text.includes('no evidence') || text.includes('negative') || text.includes('no indication') || text.includes('low risk')) return 'understandingLowRisk'
+  if (text.includes('possible') || text.includes('signs') || text.includes('suspected') || text.includes('likely') || text.includes('pattern') || text.includes('probability')) return 'understandingPossible'
+  return 'understandingFallback'
 }
 
 function ictMonthKey(value) {

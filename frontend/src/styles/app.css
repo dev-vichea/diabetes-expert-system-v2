@@ -9,6 +9,11 @@
   :root {
     --app-font-sans: 'Manrope';
     --app-font-display: 'Poppins';
+    /* Latin-first stacks used by the marketing/auth surfaces. Noto Sans Khmer
+       sits before the generic fallback so Khmer glyphs render consistently
+       even when the surrounding element forces a Latin-first family. */
+    --font-latin-sans: 'DM Sans', 'Noto Sans Khmer', sans-serif;
+    --font-latin-display: 'Outfit', 'Noto Sans Khmer', sans-serif;
     --color-primary: 14 116 144;
     --color-success: 22 163 74;
     --color-warning: 217 119 6;
@@ -819,6 +824,24 @@
   html[lang='km'] .auth-accent-content {
     padding-top: 32px;
     padding-bottom: 32px;
+  }
+
+  /* ── Landing Page — Khmer Vertical Breathing Room ── */
+  html[lang='km'] .landing-subtitle {
+    line-height: 1.9;
+    font-size: 1.08rem;
+  }
+
+  html[lang='km'] .gradient-text {
+    letter-spacing: 0;
+    line-height: 1.45;
+  }
+
+  html[lang='km'] .glass-badge,
+  html[lang='km'] .team-name,
+  html[lang='km'] .prof-badge,
+  html[lang='km'] .premium-btn {
+    line-height: 1.6;
   }
 
   .auth-form {

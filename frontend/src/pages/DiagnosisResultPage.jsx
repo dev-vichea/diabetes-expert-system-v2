@@ -23,6 +23,7 @@ import { EmptyState, StatusBadge, ConfirmDialog } from '@/components/ui'
 import { ConditionEducationPanel } from '@/components/diagnosis/ConditionEducationPanel'
 import { PlainSummaryStrip } from '@/components/diagnosis/PlainSummaryStrip'
 import { getSymptomGuideKey } from '@/lib/symptom-guide'
+import { getRiskGuideKey } from '@/lib/risk-factor-guide'
 import { TechnicalDetailsSection } from '@/components/diagnosis/TechnicalDetailsSection'
 import { readDiagnosisResultSnapshot, saveDiagnosisResultSnapshot } from '@/lib/diagnosis-result-storage'
 import { notify } from '@/lib/toast'
@@ -87,22 +88,28 @@ async function getDownloadErrorMessage(error, fallbackMessage) {
   return getApiErrorMessage(error, fallbackMessage)
 }
 
-function getConfidenceMeta(result, percent) {
+function getConfidenceMeta(result, percent, t, tExact) {
+  const getKey = (pct) => pct >= 85 ? 'veryHigh' : pct >= 70 ? 'high' : pct >= 45 ? 'moderate' : 'low'
+  const key = getKey(percent)
+
+  const fallbackTitle = percent >= 85 ? 'Very high confidence' : percent >= 70 ? 'High confidence' : percent >= 45 ? 'Moderate confidence' : 'Low confidence'
+  const fallbackDesc = percent >= 85
+    ? 'Multiple strong indicators align — lab values and symptoms both point toward diabetes.'
+    : percent >= 70
+      ? 'Most evidence points in the same direction. A clinical follow-up can confirm.'
+      : percent >= 45
+        ? 'Some warning signs are present. Additional lab work would sharpen this assessment.'
+        : 'Limited evidence available — the data does not strongly point toward diabetes at this time.'
+
   const fallback = {
-    title: percent >= 85 ? 'Very high confidence' : percent >= 70 ? 'High confidence' : percent >= 45 ? 'Moderate confidence' : 'Low confidence',
-    description: percent >= 85
-      ? 'The pattern strongly matches diabetes indicators.'
-      : percent >= 70
-        ? 'Many indicators point in the same direction.'
-        : percent >= 45
-          ? 'Some indicators match, but more checks may be needed.'
-          : 'Current data shows weak diabetes indication.',
+    title: t ? t(`diagnosisResult.confidenceMeta.${key}.title`, fallbackTitle) : fallbackTitle,
+    description: t ? t(`diagnosisResult.confidenceMeta.${key}.description`, fallbackDesc) : fallbackDesc,
   }
 
   if (!result?.confidence_level || typeof result.confidence_level !== 'object') return fallback
   return {
-    title: result.confidence_level.title || fallback.title,
-    description: result.confidence_level.description || fallback.description,
+    title: result.confidence_level.title ? (tExact ? tExact(result.confidence_level.title) : result.confidence_level.title) : fallback.title,
+    description: result.confidence_level.description ? (tExact ? tExact(result.confidence_level.description) : result.confidence_level.description) : fallback.description,
   }
 }
 
@@ -183,12 +190,29 @@ function formatCertaintyContribution(rule) {
   return Number(rule?.effective_certainty ?? rule?.certainty_factor ?? 0).toFixed(2)
 }
 
-function getPrimaryHeadline(result, percent) {
+function getPrimaryHeadline(result, percent, t, tExact) {
   const diagnosis = String(result?.diagnosis || '').toLowerCase()
-  if (diagnosis.includes('likely')) return 'Diabetes likely'
-  if (diagnosis.includes('prediabetes')) return 'Prediabetes pattern'
-  if (percent <= 30) return 'Low diabetes indication'
-  return result?.diagnosis || 'Assessment completed'
+  const typeLabel = result?.suspected_type?.type || ''
+
+  const translateKey = (k, fb) => t ? t(`diagnosisResult.headlines.${k}`, fb) : fb
+
+  if (diagnosis.includes('emergency') || diagnosis.includes('urgent')) return translateKey('urgent', 'Urgent — Seek Care Now')
+  if (diagnosis.includes('highly likely') || (diagnosis.includes('likely') && percent >= 80)) return translateKey('diabetesLikely', 'Diabetes Likely')
+  if (diagnosis.includes('likely diabetes') || diagnosis.includes('likely')) return translateKey('diabetesLikely', 'Diabetes Likely')
+  if (diagnosis.includes('suspected') && diagnosis.includes('classic')) return translateKey('classicSymptoms', 'Classic Diabetes Symptoms')
+  if (diagnosis.includes('prediabetes')) return translateKey('prediabetes', 'Prediabetes Pattern')
+  if (diagnosis.includes('possible early')) return translateKey('earlySigns', 'Possible Early Signs')
+  if (diagnosis.includes('elevated') && diagnosis.includes('risk')) return translateKey('elevatedRisk', 'Elevated Risk')
+  if (diagnosis.includes('no strong') || diagnosis.includes('insufficient')) return translateKey('noStrongIndication', 'No Strong Indication')
+
+  if (typeLabel === 'Type 1') return translateKey('type1Detected', 'Type 1 Pattern Detected')
+  if (typeLabel === 'Gestational') return translateKey('gestational', 'Gestational Screening')
+
+  if (percent >= 70) return translateKey('highSignal', 'High Diabetes Signal')
+  if (percent >= 45) return translateKey('moderateSignal', 'Moderate Signal Detected')
+  if (percent <= 20) return translateKey('lowRisk', 'Low Risk Indicated')
+
+  return result?.diagnosis ? (tExact ? tExact(result.diagnosis) : result.diagnosis) : translateKey('complete', 'Assessment Complete')
 }
 
 function getScalePercent(labKey, rawValue) {
@@ -448,7 +472,7 @@ export function DiagnosisResultPage() {
   const certaintyPercent = result?.certainty_percent != null
     ? Math.max(0, Math.min(100, Number(result.certainty_percent) || 0))
     : toCertaintyPercent(result?.certainty)
-  const confidenceMeta = getConfidenceMeta(result, certaintyPercent)
+  const confidenceMeta = getConfidenceMeta(result, certaintyPercent, t, tExact)
 
   const matchedSymptoms = Array.isArray(result?.matched_symptoms) ? result.matched_symptoms : []
   const matchedRiskFactors = Array.isArray(result?.matched_risk_factors) ? result.matched_risk_factors : []
@@ -583,7 +607,7 @@ export function DiagnosisResultPage() {
   const hba1cPointer = getScalePercent('hba1c', hba1cValue)
   const fastingPointer = getScalePercent('fasting', fastingValue)
 
-  const primaryHeadline = tExact(getPrimaryHeadline(result, certaintyPercent)).toUpperCase()
+  const primaryHeadline = getPrimaryHeadline(result, certaintyPercent, t, tExact).toUpperCase()
   const suspectedType = result?.suspected_type
     || result?.explanation_trace?.suspected_type
     || null
@@ -713,7 +737,12 @@ export function DiagnosisResultPage() {
                 </div>
               ) : null}
               <p className="mt-4 max-w-md text-base font-medium leading-relaxed text-white/95 drop-shadow-sm sm:text-lg">
-                {t('diagnosisResult.probabilityBase', 'Based on comprehensive clinical data, the inference engine calculates a ')}<strong className="font-extrabold text-white">{certaintyPercent >= 85 ? t('diagnosisResult.probability.veryHigh', 'very high probability') : certaintyPercent >= 70 ? t('diagnosisResult.probability.high', 'high probability') : certaintyPercent >= 45 ? t('diagnosisResult.probability.moderate', 'moderate probability') : t('diagnosisResult.probability.low', 'low probability')}</strong>{t('diagnosisResult.probabilityOf', ' of this diagnosis.')}
+                {result?.headline_explanation
+                  ? tExact(result.headline_explanation)
+                  : result?.result_summary
+                    ? tExact(result.result_summary)
+                    : (<>{t('diagnosisResult.probabilityBase', 'Screening confidence: ')}<strong className="font-extrabold text-white">{certaintyPercent}%</strong>{t('diagnosisResult.probabilityOf', ' — see the evidence breakdown below.')}</>)
+                }
               </p>
               {result?.context_note ? (
                 <p className="mt-3 flex max-w-md items-start gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold leading-relaxed text-white/95 backdrop-blur-sm">
@@ -862,23 +891,32 @@ export function DiagnosisResultPage() {
           <SurfaceSection title={t('diagnosisResult.relevantHistory', 'Relevant History & Symptoms')} icon={Heart}>
             {matchedSymptoms.length ? (
               <div>
-                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('diagnosisResult.knownSymptoms', 'Known symptoms includes:')}</p>
-                <ul className="mt-3 space-y-2.5">
+                <p className="text-sm font-bold text-slate-600 dark:text-slate-400">{t('diagnosisResult.knownSymptoms', 'You reported:')}</p>
+                <ul className="mt-3 space-y-3">
                   {matchedSymptoms.map((symptom) => {
                     const guideKey = getSymptomGuideKey(symptom)
                     const guide = guideKey ? t(`diagnosisResult.symptomGuide.items.${guideKey}`, null) : null
                     return (
-                      <li key={symptom} className="flex items-start gap-2 text-sm text-slate-800 dark:text-slate-100">
-                        <span className="mt-0.5 text-slate-400 dark:text-slate-600">•</span>
+                      <li key={symptom} className="flex items-start gap-2.5">
+                        <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-500 dark:bg-cyan-400" aria-hidden="true" />
                         <div className="min-w-0">
-                          <p className="font-semibold leading-snug">
+                          <p className="text-[1.05rem] font-bold leading-snug text-slate-900 dark:text-slate-100">
                             {tExact(symptom)}
                             {guide && guide.term ? (
                               <span className="ml-1.5 text-xs font-bold uppercase tracking-wide text-cyan-700 dark:text-cyan-400">{String(guide.term)}</span>
                             ) : null}
                           </p>
                           {guide && guide.meaning ? (
-                            <p className="mt-0.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{String(guide.meaning)}</p>
+                            <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{String(guide.meaning)}</p>
+                          ) : null}
+                          {guide && guide.prevention ? (
+                            <p className="mt-1.5 flex items-start gap-1.5 text-sm leading-relaxed text-emerald-700 dark:text-emerald-400">
+                              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                              <span>
+                                <span className="font-bold">{t('diagnosisResult.symptomGuide.preventionLabel', 'Prevention:')}</span>{' '}
+                                {String(guide.prevention)}
+                              </span>
+                            </p>
                           ) : null}
                         </div>
                       </li>
@@ -899,14 +937,23 @@ export function DiagnosisResultPage() {
           <SurfaceSection title={t('diagnosisResult.riskFactors', 'Risk Factors')} icon={Zap}>
             {matchedRiskFactors.length ? (
               <div>
-                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('diagnosisResult.knownHistory', 'Known history includes:')}</p>
-                <ul className="mt-3 space-y-2">
-                  {matchedRiskFactors.map((risk) => (
-                    <li key={risk} className="text-sm text-slate-800 dark:text-slate-100 flex items-start gap-2">
-                      <span className="text-slate-400 dark:text-slate-600 mt-0.5">•</span>
-                      <span>{tExact(risk)}</span>
-                    </li>
-                  ))}
+                <p className="text-sm font-bold text-slate-600 dark:text-slate-400">{t('diagnosisResult.knownHistory', 'Known history includes:')}</p>
+                <ul className="mt-3 space-y-3">
+                  {matchedRiskFactors.map((risk) => {
+                    const riskKey = getRiskGuideKey(risk)
+                    const riskGuide = riskKey ? t(`diagnosisResult.riskGuide.items.${riskKey}`, null) : null
+                    return (
+                      <li key={risk} className="flex items-start gap-2.5">
+                        <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500 dark:bg-amber-400" aria-hidden="true" />
+                        <div className="min-w-0">
+                          <p className="text-[1.05rem] font-bold leading-snug text-slate-900 dark:text-slate-100">{tExact(risk)}</p>
+                          {riskGuide && riskGuide.meaning ? (
+                            <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{String(riskGuide.meaning)}</p>
+                          ) : null}
+                        </div>
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
             ) : (

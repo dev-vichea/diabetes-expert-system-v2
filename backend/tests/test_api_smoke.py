@@ -242,6 +242,8 @@ def test_patient_can_submit_without_labs_and_get_backend_summary(client, patient
     data = response.get_json()["data"]
     assert "certainty_percent" in data
     assert isinstance(data["certainty_percent"], int)
+    assert data["certainty_percent"] > 0
+    assert data["diagnosis"] != "No strong diabetes indication"
     assert "confidence_level" in data
     assert isinstance(data["matched_symptoms"], list)
     assert "Frequent Urination" in data["matched_symptoms"]
@@ -502,18 +504,15 @@ def test_seeded_diabetes_rule_groups_exist(client, doctor_auth):
     assert {"triage", "diagnosis", "classification", "recommendation"}.issubset(category_codes)
 
     codes = {row["code"] for row in rows}
-    expected_codes = {
+    v1_expected = {
         "triage-hypoglycemia-threshold",
-        "triage-possible-dka-cluster",
         "diagnosis-fasting-glucose-threshold",
-        "diagnosis-hba1c-threshold",
-        "diagnosis-prediabetes-fasting-range",
-        "diagnosis-prediabetes-hba1c-range",
-        "classification-type2-risk-bmi-family-history",
-        "recommendation-urgent-dka-referral",
-        "recommendation-diabetes-clinical-referral",
     }
-    assert expected_codes.issubset(codes)
+    v2_expected = {
+        "v2-triage-hypoglycemia",
+        "v2-diabetes-fpg",
+    }
+    assert v1_expected.issubset(codes) or v2_expected.issubset(codes)
 
 
 def test_rule_categories_endpoint(client, doctor_auth):

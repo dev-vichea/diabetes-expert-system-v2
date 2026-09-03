@@ -38,7 +38,7 @@ export function AppLayout() {
   }, [theme])
 
   const navItems = useMemo(() => getVisibleNavItems(user, language), [language, user])
-  const page = getPageInfo(location.pathname, language)
+  const page = getPageInfo(location.pathname, language, user)
   const breadcrumbs = useMemo(() => getBreadcrumbs(location.pathname, navItems, language), [language, location.pathname, navItems])
   const activeRole = user?.roles?.[0] || user?.role || 'user'
   const sidebarWidth = desktopSidebarCollapsed ? 'lg:grid-cols-[5rem_1fr]' : 'lg:grid-cols-[15rem_1fr]'

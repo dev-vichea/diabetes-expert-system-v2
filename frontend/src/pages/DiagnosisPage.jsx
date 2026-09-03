@@ -12,6 +12,7 @@ import {
   Sparkles,
   Trash2,
   UserRound,
+  Users,
   Activity,
   AlertTriangle,
   Scale,
@@ -44,7 +45,9 @@ import {
 } from '@/components/assessment/interview-flow'
 
 /* ── Constants ────────────────────────── */
-const DIAGNOSIS_DRAFT_VERSION = 3
+/* v4: staff drafts may hold a silently auto-picked patient — discard them so
+   the "Which patient?" question is asked explicitly again. */
+const DIAGNOSIS_DRAFT_VERSION = 4
 const TOTAL_STEPS = 2
 const REVIEW_STEP = 2
 
@@ -70,6 +73,23 @@ const DEFAULT_FORM = {
 }
 
 const DEFAULT_QCM = { age_group: '', bmi_group: '', fasting_group: '', hba1c_group: '', ogtt_group: '' }
+
+/* Patient accounts choose the assessment subject. "self" pre-fills from the
+   saved health profile; "other" asks every question about that person. */
+const SUBJECT_OPTIONS = [
+  {
+    id: 'self',
+    icon: UserRound,
+    labelKey: 'assessment.subject.self', labelFallback: 'Myself',
+    descKey: 'assessment.subject.selfDesc', descFallback: 'Pre-fill my details from my saved health profile',
+  },
+  {
+    id: 'other',
+    icon: Users,
+    labelKey: 'assessment.subject.other', labelFallback: 'Someone else',
+    descKey: 'assessment.subject.otherDesc', descFallback: 'Ask me everything — age, weight and health of that person',
+  },
+]
 
 /* DOB → age in years, or null when the DOB is missing/invalid/implausible. */
 function yearsFromDob(dob) {
@@ -251,7 +271,12 @@ export function DiagnosisPage() {
   const profilePrefilledRef = useRef(false)
 
   const userRoles = useMemo(() => new Set(user?.roles || (user?.role ? [user.role] : [])), [user])
-  const needsPatient = userRoles.has('doctor') || userRoles.has('admin') || userRoles.has('super_admin')
+  /* Staff accounts (doctor, admin, super_admin, knowledge manager, …) must pick
+     the patient they assess; patient accounts assess themselves or someone else. */
+  const isPatientAccount = userRoles.size > 0 && [...userRoles].every((role) => String(role).toLowerCase() === 'patient')
+  const needsPatient = userRoles.size > 0 && !isPatientAccount
+  /* Patient accounts only — "self" prefills from the saved profile, "other" asks every question. */
+  const [subjectMode, setSubjectMode] = useState('self')
   const selectedPatient = useMemo(
     () => patients.find((p) => String(p.id) === String(form.patient_id)),
     [patients, form.patient_id],
@@ -269,13 +294,6 @@ export function DiagnosisPage() {
   const [interviewDone, setInterviewDone] = useState([])
   const [interviewSkipped, setInterviewSkipped] = useState([])
   const [cursorOverride, setCursorOverride] = useState(null)
-  /* ── Backend-driven adaptive loop state ──
-     Ask → Analyze → Choose the most useful next question → Re-evaluate.
-     The backend engine returns a question KEY; the question definitions
-     stay hardcoded here and render by key. If the engine cannot be
-     reached, the flow falls back to the local static order. */
-  const [engineState, setEngineState] = useState(null)
-  const [analyzing, setAnalyzing] = useState(false)
 
   /* Settled node ids ride along so grids can shrink by "already asked by a
      probe" (node id) instead of by form values. */
@@ -292,10 +310,7 @@ export function DiagnosisPage() {
     [interviewCtx, interviewDone, interviewSkipped],
   )
   const applicableCount = useMemo(() => applicableNodes(INTERVIEW_NODES, interviewCtx).length, [interviewCtx])
-  /* When the engine has spoken, its verdict rules — including "done" (null
-     key → the all-answered panel). Only when the engine is unreachable do we
-     fall back to the local static order. */
-  const currentNodeId = cursorOverride ?? (engineState ? engineState.next_question_key : autoCursor)
+  const currentNodeId = cursorOverride ?? autoCursor
   const currentNode = useMemo(
     () => INTERVIEW_NODES.find((n) => n.id === currentNodeId) || null,
     [currentNodeId],
@@ -356,6 +371,7 @@ export function DiagnosisPage() {
       if (typeof p.step === 'number') setStep(Math.max(1, Math.min(REVIEW_STEP, p.step)))
       if (typeof p.maxReachedStep === 'number') setMaxReached(Math.max(1, Math.min(REVIEW_STEP, p.maxReachedStep)))
       if (p.result) setResult(p.result)
+      if (p.subject === 'self' || p.subject === 'other') setSubjectMode(p.subject)
     } catch { /* ignore */ } finally {
       isHydratingRef.current = false
       hasHydratedRef.current = true
@@ -368,14 +384,16 @@ export function DiagnosisPage() {
     if (isDraftPristine) { window.localStorage.removeItem(storageKey); return }
     window.localStorage.setItem(storageKey, JSON.stringify({
       version: DIAGNOSIS_DRAFT_VERSION, step, maxReachedStep: maxReached,
-      form, qcm, extraLabs, result, interviewDone, interviewSkipped, savedAt: new Date().toISOString(),
+      form, qcm, extraLabs, result, interviewDone, interviewSkipped, subject: subjectMode, savedAt: new Date().toISOString(),
     }))
-  }, [storageKey, step, maxReached, form, qcm, extraLabs, result, interviewDone, interviewSkipped, draftReady, isDraftPristine])
+  }, [storageKey, step, maxReached, form, qcm, extraLabs, result, interviewDone, interviewSkipped, subjectMode, draftReady, isDraftPristine])
 
-  /* ── Profile prefill (self-assessment): fill empty fields from the saved health profile ── */
+  /* ── Profile prefill (patient, "for myself"): fill empty fields from the saved health profile ── */
+  const profileDataRef = useRef(null)
   useEffect(() => {
     if (!draftReady || profilePrefilledRef.current) return
     if (needsPatient || !user?.patient_id) return
+    if (subjectMode !== 'self') return
     profilePrefilledRef.current = true
     let cancelled = false
 
@@ -384,17 +402,9 @@ export function DiagnosisPage() {
         const response = await api.get('/patients/mine')
         const profileData = getApiData(response)
         if (!profileData || cancelled) return
+        profileDataRef.current = profileData
 
-        setForm((prev) => applyProfileToForm(prev, profileData))
-
-        // Questions answered by the profile are marked done explicitly (never via
-        // autoDone — that would advance mid-typing while the user edits them).
-        if (yearsFromDob(profileData.date_of_birth)) markNodeDone('age')
-        // Derive BMI (+ its QCM group) from the prefilled body metrics.
-        if (profileData.height_cm && profileData.weight_kg) {
-          calculateBmi(profileData.weight_kg, profileData.height_cm)
-          markNodeDone('body')
-        }
+        applyProfileAnswers(profileData)
       } catch {
         /* Profile prefill is best-effort — never block the assessment form. */
       }
@@ -402,7 +412,42 @@ export function DiagnosisPage() {
 
     prefillFromProfile()
     return () => { cancelled = true }
-  }, [draftReady, needsPatient, user?.patient_id])
+  }, [draftReady, needsPatient, user?.patient_id, subjectMode])
+
+  function applyProfileAnswers(profileData) {
+    setForm((prev) => applyProfileToForm(prev, profileData))
+
+    // Questions answered by the profile are marked done explicitly (never via
+    // autoDone — that would advance mid-typing while the user edits them).
+    if (yearsFromDob(profileData.date_of_birth)) markNodeDone('age')
+    // Derive BMI (+ its QCM group) from the prefilled body metrics.
+    if (profileData.height_cm && profileData.weight_kg) {
+      calculateBmi(profileData.weight_kg, profileData.height_cm)
+      markNodeDone('body')
+    }
+  }
+
+  /* ── "Myself / Someone else" switch ──
+     Profile-derived answers belong to the subject: clearing them when the
+     assessment is for someone else (age, weight, sex… are asked again),
+     re-applying them when switching back to "myself". */
+  const subjectInitRef = useRef(false)
+  useEffect(() => {
+    if (!draftReady || needsPatient) { subjectInitRef.current = true; return }
+    if (!subjectInitRef.current) { subjectInitRef.current = true; return }
+    if (subjectMode === 'other') {
+      setForm((prev) => ({
+        ...prev,
+        age: '', sex: '', height_cm: '', weight_kg: '', bmi: '', waist_circumference: '',
+        family_history: false, hypertension: false, high_cholesterol: false,
+        smoking: false, sedentary_lifestyle: false,
+      }))
+      setQcm((prev) => ({ ...prev, age_group: '', bmi_group: '' }))
+      setInterviewDone((prev) => prev.filter((id) => id !== 'age' && id !== 'body'))
+    } else if (profileDataRef.current) {
+      applyProfileAnswers(profileDataRef.current)
+    }
+  }, [draftReady, needsPatient, subjectMode])
 
   /* ── Doctor mode: prefill empty answers from the selected patient's record ── */
   const prefilledPatientRef = useRef(null)
@@ -458,12 +503,10 @@ export function DiagnosisPage() {
     setLoadingPatients(true); setError('')
     try {
       const res = await api.get('/patients/?limit=200')
-      const list = getApiData(res) || []
-      setPatients(list)
-      if (list.length) setForm(p => {
-        const has = list.some(pt => String(pt.id) === String(p.patient_id))
-        return has ? p : { ...p, patient_id: String(list[0].id) }
-      })
+      setPatients(getApiData(res) || [])
+      /* Staff choose the patient themselves — never auto-pick one here.
+         patient_id may only come from the draft, an explicit ?patient_id=
+         URL param, or the "Who is this assessment for?" interview node. */
     } catch (e) { setError(getApiErrorMessage(e, t('assessment.errors.loadPatients'))) }
     finally { setLoadingPatients(false) }
   }
@@ -575,79 +618,28 @@ export function DiagnosisPage() {
   function goBack() { setError(''); setStep(p => Math.max(1, p - 1)) }
   function jumpTo(s) { if (s <= maxReached) { setError(''); setStep(s) } }
 
-  /* ── Backend engine: Select Next Question ──
-     After every answer the whole evidence is re-evaluated server-side and
-     the next most useful question KEY comes back. When the engine runs out
-     of useful questions (or has enough evidence) it reports done and the
-     flow routes straight to review. */
-  const engineReqRef = useRef(0)
   /* ── Double-click guard ──
      Advancing actions (answer / continue / skip) are ignored for a short
-     window after the previous one AND after a new card renders. Without it,
-     the second click of a double-click lands on the NEXT question's button
-     (same screen position) and silently skips that question. */
-  const ADVANCE_COOLDOWN_MS = 450
+     window after the previous one AND after a new card renders. */
+  const ADVANCE_COOLDOWN_MS = 350
   const advanceLockRef = useRef(0)
   function beginAdvance() {
     if (Date.now() - advanceLockRef.current < ADVANCE_COOLDOWN_MS) return false
     advanceLockRef.current = Date.now()
     return true
   }
-  async function refreshEngineState({ form: formOverride = null, answered = interviewDone, skipped = interviewSkipped, routeOnDone = true } = {}) {
-    const reqId = ++engineReqRef.current
-    setAnalyzing(true)
-    try {
-      const res = await api.post('/assessment/next', {
-        answers: { ...form, ...(formOverride || {}) },
-        answered,
-        skipped,
-        needs_patient: needsPatient,
-      })
-      const data = getApiData(res)
-      if (reqId !== engineReqRef.current) return // a newer answer superseded this request
-      advanceLockRef.current = Date.now() // new card about to render — restart the cooldown from "card visible"
-      setEngineState(data && typeof data === 'object' ? data : null)
-      if (data?.done && routeOnDone) {
-        setStep(REVIEW_STEP)
-        setMaxReached(p => Math.max(p, REVIEW_STEP))
-      }
-    } catch {
-      /* Engine unreachable → keep the local static order as fallback. */
-      if (reqId === engineReqRef.current) setEngineState(null)
-    } finally {
-      if (reqId === engineReqRef.current) setAnalyzing(false)
-    }
-  }
-  /* Kick the engine whenever the interview (re)opens or the patient changes.
-     Never auto-routes on load — a "Back" press must always land on the
-     interview, even when the engine has nothing left to ask. */
-  useEffect(() => {
-    if (step !== 1 || result) return
-    refreshEngineState({ routeOnDone: false })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, needsPatient, form.patient_id, result])
 
   /* ── Evidence-interview handlers ── */
   function markNodeDone(nodeId) {
     setInterviewDone(prev => prev.includes(nodeId) ? prev : [...prev, nodeId])
     setInterviewSkipped(prev => prev.filter(id => id !== nodeId))
   }
-  /* Like markNodeDone, but RETURNS the fresh done/skipped lists. React state
-     updates are asynchronous — the engine call that follows an answer must
-     carry these lists explicitly. Sending the render-time list instead made
-     the backend see the question the user had JUST confirmed as still open
-     and re-ask it: the answer got noted (the chip renders from state) yet
-     the card only moved on the SECOND Continue click. Each handler settles
-     at most one node per event, so the render-time lists here are safe to
-     read; the prefill effects keep using markNodeDone (they never consult
-     the engine immediately after). */
+
   function settleNode(nodeId) {
-    const nextDone = interviewDone.includes(nodeId) ? interviewDone : [...interviewDone, nodeId]
-    const nextSkipped = interviewSkipped.filter(id => id !== nodeId)
-    setInterviewDone(nextDone)
-    setInterviewSkipped(nextSkipped)
-    return { nextDone, nextSkipped }
+    setInterviewDone(prev => prev.includes(nodeId) ? prev : [...prev, nodeId])
+    setInterviewSkipped(prev => prev.filter(id => id !== nodeId))
   }
+
   function handleYesNo(node, value) {
     if (!beginAdvance()) return
     if (node.id === 'has_labs') {
@@ -664,15 +656,10 @@ export function DiagnosisPage() {
     } else {
       up(node.field, value)
     }
-    const { nextDone, nextSkipped } = settleNode(node.id)
+    settleNode(node.id)
     setCursorOverride(null)
-    const override = node.id === 'has_labs'
-      ? { has_labs: value ? 'yes' : 'no', no_labs_available: !value }
-      : node.id === 'currently_pregnant'
-        ? { currently_pregnant: value }
-        : { [node.field]: value }
-    refreshEngineState({ form: override, answered: nextDone, skipped: nextSkipped })
   }
+
   function handleChoice(node, value) {
     if (!beginAdvance()) return
     if (node.id === 'sex' && value !== 'female') {
@@ -680,16 +667,10 @@ export function DiagnosisPage() {
     } else {
       up(node.field, value)
     }
-    const { nextDone, nextSkipped } = settleNode(node.id)
+    settleNode(node.id)
     setCursorOverride(null)
-    refreshEngineState({
-      form: node.id === 'sex' && value !== 'female'
-        ? { sex: value, currently_pregnant: false }
-        : { [node.field]: value },
-      answered: nextDone,
-      skipped: nextSkipped,
-    })
   }
+
   function handleMultiNone(node) {
     if (!beginAdvance()) return
     setForm(p => {
@@ -697,40 +678,25 @@ export function DiagnosisPage() {
       for (const f of nodeFields(node, interviewCtx)) next[f] = false
       return next
     })
-    const { nextDone, nextSkipped } = settleNode(node.id)
+    settleNode(node.id)
     setCursorOverride(null)
-    refreshEngineState({
-      form: Object.fromEntries(nodeFields(node, interviewCtx).map(f => [f, false])),
-      answered: nextDone,
-      skipped: nextSkipped,
-    })
   }
+
   function handleSkipNode(node) {
     if (!beginAdvance()) return
-    const nextSkipped = interviewSkipped.includes(node.id) ? interviewSkipped : [...interviewSkipped, node.id]
-    const nextDone = interviewDone.filter(id => id !== node.id)
     setInterviewSkipped(prev => prev.includes(node.id) ? prev : [...prev, node.id])
     setInterviewDone(prev => prev.filter(id => id !== node.id))
     if (node.id === 'labs') up('no_labs_available', true)
     setCursorOverride(null)
-    refreshEngineState({
-      form: node.id === 'labs' ? { no_labs_available: true } : null,
-      answered: nextDone,
-      skipped: nextSkipped,
-    })
   }
+
   function handleInterviewContinue() {
-    /* Confirm the node on screen (also when editing an earlier answer via a
-       chip) and return to the natural flow position. */
+    /* Confirm the node on screen and return to natural flow position. */
     if (!beginAdvance()) return
     if (currentNodeId) {
-      const { nextDone, nextSkipped } = settleNode(currentNodeId)
-      setCursorOverride(null)
-      refreshEngineState({ answered: nextDone, skipped: nextSkipped })
-    } else {
-      setCursorOverride(null)
-      refreshEngineState()
+      settleNode(currentNodeId)
     }
+    setCursorOverride(null)
   }
   function interviewBack() {
     if (cursorOverride) { setCursorOverride(null); return }
@@ -922,6 +888,49 @@ export function DiagnosisPage() {
               {/* ═══════════════ STEP 1 — Evidence Interview ═══════════════ */}
               {step === 1 ? (
                 <div>
+                  {!needsPatient && !result ? (
+                    <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
+                      <p className="text-[0.95rem] font-bold uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">
+                        {t('assessment.subject.title', 'Who is this assessment for?')}
+                      </p>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        {SUBJECT_OPTIONS.map((option) => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => setSubjectMode(option.id)}
+                            aria-pressed={subjectMode === option.id}
+                            className={cn(
+                              'flex items-start gap-3 rounded-xl border p-3.5 text-left transition',
+                              subjectMode === option.id
+                                ? 'border-cyan-500 bg-cyan-50/70 ring-1 ring-cyan-400 dark:border-cyan-500 dark:bg-cyan-950/40 dark:ring-cyan-600'
+                                : 'border-slate-200 bg-white hover:border-cyan-300 hover:bg-cyan-50/40 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-cyan-700',
+                            )}
+                          >
+                            <option.icon className={cn('mt-0.5 h-5 w-5 shrink-0', subjectMode === option.id ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-400')} aria-hidden="true" />
+                            <span className="min-w-0">
+                              <span className={cn('block text-[0.98rem] font-bold', subjectMode === option.id ? 'text-cyan-900 dark:text-cyan-200' : 'text-slate-800 dark:text-slate-100')}>
+                                {t(option.labelKey, option.labelFallback)}
+                              </span>
+                              <span className="mt-0.5 block text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                                {t(option.descKey, option.descFallback)}
+                              </span>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {!needsPatient && subjectMode === 'other' ? (
+                    <div className="mb-3 flex items-start gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-800 dark:bg-sky-900/20">
+                      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-sky-500" />
+                      <p className="text-sm leading-relaxed text-sky-800 dark:text-sky-300">
+                        {t('assessment.subject.otherBanner', "You are assessing someone else — answer each question using their information, not yours. The result will be saved to this account's history.")}
+                      </p>
+                    </div>
+                  ) : null}
+
                   {activeBanners.map((b) => (
                     <div key={b.id} className={cn(
                       'mb-3 flex items-start gap-3 rounded-xl border p-4',
@@ -981,7 +990,7 @@ export function DiagnosisPage() {
                       onSkip={() => handleSkipNode(currentNode)}
                       onFinish={() => { setStep(REVIEW_STEP); setMaxReached(p => Math.max(p, REVIEW_STEP)) }}
                       canFinish={canFinishEarly}
-                      analyzing={analyzing}
+                      analyzing={false}
                       editing={Boolean(cursorOverride)}
                       doneIds={interviewDone}
                       skippedIds={interviewSkipped}
@@ -1021,6 +1030,7 @@ export function DiagnosisPage() {
                       <dl className="divide-y divide-slate-200 dark:divide-slate-700 text-sm">
                         {[
                           [t('assessment.review.patient', 'Patient'), needsPatient ? (selectedPatient ? `${selectedPatient.full_name} (#${selectedPatient.id})` : t('assessment.patient.noSelection', 'Not selected')) : user?.name || 'Current user'],
+                          ...(!needsPatient ? [[t('assessment.review.assessedFor', 'Assessed for'), subjectMode === 'other' ? t('assessment.review.forOther', 'Someone else') : t('assessment.review.forSelf', 'Myself')]] : []),
                           [t('assessment.review.mode', 'Mode'), assessmentMode === 'diagnostic' ? t('assessment.labs.diagnosticMode', '🔬 Diagnostic') : t('assessment.labs.screeningMode', '📋 Screening')],
                           [t('assessment.review.sexPregnancy', 'Sex / Pregnancy'), form.sex === 'female' ? `${sexLabel} · ${form.currently_pregnant ? t('assessment.interview.pregnantShort', 'Pregnant') : t('assessment.interview.notPregnant', 'Not pregnant')}` : sexLabel],
                           [t('assessment.review.profile', 'Age / BMI / Waist'), `${form.age || '-'} yrs / ${form.bmi || '-'} / ${form.waist_circumference || '-'} cm`],

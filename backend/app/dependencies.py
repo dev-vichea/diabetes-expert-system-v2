@@ -10,16 +10,18 @@ from app.repositories import (
     UserRepository,
 )
 from app.services.admin_service import AdminService
-from app.services.assessment_service import AssessmentService
 from app.services.auth_service import AuthService
 from app.services.diagnosis_service import DiagnosisService
 from app.services.patient_service import PatientService
 from app.services.rule_service import RuleService
 from app.services.dashboard_service import DashboardService
+from app.services.unified_assessment_service import UnifiedAssessmentService
+from app.services.conversational_assessment_service import ConversationalAssessmentService
 
 SERVICE_KEYS = {
     "auth": "auth_service",
-    "assessment": "assessment_service",
+    "unified_assessment": "unified_assessment_service",
+    "conversational": "conversational_assessment_service",
     "rule": "rule_service",
     "diagnosis": "diagnosis_service",
     "admin": "admin_service",
@@ -48,7 +50,20 @@ def init_dependencies(app):
             audit_log_repository=audit_log_repository,
             patient_repository=patient_repository,
         ),
-        SERVICE_KEYS["assessment"]: AssessmentService(),
+        SERVICE_KEYS["unified_assessment"]: UnifiedAssessmentService(
+            rule_repository=rule_repository,
+            diagnosis_repository=diagnosis_repository,
+            assessment_repository=assessment_repository,
+            patient_repository=patient_repository,
+            audit_log_repository=audit_log_repository,
+        ),
+        SERVICE_KEYS["conversational"]: ConversationalAssessmentService(
+            rule_repository=rule_repository,
+            diagnosis_repository=diagnosis_repository,
+            assessment_repository=assessment_repository,
+            patient_repository=patient_repository,
+            audit_log_repository=audit_log_repository,
+        ),
         SERVICE_KEYS["rule"]: RuleService(
             rule_repository=rule_repository,
             audit_log_repository=audit_log_repository,
@@ -90,8 +105,8 @@ def get_rule_service() -> RuleService:
     return _get_service(SERVICE_KEYS["rule"])
 
 
-def get_assessment_service() -> AssessmentService:
-    return _get_service(SERVICE_KEYS["assessment"])
+def get_unified_assessment_service() -> UnifiedAssessmentService:
+    return _get_service(SERVICE_KEYS["unified_assessment"])
 
 
 def get_diagnosis_service() -> DiagnosisService:
@@ -104,6 +119,10 @@ def get_admin_service() -> AdminService:
 
 def get_patient_service() -> PatientService:
     return _get_service(SERVICE_KEYS["patient"])
+
+def get_conversational_assessment_service() -> ConversationalAssessmentService:
+    return _get_service(SERVICE_KEYS["conversational"])
+
 
 def get_dashboard_service() -> DashboardService:
     return _get_service(SERVICE_KEYS["dashboard"])

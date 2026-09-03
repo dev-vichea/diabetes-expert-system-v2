@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { ArrowLeft, Save, Shield, Users } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { AdminHeroCard } from '@/components/admin'
@@ -17,27 +18,22 @@ const EMPTY_FORM = {
   is_active: true,
 }
 
-const PERMISSION_GROUP_LABELS = {
-  user: 'Users',
-  permission: 'Roles & Permissions',
-  patient: 'Patients',
-  symptom: 'Symptoms',
-  lab: 'Lab Results',
-  rule: 'Rules',
-  diagnosis: 'Diagnosis',
-}
+const EDIT_NS = 'usersPage.editor.editPage'
 
 function getPermissionGroup(code) {
   return String(code || '').split('.')[0] || 'other'
 }
 
-function getPermissionGroupLabel(group) {
-  if (PERMISSION_GROUP_LABELS[group]) return PERMISSION_GROUP_LABELS[group]
+function prettifyGroupName(group) {
   return group
     .split(/[_-]/)
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ')
+}
+
+function getPermissionGroupLabel(group, t) {
+  return t(`${EDIT_NS}.permissionGroups.${group}`, prettifyGroupName(group))
 }
 
 function sortPermissionItems(left, right) {
@@ -76,7 +72,7 @@ function samePermissions(left, right) {
   return a.every((code, index) => code === b[index])
 }
 
-function RoleCombobox({ value, options, disabled, onValueChange }) {
+function RoleCombobox({ value, options, disabled, onValueChange, t }) {
   const inputValue = value === CUSTOM_ROLE_DRAFT ? '' : value
   const normalizedInput = normalizeRoleName(inputValue)
   const selectedOption = useMemo(
@@ -90,11 +86,11 @@ function RoleCombobox({ value, options, disabled, onValueChange }) {
       ...options,
       {
         value: normalizedInput,
-        label: `Create role "${inputValue}"`,
+        label: t(`${EDIT_NS}.createRoleOption`, { name: inputValue }),
         isCreate: true,
       },
     ]
-  }, [hasExactMatch, inputValue, normalizedInput, options])
+  }, [hasExactMatch, inputValue, normalizedInput, options, t])
 
   return (
     <Combobox
@@ -112,9 +108,9 @@ function RoleCombobox({ value, options, disabled, onValueChange }) {
         onValueChange(nextValue.value)
       }}
     >
-      <ComboboxInput disabled={disabled} placeholder="Select or type role name" autoComplete="off" />
+      <ComboboxInput disabled={disabled} placeholder={t(`${EDIT_NS}.rolePlaceholder`)} autoComplete="off" />
       <ComboboxContent>
-        <ComboboxEmpty>{normalizedInput ? 'No matching roles.' : 'No roles available.'}</ComboboxEmpty>
+        <ComboboxEmpty>{normalizedInput ? t(`${EDIT_NS}.noMatchingRoles`) : t(`${EDIT_NS}.noRolesAvailable`)}</ComboboxEmpty>
         <ComboboxList>
           {(item) => (
             <ComboboxItem
@@ -137,6 +133,7 @@ function RoleCombobox({ value, options, disabled, onValueChange }) {
 
 export function AdminUserEditPage() {
   const { user: currentUser } = useAuth()
+  const { t } = useLanguage()
   const { userId } = useParams()
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
@@ -181,13 +178,13 @@ export function AdminUserEditPage() {
     })
 
     return Array.from(groups.entries())
-      .sort(([left], [right]) => getPermissionGroupLabel(left).localeCompare(getPermissionGroupLabel(right), undefined, { sensitivity: 'base' }))
+      .sort(([left], [right]) => getPermissionGroupLabel(left, t).localeCompare(getPermissionGroupLabel(right, t), undefined, { sensitivity: 'base' }))
       .map(([group, items]) => ({
         key: group,
-        label: getPermissionGroupLabel(group),
+        label: getPermissionGroupLabel(group, t),
         items: [...items].sort(sortPermissionItems),
       }))
-  }, [permissions])
+  }, [permissions, t])
 
   const previewUser = user
     ? {
@@ -231,7 +228,7 @@ export function AdminUserEditPage() {
       setPermissions(permissionData)
       syncUserState(userData)
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to load user details'))
+      setError(getApiErrorMessage(err, t(`${EDIT_NS}.loadFailed`)))
     } finally {
       setLoading(false)
     }
@@ -275,7 +272,7 @@ export function AdminUserEditPage() {
     const normalizedRoleName = normalizeRoleName(form.role_name)
     if (!normalizedRoleName || normalizedRoleName === CUSTOM_ROLE_DRAFT) {
       setSaving(false)
-      notify.warning('Enter a name for the custom role before saving.')
+      notify.warning(t(`${EDIT_NS}.enterCustomRoleName`))
       return
     }
 
@@ -284,12 +281,12 @@ export function AdminUserEditPage() {
     try {
       const existingRole = roleMap.get(normalizedRoleName)
       if (existingRole && !samePermissions(selectedPermissions, existingRole.permissions || [])) {
-        notify.warning('That role name already exists with different permissions. Use another name.')
+        notify.warning(t(`${EDIT_NS}.roleNameConflict`))
         setSaving(false)
         return
       }
 
-      loadingToast = notify.loading('Saving user access profile...')
+      loadingToast = notify.loading(t(`${EDIT_NS}.savingProfile`))
 
       await api.patch(`/admin/users/${userId}/access-profile`, {
         name: form.name,
@@ -297,15 +294,17 @@ export function AdminUserEditPage() {
         is_active: form.is_active,
         role_name: normalizedRoleName,
         permissions: normalizePermissionList(selectedPermissions),
-        role_description: `Custom role for ${form.name || 'user'}`,
+        role_description: t(`${EDIT_NS}.customRoleDescription`, {
+          name: form.name || t(`${EDIT_NS}.customRoleFallbackName`),
+        }),
       })
 
       await loadPage()
       notify.dismiss(loadingToast)
-      notify.success(existingRole ? 'User updated successfully.' : 'New role created and assigned successfully.')
+      notify.success(existingRole ? t(`${EDIT_NS}.saved`) : t(`${EDIT_NS}.roleCreated`))
     } catch (err) {
       notify.dismiss(loadingToast)
-      notify.error(getApiErrorMessage(err, 'Failed to update user'))
+      notify.error(getApiErrorMessage(err, t(`${EDIT_NS}.saveFailed`)))
     } finally {
       setSaving(false)
     }
@@ -314,16 +313,19 @@ export function AdminUserEditPage() {
   return (
     <div className="space-y-6">
       <AdminHeroCard
-        eyebrow="User Management"
+        eyebrow={t('usersPage.hero.eyebrow')}
         eyebrowIcon={Users}
-        title={form.name ? `Edit ${form.name}` : user?.name ? `Edit ${user.name}` : 'Edit User'}
-        description="Update user information, choose a role, or create a new role from permission selections."
+        title={(() => {
+          const displayName = form.name || user?.name
+          return displayName ? t(`${EDIT_NS}.title`, { name: displayName }) : t(`${EDIT_NS}.titleFallback`)
+        })()}
+        description={t(`${EDIT_NS}.description`)}
         variant="simple"
         action={
           <>
             <Link to="/users" className="btn-secondary gap-2 rounded-2xl px-4 py-3">
               <ArrowLeft className="h-4 w-4" />
-              Back
+              {t('common.back')}
             </Link>
             <button
               type="submit"
@@ -332,7 +334,7 @@ export function AdminUserEditPage() {
               disabled={saving || loading || !user}
             >
               <Save className="h-4 w-4" />
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? t('usersPage.editor.actions.saving') : t('usersPage.editor.actions.saveChanges')}
             </button>
           </>
         }
@@ -345,15 +347,15 @@ export function AdminUserEditPage() {
         <div className="space-y-5">
           <section className="surface p-5 sm:p-6">
             <div>
-              <h2 className="section-title">User Details</h2>
-              <p className="section-subtitle mt-1">Edit account identity, status, and role assignment from one form.</p>
+              <h2 className="section-title">{t(`${EDIT_NS}.detailsTitle`)}</h2>
+              <p className="section-subtitle mt-1">{t(`${EDIT_NS}.detailsDescription`)}</p>
             </div>
 
-            {loading ? <p className="state-box mt-4">Loading user details...</p> : null}
+            {loading ? <p className="state-box mt-4">{t(`${EDIT_NS}.loading`)}</p> : null}
 
             <form id="admin-user-edit-form" className="mt-4 grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
               <label className="block md:col-span-2">
-                <span className="label-text">Full Name</span>
+                <span className="label-text">{t('usersPage.editor.fields.fullName')}</span>
                 <input
                   className="input-base"
                   value={form.name}
@@ -364,7 +366,7 @@ export function AdminUserEditPage() {
               </label>
 
               <label className="block md:col-span-2">
-                <span className="label-text">Email</span>
+                <span className="label-text">{t('usersPage.editor.fields.email')}</span>
                 <input
                   className="input-base"
                   type="email"
@@ -376,23 +378,24 @@ export function AdminUserEditPage() {
               </label>
 
               <label className="block">
-                <span className="label-text">Role / Custom Role Name</span>
+                <span className="label-text">{t(`${EDIT_NS}.roleLabel`)}</span>
                 <RoleCombobox
                   value={form.role_name}
                   options={roleOptions}
                   disabled={loading || saving}
                   onValueChange={applyRoleSelection}
+                  t={t}
                 />
               </label>
 
               <label className="block">
-                <span className="label-text">Account Status</span>
+                <span className="label-text">{t('usersPage.editor.fields.status')}</span>
                 <AppSelect
                   value={form.is_active ? 'active' : 'inactive'}
                   onValueChange={(value) => setForm((current) => ({ ...current, is_active: value === 'active' }))}
                   options={[
-                    { value: 'active', label: 'Active' },
-                    { value: 'inactive', label: 'Inactive' },
+                    { value: 'active', label: t('common.active') },
+                    { value: 'inactive', label: t('common.inactive') },
                   ]}
                   disabled={loading || saving}
                 />
@@ -405,8 +408,8 @@ export function AdminUserEditPage() {
               <div className="flex items-start gap-3">
                 <Shield className="h-5 w-5 text-cyan-600 dark:text-cyan-300" />
                 <div>
-                  <h2 className="section-title">Permissions</h2>
-                  <p className="section-subtitle mt-1">Check permissions for this role. If they differ from an existing role, save with a new role name.</p>
+                  <h2 className="section-title">{t(`${EDIT_NS}.permissionsTitle`)}</h2>
+                  <p className="section-subtitle mt-1">{t(`${EDIT_NS}.permissionsDescription`)}</p>
                 </div>
               </div>
             </div>
@@ -437,7 +440,7 @@ export function AdminUserEditPage() {
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-slate-500 dark:text-slate-400">No permissions are available.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t(`${EDIT_NS}.noPermissions`)}</p>
               )}
             </div>
 
@@ -449,7 +452,7 @@ export function AdminUserEditPage() {
                 disabled={saving || loading || !user}
               >
                 <Save className="h-4 w-4" />
-                {saving ? 'Saving...' : 'Save Changes'}
+                {saving ? t('usersPage.editor.actions.saving') : t('usersPage.editor.actions.saveChanges')}
               </button>
               <button
                 type="button"
@@ -457,7 +460,7 @@ export function AdminUserEditPage() {
                 onClick={() => navigate('/users')}
                 disabled={saving}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </section>

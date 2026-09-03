@@ -63,7 +63,10 @@ class RuleLoader:
             # would share rule_id=0 and the chainer's fired-rule dedup would
             # block all rules after the first firing in each stage.
             raw_id = raw_rule.get("id")
-            rule_id = int(raw_id) if raw_id not in (None, "", 0) else -(index + 1)
+            try:
+                rule_id = int(raw_id) if raw_id not in (None, "", 0) else -(index + 1)
+            except (ValueError, TypeError):
+                rule_id = -(index + 1)
             code = str(raw_rule.get("code") or f"rule_{rule_id}").strip() or f"rule_{rule_id}"
             name = str(raw_rule.get("name") or f"rule_{rule_id}")
             condition_expression = str(raw_rule.get("condition") or "").strip()

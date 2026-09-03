@@ -1,0 +1,20 @@
+[
+  { "pattern": "^(\\d+) symptoms strongly match the classic diabetes pattern — lab confirmation advised\\.$", "template": "រោគសញ្ញា {{1}} យ៉ាងត្រូវគ្នាយ៉ាងខ្លាំងនឹងទម្រង់ទឹកនោមផ្អែមសំខាន់ៗ — គួរបញ្ជាក់ដោយការធ្វើតេស្តមន្ទីរពិសោធន៍។" },
+  { "pattern": "^Multiple symptoms align with diabetes — a fasting glucose test can confirm at (\\d+)% confidence\\.$", "template": "រោគសញ្ញាច្រើនស្របនឹងទឹកនោមផ្អែម — តេស្តជាតិស្ករអត់ចំណីអាចបញ្ជាក់បានដោយទំនុកចិត្ត {{1}}%។" },
+  { "pattern": "^(\\d+) symptoms raise a moderate signal\\. Adding a blood test would sharpen the picture\\.$", "template": "រោគសញ្ញា {{1}} យ៉ាងបង្ហាញសញ្ញាកម្រិតមធ្យម។ ការបន្ថែមតេស្តឈាមនឹងធ្វើឱ្យរូបភាពច្បាស់ជាង។" },
+  { "pattern": "^(\\d+) risk factor\\(s\\) identified, but no active symptoms\\. Routine screening recommended\\.$", "template": "រកឃើញកត្តាហានិភ័យ {{1}} យ៉ាង តែគ្មានរោគសញ្ញាសកម្ម។ ណែនាំពិនិត្យជាប្រចាំ។" },
+  { "pattern": "^(\\d+) risk factor\\(s\\) were identified without symptoms or labs\\. Consider routine diabetes screening to catch early signs\\.$", "template": "រកឃើញកត្តាហានិភ័យ {{1}} យ៉ាង ដោយគ្មានរោគសញ្ញាឬ Lab។ ពិចារណាពិនិត្យទឹកនោមផ្អែមជាប្រចាំ ដើម្បីចាប់សញ្ញាដំបូង។" },
+  { "pattern": "^Screening confidence stands at (\\d+)% based on the data you provided\\.$", "template": "ទំនុកចិត្តនៃការពិនិត្យស្ថិតនៅ {{1}}% ផ្អែកលើទិន្នន័យដែលអ្នកបានផ្តល់។" },
+  { "pattern": "^Only (\\d+) symptom\\(s\\) were reported without lab results\\. The current evidence is limited — a simple blood test is the best next step\\.$", "template": "មានតែរោគសញ្ញា {{1}} យ៉ាងដែលបានជម្រាប ដោយគ្មានលទ្ធផល Lab។ ភស្តុតាងបច្ចុប្បន្នមានកម្រិត — តេស្តឈាមសាមញ្ញជាជំហានបន្ទាប់ល្អបំផុត។" },
+  { "pattern": "^Based on (\\d+) symptom\\(s\\)( and (\\d+) risk factor\\(s\\))?, the screening indicates a (\\d+)% match with diabetes patterns\\. A fasting glucose or HbA1c test can make this more definitive\\.$", "template": "ផ្អែកលើរោគសញ្ញា {{1}} យ៉ាង{{2}} ការពិនិត្យបង្ហាញការផ្គូផ្គង {{4}}% ជាមួយទម្រង់ទឹកនោមផ្អែម។ តេស្តជាតិស្ករអត់ចំណី ឬ HbA1c អាចធ្វើឱ្យវាច្បាស់ជាង។" },
+  { "pattern": "^This assessment combined (\\d+) reported symptom\\(s\\) with (.+?) results( and (\\d+) risk factor\\(s\\))?\\. The evidence consistently points toward a diabetes pattern at (\\d+)% confidence\\.$", "template": "ការវាយតម្លៃនេះរួមបញ្ចូលរោគសញ្ញាដែលបានជម្រាប {{1}} យ៉ាង ជាមួយលទ្ធផល {{2}}{{3}}។ ភស្តុតាងចង្អុលតែមួយទិសដៅទៅទម្រង់ទឹកនោមផ្អែម ដោយទំនុកចិត្ត {{5}}%។" },
+  { "pattern": "^Assessment completed using (.+) — screening confidence reached (\\d+)%\\.$", "template": "ការវាយតម្លៃបានបញ្ចប់ដោយប្រើ {{1}} — ទំនុកចិត្តនៃការពិនិត្យបានដល់ {{2}}%។" },
+  { "pattern": "^Confidence score is calculated from (\\d+) matched diagnosis rules?\\.( linked to conclusion '(.+?)')?( Core lab inputs still missing: (.+?))?\\.$", "template": "ពិន្ទុទំនុកចិត្តត្រូវបានគណនាពីវិធានវិនិច្ឆ័យដែលត្រូវគ្នា {{1}} យ៉ាង{{2}}{{4}}" },
+  { "pattern": "^ linked to conclusion '(.+?)'$", "template": " ដែលភ្ជាប់នឹងសេចក្តីសន្និដ្ឋាន '{{1}}'។" },
+  { "pattern": "^Confidence score is calculated from (\\d+) reported symptom\\(s\\) and (\\d+) risk factor\\(s\\)\\.( Core lab inputs still missing: (.+?))?\\.$", "template": "ពិន្ទុទំនុកចិត្តត្រូវបានគណនាពីរោគសញ្ញាដែលបានជម្រាប {{1}} យ៉ាង និងកត្តាហានិភ័យ {{2}} យ៉ាង{{3}}" },
+  { "pattern": "^ Core lab inputs still missing: (.+)$", "template": "។ ខ្វះទិន្នន័យ Lab សំខាន់ៗ៖ {{1}}។" },
+  { "pattern": "^Confidence score could not be reliably calculated because (.+)\\.$", "template": "ពិន្ទុទំនុកចិត្តមិនអាចគណនាបានដោយទំនុកចិត្ត ព្រោះ {{1}}។" },
+  { "pattern": "^core lab inputs are missing \\((.+)\\)$", "template": "ខ្វះទិន្នន័យ Lab សំខាន់ៗ ({{1}})" },
+  { "pattern": "^(\\d+) symptom\\(s\\)$", "template": "រោគសញ្ញា {{1}} យ៉ាង" },
+  { "pattern": "^(\\d+) risk factor\\(s\\)$", "template": "កត្តាហានិភ័យ {{1}} យ៉ាង" }
+]

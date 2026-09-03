@@ -362,11 +362,12 @@ def _derive_classic_hyperglycemia_symptoms(facts: dict, set_fact: SetFactCallbac
     polyuria = _as_bool(facts.get("polyuria")) or _as_bool(facts.get("frequent_urination"))
     polydipsia = _as_bool(facts.get("polydipsia")) or _as_bool(facts.get("excessive_thirst"))
     weight_loss = _as_bool(facts.get("weight_loss")) or _as_bool(facts.get("unexplained_weight_loss"))
-    hunger = _as_bool(facts.get("excessive_hunger"))
+    hunger = _as_bool(facts.get("excessive_hunger")) or _as_bool(facts.get("polyphagia"))
 
-    if polyuria and polydipsia:
+    cardinal_count = sum(1 for present in [polyuria, polydipsia, weight_loss, hunger] if present)
+
+    if cardinal_count >= 2:
         set_fact("classic_hyperglycemia_symptoms", True, "derived.classic_hyperglycemia_symptoms")
-    # Classic triad: polyuria + polydipsia + (polyphagia or catabolic weight loss)
     if polyuria and polydipsia and (weight_loss or hunger):
         set_fact("classic_symptom_cluster", True, "derived.classic_symptom_cluster")
         set_fact("symptom_strength", "high", "derived.symptom_strength")

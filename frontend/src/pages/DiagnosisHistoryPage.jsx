@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, AlertTriangle, ArrowRight, ClipboardList, Clock3, FileText, Sparkles } from 'lucide-react'
+import { Activity, AlertTriangle, ArrowRight, ClipboardList, Clock3, FileText, Sparkles, UserRound } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
 import { EmptyState, ErrorAlert, SectionCard, StatusBadge } from '@/components/ui'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useAuth } from '@/contexts/AuthContext'
+import { userHasStaffRole } from '@/lib/nav-config'
 
 function toCertaintyPercent(certainty) {
   const numeric = Number(certainty)
@@ -72,6 +74,8 @@ function getRecommendationPreview(result, t, tExact) {
 
 export function DiagnosisHistoryPage() {
   const { t, tExact, language } = useLanguage()
+  const { user } = useAuth()
+  const isStaff = userHasStaffRole(user)
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -80,7 +84,10 @@ export function DiagnosisHistoryPage() {
     setLoading(true)
     setError('')
     try {
-      const response = await api.get('/diagnosis/mine')
+      // Staff (doctor / admin / knowledge manager…) see every patient's results;
+      // patient accounts see their own history.
+      const endpoint = isStaff ? '/diagnosis/recent?limit=100' : '/diagnosis/mine'
+      const response = await api.get(endpoint)
       setResults(getApiData(response) || [])
     } catch (err) {
       setError(getApiErrorMessage(err, t('myResults.loadError')))
@@ -96,6 +103,10 @@ export function DiagnosisHistoryPage() {
   const latest = results[0]
   const latestPercent = latest ? toCertaintyPercent(latest.certainty) : 0
   const latestUrgency = getUrgencyMeta(latest, t)
+  const listTitle = isStaff ? t('page.patientResults.title', 'Patient Results') : t('myResults.title')
+  const listDescription = isStaff
+    ? t('page.patientResults.subtitle', 'All patient assessment results across the clinic')
+    : t('myResults.description')
   const latestConclusion = latest?.explanation_trace?.confidence_calculation?.top_conclusion
     ? tExact(latest.explanation_trace.confidence_calculation.top_conclusion) || toReadableLabel(latest.explanation_trace.confidence_calculation.top_conclusion)
     : t('common.notAvailable')
@@ -103,8 +114,8 @@ export function DiagnosisHistoryPage() {
   return (
     <section className="space-y-5">
       <SectionCard
-        title={t('myResults.title')}
-        description={t('myResults.description')}
+        title={listTitle}
+        description={listDescription}
         className="overflow-hidden"
       >
         {!latest ? (
@@ -225,8 +236,8 @@ export function DiagnosisHistoryPage() {
       </SectionCard>
 
       <SectionCard
-        title={t('myResults.title')}
-        description={t('myResults.description')}
+        title={listTitle}
+        description={listDescription}
       >
         {loading ? (
           <div className="mt-2 rounded-3xl border border-dashed border-slate-200 p-8 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">
@@ -248,6 +259,12 @@ export function DiagnosisHistoryPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <StatusBadge tone={urgency.tone} size="sm">{urgency.label}</StatusBadge>
+                        {isStaff && result.patient_name ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                            <UserRound className="h-3.5 w-3.5" />
+                            {t('myResults.patientLabel', 'Patient')}: {result.patient_name}
+                          </span>
+                        ) : null}
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400">
                           <Clock3 className="h-3.5 w-3.5" />
                           {formatDateTime(result.created_at, language, t('common.notAvailable'))}

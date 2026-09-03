@@ -1,0 +1,2081 @@
+{
+  "common": {
+    "english": "English",
+    "khmer": "Khmer",
+    "language": "Language",
+    "notAvailable": "N/A",
+    "user": "User",
+    "unknownUser": "Unknown User",
+    "noEmail": "No email",
+    "role": "Role",
+    "open": "Open",
+    "seeAll": "See all",
+    "closeSidebar": "Close sidebar",
+    "closeMenu": "Close menu",
+    "settings": "Settings",
+    "getHelp": "Get Help",
+    "back": "Back",
+    "continue": "Continue",
+    "selected": "selected",
+    "yes": "Yes",
+    "noSelection": "Not selected",
+    "logout": "Logout",
+    "male": "Male",
+    "female": "Female",
+    "other": "Other",
+    "unknown": "Unknown",
+    "all": "All",
+    "active": "Active",
+    "inactive": "Inactive",
+    "suspended": "Suspended",
+    "showing": "Showing {{from}}-{{to}} of {{total}} results",
+    "rows": "Rows",
+    "previous": "Previous",
+    "next": "Next",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "confirmStatusChange": "Confirm account status change.",
+    "disableAccount": "Disable user account?",
+    "enableAccount": "Enable user account?",
+    "disableDesc": "{{name}} will be marked inactive and will lose access until re-enabled.",
+    "enableDesc": "{{name}} will be restored and allowed to sign in again.",
+    "disableUser": "Disable User",
+    "enableUser": "Enable User",
+    "loading": "Loading..."
+  },
+  "auth": {
+    "loginTitle": "Welcome Back",
+    "loginSub": "Sign in to your diabetes expert account",
+    "emailLabel": "Email Address",
+    "passwordLabel": "Password",
+    "signInBtn": "Sign In",
+    "noAccount": "Don't have an account?",
+    "signUp": "Sign Up",
+    "loginPageTitle": "Login",
+    "loginPageSub": "Sign in to continue to your dashboard.",
+    "emailPlaceholder": "Email address",
+    "passwordPlaceholder": "Password",
+    "rememberMe": "Remember me",
+    "signingIn": "Signing in...",
+    "login": "Login",
+    "accentEyebrow": "Diabetes Expert System",
+    "accentTitle": "Hello, Welcome!",
+    "accentCopy": "Don't have an account yet? Create one to access diagnosis tools, patient history, and smarter follow-up care.",
+    "register": "Register",
+    "registerTitle": "Register",
+    "registerSub": "Create your account and get started right away.",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "firstNamePlaceholder": "First name",
+    "lastNamePlaceholder": "Last name",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Confirm password",
+    "agreeTerms": "I agree to the",
+    "termsAndConditions": "Terms and Conditions",
+    "creatingAccount": "Creating account...",
+    "createAccount": "Create Account",
+    "alreadyHaveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "secureAccess": "Secure Access",
+    "welcomeBack": "Welcome Back!",
+    "registerAccentCopy": "Already registered? Head back to the login screen and continue managing assessments, rules, and patient care.",
+    "errorEmailPasswordRequired": "Email and password are required.",
+    "errorLoginFailed": "Login failed",
+    "errorAgreeTerms": "Please agree to the terms and conditions.",
+    "errorPasswordMismatch": "Password and confirm password must match.",
+    "errorRegistrationFailed": "Registration failed"
+  },
+  "roles": {
+    "user": "User",
+    "patient": "Patient",
+    "doctor": "Doctor",
+    "admin": "Admin",
+    "super_admin": "Super Admin"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "assessment": "Assessment",
+    "patients": "Patients",
+    "knowledgeBase": "Knowledge Base",
+    "patientReview": "Patient Review",
+    "myResults": "My Results",
+    "carePlan": "Care Plan",
+    "users": "Users",
+    "roles": "Roles",
+    "workspace": "Workspace",
+    "system": "System",
+    "documents": "Documents",
+    "tools": "Tools",
+    "patientResults": "Patient Results"
+  },
+  "page": {
+    "unauthorized": {
+      "title": "Unauthorized",
+      "subtitle": "You do not have access to this resource"
+    },
+    "notFound": {
+      "title": "Not Found",
+      "subtitle": "The requested page could not be found"
+    },
+    "assessmentResult": {
+      "title": "Assessment Result",
+      "subtitle": "Readable clinical summary from your assessment output"
+    },
+    "assessmentWorkspace": {
+      "title": "Assessment Workspace",
+      "subtitle": "Collect patient facts and run expert inference"
+    },
+    "patientManagement": {
+      "title": "Patient Management",
+      "subtitle": "Profiles, symptoms, labs, and diagnosis timelines"
+    },
+    "knowledgeBase": {
+      "title": "Knowledge Base",
+      "subtitle": "Rule authoring, history, and governance"
+    },
+    "clinicalReview": {
+      "title": "Clinical Review",
+      "subtitle": "Annotate and triage diagnosis outcomes"
+    },
+    "myDiagnosisResults": {
+      "title": "My Diagnosis Results",
+      "subtitle": "Track your diagnosis history and feedback"
+    },
+    "carePlan": {
+      "title": "My Care Plan",
+      "subtitle": "Your follow-up plan, doctor's notes, and progress in one place"
+    },
+    "users": {
+      "title": "Users",
+      "subtitle": "Manage user access, roles, and account status"
+    },
+    "rolesPermissions": {
+      "title": "Roles & Permissions",
+      "subtitle": "Create role profiles and choose granted permissions"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Operational overview by role"
+    },
+    "patientResults": {
+      "title": "Patient Results",
+      "subtitle": "All patient assessment results across the clinic"
+    }
+  },
+  "usersPage": {
+    "hero": {
+      "eyebrow": "User Management",
+      "title": "Users",
+      "description": "Manage team members, roles, and account access from one control surface.",
+      "addUser": "Add User"
+    },
+    "insights": {
+      "rolesTitle": "Users by Role",
+      "rolesDesc": "Distribution across assigned roles.",
+      "rulesTitle": "Rules by Status",
+      "rulesDesc": "Current active versus archived rules.",
+      "actionsTitle": "Top Actions (7d)",
+      "actionsDesc": "Most common admin and auth events.",
+      "noRoleData": "No role data",
+      "noRoleDataDesc": "Role distribution appears when user stats are available.",
+      "noRuleData": "No rule data",
+      "noRuleDataDesc": "Rule status chart appears once rule stats are loaded.",
+      "noActionData": "No action data",
+      "noActionDataDesc": "Activity actions will be charted once events are available.",
+      "usersCount": "Users",
+      "eventsCount": "Events"
+    },
+    "table": {
+      "searchPlaceholder": "Search users...",
+      "columns": "Columns",
+      "export": "Export",
+      "visibleColumns": "Visible columns",
+      "suspendedNotice": "Suspended accounts are not modeled separately in the current backend. Use Inactive to disable access.",
+      "headers": {
+        "name": "Name",
+        "role": "Role",
+        "access": "Access",
+        "status": "Status",
+        "lastActive": "Last Active",
+        "actions": "Actions"
+      },
+      "states": {
+        "loading": "Loading users...",
+        "noneFound": "No users found",
+        "noneFoundDesc": "Try another search or switch account status.",
+        "permissions": "{{count}} permission",
+        "permissions_plural": "{{count}} permissions"
+      }
+    },
+    "editor": {
+      "newAccount": "New Account",
+      "editAccount": "Edit Account",
+      "addUser": "Add User",
+      "updateUser": "Update User",
+      "createDesc": "Create a new system account and assign the initial role.",
+      "editDesc": "Update account identity, role assignment, and access state.",
+      "fields": {
+        "fullName": "Full Name",
+        "email": "Email",
+        "password": "Password",
+        "role": "Role",
+        "status": "Account Status"
+      },
+      "actions": {
+        "cancel": "Cancel",
+        "saving": "Saving...",
+        "createUser": "Create User",
+        "saveChanges": "Save Changes"
+      },
+      "editPage": {
+        "title": "Edit {{name}}",
+        "titleFallback": "Edit User",
+        "description": "Update user information, choose a role, or create a new role from permission selections.",
+        "detailsTitle": "User Details",
+        "detailsDescription": "Edit account identity, status, and role assignment from one form.",
+        "loading": "Loading user details...",
+        "roleLabel": "Role / Custom Role Name",
+        "rolePlaceholder": "Select or type role name",
+        "createRoleOption": "Create role \"{{name}}\"",
+        "noMatchingRoles": "No matching roles.",
+        "noRolesAvailable": "No roles available.",
+        "permissionsTitle": "Permissions",
+        "permissionsDescription": "Check permissions for this role. If they differ from an existing role, save with a new role name.",
+        "noPermissions": "No permissions are available.",
+        "saveFailed": "Failed to update user",
+        "loadFailed": "Failed to load user details",
+        "enterCustomRoleName": "Enter a name for the custom role before saving.",
+        "roleNameConflict": "That role name already exists with different permissions. Use another name.",
+        "savingProfile": "Saving user access profile...",
+        "saved": "User updated successfully.",
+        "roleCreated": "New role created and assigned successfully.",
+        "customRoleDescription": "Custom role for {{name}}",
+        "customRoleFallbackName": "user",
+        "permissionGroups": {
+          "user": "Users",
+          "permission": "Roles & Permissions",
+          "patient": "Patients",
+          "symptom": "Symptoms",
+          "lab": "Lab Results",
+          "rule": "Rules",
+          "diagnosis": "Diagnosis"
+        }
+      }
+    },
+    "notifications": {
+      "creating": "Creating user...",
+      "updating": "Saving user changes...",
+      "createSuccess": "User created successfully.",
+      "updateSuccess": "User updated successfully.",
+      "disabling": "Disabling user...",
+      "enabling": "Enabling user...",
+      "statusSuccess": "User status updated successfully.",
+      "exportSuccess": "User export downloaded.",
+      "loadError": "Failed to load users",
+      "updateError": "Failed to update user",
+      "createError": "Failed to create user"
+    }
+  },
+  "rolesPage": {
+    "hero": {
+      "title": "Roles & Permissions",
+      "description": "Create custom roles and configure the permissions each role can access.",
+      "newRole": "New Role"
+    },
+    "list": {
+      "title": "Roles",
+      "description": "Select a role to review its permissions or start a new custom role.",
+      "loading": "Loading roles...",
+      "emptyTitle": "No roles found",
+      "emptyDescription": "Roles will appear here once they are available.",
+      "userCount": "{{count}} user",
+      "userCount_plural": "{{count}} users",
+      "builtIn": "Built-in",
+      "custom": "Custom",
+      "newRole": "New Role"
+    },
+    "form": {
+      "detailsTitle": "Role Details",
+      "newRoleTitle": "New Role",
+      "builtInNotice": "Built-in roles are read-only. Review permissions here, but create a new role to customize access.",
+      "newRoleDesc": "Set the role name and choose the permissions that role should grant.",
+      "roleName": "Role Name",
+      "roleNamePlaceholder": "Enter role name",
+      "permissions": "Permissions",
+      "saving": "Saving...",
+      "saveRole": "Save Role",
+      "createRole": "Create Role",
+      "noPermissionsTitle": "No permissions found",
+      "noPermissionsDesc": "Permission options will appear here once they are available."
+    },
+    "groups": {
+      "user": "Users",
+      "permission": "Roles & Permissions",
+      "patient": "Patients",
+      "symptom": "Symptoms",
+      "lab": "Lab Results",
+      "rule": "Rules",
+      "diagnosis": "Diagnosis"
+    },
+    "notifications": {
+      "nameRequired": "Role name is required.",
+      "permissionRequired": "Select at least one permission.",
+      "saving": "Saving role...",
+      "creating": "Creating role...",
+      "saveSuccess": "Role updated successfully.",
+      "createSuccess": "Role created successfully.",
+      "loadError": "Failed to load roles and permissions",
+      "saveError": "Failed to update role",
+      "createError": "Failed to create role"
+    }
+  },
+  "permissions": {
+    "user": {
+      "manage": "Manage users",
+      "view": "View users"
+    },
+    "diagnosis": {
+      "review_any": "Review all diagnosis results",
+      "run": "Run diagnosis",
+      "view_own": "View own diagnosis results"
+    },
+    "patient": {
+      "manage": "Create and update patient records",
+      "view_own": "View own patient record",
+      "view": "View patient records"
+    },
+    "rule": {
+      "manage": "Create and manage rules",
+      "view": "View rules"
+    },
+    "lab": {
+      "manage": "Create lab records",
+      "view": "View lab history"
+    },
+    "permission": {
+      "manage": "Create and update roles",
+      "view": "View roles and permissions"
+    },
+    "symptom": {
+      "manage": "Create symptom records",
+      "view": "View symptom history"
+    }
+  },
+  "userSidebar": {
+    "userFallback": "User",
+    "contact": "Contact",
+    "noEmail": "No email",
+    "accountId": "Account ID",
+    "na": "N/A",
+    "timeline": "Timeline",
+    "created": "Created:",
+    "updated": "Updated:",
+    "effectivePermissions": "Effective Permissions",
+    "noPermissions": "No permissions available for this role."
+  },
+  "time": {
+    "noActivity": "No activity yet",
+    "justNow": "Just now",
+    "minAgo": "{{count}} min ago",
+    "hourAgo": "{{count}} hour ago",
+    "hoursAgo": "{{count}} hours ago",
+    "dayAgo": "{{count}} day ago",
+    "daysAgo": "{{count}} days ago"
+  },
+  "breadcrumbs": {
+    "dashboard": "Dashboard",
+    "patientHistory": "Patient History",
+    "ruleDetails": "Rule Details",
+    "reviewDetails": "Review Details",
+    "details": "Details"
+  },
+  "topbar": {
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar",
+    "openMenu": "Open menu",
+    "breadcrumb": "Breadcrumb",
+    "newAssessment": "New Assessment",
+    "switchToLightTheme": "Switch to light theme",
+    "switchToDarkTheme": "Switch to dark theme",
+    "notifications": "Notifications",
+    "languageSwitcher": "Switch language",
+    "profileSettings": "Settings",
+    "profile": "Profile",
+    "logOut": "Log out"
+  },
+  "profileSetup": {
+    "stepProgress": "Step {{current}} of {{total}}",
+    "stepLabel": "Step {{current}}/{{total}}",
+    "welcome": "Hi {{name}} — let’s set up your health profile.",
+    "footnote": "These answers replace the profile questions inside every assessment — less typing, more accuracy.",
+    "step1": {
+      "title": "About you",
+      "description": "Two quick details so your assessments start pre-filled."
+    },
+    "step2": {
+      "title": "Your body",
+      "description": "Used to calculate your BMI automatically — no need to type it later."
+    },
+    "step3": {
+      "title": "Health background",
+      "description": "Optional — these feed the risk analysis only if they apply to you."
+    },
+    "genderLabel": "Gender",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "genderOther": "Other",
+    "dobLabel": "Date of birth",
+    "agePreview": "{{age}} years old",
+    "heightLabel": "Height (cm)",
+    "weightLabel": "Weight (kg)",
+    "waistLabel": "Waist (cm)",
+    "optional": "optional",
+    "bmiPreview": "Your BMI: {{value}} — calculated automatically in every assessment.",
+    "riskFamily": "Family history of diabetes",
+    "riskHypertension": "High blood pressure",
+    "riskCholesterol": "High cholesterol",
+    "riskSmoking": "I smoke",
+    "riskSedentary": "Mostly sedentary lifestyle",
+    "privacyNote": "Only you and your care team can see this. You can change it anytime in your profile.",
+    "back": "Back",
+    "continue": "Continue",
+    "finish": "Finish setup",
+    "saving": "Saving...",
+    "errors": {
+      "gender": "Please choose a gender option.",
+      "dob": "Please enter your date of birth.",
+      "dobRange": "Please enter a valid date of birth.",
+      "height": "Please enter a height between 80 and 250 cm.",
+      "weight": "Please enter a weight between 20 and 400 kg.",
+      "waist": "Please enter a waist between 40 and 200 cm.",
+      "save": "Could not save your profile. Please try again."
+    }
+  },
+  "profilePage": {
+    "title": "Your profile",
+    "subtitle": "Account details and the health profile your assessments pre-fill from.",
+    "accountTitle": "Account",
+    "healthTitle": "Health profile",
+    "healthSubtitle": "Keep this up to date — every new assessment starts pre-filled from here.",
+    "save": "Save changes",
+    "saved": "Saved",
+    "staffNote": "You are signed in as staff — the health profile section is only shown for patient accounts.",
+    "loadFailed": "Could not load your health profile."
+  },
+  "patientDashboard": {
+    "errors": {
+      "loadFailed": "Failed to load your dashboard data"
+    },
+    "hero": {
+      "eyebrow": "Patient Dashboard",
+      "welcomeBack": "Welcome back, {{name}}",
+      "fallbackName": "Patient",
+      "description": "Review your latest result, understand what to do next, and keep your diabetes care history easy to follow.",
+      "startAssessment": "Start New Assessment",
+      "viewHistory": "View Full History",
+      "assessments": "Assessments",
+      "assessmentsHint": "Stored in your result history",
+      "latestConfidence": "Latest Confidence",
+      "latestConfidenceHintFallback": "No diagnosis available yet",
+      "urgentFollowUp": "Urgent Follow-Up",
+      "latestSnapshot": "Latest Snapshot",
+      "noDiagnosisYet": "No diagnosis result yet",
+      "snapshotFallback": "Complete an assessment to generate a diagnosis result and next-step guidance.",
+      "openFullResult": "Open full result",
+      "greetingMorning": "Good morning, {{name}}!",
+      "greetingAfternoon": "Good afternoon, {{name}}!",
+      "greetingEvening": "Good evening, {{name}}!",
+      "lastCheck": "Last check",
+      "lastCheckToday": "Today",
+      "lastCheckYesterday": "Yesterday",
+      "lastCheckDaysAgo": "{{count}} days ago",
+      "lastCheckNever": "No checks yet"
+    },
+    "situation": {
+      "title": "Your situation",
+      "newAssessment": "New assessment",
+      "viewResults": "View my results",
+      "stable": "Your latest assessment looks stable — keep up routine monitoring.",
+      "urgent": "Your latest assessment was flagged for urgent follow-up.",
+      "urgentReason": "Reason: {{reason}}",
+      "noResult": "You haven't completed an assessment yet. Start your first one to see your situation here.",
+      "ageLabel": "Age"
+    },
+    "health": {
+      "title": "Health snapshot",
+      "description": "Key body metrics from your latest assessment.",
+      "latestFrom": "From your assessment on {{date}}",
+      "bmi": "Body Mass Index (BMI)",
+      "fastingGlucose": "Fasting blood glucose",
+      "hba1c": "HbA1c",
+      "catUnderweight": "Underweight",
+      "catNormal": "Normal",
+      "catOverweight": "Overweight",
+      "catObese": "Obese",
+      "catPrediabetes": "Prediabetes range",
+      "catDiabetes": "Diabetes range",
+      "notProvided": "Not provided",
+      "bmiRangeHint": "Healthy: 18.5 – 24.9",
+      "glucoseRangeHint": "Healthy (fasting): below 100 mg/dL",
+      "a1cRangeHint": "Healthy: below 5.7%",
+      "mgdlUnit": "mg/dL",
+      "emptyTitle": "No health metrics yet",
+      "emptyDescription": "Complete an assessment with your height, weight and lab values to see your BMI, glucose and HbA1c here.",
+      "disclaimer": "Screening reference only — always confirm results with your clinician."
+    },
+    "recentAssessments": {
+      "title": "Recent Assessments",
+      "description": "Your latest diagnosis outcomes and recommendation summaries.",
+      "loading": "Loading your assessments...",
+      "emptyTitle": "No assessments yet",
+      "emptyDescription": "Submit your first assessment to unlock a personal diagnosis history and follow-up guidance.",
+      "unknownDiagnosis": "Unknown diagnosis",
+      "confidence": "Confidence",
+      "urgent": "Urgent",
+      "routine": "Routine",
+      "noRecommendation": "No recommendation provided."
+    },
+    "carePlan": {
+      "title": "Care Plan",
+      "description": "What matters most after your latest assessment.",
+      "emptyTitle": "No latest summary yet",
+      "emptyDescription": "Once you complete an assessment, your most recent diagnosis and follow-up plan will appear here.",
+      "currentPriority": "Current priority",
+      "urgentPriorityText": "Your latest result includes an urgent flag. Follow the recommendation promptly and contact a clinician if symptoms are getting worse.",
+      "routinePriorityText": "Your latest result does not show an urgent flag. Continue with the recommended follow-up and monitor any symptom changes.",
+      "latestSummary": "Latest Summary",
+      "noDiagnosisAvailable": "No diagnosis available",
+      "confidence": "Confidence",
+      "reviewNote": "Review Note",
+      "noDoctorNote": "No doctor note yet.",
+      "reportedSymptoms": "Symptoms you reported",
+      "noSymptoms": "No symptoms reported in your latest assessment.",
+      "openFull": "Open care plan",
+      "moreSymptoms": "+{{count}} more",
+      "numbersTitle": "Your numbers",
+      "numbersAge": "Age",
+      "yearsUnit": "yrs",
+      "numbersBmi": "BMI",
+      "numbersFasting": "Fasting glucose",
+      "numbersHba1c": "HbA1c",
+      "unitMgdl": "mg/dL",
+      "unitPercent": "%",
+      "catNormal": "Normal",
+      "catHealthy": "Healthy",
+      "catPrediabetes": "Borderline",
+      "catDiabetes": "High",
+      "catOverweight": "Overweight",
+      "catObese": "Obese",
+      "catUnderweight": "Underweight",
+      "numbersNoLabs": "No lab values yet — a fasting glucose and HbA1c test will make your reports far more accurate.",
+      "understandingTitle": "Understanding your result",
+      "understandingConfirmed": "Your results meet the criteria for diabetes. This is not an emergency — it means your blood sugar has been consistently above the normal range. The next step is a care plan: meet your clinician, set sugar targets, and start treatment, plus regular eye and foot checks.",
+      "understandingPossible": "Your answers match common signs of diabetes, but a blood test is still needed to confirm. Book a fasting glucose or HbA1c test — it takes minutes and any lab can do it.",
+      "understandingPrediabetes": "Your numbers sit in the borderline range between normal and diabetes. This stage can often be reversed: about 7% weight loss, 150 minutes of activity a week, and fewer sugary drinks sharply lower the risk.",
+      "understandingGestational": "Your results relate to diabetes in pregnancy. Pregnancy changes how the body handles sugar. Your obstetric team will plan glucose monitoring and diet first — with good control, most pregnancies go well.",
+      "understandingLowRisk": "No strong diabetes signs were found in your latest assessment. Keep your healthy routines, re-check routinely every 1–3 years, and come back sooner if new symptoms appear.",
+      "understandingType1": "Your pattern (rapid onset with weight loss) fits type 1 diabetes, where the body stops making insulin. This needs specialist care quickly — insulin treatment cannot wait for a routine appointment.",
+      "understandingMixed": "Your results show features of more than one diabetes type. A clinician may order extra antibody tests to pick the right treatment.",
+      "understandingFallback": "This report compares your answers against medical rules for diabetes. Open the full report to see the evidence behind it and the recommended next steps.",
+      "warningTitle": "Warning signs — get help fast",
+      "warningBody": "Go to emergency care for fruity-smelling breath, deep or fast breathing, vomiting with no fluids kept down, confusion or extreme drowsiness. For shakiness, sweating or dizziness, take fast sugar (juice or glucose tablets) and recheck after 15 minutes.",
+      "riskTitle": "Your risk factors",
+      "riskEmpty": "No risk factors recorded in your latest assessment.",
+      "heroWhatThisMeans": "What this means",
+      "nextStepsTitle": "Your next steps",
+      "heroViewReport": "View full report"
+    },
+    "report": {
+      "title": "Health report",
+      "description": "What your assessments show over time.",
+      "activityTitle": "Assessment activity",
+      "activityHint": "Assessments completed per month — last 6 months",
+      "trendTitle": "Confidence trend",
+      "trendHint": "Expert-system confidence for each assessment",
+      "totalAssessments": "Total assessments",
+      "urgentFlags": "Urgent flags",
+      "lastCheck": "Last check",
+      "latestConfidence": "Latest confidence",
+      "emptyTitle": "Your report is waiting for data",
+      "emptyDescription": "Complete assessments and this report fills itself in — activity, confidence trends, and key numbers over time.",
+      "emptyCta": "Start my first assessment",
+      "noTrendData": "Confidence appears once an assessment produces a diagnosis.",
+      "confidenceUnit": "%"
+    },
+    "recommendations": {
+      "title": "Recommended for you",
+      "description": "Generated automatically from your latest assessment data.",
+      "basisPrefix": "Based on: {{reason}}",
+      "priorityNow": "Act now",
+      "prioritySoon": "This week",
+      "priorityHabit": "Daily habit",
+      "basisUrgentFlag": "urgent flag on your latest result",
+      "basisSymptoms": "your symptoms: {{symptoms}}",
+      "basisGlucose": "glucose {{value}} mg/dL",
+      "basisHba1c": "HbA1c {{value}}%",
+      "basisBmi": "BMI {{value}}",
+      "basisNoLabs": "no lab values on file",
+      "basisSmoking": "smoking",
+      "basisLastCheck": "last check {{days}} days ago",
+      "basisHypertension": "hypertension flag",
+      "basisRiskFactor": "your risk factors",
+      "basisAssessmentCount": "{{count}} assessments so far",
+      "urgentFollowUpTitle": "Contact a clinician promptly",
+      "urgentFollowUpText": "Your latest assessment was flagged urgent. Don't wait — follow the recommendation and speak to a clinician as soon as you can.",
+      "crisisSignsTitle": "Seek emergency care now",
+      "crisisSignsText": "You reported warning signs ({{symptoms}}). These can indicate a dangerous glucose crisis — get urgent medical help immediately.",
+      "hypoSignsTitle": "Know how to treat low blood sugar",
+      "hypoSignsText": "Shakiness, sweating or dizziness can mean low blood sugar. If it happens, take fast-acting sugar (juice, glucose tablets) and tell your clinician.",
+      "veryHighGlucoseTitle": "Your glucose is very high",
+      "veryHighGlucoseText": "A reading of {{value}} mg/dL needs medical attention soon. Contact your clinician, drink water, and avoid sugary drinks for now.",
+      "missingLabsTitle": "Add lab tests to unlock better insight",
+      "missingLabsText": "Your assessments have no lab values yet. A fasting glucose and HbA1c test would make your reports and these recommendations far more accurate.",
+      "diabetesRangeGlucoseTitle": "Discuss your glucose with a clinician",
+      "diabetesRangeGlucoseText": "Your fasting glucose of {{value}} mg/dL is in the diabetes range. Book an appointment to confirm the result and plan next steps.",
+      "prediabetesGlucoseTitle": "Reverse prediabetes with lifestyle",
+      "prediabetesGlucoseText": "Your glucose of {{value}} mg/dL is in the warning range. Diet changes and regular movement now can bring it back to normal.",
+      "a1cElevatedTitle": "Recheck your HbA1c every 3 months",
+      "a1cElevatedText": "Your HbA1c of {{value}}% is above target. A check every 3 months shows whether your plan is actually working.",
+      "weightManagementTitle": "Aim for gradual weight loss",
+      "weightManagementText": "A BMI of {{value}} responds well to small changes: balanced portions and a daily walk. Even a 5% weight loss measurably improves glucose.",
+      "underweightTitle": "Get nutrition support",
+      "underweightText": "A BMI of {{value}} is below the healthy range. Focus on nutrient-rich meals and ask a professional about a safe plan to gain weight.",
+      "symptomDiaryTitle": "Keep a symptom diary",
+      "symptomDiaryText": "You reported {{count}} symptoms ({{symptoms}}). Note when they appear and how strong they feel — it helps your clinician spot patterns.",
+      "quitSmokingTitle": "Quit smoking to protect your vessels",
+      "quitSmokingText": "Smoking sharply raises the risk of diabetes complications. Ask your clinician about cessation support — it's one of the highest-impact changes you can make.",
+      "reassessSoonTitle": "Time for a fresh assessment",
+      "reassessSoonText": "Your last check was {{days}} days ago. Re-run the assessment to keep your report and trends up to date.",
+      "bpMonitorTitle": "Check your blood pressure at home",
+      "bpMonitorText": "You flagged hypertension. Measure twice a week at rest and bring the readings to your appointments.",
+      "yearlyScreeningTitle": "Get screened every year",
+      "yearlyScreeningText": "Your risk factors make yearly glucose checks important — even when you feel completely fine.",
+      "buildHistoryTitle": "Build your health history",
+      "buildHistoryText": "You've completed {{count}} assessment(s). Repeating the assessment monthly reveals trends and makes every report smarter.",
+      "stayActiveTitle": "Move 150 minutes a week",
+      "stayActiveText": "Brisk walking, cycling or swimming lowers glucose and improves insulin sensitivity. Start with 10-minute walks after meals.",
+      "balancedDietTitle": "Keep your plate balanced",
+      "balancedDietText": "Half vegetables, a quarter protein, a quarter whole grains — and water instead of sweet drinks. Simple habits, big effect on glucose."
+    },
+    "carePlanPage": {
+      "loading": "Loading your care plan...",
+      "loadFailed": "Failed to load your care plan",
+      "hero": {
+        "eyebrow": "Your care plan",
+        "lastCheck": "Last check",
+        "confidence": "Confidence",
+        "assessments": "Assessments"
+      },
+      "onboarding": {
+        "title": "Let's build your care plan",
+        "description": "Three quick steps and everything below fills in with your own results.",
+        "step1": "Complete a health assessment",
+        "step1Text": "Answer questions about symptoms, lifestyle and lab values — it only takes a few minutes.",
+        "step2": "Get your instant result",
+        "step2Text": "The expert system analyses your answers and produces a readable diagnosis summary.",
+        "step3": "Follow your personal plan",
+        "step3Text": "Your checklist, doctor's notes and progress tracking appear here automatically.",
+        "cta": "Start my first assessment"
+      },
+      "checklist": {
+        "title": "Action checklist",
+        "description": "Practical next steps based on your latest assessment.",
+        "progress": "{{done}} of {{total}} completed",
+        "completedTitle": "All done for now!",
+        "completedText": "You've completed every step. Check back after your next assessment.",
+        "reset": "Reset",
+        "empty": "Complete an assessment to get your personal checklist."
+      },
+      "doctorNote": {
+        "title": "Doctor's note",
+        "empty": "No note from your doctor yet — notes appear here after a clinician reviews your result."
+      },
+      "watch": {
+        "title": "Numbers to watch",
+        "description": "Latest values from your assessments with healthy targets."
+      },
+      "safety": {
+        "title": "Seek care urgently if",
+        "item1": "You develop confusion, drowsiness or fainting",
+        "item2": "You have rapid breathing with fruity-smelling breath",
+        "item3": "Vomiting or diarrhoea stops you keeping fluids down",
+        "item4": "A wound is red, swollen, or not healing",
+        "item5": "Your symptoms suddenly get much worse",
+        "footnote": "This list doesn't replace medical advice. In an emergency, call your local emergency number."
+      },
+      "history": {
+        "title": "Assessment history",
+        "description": "Every assessment you've completed, newest first.",
+        "viewReport": "View report",
+        "reviewed": "Doctor reviewed"
+      },
+      "symptoms": {
+        "title": "Symptoms from your latest assessment"
+      }
+    },
+    "nextSteps": {
+      "title": "Next Steps",
+      "description": "Simple actions to keep your care on track.",
+      "reviewHistoryTitle": "Review your diagnosis history",
+      "reviewHistoryText": "Track changes in diagnosis, urgency, and confidence across older and newer results.",
+      "openHistory": "Open history",
+      "newAssessmentTitle": "Start a new assessment when information changes",
+      "newAssessmentText": "Run another assessment when symptoms change, new lab values become available, or your doctor asks for an update.",
+      "startAssessment": "Start assessment"
+    },
+    "status": {
+      "noResultYet": "No result yet",
+      "needsAttention": "Needs attention",
+      "stable": "Stable"
+    },
+    "checklist": {
+      "firstAssessment1": "Complete your first assessment to generate a diagnosis summary.",
+      "firstAssessment2": "Keep recent lab values nearby before you start the questionnaire.",
+      "firstAssessment3": "Return to the dashboard to track future result changes.",
+      "urgentRecommendation": "Follow the urgent advice from your latest result as soon as possible.",
+      "routineRecommendation": "Follow the latest recommendation from your most recent result.",
+      "compareHistory": "Use your result history to compare changes in confidence and diagnosis over time.",
+      "prepareLabs": "Prepare missing lab tests before your next assessment to improve certainty.",
+      "startWhenChanged": "Start a new assessment whenever symptoms, labs, or medication status changes."
+    }
+  },
+  "assessment": {
+    "healthAssessment": "Health Assessment",
+    "draftAutosaved": "Draft autosaved",
+    "complete": "Complete",
+    "demoFill": "Demo Fill:",
+    "step": "Step",
+    "answered": "answered",
+    "closeBmiCalc": "Close calculator",
+    "openBmiCalc": "I don't know my exact BMI",
+    "weightKg": "Weight (kg)",
+    "heightCm": "Height (cm)",
+    "labHaveResults": "Do you have lab results?",
+    "labHaveResultsSub": "Lab values improve accuracy — but you can skip this",
+    "exactValueMgDl": "Exact value (mg/dL)",
+    "exactValuePercent": "Exact value (%)",
+    "additionalLabTests": "Additional lab tests (optional)",
+    "testName": "Test name",
+    "value": "Value",
+    "add": "Add",
+    "remove": "Remove",
+    "reviewSummary": "Review Summary",
+    "reviewSummarySub": "Double-check before submitting",
+    "footerHintContinue": "Complete each section, then continue",
+    "footerHintSubmitted": "Assessment submitted",
+    "footerHintReady": "Ready to submit",
+    "criticalHigh": "Critical High",
+    "diabetesRange": "Diabetes Range",
+    "preDiabetes": "Pre-diabetes",
+    "normalRange": "Normal Range",
+    "valueMgDl": "Value (mg/dL)",
+    "extraPlaceholderText": "e.g. tingling feet, dry mouth, frequent infections...",
+    "steps": {
+      "interview": {
+        "title": "Evidence Interview",
+        "description": "One question at a time — adapts to your answers"
+      },
+      "profile": {
+        "title": "Profile",
+        "description": "Basic patient information"
+      },
+      "symptoms": {
+        "title": "Symptoms",
+        "description": "Symptoms you are feeling"
+      },
+      "labs": {
+        "title": "Lab Values",
+        "description": "Glucose and lab values"
+      },
+      "risks": {
+        "title": "Risk Factors",
+        "description": "Lifestyle and medical risks"
+      },
+      "review": {
+        "title": "Review & Submit",
+        "description": "Check details and run diagnosis"
+      }
+    },
+    "interview": {
+      "finishNow": "Enough — see my result",
+      "patientTitle": "Who is this assessment for?",
+      "patientHelper": "Select the patient — answers we already know will be pre-filled.",
+      "ageTitle": "How old are you?",
+      "ageHelper": "Age changes the thresholds we screen with.",
+      "agePlaceholder": "e.g. 42",
+      "sexTitle": "What is your sex?",
+      "sexHelper": "Biological sex — it decides which questions and thresholds apply.",
+      "sexMale": "Male",
+      "sexFemale": "Female",
+      "sexOther": "Other",
+      "pregnantTitle": "Are you currently pregnant?",
+      "pregnantHelper": "Pregnancy uses stricter blood-sugar thresholds — I will adjust if so.",
+      "stageTitle": "How far along are you?",
+      "stageHelper": "Gestational diabetes is usually screened between weeks 24–28.",
+      "stageFirst": "1st trimester (0–13 weeks)",
+      "stageSecond": "2nd trimester (14–27 weeks)",
+      "stageThird": "3rd trimester (28+ weeks)",
+      "stageUnsure": "Not sure",
+      "gdmPrevTitle": "Have you had gestational diabetes in a previous pregnancy?",
+      "gdmPrevHelper": "A previous episode raises lifetime risk and means earlier testing this time.",
+      "onsetTitle": "Did these symptoms come on suddenly?",
+      "onsetHelper": "Sudden onset (days to weeks) points to type 1 diabetes; a slow build-up over months or years points to type 2.",
+      "coreSymptomsTitle": "Which of these have you noticed recently?",
+      "coreSymptomsHelper": "Select all that apply — or tap \"None of these\" if you feel fine.",
+      "otherSymptomsTitle": "Any of these as well?",
+      "otherSymptomsHelper": "Select all that apply — or tap \"None of these\".",
+      "warningTitle": "Any of these warning signs right now?",
+      "warningHelper": "These help detect low blood sugar or emergencies.",
+      "riskTitle": "Do any of these apply to you?",
+      "riskHelper": "Answers already known from your health profile are pre-ticked — you can change them.",
+      "bodyTitle": "Height & weight",
+      "bodyHelper": "I will calculate BMI automatically — or enter it directly if you know it.",
+      "bmiIs": "Your BMI:",
+      "orExactBmi": "Or enter BMI directly",
+      "hasLabsTitle": "Do you have recent lab results?",
+      "hasLabsHelper": "Lab values sharpen accuracy a lot — but the interview works without them.",
+      "labsTitle": "Enter the lab values you have",
+      "labsHelper": "Any one of these helps — everything is optional, and ranges work too.",
+      "extraTitle": "Anything else to tell the clinician?",
+      "extraHelper": "Something the questions did not cover — optional.",
+      "noneOfThese": "None of these",
+      "selectedCount": "selected",
+      "answerYes": "Yes",
+      "answerNo": "No",
+      "skip": "Skip",
+      "doneEditing": "Done",
+      "insightPregnantTitle": "Pregnancy noted — adjusting what I check",
+      "insightPregnantText": "Gestational diabetes is screened with stricter thresholds. A couple of pregnancy questions follow, and your labs will be read against pregnancy ranges.",
+      "insightT1dTitle": "This pattern gets my attention",
+      "insightT1dText": "Weight loss together with intense thirst and frequent urination can point to type 1 diabetes, which can develop quickly. This will be flagged for clinician review.",
+      "insightTriadTitle": "The classic diabetes pattern",
+      "insightTriadText": "Intense thirst, frequent urination and constant hunger together are the classic trio (polydipsia, polyuria, polyphagia) — high blood sugar pulls water out of your body. The next questions help me tell which type fits.",
+      "insightT2Title": "Slow build-up — type 2 pattern",
+      "insightT2Text": "Symptoms that build up over months usually point to type 2 diabetes, where the body still makes insulin but resists it. Signs like dark skin patches, tingling and slow healing matter most here.",
+      "insightChildTitle": "In children this pattern is urgent",
+      "insightChildText": "Sudden thirst and urination in a child — especially with new bed-wetting — is a strong type 1 signal. A finger-prick glucose check today is the fastest way to know.",
+      "insightDkaTitle": "Possible emergency — please read",
+      "insightKetosisTitle": "Ketone warning signs",
+      "insightKetosisText": "Fruity breath or deep, rapid breathing can mean ketones are building up — a sign of insulin shortage. Combined with feeling unwell, this needs urgent medical attention.",
+      "insightDkaText": "Vomiting or stomach pain with high blood sugar can signal diabetic ketoacidosis (DKA) — a medical emergency. If you feel very unwell right now, seek urgent care first; this assessment can wait.",
+      "insightCheckTitle": "Sign noted — the assessment keeps going",
+      "insightCheckText": "Stomach pain, vomiting, fruity breath or deep breathing can have many causes, and one sign on its own is not an emergency. The next questions help me tell whether this fits a pattern that needs urgent care.",
+      "insightHypoTitle": "Possible low blood sugar signs",
+      "insightHypoText": "Shakiness, sweating or dizziness can mean low blood sugar. If you have a glucose meter, a reading taken now would be valuable evidence.",
+      "childProbeTitle": "Any new bed-wetting at night?",
+      "childProbeHelper": "In children, new bed-wetting with extra thirst or urination is the strongest type 1 signal.",
+      "t2ProbeTitle": "Any of these insulin-resistance signs?",
+      "t2ProbeHelper": "With a slow build-up, these signs strongly point to the type 2 pattern.",
+      "insightShortcutTitle": "Skipping the lab questions — here is why",
+      "insightShortcutText": "With the signs you reported, the next step is the same no matter what a lab would say: get checked by a doctor today. I skipped the lab questions to save you time — finish the rest so your report is complete for the clinician.",
+      "answeredLabel": "Answered:",
+      "questionN": "Question",
+      "allAnsweredTitle": "All questions answered",
+      "allAnsweredText": "Review your evidence, then run the assessment.",
+      "goReview": "Review & Run",
+      "editAnswers": "Edit interview answers",
+      "pregnantShort": "Pregnant",
+      "notPregnant": "Not pregnant"
+    },
+    "options": {
+      "age": {
+        "under18": "Under 18",
+        "age18to30": "18-30",
+        "age31to45": "31-45",
+        "age46to60": "46-60",
+        "over60": "60 +"
+      },
+      "bmi": {
+        "underweight": "Underweight",
+        "normal": "Normal",
+        "overweight": "Overweight",
+        "obese": "Obese"
+      },
+      "waist": {
+        "low": "Low risk",
+        "medium": "Medium risk",
+        "high": "High risk"
+      },
+      "ogtt": {
+        "normal": "Normal",
+        "prediabetes": "Pre-diabetes",
+        "diabetes": "Diabetes"
+      }
+    },
+    "fields": {
+      "symptoms": {
+        "frequentUrination": "Frequent urination",
+        "excessiveThirst": "Excessive thirst",
+        "fatigue": "Constant tiredness",
+        "blurredVision": "Blurred vision",
+        "weightLoss": "Unexplained weight loss",
+        "slowHealing": "Slow wound healing",
+        "nausea": "Nausea",
+        "tinglingHandsFeet": "Tingling hands / feet",
+        "frequentInfections": "Frequent infections",
+        "acanthosisNigricans": "Dark skin patches",
+        "excessiveHunger": "Feeling very hungry",
+        "irritability": "Irritability / mood changes",
+        "recurrentUtiYeast": "Recurring UTIs / yeast infections",
+        "bedWetting": "New bed-wetting (children)"
+      },
+      "safetySymptoms": {
+        "sweating": "Sweating episodes",
+        "shaking": "Shaking / tremor",
+        "dizziness": "Dizziness",
+        "vomiting": "Vomiting",
+        "abdominalPain": "Stomach pain",
+        "fruityBreath": "Fruity / acetone breath",
+        "deepRapidBreathing": "Deep, rapid breathing"
+      },
+      "hypoglycemia": {
+        "confusion": "Confusion or trouble focusing",
+        "palpitations": "Palpitations/rapid heartbeat",
+        "improvesWithSugar": "Symptoms improve after sugar intake"
+      },
+      "urgent": {
+        "nausea": "Nausea",
+        "rapidBreathing": "Rapid or deep breathing",
+        "unableToKeepFluids": "Unable to keep fluids down",
+        "crisis": "Looks severely ill or in crisis"
+      },
+      "riskFactors": {
+        "familyHistory": "Family history",
+        "obesity": "Obesity / overweight",
+        "hypertension": "High blood pressure",
+        "sedentaryLifestyle": "Inactive / sedentary",
+        "gestationalHistory": "Gestational diabetes history",
+        "smoking": "Current smoker",
+        "highCholesterol": "High cholesterol",
+        "pcosHistory": "PCOS History",
+        "ethnicityHighRisk": "High-risk ethnicity"
+      },
+      "labs": {
+        "fasting": {
+          "normal": "Normal",
+          "prediabetes": "Pre-diabetes",
+          "diabetes": "Diabetes range",
+          "critical": "Critical"
+        },
+        "hba1c": {
+          "normal": "Normal",
+          "prediabetes": "Pre-diabetes",
+          "diabetes": "Diabetes",
+          "critical": "Severe"
+        }
+      }
+    },
+    "status": {
+      "flow": "Assessment Flow",
+      "complete": "{{percent}}% Complete",
+      "stepCounter": "Step {{step}}/{{total}}",
+      "analyzing": "Analyzing...",
+      "runAssessment": "🔬 Run Assessment",
+      "runAgain": "Run Again",
+      "newAssessment": "New Assessment"
+    },
+    "patient": {
+      "title": "Who is being assessed?",
+      "loading": "Loading patients...",
+      "selectPlaceholder": "Select patient",
+      "noPatients": "No patients available",
+      "noSelection": "Not selected"
+    },
+    "profile": {
+      "ageTitle": "How old are you?",
+      "ageHelper": "Tap the range that fits best, or type your exact age",
+      "exactAge": "Or enter exact age",
+      "bmiTitle": "Body Mass Index (BMI)",
+      "exactBmi": "Select your range or enter your BMI number",
+      "waistTitle": "Waist Circumference (optional)",
+      "exactWaist": "Waist in cm",
+      "waistHelper": "Helps detect central obesity - a key diabetes risk factor"
+    },
+    "symptoms": {
+      "commonTitle": "Common symptoms",
+      "commonHelper": "Tap any symptoms you're currently experiencing",
+      "safetyTitle": "Warning signs",
+      "safetyHelper": "These help detect low blood sugar or emergencies",
+      "hypoglycemiaTitle": "Hypoglycemia follow-up",
+      "hypoglycemiaHelper": "Shown because sweating, shaking, or dizziness was selected.",
+      "urgentTitle": "Urgent / DKA follow-up",
+      "urgentHelper": "Shown because vomiting, abdominal pain, or high glucose pattern was detected.",
+      "extraTitle": "Anything else?",
+      "extraHelper": "Describe any additional symptoms (optional)",
+      "extraPlaceholder": "e.g. dry_mouth, tingling_feet"
+    },
+    "labs": {
+      "availabilityTitle": "Lab availability",
+      "noLabs": "I do not have lab results right now (continue in screening mode).",
+      "currentMode": "Current mode:",
+      "fastingTitle": "Fasting Blood Glucose",
+      "rangeHelper": "Optional: select range, then optionally override exact value.",
+      "exactFasting": "Exact fasting glucose",
+      "hba1cTitle": "HbA1c (Glycated Hemoglobin)",
+      "exactHba1c": "Exact HbA1c",
+      "randomTitle": "Random glucose (optional)",
+      "randomLabel": "Random plasma glucose (mg/dL)",
+      "additionalTitle": "Additional lab values",
+      "labNamePlaceholder": "Lab name",
+      "valuePlaceholder": "Value",
+      "add": "Add",
+      "remove": "Remove",
+      "noAdditionalLabs": "No additional labs added.",
+      "title": "Do you have lab results?",
+      "helper": "Lab values improve accuracy — but you can skip this",
+      "noLabsAvailable": "I don't have lab results right now",
+      "mode": "Mode",
+      "diagnosticMode": "🔬 Diagnostic",
+      "screeningMode": "📋 Screening",
+      "fastingHelper": "mg/dL — after 8+ hours of fasting",
+      "hba1cHelper": "Percentage — reflects 2–3 month average blood sugar",
+      "ogttTitle": "2-Hour OGTT (optional)",
+      "ogttHelper": "mg/dL — measured 2 hours after 75g glucose load",
+      "rpgTitle": "Random Blood Glucose (optional)",
+      "rpgHelper": "mg/dL — any time, no fasting needed"
+    },
+    "riskFactors": {
+      "title": "Risk factors checklist",
+      "helper": "Check all risk factors present."
+    },
+    "review": {
+      "title": "Quick review before analysis",
+      "helper": "Please check this summary before you run diagnosis.",
+      "summaryTitle": "Patient Info Summary",
+      "patient": "Patient",
+      "notSelected": "Not selected",
+      "currentUser": "Current user",
+      "mode": "Mode",
+      "bodyMetrics": "Age / Body Mass / Waist",
+      "glucoseTests": "Glucose tests (Fasting / HbA1c / Random)",
+      "counts": "Symptoms / Risk Factors",
+      "adaptiveFlags": "Adaptive branch flags",
+      "hypoglycemia": "Hypoglycemia",
+      "urgent": "Urgent/DKA",
+      "on": "On",
+      "off": "Off",
+      "resultGenerated": "Result generated successfully. Open the dedicated report page for full clinical explanation.",
+      "openReport": "Open Result Report",
+      "submitHint": "Submit this assessment to generate diagnosis output.",
+      "overview": "Assessment Overview",
+      "profile": "Age / BMI / Waist",
+      "sexPregnancy": "Sex / Pregnancy",
+      "glucose": "Glucose Tests",
+      "symptoms": "Symptoms",
+      "risks": "Risk Factors",
+      "flags": "Flags",
+      "assessedFor": "Assessed for",
+      "forSelf": "Myself",
+      "forOther": "Someone else"
+    },
+    "footer": {
+      "continueHint": "Answer each section, then continue.",
+      "resultReadyHint": "Diagnosis result is ready. You can adjust inputs and run again.",
+      "reviewHint": "Check your summary, then run diagnosis.",
+      "back": "Back",
+      "next": "Next",
+      "running": "Running...",
+      "runAgain": "Run Again",
+      "runExpertSystem": "Run Expert System",
+      "newAssessment": "New Assessment"
+    },
+    "confirm": {
+      "title": "Start New Assessment?",
+      "description": "This will clear the current draft and result from this device. Continue only if you want to restart.",
+      "cancel": "Cancel",
+      "confirm": "Start New"
+    },
+    "modeLabels": {
+      "diagnostic": "Diagnostic",
+      "screening": "Screening"
+    },
+    "errors": {
+      "loadPatients": "Failed to load patients for assessment",
+      "enterLabName": "Enter a lab test name before adding.",
+      "enterLabValue": "Enter a valid numeric lab value before adding.",
+      "selectPatient": "Select a patient before continuing.",
+      "ageRange": "Age must be between 0 and 120.",
+      "bmiRange": "BMI must be between 10 and 80.",
+      "waistRange": "Waist circumference must be between 30 and 250 cm.",
+      "fastingRange": "Fasting glucose must be between 40 and 600.",
+      "hba1cRange": "HbA1c must be between 3 and 20.",
+      "randomRange": "Random glucose must be between 30 and 1000.",
+      "submitFailed": "Assessment failed"
+    },
+    "risks": {
+      "title": "Risk factors",
+      "helper": "Do any of these apply to you?"
+    },
+    "subject": {
+      "title": "Who is this assessment for?",
+      "self": "Myself",
+      "selfDesc": "Pre-fill my details from my saved health profile",
+      "other": "Someone else",
+      "otherDesc": "Ask me everything — age, weight and health of that person",
+      "otherBanner": "You are assessing someone else — answer each question using their information, not yours. The result will be saved to this account's history."
+    }
+  },
+  "publicPages": {
+    "notFound": {
+      "eyebrow": "Navigation",
+      "title": "Page Not Found",
+      "description": "The page you are looking for does not exist or has moved.",
+      "backDashboard": "Back to Dashboard",
+      "goLogin": "Go to Login"
+    },
+    "unauthorized": {
+      "eyebrow": "Access Control",
+      "title": "Unauthorized",
+      "description": "You do not have permission to access this page.",
+      "backDashboard": "Back to Dashboard",
+      "goLogin": "Go to Login"
+    }
+  },
+  "adminStats": {
+    "totalUsers": "Total Users",
+    "totalUsersDesc": "All registered accounts",
+    "patients": "Patients",
+    "patientsDesc": "Linked patient profiles",
+    "diagnosisTotal": "Diagnosis Total",
+    "diagnosisDesc": "Recorded diagnostic outcomes",
+    "urgentCases": "Urgent Cases",
+    "urgentCasesDesc": "Cases flagged for review"
+  },
+  "myResults": {
+    "title": "My Results",
+    "description": "Review diagnosis outcomes, certainty scores, and doctor annotations.",
+    "columns": {
+      "diagnosis": "Diagnosis",
+      "certainty": "Certainty",
+      "urgent": "Urgent",
+      "reviewNote": "Review Note",
+      "recommendation": "Recommendation",
+      "time": "Time"
+    },
+    "loading": "Loading diagnosis history...",
+    "emptyTitle": "No diagnosis submissions yet.",
+    "latestExplanation": "Latest Explanation",
+    "noExplanationTitle": "No explanation yet",
+    "noExplanationDesc": "Explanation trace will appear after your first assessment.",
+    "topConclusion": "Top Conclusion",
+    "loadError": "Failed to load your diagnosis history",
+    "patientLabel": "Patient"
+  },
+  "diagnosisResult": {
+    "loading": "Loading diagnosis result...",
+    "noResultTitle": "No assessment result found",
+    "noResultDesc": "Run an assessment first, then the result report will appear here.",
+    "backToAssessment": "Back to Assessment",
+    "pageTitle": "Medical Assessment Report",
+    "patient": "Patient",
+    "generatedOn": "Generated on",
+    "printPdf": "Print PDF",
+    "restartConfirmTitle": "Restart Assessment?",
+    "restartConfirmDesc": "This will clear the current assessment result and take you back to start a new assessment. Are you sure?",
+    "restart": "Restart",
+    "cancel": "Cancel",
+    "headlines": {
+      "urgent": "Urgent — Seek Care Now",
+      "diabetesLikely": "Diabetes Likely",
+      "classicSymptoms": "Classic Diabetes Symptoms",
+      "prediabetes": "Prediabetes Pattern",
+      "earlySigns": "Possible Early Signs",
+      "elevatedRisk": "Elevated Risk",
+      "noStrongIndication": "No Strong Indication",
+      "type1Detected": "Type 1 Pattern Detected",
+      "gestational": "Gestational Screening",
+      "highSignal": "High Diabetes Signal",
+      "moderateSignal": "Moderate Signal Detected",
+      "lowRisk": "Low Risk Indicated",
+      "complete": "Assessment Complete"
+    },
+    "confidenceMeta": {
+      "veryHigh": {
+        "title": "Very high confidence",
+        "description": "Multiple strong indicators align — lab values and symptoms both point toward diabetes."
+      },
+      "high": {
+        "title": "High confidence",
+        "description": "Most evidence points in the same direction. A clinical follow-up can confirm."
+      },
+      "moderate": {
+        "title": "Moderate confidence",
+        "description": "Some warning signs are present. Additional lab work would sharpen this assessment."
+      },
+      "low": {
+        "title": "Low confidence",
+        "description": "Limited evidence available — the data does not strongly point toward diabetes at this time."
+      }
+    },
+    "overallScore": "Screening Confidence",
+    "clinicalEvidence": "The evidence behind this result",
+    "keyDiagnosticIndicators": "Your lab results",
+    "hba1cIndicator": "HbA1c — 3-month average",
+    "hba1cSubtitle": "A key marker of long-term glucose control.",
+    "fastingIndicator": "Fasting glucose — after an 8-hour fast",
+    "fastingSubtitle": "Indicates glucose level after an 8-hour fast.",
+    "evidenceCompleteness": "How complete is this information?",
+    "availableLabs": "Provided:",
+    "missing": "Not provided:",
+    "none": "none",
+    "relevantHistory": "Your symptoms",
+    "knownSymptoms": "You reported:",
+    "symptomAlign": "The patient's reported symptoms align with the matched diabetes pattern shown by the inference engine.",
+    "noSymptom": "No prominent symptom pattern was selected.",
+    "riskFactors": "Your risk factors",
+    "knownHistory": "Your history:",
+    "noRisk": "No risk factors were flagged in this submission.",
+    "reasoningKeyRules": "Matched rules — technical",
+    "matchedRule": "Matched Rule",
+    "ruleConditionMatched": "Rule condition matched.",
+    "contribution": "Contribution",
+    "noDetailedRule": "No detailed rule reasoning is available for this run.",
+    "diagnosticReasoning": "Diagnostic Reasoning",
+    "diagnosticReasoningP1": "The system compares this assessment against structured diabetes rules from symptom, laboratory, and risk-factor evidence.",
+    "diagnosticReasoningP2": "Confidence is calculated from the strength and priority of matched rules, then adjusted by evidence completeness.",
+    "diagnosticReasoningP3": "This output is a decision-support summary and should be reviewed with a qualified healthcare professional.",
+    "actionableRecommendations": "What you should do next",
+    "preventionTitle": "Prevention",
+    "preventionIntro": "Healthy lifestyle choices can help prevent type 2 diabetes. If you have prediabetes, lifestyle changes may slow the condition or keep it from becoming diabetes.",
+    "preventionListIntro": "A healthy lifestyle includes the following:",
+    "preventionEatLead": "Eat healthy foods.",
+    "preventionEatText": "Choose foods lower in fat and calories and higher in fiber. Focus on fruits, vegetables and whole grains.",
+    "preventionActiveLead": "Be active.",
+    "preventionActiveText": "Aim for 150 or more minutes a week of moderate to vigorous aerobic activity, such as brisk walking, bicycling, running or swimming.",
+    "preventionWeightLead": "Lose weight.",
+    "preventionWeightText": "If you are overweight, losing some weight and keeping it off may slow prediabetes from becoming type 2 diabetes. If you have prediabetes, losing 7% to 10% of your body weight may lower the risk of diabetes.",
+    "preventionSitLead": "Don't sit for long.",
+    "preventionSitText": "Sitting for long periods can raise the risk of type 2 diabetes. Get up every 30 minutes and move around for at least a few minutes.",
+    "preventionMetformin": "People with prediabetes may take metformin (Fortamet, Glumetza, others), a diabetes medicine, to lower the risk of type 2 diabetes. This is most often prescribed for older adults who are obese and who can't lower blood sugar levels with lifestyle changes.",
+    "preventionGdmTitle": "Gestational diabetes — care & prevention",
+    "preventionGdmIntro": "During pregnancy your blood-sugar targets are stricter. Gestational diabetes can usually be managed well — and its risks greatly reduced — with early care.",
+    "preventionGdmWatchLead": "Watch your blood sugar.",
+    "preventionGdmWatchText": "Test as your obstetric team advises. The 75g OGTT around weeks 24–28 confirms or rules out gestational diabetes — earlier if you have risk factors.",
+    "preventionGdmEatLead": "Eat for steady glucose.",
+    "preventionGdmEatText": "Smaller, regular meals built on whole grains, vegetables and protein help avoid sugar spikes. Ask for a dietitian referral.",
+    "preventionGdmActiveLead": "Stay active.",
+    "preventionGdmActiveText": "A short walk after meals lowers glucose spikes. Keep to the activity level your doctor approves for your pregnancy.",
+    "preventionGdmFollowUpLead": "Follow up after birth.",
+    "preventionGdmFollowUpText": "Gestational diabetes raises your lifetime type 2 risk. Re-test 4–12 weeks after delivery, then every 1–3 years.",
+    "preventionGdmNote": "Any diabetes treatment during pregnancy needs obstetric supervision — never start or stop medication on your own.",
+    "preventionDiabetesTitle": "Diabetes — protect yourself starting today",
+    "preventionDiabetesIntro": "Your results meet diabetes-level evidence. These steps protect your eyes, kidneys, nerves and heart — the earlier you start, the better.",
+    "preventionDiabetesDoctorLead": "See a doctor promptly.",
+    "preventionDiabetesDoctorText": "Bring these results with you. Diabetes treatment works best when it starts early — your doctor will set targets and a monitoring plan with you.",
+    "preventionDiabetesLabsLead": "Confirm with lab tests.",
+    "preventionDiabetesLabsText": "If you have not had one yet, a fasting glucose or HbA1c test confirms the result and becomes your baseline for tracking.",
+    "preventionDiabetesBasicsLead": "Start the basics now.",
+    "preventionDiabetesBasicsText": "The same lifestyle that prevents diabetes also treats it: healthy food, 150 minutes of activity a week, and a steady weight.",
+    "preventionDiabetesCheckLead": "Check for complications.",
+    "preventionDiabetesCheckText": "Ask your doctor about eye, kidney, foot and blood-pressure checks — catching problems early prevents lasting damage.",
+    "preventionDiabetesNote": "Urgent warning signs — vomiting, fruity breath, deep rapid breathing, or confusion — need emergency care straight away.",
+    "preventionRiskTitle": "Lower your risk now",
+    "preventionRiskIntro": "No diabetes yet — but your risk factors make prevention worthwhile. Small, steady changes cut the risk sharply.",
+    "preventionRiskMoveLead": "Move 150 minutes a week.",
+    "preventionRiskMoveText": "Brisk walking, cycling or swimming — anything that raises your breathing — is the single most effective habit.",
+    "preventionRiskWeightLead": "Keep a healthy weight.",
+    "preventionRiskWeightText": "If you are overweight, losing 5–10% of your body weight measurably improves blood sugar and blood pressure.",
+    "preventionRiskFoodLead": "Eat more whole foods.",
+    "preventionRiskFoodText": "Build meals around vegetables, whole grains and lean protein; go easy on sugary drinks and processed snacks.",
+    "preventionRiskScreenLead": "Re-screen on schedule.",
+    "preventionRiskScreenText": "With risk factors, screen for diabetes every 1–3 years — sooner if prediabetes is ever found.",
+    "urgentTag": "Urgent",
+    "priority": "Priority",
+    "rule": "Rule:",
+    "noSpecificRecommendations": "No specific recommendations were generated. Please consult with a physician.",
+    "factPreparation": "Fact Preparation",
+    "factKey": "Fact Key",
+    "source": "Source",
+    "processedValue": "Processed Value",
+    "savedResultActive": "Saved result snapshot is active for this account. Start a new assessment to replace it.",
+    "viewAssessmentResults": "View your assessment results and recommendations above.",
+    "back": "Back",
+    "restartAssessment": "Restart Assessment",
+    "currentPatient": "Current patient",
+    "assessmentComplete": "Assessment complete! Your results have been saved.",
+    "viewReport": "View Report →",
+    "reviewBeforeSubmit": "Review your answers above, then click \"Run Assessment\" to get your results.",
+    "couldFit": "Could fit:",
+    "plainSummary": {
+      "title": "In short",
+      "whatThisIs": "This report compares your answers with common patterns of diabetes. It is a screening — not a final diagnosis. A doctor and a simple test can confirm.",
+      "matchedMany": "Your answers matched {{count}} common sign(s) associated with high blood sugar.",
+      "matchedFew": "This run included little direct evidence — the result leans on general risk patterns.",
+      "typeFit": "The pattern fits {{type}}.",
+      "couldFitTwo": "The signs could fit {{first}} ({{firstPercent}}%) or {{second}} ({{secondPercent}}%) — the first steps are the same either way.",
+      "noType": "No single diabetes type pattern stood out yet.",
+      "nextStep": "Next step:"
+    },
+    "symptomGuide": {
+      "items": {
+        "excessiveThirst": {
+          "term": "Polydipsia",
+          "meaning": "Can occur when blood glucose is high — the body pulls water to dilute the sugar.",
+          "prevention": "Drink water regularly and keep blood sugar in the target range; avoid sugary drinks."
+        },
+        "frequentUrination": {
+          "term": "Polyuria",
+          "meaning": "Often accompanies high blood glucose — the kidneys flush out the extra sugar.",
+          "prevention": "Limit caffeine in the evening and keep glucose well controlled to reduce night-time trips."
+        },
+        "excessiveHunger": {
+          "term": "Polyphagia",
+          "meaning": "Can occur when glucose cannot effectively enter cells.",
+          "prevention": "Eat balanced meals with fibre and protein so energy is released slowly."
+        },
+        "weightLoss": {
+          "term": "Catabolic weight loss",
+          "meaning": "The body burns fat and muscle for energy when glucose can't enter cells.",
+          "prevention": "See a doctor soon — sudden weight loss needs checking; balanced meals help rebuild healthy weight."
+        },
+        "fatigue": {
+          "term": "Asthenia",
+          "meaning": "Cells don't get enough glucose for energy.",
+          "prevention": "Light regular exercise, good sleep and steady meals help restore energy."
+        },
+        "blurredVision": {
+          "term": "Lens swelling",
+          "meaning": "High glucose draws water into the eye's lens, blurring focus.",
+          "prevention": "Bring glucose back to target and get an eye exam — vision usually improves as sugar stabilises."
+        },
+        "slowHealing": {
+          "term": "Impaired wound healing",
+          "meaning": "High glucose slows blood flow and weakens immune repair.",
+          "prevention": "Clean and protect wounds early and keep glucose in range to speed up healing."
+        },
+        "tingling": {
+          "term": "Peripheral neuropathy",
+          "meaning": "High glucose can irritate small nerve fibres over time.",
+          "prevention": "Check your feet daily and keep glucose steady to protect the nerves from further damage."
+        },
+        "frequentInfections": {
+          "term": "Recurrent infections",
+          "meaning": "High glucose weakens the immune system's defences.",
+          "prevention": "Keep glucose in range, keep skin clean and dry, and treat infections early."
+        },
+        "acanthosisNigricans": {
+          "term": "Acanthosis nigricans",
+          "meaning": "Dark, velvety skin patches — commonly linked with insulin resistance.",
+          "prevention": "Weight loss and exercise often fade these patches — ask a doctor about insulin resistance."
+        },
+        "irritability": {
+          "term": "Mood changes",
+          "meaning": "Blood sugar swings can affect mood and concentration.",
+          "prevention": "Steady meals, sleep and glucose control can lift mood — seek support if it persists."
+        },
+        "recurrentInfections": {
+          "term": "Recurrent UTI / yeast infections",
+          "meaning": "Glucose in urine feeds bacteria and yeast.",
+          "prevention": "Control sugar levels, stay hydrated, and see a doctor for infections that keep coming back."
+        },
+        "bedWetting": {
+          "term": "Nocturnal enuresis",
+          "meaning": "Extra glucose pulls more water — a classic Type 1 sign in children.",
+          "prevention": "A quick glucose check today can rule out early diabetes — see a doctor promptly."
+        },
+        "fruityBreath": {
+          "term": "Ketone breath",
+          "meaning": "Possible diabetic ketoacidosis (DKA) — seek care urgently.",
+          "prevention": "This can signal DKA (a dangerous chemical imbalance) — check ketones and seek urgent care."
+        },
+        "deepRapidBreathing": {
+          "term": "Kussmaul breathing",
+          "meaning": "The body tries to release ketone acids — seek care urgently.",
+          "prevention": "An emergency sign (possible DKA) — go to emergency care immediately."
+        },
+        "nausea": {
+          "term": "Nausea",
+          "meaning": "Can occur when blood glucose or ketones are very high.",
+          "prevention": "Sip water slowly and seek care if it persists — nausea with high sugar can be serious."
+        },
+        "vomiting": {
+          "term": "Vomiting",
+          "meaning": "With very high glucose this can signal DKA — seek care urgently.",
+          "prevention": "Seek medical care quickly — vomiting with high glucose risks dehydration and DKA."
+        },
+        "abdominalPain": {
+          "term": "Abdominal pain",
+          "meaning": "With very high glucose this can signal DKA — seek care urgently.",
+          "prevention": "Get medical help promptly, especially with vomiting or high sugar — possible DKA."
+        },
+        "sweating": {
+          "term": "Diaphoresis",
+          "meaning": "Can be a warning sign of low blood sugar (hypoglycemia).",
+          "prevention": "Check blood sugar — sweating can signal a low; keep fast-acting sugar within reach."
+        },
+        "shaking": {
+          "term": "Tremor",
+          "meaning": "Common warning sign of low blood sugar (hypoglycemia).",
+          "prevention": "Test glucose now — trembling often means low sugar; use the 15/15 rule if below 70 mg/dL."
+        },
+        "dizziness": {
+          "term": "Dizziness",
+          "meaning": "Can come from low — or very high — blood sugar.",
+          "prevention": "Sit down and check glucose; treat lows quickly and seek help if it is severe."
+        }
+      },
+      "preventionLabel": "Prevention:"
+    },
+    "adaptive": {
+      "title": "Detected patterns & evidence",
+      "patternsTitle": "Pattern analysis",
+      "strongest": "Strongest match",
+      "strength": "Strength",
+      "supporting": "Supporting",
+      "conflicting": "Conflicting",
+      "noPatterns": "No diabetes-like pattern was detected from the answers provided.",
+      "uncertaintyTitle": "Uncertainty",
+      "uncertainty": {
+        "low": "Low — the evidence points clearly in one direction",
+        "moderate": "Moderate — some questions remain open",
+        "high": "High — the evidence is limited or mixed"
+      },
+      "reason": {
+        "no_lab_values": "No lab values were provided",
+        "no_dominant_pattern": "No single pattern dominates the evidence",
+        "competing_patterns": "Two patterns score too closely to separate",
+        "conflicting_evidence": "Some evidence points in different directions"
+      },
+      "explanationTitle": "Why these patterns",
+      "exp": {
+        "core_symptoms": "{count} classic diabetes symptom(s) reported",
+        "sudden_onset": "Symptoms came on suddenly (days to weeks)",
+        "gradual_onset": "Symptoms built up gradually (months to years)",
+        "risk_factors": "{count} risk factor(s) present",
+        "lab_evidence": "Lab evidence: {flag}",
+        "pregnancy": "Pregnancy — stricter screening thresholds apply",
+        "competing_patterns": "Two patterns score closely ({primary} vs {secondary})",
+        "not_a_diagnosis": "Screening only — these pattern names are not diagnoses."
+      },
+      "step": {
+        "seek_emergency_care": "Seek emergency care now",
+        "see_clinician_soon": "See a clinician soon",
+        "get_lab_tests": "Get lab tests (fasting glucose / HbA1c)",
+        "retest_confirm": "Repeat the test to confirm",
+        "routine_screening": "Routine screening is enough for now"
+      },
+      "nextStepTitle": "Recommended next step",
+      "status": {
+        "sufficient": "Enough evidence was collected for a screening result.",
+        "insufficient": "Insufficient evidence — no result is forced; treat this as guidance only."
+      },
+      "not_a_diagnosis": "Pattern names are not diagnoses — only a clinician with lab tests can confirm anything.",
+      "evidence": {
+        "rapid_onset": "Sudden onset of symptoms",
+        "gradual_onset": "Gradual build-up of symptoms",
+        "age_under_18": "Age under 18",
+        "age_35_plus": "Age 35 or older",
+        "age_45_plus": "Age 45 or older",
+        "elevated_bmi": "Elevated BMI / overweight",
+        "lab_hyperglycemia": "Lab-elevated blood glucose",
+        "critical_lab_values": "Critically high lab values",
+        "crisis": "Critical condition reported"
+      },
+      "pattern": {
+        "insulin_deficiency_like": "Insulin-deficiency-like pattern (Type-1-like)",
+        "insulin_resistance_like": "Insulin-resistance-like pattern (Type-2-like)",
+        "gestational_risk": "Gestational diabetes risk",
+        "hyperglycemic_emergency_risk": "Hyperglycemic emergency risk"
+      }
+    },
+    "whyResult": {
+      "title": "Why this result?",
+      "toldUs": "What you told us",
+      "measured": "Lab values you provided",
+      "missingTitle": "Checks that would help most",
+      "noSymptoms": "No symptoms or risk factors were reported in this assessment.",
+      "noLabs": "No lab values were provided — the result is based on your reported answers only.",
+      "allProvided": "All recommended checks were provided.",
+      "summaryPrefix": "The system matched",
+      "summarySuffix": "piece(s) of information from your assessment.",
+      "limitedNote": "This result is based on limited information — the missing checks above would make it noticeably more reliable."
+    },
+    "technical": {
+      "title": "Technical details — how the engine decided",
+      "subtitle": "The behind-the-scenes rules and data the expert system used. You can skip this — the summary above already tells the story.",
+      "plainNote": "In simple words: the system compared the answers with known medical rules. Every rule that matched adds a small piece of evidence, and complete lab results make the conclusion more certain. Your doctor can read this section to double-check exactly why the system reached its conclusion."
+    },
+    "labStatusHigh": "High",
+    "labStatusElevated": "Elevated",
+    "labStatusNormal": "Normal",
+    "labStatusUnknown": "Unknown",
+    "education": {
+      "titlePrefix": "Understanding",
+      "whatTitle": "What is it?",
+      "symptomsTitle": "Common symptoms",
+      "careTitle": "Treatment & care",
+      "learnMore": "Full guide on MedlinePlus",
+      "disclaimer": "Educational background only — always follow your healthcare provider's advice.",
+      "conditions": {
+        "general": {
+          "name": "diabetes",
+          "tagline": "Blood sugar stays too high when the body can't make or use insulin well.",
+          "what": [
+            "Insulin moves glucose (sugar) from your blood into your cells for energy.",
+            "With diabetes, the body makes little or no insulin, can't use it well, or both — so glucose builds up in the blood.",
+            "Over time, high blood glucose can harm the heart, kidneys, eyes, and nerves.",
+            "It can be managed — early treatment lowers the risk of complications."
+          ],
+          "symptoms": [
+            "Feeling very thirsty or very hungry",
+            "Urinating more often, including at night",
+            "Tired all the time; blurry vision",
+            "Tingling or numb feet; sores that heal slowly"
+          ],
+          "care": [
+            "Confirm with lab tests: A1C, fasting glucose, or an oral glucose tolerance test.",
+            "Eat well, stay physically active, and keep a healthy weight.",
+            "Take prescribed medicines and monitor blood sugar as directed.",
+            "Get regular checkups for eyes, kidneys, nerves, and feet."
+          ]
+        },
+        "type1": {
+          "name": "Type 1 diabetes",
+          "tagline": "An autoimmune condition — the body makes little or no insulin.",
+          "what": [
+            "The immune system mistakenly attacks the pancreas cells that make insulin.",
+            "Without insulin, glucose builds up in the blood instead of feeding your cells.",
+            "It often starts in children, teens, or young adults — but can appear at any age.",
+            "It is not caused by lifestyle, and it cannot be prevented."
+          ],
+          "symptoms": [
+            "Very thirsty, very hungry, urinating often (including at night)",
+            "Losing weight without trying; tired all the time",
+            "Blurry vision; tingling in feet or hands",
+            "Emergency signs: deep rapid breathing, fruity breath, vomiting, stomach pain — seek care immediately"
+          ],
+          "care": [
+            "Daily insulin for life, by injection or an insulin pump.",
+            "Check blood glucose regularly (fingerstick or a wearable sensor).",
+            "Match insulin to food (carbohydrate counting) and activity.",
+            "Regular clinic visits to adjust doses and screen for complications."
+          ]
+        },
+        "type2": {
+          "name": "Type 2 diabetes",
+          "tagline": "The most common type — the body resists insulin.",
+          "what": [
+            "Cells don't respond to insulin normally (insulin resistance), so glucose stays in the blood.",
+            "It develops slowly over years — many people feel fine at first.",
+            "Risk rises with excess weight, low activity, age over 35–45, and family history.",
+            "Healthy habits can control it — and sometimes prevent or delay it."
+          ],
+          "symptoms": [
+            "Often no early symptoms — screening matters.",
+            "Increased thirst, urination, and hunger",
+            "Feeling tired; blurred vision",
+            "Numb or tingling hands and feet; sores that heal slowly"
+          ],
+          "care": [
+            "Healthy eating, regular activity, and weight management come first.",
+            "Medicines such as metformin are common; insulin can be added later.",
+            "Monitor blood glucose and A1C as your provider advises.",
+            "Yearly checks of eyes, kidneys, nerves, feet, and heart."
+          ]
+        },
+        "gestational": {
+          "name": "gestational diabetes",
+          "tagline": "High blood sugar that develops during pregnancy.",
+          "what": [
+            "Pregnancy hormones can block insulin, so blood sugar rises.",
+            "It usually appears midway through pregnancy and is found by screening at 24–28 weeks.",
+            "Most women feel no symptoms — that is why testing matters.",
+            "It often goes away after delivery, but it raises the chance of type 2 diabetes later."
+          ],
+          "symptoms": [
+            "Usually none — detected by routine prenatal testing",
+            "Mild increased thirst or shakiness",
+            "Sometimes fatigue, blurred vision, or frequent infections"
+          ],
+          "care": [
+            "A healthy meal plan and regular gentle activity.",
+            "Check blood sugar at home as your provider directs.",
+            "Insulin or safe medicines if diet alone isn't enough.",
+            "Extra monitoring of the baby, and a glucose test after delivery."
+          ]
+        },
+        "prediabetes": {
+          "name": "prediabetes",
+          "tagline": "Blood sugar is above normal — but not diabetes yet.",
+          "what": [
+            "Glucose is higher than normal (A1C 5.7–6.4% or fasting 100–125 mg/dL).",
+            "Usually there are no clear symptoms — it is found through testing.",
+            "Without changes, it often progresses to type 2 diabetes.",
+            "Acting now can delay or even prevent type 2 diabetes."
+          ],
+          "symptoms": [
+            "Most people feel completely normal",
+            "Some notice darkened, velvety skin patches on the neck or under the arms"
+          ],
+          "care": [
+            "Losing 5–7% of body weight greatly lowers the risk.",
+            "Aim for about 150 minutes of brisk activity each week.",
+            "Choose more vegetables, whole grains, and lean protein.",
+            "Recheck blood sugar at least once a year."
+          ]
+        }
+      }
+    },
+    "diagnosticOutput": "Diagnostic Output",
+    "suspectedType": "Suspected type",
+    "type": {
+      "type1": "Type 1 pattern",
+      "type2": "Type 2 pattern",
+      "gestational": "Gestational pattern",
+      "mixed": "Mixed features",
+      "undetermined": "Undetermined"
+    },
+    "probabilityBase": "Based on all available clinical data, the inference engine calculated a ",
+    "probabilityOf": " probability of this diagnosis.",
+    "probability": {
+      "veryHigh": "very high probability",
+      "high": "high probability",
+      "moderate": "moderate probability",
+      "low": "low probability"
+    },
+    "riskGuide": {
+      "items": {
+        "familyHistory": {
+          "meaning": "A parent or sibling with diabetes raises your lifetime risk — screening should start earlier and repeat regularly."
+        },
+        "obesity": {
+          "meaning": "Excess body fat — especially around the waist — makes the body resistant to insulin, the top driver of type 2 diabetes."
+        },
+        "overweight": {
+          "meaning": "A BMI of 25–30 already raises type 2 risk; a modest 5–10% weight loss brings it down sharply."
+        },
+        "hypertension": {
+          "meaning": "High blood pressure often travels with high sugar and doubles the risk to the heart and kidneys."
+        },
+        "sedentaryLifestyle": {
+          "meaning": "Sitting most of the day weakens glucose control — 150 minutes of movement a week cuts risk by about a third."
+        },
+        "gestationalHistory": {
+          "meaning": "Diabetes during pregnancy means a high chance of type 2 later in life — test every 1–3 years."
+        },
+        "smoking": {
+          "meaning": "Smoking worsens insulin resistance and damages blood vessels — quitting is the single best step."
+        },
+        "highCholesterol": {
+          "meaning": "High cholesterol together with high sugar speeds up artery damage — diet, movement and medication help."
+        },
+        "pcosHistory": {
+          "meaning": "PCOS is strongly linked to insulin resistance — women with PCOS need regular glucose checks."
+        },
+        "ethnicityHighRisk": {
+          "meaning": "Some ethnic groups (South Asian, Southeast Asian and others) face higher risk at lower weights — screen earlier."
+        }
+      }
+    }
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "assessment": "Health Assessment",
+    "patients": "Patients",
+    "knowledgeBase": "Knowledge Base",
+    "ruleManagement": "Rule Management",
+    "adminConsole": "Admin Console"
+  },
+  "rules": {
+    "tabs": {
+      "overview": "Overview",
+      "editor": "Rule Editor",
+      "visual": "Visual Graph",
+      "sandbox": "Sandbox"
+    },
+    "dashboard": {
+      "visualLogicGraph": "Visual Logic Graph",
+      "visualizingRule": "Visualizing rule:",
+      "unnamedRule": "Unnamed Rule",
+      "saveRule": "Save Rule",
+      "saving": "Saving...",
+      "knowledgeBaseRules": "Knowledge Base Rules",
+      "filterSelectReview": "Filter and select a rule to review versions and edit conditions.",
+      "searchPlaceholder": "Search rules by name, category, or conclusion...",
+      "allCategories": "All categories",
+      "allStatuses": "All statuses",
+      "includeArchived": "Include archived",
+      "reset": "Reset",
+      "columns": {
+        "name": "Name",
+        "category": "Category",
+        "status": "Status",
+        "priority": "Priority",
+        "version": "Version"
+      },
+      "loadingRules": "Loading rules...",
+      "noRulesSearch": "No rules match your search.",
+      "noRulesFound": "No rules found."
+    },
+    "editor": {
+      "editRule": "Edit Rule",
+      "createRule": "Create Rule",
+      "subtitle": "Write simple clinical logic for doctors. Example: if fasting glucose is 126 or higher, set diabetes possible.",
+      "newRule": "New Rule",
+      "unarchive": "Unarchive",
+      "restoring": "Restoring...",
+      "archive": "Archive",
+      "ruleName": "Rule Name",
+      "category": "Category",
+      "conclusion": "Conclusion",
+      "conditions": "Conditions",
+      "addCondition": "+ Add Condition",
+      "expectedValue": "Expected value",
+      "remove": "Remove",
+      "certaintyFactor": "Certainty Factor",
+      "priority": "Priority",
+      "status": "Status",
+      "explanation": "Explanation",
+      "recommendation": "Recommendation",
+      "notes": "Notes",
+      "updateRule": "Update Rule"
+    },
+    "history": {
+      "ruleVersions": "Rule Versions",
+      "selectRuleToViewVersions": "Select a rule to view versions.",
+      "columns": {
+        "version": "Version",
+        "change": "Change",
+        "by": "By",
+        "time": "Time"
+      },
+      "noVersionHistory": "No version history found.",
+      "auditTrail": "Audit Trail",
+      "selectRuleToViewAudit": "Select a rule to view audit logs.",
+      "auditColumns": {
+        "action": "Action",
+        "by": "By",
+        "time": "Time"
+      }
+    },
+    "dropdowns": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "archived": "Archived",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    }
+  },
+  "kbDashboard": {
+    "ranges": {
+      "last7Days": "Last 7 Days",
+      "last30Days": "Last 30 Days",
+      "last90Days": "Last 90 Days",
+      "thisYear": "This Year",
+      "allTime": "All Time"
+    },
+    "refresh": "Refresh",
+    "loading": "Loading analytics...",
+    "cards": {
+      "engineExecutions": {
+        "title": "Engine Executions",
+        "trend": "+12% from previous"
+      },
+      "avgRules": {
+        "title": "Avg. Rules Triggered",
+        "desc": "Per assessment",
+        "trend": "Stable"
+      },
+      "activeRules": {
+        "title": "Active Rules",
+        "desc": "System-wide logic",
+        "trend": "+2 this month"
+      },
+      "accuracy": {
+        "title": "System Accuracy",
+        "desc": "Estimated match rate",
+        "trend": "+0.5% optimization"
+      }
+    },
+    "ruleDistribution": "Rule Distribution",
+    "topTriggeredRules": "Top Triggered Rules",
+    "columns": {
+      "rank": "Rank",
+      "ruleName": "Rule Name",
+      "category": "Category",
+      "hits": "Hits"
+    },
+    "recentCases": {
+      "title": "Recent Cases",
+      "desc": "Latest {{count}} diagnoses evaluated by the system.",
+      "viewAll": "View All",
+      "columns": {
+        "patient": "Patient",
+        "diagnosis": "Diagnosis",
+        "assessedBy": "Assessed By",
+        "time": "Time",
+        "status": "Status"
+      },
+      "system": "System",
+      "reviewed": "Reviewed",
+      "pending": "Pending",
+      "noCases": "No recent cases found in the selected timeframe."
+    }
+  },
+  "dashboard": {
+    "hero": {
+      "dashboardTitle": "{{role}} dashboard",
+      "title": "Build Better Diabetes Care Pathways",
+      "desc": "Monitor screening trends, review rule-driven outcomes, and coordinate medical follow-ups from one unified clinical dashboard.",
+      "startAssessment": "Start Assessment",
+      "openPatients": "Open Patients"
+    },
+    "toolbar": {
+      "dateRange": "Date Range",
+      "refresh": "Refresh"
+    },
+    "kpi": {
+      "clickToView": "Click to view details →",
+      "assessments": "Assessments",
+      "activePatients": "Active Patients",
+      "totalRegistered": "Total registered",
+      "urgentCases": "Urgent Cases",
+      "awaitingReview": "Awaiting review",
+      "treatmentPlans": "Treatment Plans",
+      "allTime": "All Time"
+    },
+    "recent": {
+      "title": "Recent Cases",
+      "desc": "Latest {{count}} diagnoses awaiting review or recently completed.",
+      "viewAll": "View All",
+      "columns": {
+        "patient": "Patient",
+        "diagnosis": "Diagnosis",
+        "assessedBy": "Assessed By",
+        "status": "Status",
+        "date": "Date"
+      },
+      "noDiagnoses": "No diagnoses found for this period.",
+      "urgent": "Urgent",
+      "reviewed": "Reviewed",
+      "pending": "Pending"
+    },
+    "charts": {
+      "volume": "Diagnosis Volume vs Pending",
+      "volumeDesc": "Monthly clinical throughput (live data).",
+      "noTrendData": "No trend data available yet. Create some assessments to see trends.",
+      "risk": "Risk Classification",
+      "riskDesc": "Click a slice to filter patients by risk level."
+    }
+  },
+  "sandbox": {
+    "title": "Rule Simulation Sandbox",
+    "subtitle": "Test patient scenarios against active rules without saving records",
+    "matched": "matched",
+    "rulesLabel": "rules",
+    "testPatientData": "Test Patient Data",
+    "clear": "Clear",
+    "simulationResults": "Simulation Results",
+    "enterTestData": "Enter test data to simulate",
+    "usePresets": "Use presets above for quick scenarios",
+    "triggeredSummary": "{{matched}} of {{total}} active rules triggered",
+    "hide": "Hide",
+    "details": "Details",
+    "presets": {
+      "healthy": "Healthy Adult",
+      "prediabetes": "Pre-Diabetes",
+      "t2dm": "Type 2 Diabetes",
+      "dka": "DKA Crisis"
+    },
+    "groups": {
+      "demographics": "Demographics",
+      "labValues": "Lab Values",
+      "symptoms": "Symptoms",
+      "riskFactors": "Risk Factors"
+    },
+    "fields": {
+      "age": "Age",
+      "bmi": "BMI",
+      "fastingGlucose": "Fasting Glucose",
+      "fastingPlasmaGlucose": "Fasting Plasma Glucose",
+      "hba1c": "HbA1c",
+      "ogtt": "2h OGTT",
+      "randomPlasmaGlucose": "Random Plasma Glucose",
+      "bloodGlucose": "Blood Glucose",
+      "frequentUrination": "Frequent Urination",
+      "excessiveThirst": "Excessive Thirst",
+      "fatigue": "Fatigue",
+      "blurredVision": "Blurred Vision",
+      "weightLoss": "Weight Loss",
+      "nausea": "Nausea",
+      "vomiting": "Vomiting",
+      "abdominalPain": "Abdominal Pain",
+      "tinglingHandsFeet": "Tingling Hands/Feet",
+      "frequentInfections": "Frequent Infections",
+      "acanthosisNigricans": "Dark Skin Patches (Acanthosis Nigricans)",
+      "familyHistory": "Family History",
+      "lowPhysicalActivity": "Low Physical Activity",
+      "sedentaryLifestyle": "Sedentary Lifestyle",
+      "highCholesterol": "High Cholesterol",
+      "pcosHistory": "PCOS History",
+      "highRiskEthnicity": "High Risk Ethnicity"
+    }
+  },
+  "patientsPage": {
+    "records": {
+      "title": "Patient Records",
+      "desc": "Search, filter, edit profiles, and open assessment workflows."
+    },
+    "filters": {
+      "search": "Search by name or phone",
+      "allGenders": "All genders",
+      "anyDiagnosis": "Any diagnosis status",
+      "hasDiagnosis": "Has diagnosis",
+      "noDiagnosis": "No diagnosis yet",
+      "apply": "Apply",
+      "reset": "Reset"
+    },
+    "table": {
+      "name": "Name",
+      "gender": "Gender",
+      "phone": "Phone",
+      "diagnoses": "Diagnoses",
+      "actions": "Actions",
+      "loading": "Loading patients...",
+      "empty": "No patients found for current filters.",
+      "history": "History",
+      "latestResult": "Latest Result",
+      "assess": "Assess"
+    },
+    "form": {
+      "editTitle": "Edit Patient",
+      "createTitle": "Register Patient",
+      "editDesc": "Update profile details before reviewing history or running a new assessment.",
+      "createDesc": "Add a profile before recording symptoms and labs.",
+      "cancelEdit": "Cancel Edit",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "Patient full name",
+      "gender": "Gender",
+      "dateOfBirth": "Date of birth",
+      "phone": "Phone",
+      "phonePlaceholder": "Phone number",
+      "notes": "Notes",
+      "notesPlaceholder": "Background notes",
+      "saving": "Saving...",
+      "updatePatient": "Update Patient",
+      "createPatient": "Create Patient"
+    }
+  },
+  "historyPage": {
+    "profile": {
+      "title": "Patient Profile",
+      "desc": "Manage demographics and monitor case history over time.",
+      "back": "Back to List",
+      "assess": "Run Assessment",
+      "updateProfile": "Update Profile",
+      "saving": "Saving..."
+    },
+    "sections": {
+      "symptoms": "Symptoms",
+      "labResults": "Lab Results",
+      "diagnosisHistory": "Diagnosis History",
+      "recorded": "Recorded",
+      "recorded_at": "When"
+    },
+    "symptomForm": {
+      "title": "Add Symptom",
+      "code": "Symptom code (e.g. fatigue)",
+      "name": "Symptom name",
+      "severity": "Severity 1-10",
+      "present": "Present now",
+      "notes": "Notes",
+      "add": "Add Symptom",
+      "noHistory": "No symptom history."
+    },
+    "labForm": {
+      "title": "Add Lab Result",
+      "testName": "Test name",
+      "testValue": "Test value",
+      "unit": "Unit",
+      "range": "Reference range",
+      "notes": "Notes",
+      "add": "Add Lab Result",
+      "noHistory": "No lab history."
+    },
+    "diagnosisTable": {
+      "diagnosis": "Diagnosis",
+      "certainty": "Certainty",
+      "by": "By",
+      "when": "When",
+      "noHistory": "No diagnosis history yet."
+    }
+  },
+  "reviewPage": {
+    "queue": {
+      "title": "Patient Review Queue",
+      "pendingCount": "{{count}} pending reviews",
+      "autoUpdating": "Auto-updating",
+      "searchPlaceholder": "Search patients..."
+    },
+    "states": {
+      "loading": "Loading queue...",
+      "empty": "Queue is entirely empty. Great job!",
+      "noMatch": "No patients match your search.",
+      "urgent": "URGENT",
+      "standard": "Standard",
+      "score": "Score",
+      "unknownPatient": "Unknown Patient"
+    },
+    "details": {
+      "noPatientSelected": "No Patient Selected",
+      "noPatientSelectedDesc": "Select a diagnosis from the queue on the left to review clinical output and append your notes.",
+      "assessmentRecord": "Assessment Record",
+      "generated": "Generated",
+      "reviewed": "Reviewed",
+      "pendingReview": "Pending Doctor Review",
+      "aiOutput": "AI Diagnostic Output",
+      "confidenceScore": "Confidence Score",
+      "criticalWarning": "Critical Warning",
+      "defaultCriticalMsg": "This case requires immediate attention."
+    },
+    "evidence": {
+      "title": "Clinical Evidence",
+      "recommendations": "Recommendations",
+      "noRecommendations": "No specific recommendations provided by the engine.",
+      "triggeredRules": "Triggered Rules"
+    },
+    "doctorReview": {
+      "title": "Doctor's Review",
+      "notesLabel": "Clinical Notes & Addendum",
+      "notesPlaceholder": "Add your own assessment notes, treatment plan adjustments, or patient follow-up instructions here...",
+      "urgentFlag": "Flag as Urgent Case",
+      "urgentReasonPlaceholder": "Why is this urgent? (Required)",
+      "urgentReasonRequired": "Urgent reason is required when urgent flag is enabled.",
+      "submit": "Sign & Submit Review",
+      "saving": "Saving Review...",
+      "submitNotice": "Submitting this form will mark the assessment as Reviewed."
+    }
+  },
+  "landing": {
+    "title": "Diabetes Expert System",
+    "logoAlt": "Diabetes Expert System logo",
+    "subtitle": "An intelligent clinical decision support system for early detection, risk assessment, and personalized diabetes management.",
+    "badges": {
+      "aiDiagnosis": "AI Diagnosis",
+      "riskAnalysis": "Risk Analysis",
+      "treatmentPlan": "Treatment Plan"
+    },
+    "cta": "Get Started",
+    "developedBy": "Developed by",
+    "team": {
+      "saoKuntisa": "Sao Kuntisa",
+      "chhengVichea": "Chheng Vichea",
+      "saryDanish": "Sary Danish",
+      "chanChungchay": "Chan Chungchay"
+    },
+    "supervisedBy": "Supervised by",
+    "supervisorName": "Prof. Sek Sokcheat",
+    "footerVersion": "v1.0",
+    "footerUniversity": "Norton University",
+    "footerCity": "Phnom Penh"
+  },
+  "errors": {
+    "boundary": {
+      "title": "Something went wrong",
+      "description": "An unexpected error occurred. Please try refreshing the page.",
+      "tryAgain": "Try Again",
+      "goHome": "Go Home"
+    }
+  }
+}

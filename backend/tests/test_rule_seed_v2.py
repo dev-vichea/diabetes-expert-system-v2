@@ -1,17 +1,13 @@
-"""Rule seed V2 — minimal seed aligned with the adaptive assessment engine.
+"""Rule seed V2 — minimal seed aligned with the inference engine.
 
-DIABETES_RULE_SEED_V2 mirrors app.expert_system.adaptive_assessment: the lab
-cutoffs, emergency clusters and type discriminators are the same numbers and
-the same gates. These tests run the inference engine with the v2 seed over
-the same personas the adaptive engine evaluates and assert the two pipelines
-agree, plus check the RULES_SEED_VERSION seeding switch.
+DIABETES_RULE_SEED_V2 provides lab cutoffs, emergency clusters and type discriminators.
+These tests run the inference engine with the v2 seed and verify the RULES_SEED_VERSION seeding switch.
 """
 
 import pytest
 
 from app import create_app
 from app.config import Config
-from app.expert_system.adaptive_assessment import build_interview_state
 from app.expert_system.inference_engine import run_inference
 from app.expert_system.rule_loading import RuleLoader
 from app.utils.diabetes_rule_seed_data_v2 import DIABETES_RULE_SEED_V2
@@ -28,11 +24,6 @@ def _engine_conclusions(result: dict) -> set:
     }
 
 
-def _adaptive_state(payload: dict) -> dict:
-    """Run the adaptive interview loop to completion for this payload."""
-    return build_interview_state(payload, skipped=[], answered=list(payload.keys()))
-
-
 def test_v2_seed_compiles_with_zero_skipped():
     load_result = RuleLoader().load(DIABETES_RULE_SEED_V2)
     assert len(load_result.rules) == len(DIABETES_RULE_SEED_V2)
@@ -44,26 +35,20 @@ def test_v2_codes_are_prefixed_and_unique():
     assert len(V2_CODES) == len(DIABETES_RULE_SEED_V2)
 
 
-# ── Persona cross-checks: rule engine (v2 seed) vs adaptive engine ──
+# ── Persona tests for rule engine (v2 seed) ──
 
 
-def test_prediabetes_lab_agrees_with_adaptive_banding():
+def test_prediabetes_lab_agrees_with_banding():
     payload = {"age": 45, "sex": "male", "hba1c": 6.1}
     result = run_inference(payload, DIABETES_RULE_SEED_V2)
     assert "prediabetes_possible" in _engine_conclusions(result)
-    adaptive = _adaptive_state(payload)
-    pattern_ids = {p["id"] for p in adaptive["patterns"]}
-    # The adaptive T2-like pattern absorbs the same lab signal.
-    assert "insulin_resistance_like" in pattern_ids
 
 
-def test_diabetic_lab_agrees_with_adaptive_banding():
+def test_diabetic_lab_agrees_with_banding():
     payload = {"age": 52, "sex": "female", "hba1c": 7.2}
     result = run_inference(payload, DIABETES_RULE_SEED_V2)
     assert "diabetes_likely" in _engine_conclusions(result)
     assert result["urgency"] in {"urgent", "soon"}
-    adaptive = _adaptive_state(payload)
-    assert "insulin_resistance_like" in {p["id"] for p in adaptive["patterns"]}
 
 
 def test_classic_symptoms_without_labs_screen_with_type2_pattern():
@@ -79,9 +64,6 @@ def test_classic_symptoms_without_labs_screen_with_type2_pattern():
     conclusions = _engine_conclusions(result)
     assert "symptom_only_screening" in conclusions
     assert result["suspected_type"]["type"] == "Type 2"
-    adaptive = _adaptive_state(payload)
-    assert adaptive["focus"] == "focus_t2_like"
-    assert "insulin_resistance_like" in {p["id"] for p in adaptive["patterns"]}
 
 
 def test_sudden_child_presentation_types_as_type1():
@@ -95,9 +77,6 @@ def test_sudden_child_presentation_types_as_type1():
     }
     result = run_inference(payload, DIABETES_RULE_SEED_V2)
     assert result["suspected_type"]["type"] == "Type 1"
-    adaptive = _adaptive_state(payload)
-    assert adaptive["focus"] == "focus_t1_like"
-    assert "insulin_deficiency_like" in {p["id"] for p in adaptive["patterns"]}
 
 
 def test_pregnant_with_symptoms_maps_to_gestational_pattern():
@@ -111,26 +90,18 @@ def test_pregnant_with_symptoms_maps_to_gestational_pattern():
     result = run_inference(payload, DIABETES_RULE_SEED_V2)
     assert "gestational_diabetes_likely" in _engine_conclusions(result)
     assert result["suspected_type"]["type"] == "Gestational"
-    adaptive = _adaptive_state(payload)
-    assert "gestational_risk" in {p["id"] for p in adaptive["patterns"]}
 
 
-def test_dka_cluster_is_emergency_in_both_engines():
+def test_dka_cluster_is_emergency():
     payload = {"vomiting": True, "abdominal_pain": True, "fruity_breath": True}
     result = run_inference(payload, DIABETES_RULE_SEED_V2)
     assert result["urgency"] == "emergency"
-    adaptive = _adaptive_state(payload)
-    # The adaptive engine treats this exact cluster as its emergency branch.
-    evidence_emergency = adaptive["focus"] == "focus_urgent"
-    assert evidence_emergency or adaptive["done"]
 
 
-def test_critical_random_glucose_is_emergency_in_both_engines():
+def test_critical_random_glucose_is_emergency():
     payload = {"age": 40, "sex": "male", "random_plasma_glucose": 320}
     result = run_inference(payload, DIABETES_RULE_SEED_V2)
     assert result["urgency"] == "emergency"
-    adaptive = _adaptive_state(payload)
-    assert adaptive["focus"] == "focus_urgent" or adaptive["done"]
 
 
 def test_risk_cluster_without_labs_stays_preventive():
@@ -146,18 +117,12 @@ def test_risk_cluster_without_labs_stays_preventive():
     conclusions = _engine_conclusions(result)
     assert "type2_risk_increased" in conclusions
     assert result["urgency"] == "routine"
-    adaptive = _adaptive_state(payload)
-    top = adaptive["patterns"][0] if adaptive["patterns"] else None
-    assert top is not None and top["id"] == "insulin_resistance_like"
-    assert top["strength"] >= 0.45
 
 
-def test_lone_stomach_ache_is_not_emergency_in_either_engine():
+def test_lone_stomach_ache_is_not_emergency():
     payload = {"age": 33, "sex": "female", "abdominal_pain": True}
     result = run_inference(payload, DIABETES_RULE_SEED_V2)
     assert result["urgency"] != "emergency"
-    adaptive = _adaptive_state(payload)
-    assert adaptive["focus"] != "focus_urgent"
 
 
 # ── Compound-condition semantics (regression guards) ──

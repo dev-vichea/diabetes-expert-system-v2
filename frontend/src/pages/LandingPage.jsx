@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 // ── Ultra-Premium Medical White Tokens (healthcare blue family — legacy key names kept)
 const C = {
@@ -31,8 +32,10 @@ const BRAND_LOGO_SRC = '/images/logo.png'
 export function LandingPage() {
   const navigate  = useNavigate()
   const { user }  = useAuth()
+  const { t }     = useLanguage()
   const canvasRef = useRef(null)
   const pageRef   = useRef(null)
+  const fullText  = t('landing.title')
 
   // ── Animation States
   const [typedText, setTypedText] = useState('')
@@ -94,7 +97,6 @@ export function LandingPage() {
 
   /* ── Typewriter & Sequence Orchestration ── */
   useEffect(() => {
-    const fullText = 'Diabetes Expert System'
     let charIndex = 0
     
     // Smooth orchestration timeline
@@ -124,7 +126,7 @@ export function LandingPage() {
     }, 800)
 
     return () => clearTimeout(startTimer)
-  }, [])
+  }, [fullText])
 
   const handleStart = () => {
     if (pageRef.current) pageRef.current.style.opacity = '0'
@@ -133,9 +135,8 @@ export function LandingPage() {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: C.bg, overflowY: 'auto', overflowX: 'hidden', fontFamily: "'DM Sans', sans-serif" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;800&family=DM+Sans:wght@300;400;500&display=swap');`}</style>
-      
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: C.bg, overflowY: 'auto', overflowX: 'hidden', fontFamily: 'var(--font-latin-sans)' }}>
+
       {/* ── Abstract Blurred Ambient Backgrounds (Modern Touch) ── */}
       <div style={{ position: 'fixed', top: '-10%', left: '-5%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, rgba(20,184,166,0.1) 0%, rgba(255,255,255,0) 70%)', filter: 'blur(60px)', zIndex: 0, pointerEvents: 'none', animation: 'floatSlow 20s ease-in-out infinite alternate' }} />
       <div style={{ position: 'fixed', bottom: '-20%', right: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(59,130,246,0.06) 0%, rgba(255,255,255,0) 70%)', filter: 'blur(80px)', zIndex: 0, pointerEvents: 'none', animation: 'floatSlow 25s ease-in-out infinite alternate-reverse' }} />
@@ -165,14 +166,14 @@ export function LandingPage() {
 
           <img
             src={BRAND_LOGO_SRC}
-            alt="Diabetes Expert System logo"
+            alt={t('landing.logoAlt')}
             style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', objectFit: 'contain' }}
           />
         </div>
 
         {/* ── 2. Animated Gradient Title ── */}
         <h1 style={{ 
-          fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(2rem, 5.5vw, 4rem)', fontWeight: 800, letterSpacing: '-0.02em',
+          fontFamily: 'var(--font-latin-display)', fontSize: 'clamp(2rem, 5.5vw, 4rem)', fontWeight: 800, letterSpacing: '-0.02em',
           marginBottom: '1rem', minHeight: '1.2em', position: 'relative'
         }}>
           <span className="gradient-text">
@@ -181,21 +182,21 @@ export function LandingPage() {
           <span style={{ 
             display: 'inline-block', width: 4, height: '0.85em', backgroundColor: C.tealLight, 
             marginLeft: 8, verticalAlign: 'middle', borderRadius: 4, boxShadow: '0 0 10px rgba(20,184,166,0.5)',
-            animation: 'lpBlink 0.9s infinite step-end', opacity: typedText.length === 'Diabetes Expert System'.length ? 0 : 1
+            animation: 'lpBlink 0.9s infinite step-end', opacity: typedText.length === fullText.length ? 0 : 1
           }} />
         </h1>
 
         {/* Subtitle */}
-        <p style={{ maxWidth: 620, fontSize: '1.15rem', color: C.textMid, lineHeight: '1.6', fontWeight: 300, opacity: showSubtitle ? 1 : 0, transform: `translateY(${showSubtitle ? 0 : 15}px)`, transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)', marginBottom: '3rem' }}>
-          An intelligent clinical decision support system for early detection, risk assessment, and personalized diabetes management.
+        <p className="landing-subtitle" style={{ maxWidth: 620, fontSize: '1.15rem', color: C.textMid, lineHeight: '1.6', fontWeight: 300, opacity: showSubtitle ? 1 : 0, transform: `translateY(${showSubtitle ? 0 : 15}px)`, transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)', marginBottom: '3rem' }}>
+          {t('landing.subtitle')}
         </p>
 
         {/* ── 3. Glassmorphism Badges ── */}
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '3.5rem' }}>
           {[
-            { icon: '🩺', text: 'AI Diagnosis' }, 
-            { icon: '📊', text: 'Risk Analysis' }, 
-            { icon: '💊', text: 'Treatment Plan' }
+            { icon: '🩺', text: t('landing.badges.aiDiagnosis') },
+            { icon: '📊', text: t('landing.badges.riskAnalysis') },
+            { icon: '💊', text: t('landing.badges.treatmentPlan') }
           ].map((b, i) => (
             <div key={i} className="glass-badge" style={{
               display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -215,7 +216,7 @@ export function LandingPage() {
         {/* ── 4. Premium CTA Button ── */}
         <div style={{ opacity: showCTA ? 1 : 0, transform: `translateY(${showCTA ? 0 : 20}px)`, transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)' }}>
           <button onClick={handleStart} className="premium-btn">
-            Get Started
+            {t('landing.cta')}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="btn-arrow">
               <line x1="5" y1="12" x2="19" y2="12"></line>
               <polyline points="12 5 19 12 12 19"></polyline>
@@ -227,27 +228,27 @@ export function LandingPage() {
         <div style={{ marginTop: '5rem', opacity: showTeam ? 1 : 0, transform: `translateY(${showTeam ? 0 : 20}px)`, transition: 'all 1s ease' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '2rem' }}>
             <div style={{ height: 1, width: 40, background: `linear-gradient(to right, transparent, ${C.tealBorder})` }} />
-            <p style={{ fontSize: '0.7rem', letterSpacing: '3px', color: C.textSoft, textTransform: 'uppercase', margin: 0, fontWeight: 600 }}>Developed by</p>
+            <p style={{ fontSize: '0.7rem', letterSpacing: '3px', color: C.textSoft, textTransform: 'uppercase', margin: 0, fontWeight: 600 }}>{t('landing.developedBy')}</p>
             <div style={{ height: 1, width: 40, background: `linear-gradient(to left, transparent, ${C.tealBorder})` }} />
           </div>
 
           <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '2rem' }}>
             {[
-              { n: 'Sao Kuntisa', c: C.tealLight }, 
-              { n: 'Chheng Vichea', c: C.blue }, 
-              { n: 'Sary Danish', c: C.purple }, 
-              { n: 'Chan Chungchay', c: C.sky }
+              { name: t('landing.team.saoKuntisa'), c: C.tealLight },
+              { name: t('landing.team.chhengVichea'), c: C.blue },
+              { name: t('landing.team.saryDanish'), c: C.purple },
+              { name: t('landing.team.chanChungchay'), c: C.sky }
             ].map((m, i) => (
               <div key={i} className="team-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem' }}>
                 <div className="avatar-glass" style={{
                   width: 52, height: 52, borderRadius: '50%', background: `linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.3))`,
                   border: `2px solid rgba(255,255,255,1)`, color: m.c, display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                  fontWeight: 800, fontSize: '1rem', fontFamily: "'Outfit', sans-serif", boxShadow: `0 8px 24px ${m.c}1A`, backdropFilter: 'blur(8px)',
+                  fontWeight: 800, fontSize: '1rem', fontFamily: 'var(--font-latin-display)', boxShadow: `0 8px 24px ${m.c}1A`, backdropFilter: 'blur(8px)',
                   position: 'relative', zIndex: 2
                 }}>
-                  {m.n[0]}
+                  {m.name[0]}
                 </div>
-                <span className="team-name" style={{ fontSize: '0.8rem', color: C.textMid, fontWeight: 500, padding: '0.3rem 0.8rem', background: C.glassBg, borderRadius: '20px', border: `1px solid ${C.glassBorder}`, backdropFilter: 'blur(4px)', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>{m.n}</span>
+                <span className="team-name" style={{ fontSize: '0.8rem', color: C.textMid, fontWeight: 500, padding: '0.3rem 0.8rem', background: C.glassBg, borderRadius: '20px', border: `1px solid ${C.glassBorder}`, backdropFilter: 'blur(4px)', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>{m.name}</span>
               </div>
             ))}
           </div>
@@ -258,14 +259,14 @@ export function LandingPage() {
             backdropFilter: 'blur(10px)', boxShadow: `0 8px 24px ${C.goldBg}`
           }}>
             <span style={{ fontSize: '1.2rem', filter: 'drop-shadow(0 2px 4px rgba(245,158,11,0.2))' }}>👨‍🏫</span>
-            <span style={{ color: C.textSoft }}>Supervised by</span>
-            <b style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700 }}>Prof. Sek Sokcheat</b>
+            <span style={{ color: C.textSoft }}>{t('landing.supervisedBy')}</span>
+            <b style={{ fontFamily: 'var(--font-latin-display)', fontWeight: 700 }}>{t('landing.supervisorName')}</b>
           </div>
         </div>
       </main>
 
       <footer style={{ position: 'fixed', bottom: '1.5rem', width: '100%', textAlign: 'center', fontSize: '0.75rem', color: C.textFaint, fontWeight: 500, zIndex: 3 }}>
-        <p>v1.0  <span style={{ margin: '0 0.5rem', color: C.tealBorder }}>|</span>  Norton University  <span style={{ margin: '0 0.5rem', color: C.tealBorder }}>—</span>  Phnom Penh</p>
+        <p>{t('landing.footerVersion')}  <span style={{ margin: '0 0.5rem', color: C.tealBorder }}>|</span>  {t('landing.footerUniversity')}  <span style={{ margin: '0 0.5rem', color: C.tealBorder }}>—</span>  {t('landing.footerCity')}</p>
       </footer>
 
       {/* ── CSS Animations & Hover FX ── */}
@@ -304,7 +305,7 @@ export function LandingPage() {
           background: linear-gradient(135deg, #1f76e8, #2f8cff);
           color: #fff;
           border: none;
-          font-family: 'Outfit', sans-serif;
+          font-family: var(--font-latin-display);
           font-weight: 700;
           font-size: 1rem;
           letter-spacing: 1px;

@@ -3,8 +3,9 @@ import json
 from flask import current_app
 
 from app.errors import NotFoundError, ValidationError
-from app.expert_system.adaptive_assessment import generate_final_assessment
+from app.expert_system.final_assessment import generate_final_assessment
 from app.expert_system.inference_engine import run_inference
+from app.expert_system.symptom_confidence import calculate_symptom_confidence
 from app.expert_system.patient_messaging import (
     COMPLETENESS_NOTE,
     URGENT_SAFETY_NOTE,
@@ -728,11 +729,51 @@ class DiagnosisService:
     def _enrich_inference_result(self, result: dict, normalized_payload: dict) -> dict:
         enriched = dict(result or {})
 
-        certainty_percent = self._to_percent(enriched.get("certainty", 0))
-        confidence_level = self._resolve_confidence_level(certainty_percent)
-
         matched_symptoms = self._collect_matched_symptoms(normalized_payload)
         matched_risk_factors = self._collect_matched_risk_factors(normalized_payload)
+
+        # ── Symptom-based confidence fallback for symptom-only / low-certainty assessments ──
+        symptoms_dict = {
+            key: True for key in [
+                "frequent_urination", "excessive_thirst", "excessive_hunger", "weight_loss",
+                "unexplained_weight_loss", "fatigue", "blurred_vision", "slow_healing", "nausea",
+                "vomiting", "abdominal_pain", "sweating", "shaking", "dizziness",
+                "tingling_hands_feet", "frequent_infections", "acanthosis_nigricans", "irritability",
+                "recurrent_uti_yeast", "bed_wetting", "fruity_breath", "deep_rapid_breathing"
+            ] if normalized_payload.get(key) is True
+        }
+        risk_dict = {
+            key: True for key in [
+                "family_history", "family_history_diabetes", "obesity", "hypertension",
+                "sedentary_lifestyle", "gestational_history", "smoking", "high_cholesterol",
+                "pcos_history", "ethnicity_high_risk"
+            ] if normalized_payload.get(key) is True
+        }
+
+        current_certainty = float(enriched.get("certainty", 0) or 0)
+        symptom_conf = calculate_symptom_confidence(
+            symptoms=symptoms_dict,
+            age=normalized_payload.get("age"),
+            risk_factors=risk_dict,
+        )
+        symptom_score = float(symptom_conf.get("confidence_score", 0) or 0)
+
+        # If symptom-based score is higher than rule engine output (e.g. no rule fired for symptoms alone),
+        # upgrade certainty & diagnosis
+        if (symptoms_dict or risk_dict) and symptom_score > current_certainty:
+            current_certainty = symptom_score
+            enriched["certainty"] = round(current_certainty, 2)
+            if enriched.get("diagnosis") in (None, "", "No strong diabetes indication", "Insufficient evidence for diabetes indication"):
+                if current_certainty >= 0.60:
+                    enriched["diagnosis"] = "Suspected Diabetes (Classic Symptoms)"
+                elif current_certainty >= 0.40:
+                    enriched["diagnosis"] = "Possible Early Signs of Diabetes"
+                elif current_certainty >= 0.25:
+                    enriched["diagnosis"] = "Elevated Diabetes Risk — Screening Recommended"
+
+        certainty_percent = self._to_percent(current_certainty)
+        confidence_level = self._resolve_confidence_level(certainty_percent)
+
         completeness = self._calculate_evidence_completeness(
             normalized_payload=normalized_payload,
             matched_symptoms=matched_symptoms,
@@ -763,11 +804,26 @@ class DiagnosisService:
             matched_risk_factors=matched_risk_factors,
         )
 
-        summary = "Assessment completed using symptoms, risk factors, and laboratory information."
-        if missing_inputs:
-            summary = "Completed with symptoms and risk factors only — that already gives a useful screening signal. A simple blood test (fasting glucose or HbA1c) anytime will make the result more certain."
-        if confidence_status == "insufficient_evidence" and not missing_inputs:
-            summary = "Assessment completed, but there is not enough matching evidence to produce a reliable diabetes confidence score."
+        summary = self._build_result_summary(
+            diagnosis=enriched.get("diagnosis", ""),
+            certainty_percent=certainty_percent,
+            matched_symptoms=matched_symptoms,
+            matched_risk_factors=matched_risk_factors,
+            missing_inputs=missing_inputs,
+            confidence_status=confidence_status,
+            suspected_type=enriched.get("suspected_type"),
+            normalized_payload=normalized_payload,
+        )
+
+        headline_explanation = self._build_headline_explanation(
+            diagnosis=enriched.get("diagnosis", ""),
+            certainty_percent=certainty_percent,
+            matched_symptoms=matched_symptoms,
+            matched_risk_factors=matched_risk_factors,
+            missing_inputs=missing_inputs,
+            suspected_type=enriched.get("suspected_type"),
+            normalized_payload=normalized_payload,
+        )
 
         recommendation_items = self._build_structured_recommendations(
             result=enriched,
@@ -787,6 +843,7 @@ class DiagnosisService:
         enriched["confidence_status"] = confidence_status
         enriched["confidence_reason"] = confidence_reason
         enriched["result_summary"] = summary
+        enriched["headline_explanation"] = headline_explanation
         enriched["evidence_completeness"] = completeness
         enriched["recommendations"] = recommendation_items
         enriched["explanation"] = self._build_explanation_payload(enriched, normalized_payload)
@@ -895,17 +952,22 @@ class DiagnosisService:
         conclusion_scores = trace.get("conclusion_scores") or []
         top_conclusion = str(trace.get("top_conclusion") or "").strip()
 
-        if conclusion_scores and certainty_percent > 0:
-            top_supporting_rules = conclusion_scores[0].get("supporting_rules") or []
-            support_count = len(top_supporting_rules)
-            reason = (
-                f"Confidence score is calculated from {support_count} matched diagnosis "
-                f"rule{'s' if support_count != 1 else ''}"
-            )
-            if top_conclusion:
-                reason += f" linked to conclusion '{top_conclusion}'."
+        if (conclusion_scores or matched_symptoms or matched_risk_factors) and certainty_percent > 0:
+            if conclusion_scores:
+                top_supporting_rules = conclusion_scores[0].get("supporting_rules") or []
+                support_count = len(top_supporting_rules)
+                reason = (
+                    f"Confidence score is calculated from {support_count} matched diagnosis "
+                    f"rule{'s' if support_count != 1 else ''}"
+                )
+                if top_conclusion:
+                    reason += f" linked to conclusion '{top_conclusion}'."
+                else:
+                    reason += "."
             else:
-                reason += "."
+                s_count = len(matched_symptoms)
+                r_count = len(matched_risk_factors)
+                reason = f"Confidence score is calculated from {s_count} reported symptom(s) and {r_count} risk factor(s)."
 
             if missing_inputs:
                 reason += f" Core lab inputs still missing: {', '.join(missing_inputs)}."
@@ -934,6 +996,182 @@ class DiagnosisService:
 
         reason = "Confidence score could not be reliably calculated because " + "; ".join(reasons) + "."
         return "insufficient_evidence", reason
+
+    @staticmethod
+    def _build_result_summary(
+        *,
+        diagnosis: str,
+        certainty_percent: int,
+        matched_symptoms: list[str],
+        matched_risk_factors: list[str],
+        missing_inputs: list[str],
+        confidence_status: str,
+        suspected_type,
+        normalized_payload: dict,
+    ) -> str:
+        """Build a unique, human-readable summary sentence that changes
+        based on the actual evidence and outcome — never the same boring text."""
+        diag = str(diagnosis or "").lower()
+        s_count = len(matched_symptoms)
+        r_count = len(matched_risk_factors)
+        has_labs = not bool(missing_inputs)
+        type_label = ""
+        if isinstance(suspected_type, dict):
+            type_label = str(suspected_type.get("type") or "")
+
+        # Emergency / urgent
+        if any(normalized_payload.get(k) for k in ("vomiting", "abdominal_pain", "fruity_breath", "deep_rapid_breathing", "confusion")):
+            return (
+                "Emergency warning signs detected — this result should be treated as urgent. "
+                "Please seek immediate medical attention."
+            )
+
+        # Full labs + symptoms → strong assessment
+        if has_labs and s_count >= 2 and certainty_percent >= 70:
+            lab_names = []
+            if "fasting_glucose" in normalized_payload or "fasting_plasma_glucose" in normalized_payload:
+                lab_names.append("fasting glucose")
+            if "hba1c" in normalized_payload:
+                lab_names.append("HbA1c")
+            lab_str = " and ".join(lab_names) if lab_names else "lab values"
+            return (
+                f"This assessment combined {s_count} reported symptom(s) with {lab_str} results"
+                f"{f' and {r_count} risk factor(s)' if r_count else ''}. "
+                f"The evidence consistently points toward a diabetes pattern at {certainty_percent}% confidence."
+            )
+
+        # Labs present but low certainty
+        if has_labs and certainty_percent < 45:
+            return (
+                "Lab results were included, but the values fall within or near the normal range. "
+                "No strong diabetes signal was detected at this time."
+            )
+
+        # Symptom-only with decent confidence
+        if not has_labs and s_count >= 2 and certainty_percent >= 45:
+            return (
+                f"Based on {s_count} symptom(s)"
+                f"{f' and {r_count} risk factor(s)' if r_count else ''}, "
+                f"the screening indicates a {certainty_percent}% match with diabetes patterns. "
+                "A fasting glucose or HbA1c test can make this more definitive."
+            )
+
+        # Symptom-only low confidence
+        if not has_labs and s_count >= 1 and certainty_percent < 45:
+            return (
+                f"Only {s_count} symptom(s) were reported without lab results. "
+                "The current evidence is limited — a simple blood test is the best next step."
+            )
+
+        # Risk factors only
+        if s_count == 0 and r_count >= 1 and not has_labs:
+            return (
+                f"{r_count} risk factor(s) were identified without symptoms or labs. "
+                "Consider routine diabetes screening to catch early signs."
+            )
+
+        # Gestational
+        if type_label == "Gestational":
+            return (
+                "Symptoms during pregnancy warrant glucose testing. "
+                "Contact your OB/GYN for a formal evaluation."
+            )
+
+        # Type 1 pattern
+        if type_label == "Type 1":
+            return (
+                "The symptom pattern suggests possible Type 1 diabetes with rapid onset. "
+                "Prompt medical evaluation is strongly recommended."
+            )
+
+        # Insufficient evidence
+        if confidence_status == "insufficient_evidence":
+            return (
+                "Not enough evidence to produce a reliable confidence score. "
+                "Providing more symptom details or a lab test would strengthen the result."
+            )
+
+        # Generic fallback with actual numbers
+        parts = []
+        if s_count:
+            parts.append(f"{s_count} symptom(s)")
+        if r_count:
+            parts.append(f"{r_count} risk factor(s)")
+        if has_labs:
+            parts.append("laboratory data")
+        evidence_str = ", ".join(parts) if parts else "limited data"
+        return f"Assessment completed using {evidence_str} — screening confidence reached {certainty_percent}%."
+
+    @staticmethod
+    def _build_headline_explanation(
+        *,
+        diagnosis: str,
+        certainty_percent: int,
+        matched_symptoms: list[str],
+        matched_risk_factors: list[str],
+        missing_inputs: list[str],
+        suspected_type,
+        normalized_payload: dict,
+    ) -> str:
+        """Short, punchy explanation shown in the hero section of the result page.
+        Each combination of evidence gets a distinct sentence."""
+        diag = str(diagnosis or "").lower()
+        s_count = len(matched_symptoms)
+        r_count = len(matched_risk_factors)
+        has_labs = not bool(missing_inputs)
+        type_label = ""
+        if isinstance(suspected_type, dict):
+            type_label = str(suspected_type.get("type") or "")
+
+        # Emergency
+        if any(normalized_payload.get(k) for k in ("vomiting", "fruity_breath", "deep_rapid_breathing", "confusion")):
+            return "Urgent symptoms detected — immediate medical evaluation is recommended."
+
+        # High certainty with labs
+        if certainty_percent >= 85 and has_labs:
+            return "Lab values and symptoms together produce a strong diabetes signal."
+
+        # High certainty symptom-only
+        if certainty_percent >= 85 and not has_labs:
+            return f"{s_count} symptoms strongly match the classic diabetes pattern — lab confirmation advised."
+
+        # Likely diabetes with labs
+        if certainty_percent >= 70 and has_labs:
+            return "Your lab results combined with reported symptoms indicate a high probability of diabetes."
+
+        # Likely diabetes symptom-only
+        if certainty_percent >= 70 and not has_labs:
+            return f"Multiple symptoms align with diabetes — a fasting glucose test can confirm at {certainty_percent}% confidence."
+
+        # Moderate
+        if certainty_percent >= 45:
+            if has_labs:
+                return "Some lab markers are borderline — monitoring and a follow-up test are recommended."
+            if s_count >= 2:
+                return f"{s_count} symptoms raise a moderate signal. Adding a blood test would sharpen the picture."
+            return "Some warning signs are present, but more information is needed for a clear assessment."
+
+        # Low with risk factors
+        if r_count >= 1 and s_count == 0:
+            return f"{r_count} risk factor(s) identified, but no active symptoms. Routine screening recommended."
+
+        # Low with some symptoms
+        if s_count >= 1 and certainty_percent < 45:
+            return "A few symptoms were reported but the overall signal is weak. Keep monitoring and consider a check-up."
+
+        # Gestational
+        if type_label == "Gestational":
+            return "Pregnancy-related symptoms detected — glucose testing with your OB/GYN is the recommended next step."
+
+        # Type 1 pattern
+        if type_label == "Type 1":
+            return "Rapid-onset symptoms in a younger patient suggest a Type 1 pattern — seek evaluation soon."
+
+        # Very low / no evidence
+        if certainty_percent <= 15:
+            return "Very little diabetes evidence was found in this assessment."
+
+        return f"Screening confidence stands at {certainty_percent}% based on the data you provided."
 
     @staticmethod
     def _should_apply_urgent_priority(result: dict, normalized_payload: dict) -> bool:
@@ -1189,24 +1427,24 @@ class DiagnosisService:
             return {
                 "label": "very_high",
                 "title": "Very high confidence",
-                "description": "The pattern strongly matches diabetes indicators.",
+                "description": "Multiple strong indicators align — lab values and symptoms both point toward diabetes.",
             }
         if safe >= 70:
             return {
                 "label": "high",
                 "title": "High confidence",
-                "description": "Most indicators point in the same direction.",
+                "description": "Most evidence points in the same direction. A clinical follow-up can confirm.",
             }
         if safe >= 45:
             return {
                 "label": "moderate",
                 "title": "Moderate confidence",
-                "description": "Some indicators match, but additional checks may help.",
+                "description": "Some warning signs are present. Additional lab work would sharpen this assessment.",
             }
         return {
             "label": "low",
             "title": "Low confidence",
-            "description": "Current data shows weak diabetes indication.",
+            "description": "Limited evidence available — the data does not strongly point toward diabetes at this time.",
         }
 
     @staticmethod

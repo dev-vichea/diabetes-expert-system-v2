@@ -40,3 +40,32 @@ def require_auth(roles=None, permissions=None):
         return wrapper
 
     return decorator
+
+
+def optional_auth(fn):
+    """
+    Optional authentication - sets g.current_user if token is valid,
+    but doesn't require it. Useful for endpoints that work with or without auth.
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        auth_header = request.headers.get("Authorization", "")
+        
+        if auth_header.startswith("Bearer "):
+            token = auth_header.split(" ", 1)[1].strip()
+            if token:
+                try:
+                    user = get_auth_service().decode_access_token(token)
+                    g.current_user = user
+                except Exception:
+                    # Token invalid, continue without auth
+                    g.current_user = None
+            else:
+                g.current_user = None
+        else:
+            g.current_user = None
+        
+        return fn(*args, **kwargs)
+    
+    return wrapper
+

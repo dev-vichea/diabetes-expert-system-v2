@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import api, { getApiData, getApiErrorMessage, setAuthTokens } from '../api/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { LanguageSwitcher } from '@/components/auth/LanguageSwitcher'
 
 // ── Medical White Tokens (healthcare blue family — legacy key names kept) ──
 const C = {
@@ -17,7 +18,7 @@ const C = {
 
 export function SignUpPage() {
   const { setUser } = useAuth()
-  const { t, language, setLanguage } = useLanguage()
+  const { t } = useLanguage()
   const location = useLocation()
   const navigate = useNavigate()
   const canvasRef = useRef(null)
@@ -136,43 +137,17 @@ export function SignUpPage() {
       <canvas ref={canvasRef} style={{ position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none' }} />
 
       {/* ── Language Switcher ── */}
-      <div style={{
-        position: 'absolute', top: '1.5rem', right: '1.5rem', zIndex: 10,
-        display: 'flex', gap: '0.5rem', padding: '0.4rem', borderRadius: '50px',
-        background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255, 255, 255, 0.9)',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.05)'
-      }}>
-        {[
-          { code: 'en', label: 'EN' },
-          { code: 'km', label: 'KM' }
-        ].map((lang) => (
-          <button
-            key={lang.code}
-            onClick={() => setLanguage(lang.code)}
-            style={{
-              padding: '0.4rem 0.8rem', borderRadius: '50px', border: 'none',
-              fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              background: language === lang.code ? C.teal : 'transparent',
-              color: language === lang.code ? '#fff' : '#64748b',
-              boxShadow: language === lang.code ? `0 2px 8px ${C.teal}4D` : 'none'
-            }}
-          >
-            {lang.label}
-          </button>
-        ))}
-      </div>
+      <LanguageSwitcher style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', zIndex: 10 }} />
 
       <section className={`auth-card auth-card--reverse ${cardAnimationClass}`} style={{ zIndex: 5 }}>
         <section className="auth-panel auth-panel-form">
           <div className="auth-form-inner">
             <div className="auth-form-header">
-              <h1 className="auth-form-title" style={{ fontFamily: "'Outfit', sans-serif" }}>{t('auth.signUp', 'Sign Up')}</h1>
-              <p className="auth-form-copy" style={{ fontFamily: "'DM Sans', sans-serif" }}>{t('auth.regSubTitle', 'Create your medical professional account.')}</p>
+              <h1 className="auth-form-title" style={{ fontFamily: 'var(--font-latin-display)' }}>{t('auth.signUp', 'Sign Up')}</h1>
+              <p className="auth-form-copy" style={{ fontFamily: 'var(--font-latin-sans)' }}>{t('auth.regSubTitle', 'Create your medical professional account.')}</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="auth-form" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <form onSubmit={handleSubmit} className="auth-form" style={{ fontFamily: 'var(--font-latin-sans)' }}>
               <div className="auth-field">
                 <label htmlFor="name" className="auth-field-label">{t('auth.fullNameLabel', 'Full Name')}</label>
                 <div className="auth-input-box">
@@ -287,7 +262,7 @@ export function SignUpPage() {
         <aside className="auth-panel auth-panel-accent auth-panel-accent--right">
           <div className="auth-accent-content">
             <span className="auth-eyebrow">{t('auth.secureAccess', 'Secure Access')}</span>
-            <h1 className="auth-accent-title" style={{ fontFamily: "'Outfit', sans-serif" }}>
+            <h1 className="auth-accent-title" style={{ fontFamily: 'var(--font-latin-display)' }}>
               {t('auth.welcomeBackSplit', 'Welcome|Back!').split('|').map((line, i) => (
                 <span key={i} style={{ display: 'block' }}>
                   {line}

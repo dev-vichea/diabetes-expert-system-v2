@@ -1,9 +1,10 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
-import { Eye, EyeOff, LockKeyhole, Mail, Languages } from 'lucide-react'
+import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import api, { getApiData, getApiErrorMessage, setAuthTokens } from '../api/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { LanguageSwitcher } from '@/components/auth/LanguageSwitcher'
 
 // ── Medical White Tokens (healthcare blue family — legacy key names kept) ──
 const C = {
@@ -17,7 +18,7 @@ const C = {
 
 export function LoginPage() {
   const { setUser } = useAuth()
-  const { t, language, setLanguage } = useLanguage()
+  const { t } = useLanguage()
   const location = useLocation()
   const navigate = useNavigate()
   const canvasRef = useRef(null)
@@ -130,60 +131,34 @@ export function LoginPage() {
       <canvas ref={canvasRef} style={{ position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none' }} />
 
       {/* ── Language Switcher ── */}
-      <div style={{
-        position: 'absolute', top: '1.5rem', right: '1.5rem', zIndex: 10,
-        display: 'flex', gap: '0.5rem', padding: '0.4rem', borderRadius: '50px',
-        background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255, 255, 255, 0.9)',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.05)'
-      }}>
-        {[
-          { code: 'en', label: 'EN' },
-          { code: 'km', label: 'KM' }
-        ].map((lang) => (
-          <button
-            key={lang.code}
-            onClick={() => setLanguage(lang.code)}
-            style={{
-              padding: '0.4rem 0.8rem', borderRadius: '50px', border: 'none',
-              fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              background: language === lang.code ? C.teal : 'transparent',
-              color: language === lang.code ? '#fff' : '#64748b',
-              boxShadow: language === lang.code ? `0 2px 8px ${C.teal}4D` : 'none'
-            }}
-          >
-            {lang.label}
-          </button>
-        ))}
-      </div>
+      <LanguageSwitcher style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', zIndex: 10 }} />
 
       <section className={`auth-card ${cardAnimationClass}`} style={{ zIndex: 5 }}>
         <aside className="auth-panel auth-panel-accent auth-panel-accent--left">
           <div className="auth-accent-content">
-            <span className="auth-eyebrow" style={{ fontFamily: "'Outfit', sans-serif" }}>{t('auth.accentEyebrow', 'Diabetes Expert System')}</span>
-            <h1 className="auth-accent-title" style={{ fontFamily: "'Outfit', sans-serif" }}>
+            <span className="auth-eyebrow" style={{ fontFamily: 'var(--font-latin-display)' }}>{t('auth.accentEyebrow', 'Diabetes Expert System')}</span>
+            <h1 className="auth-accent-title" style={{ fontFamily: 'var(--font-latin-display)' }}>
               {t('auth.greetingTitleSplit', 'Hello|Welcome!').split('|').map((line, i) => (
                 <span key={i} style={{ display: 'block' }}>
                   {line}
                 </span>
               ))}
             </h1>
-            <p className="auth-accent-copy" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <p className="auth-accent-copy" style={{ fontFamily: 'var(--font-latin-sans)' }}>
               {t('auth.accentCopy', "Don't have an account yet? Create one to access diagnosis tools, patient history, and smarter follow-up care.")}
             </p>
-            <Link to="/sign-up" state={{ authTransition: 'to-register' }} className="auth-outline-button" style={{ fontFamily: "'Outfit', sans-serif" }}>{t('auth.register', 'Register')}</Link>
+            <Link to="/sign-up" state={{ authTransition: 'to-register' }} className="auth-outline-button" style={{ fontFamily: 'var(--font-latin-display)' }}>{t('auth.register', 'Register')}</Link>
           </div>
         </aside>
 
         <section className="auth-panel auth-panel-form">
           <div className="auth-form-inner">
             <div className="auth-form-header">
-              <h1 className="auth-form-title" style={{ fontFamily: "'Outfit', sans-serif" }}>{t('auth.loginPageTitle', 'Login')}</h1>
-              <p className="auth-form-copy" style={{ fontFamily: "'DM Sans', sans-serif" }}>{t('auth.loginPageSub', 'Sign in to continue to your dashboard.')}</p>
+              <h1 className="auth-form-title" style={{ fontFamily: 'var(--font-latin-display)' }}>{t('auth.loginPageTitle', 'Login')}</h1>
+              <p className="auth-form-copy" style={{ fontFamily: 'var(--font-latin-sans)' }}>{t('auth.loginPageSub', 'Sign in to continue to your dashboard.')}</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="auth-form" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <form onSubmit={handleSubmit} className="auth-form" style={{ fontFamily: 'var(--font-latin-sans)' }}>
               <div className="auth-field">
                 <label htmlFor="email" className="auth-field-label">{t('auth.emailLabel', 'Email')}</label>
                 <div className="auth-input-box">
@@ -245,7 +220,7 @@ export function LoginPage() {
                 </label>
               </div>
 
-              <button type="submit" className="auth-submit-button" disabled={loading || !isValid} style={{ fontFamily: "'Outfit', sans-serif" }}>
+              <button type="submit" className="auth-submit-button" disabled={loading || !isValid} style={{ fontFamily: 'var(--font-latin-display)' }}>
                 {loading ? t('auth.signingIn', 'Signing in...') : t('auth.login', 'Login')}
               </button>
 

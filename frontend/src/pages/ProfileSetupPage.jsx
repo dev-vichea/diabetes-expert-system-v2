@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import api, { getApiData, getApiErrorMessage } from '@/api/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { LanguageSwitcher } from '@/components/auth/LanguageSwitcher'
 import { cn } from '@/lib/utils'
 
 const NS = 'profileSetup'
@@ -195,6 +196,7 @@ export function ProfileSetupPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10 dark:bg-slate-950">
+      <LanguageSwitcher style={{ position: 'fixed', top: '1.25rem', right: '1.25rem', zIndex: 20 }} />
       <div className="w-full max-w-lg">
         <div className="mb-6 flex items-center justify-between gap-4">
           <StepProgress step={step} t={t} />
