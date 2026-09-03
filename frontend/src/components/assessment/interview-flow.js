@@ -196,6 +196,23 @@ export function claimedProbeFields(ctx = {}) {
 
 export const INTERVIEW_NODES = [
   {
+    /* Patient accounts: whose information is this assessment for? Rendered as
+       the FIRST question of the interview itself (kind: 'subject').
+       "Myself" lets the saved health profile pre-fill known facts;
+       "someone else" forces every profile-derived question to be asked fresh.
+       Staff accounts never see it — they get the `patient` selector instead. */
+    id: 'subject',
+    kind: 'subject',
+    icon: 'Users',
+    priority: () => -1,
+    titleKey: 'assessment.subject.title',
+    titleFallback: 'Who is this assessment for?',
+    helperKey: 'assessment.subject.helper',
+    helperFallback: 'Pick whose information this is — we will only ask what we do not already know.',
+    applies: ({ needsPatient }) => !needsPatient,
+    autoDone: ({ subject }) => subject === 'self' || subject === 'other',
+  },
+  {
     id: 'patient',
     kind: 'patient',
     icon: 'Building2',

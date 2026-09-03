@@ -1108,6 +1108,7 @@
     },
     "subject": {
       "title": "Who is this assessment for?",
+      "helper": "Pick whose information this is — we will only ask what we do not already know.",
       "self": "Myself",
       "selfDesc": "Pre-fill my details from my saved health profile",
       "other": "Someone else",

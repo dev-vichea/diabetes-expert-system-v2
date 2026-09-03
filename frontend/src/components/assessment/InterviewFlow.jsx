@@ -12,7 +12,7 @@ import { FIELD_FALLBACKS, camelField, fieldLabelKey, nodeFields } from './interv
 
 const NODE_ICONS = {
   Building2, UserRound, Baby, CalendarHeart, Droplets, Stethoscope, AlertTriangle,
-  ClipboardList, Scale, TestTube2, FlaskConical, PenTool, Timer,
+  ClipboardList, Scale, TestTube2, FlaskConical, PenTool, Timer, Users,
 }
 
 const FIELD_ICONS = {
@@ -131,6 +131,7 @@ export function InterviewFlow(props) {
   const {
     node, form, qcm, t,
     patients, loadingPatients,
+    subjectOptions = [], subjectValue = null, onSelectSubject,
     ageOptions, labOptions, renderBadge,
     extraLabs, onAddExtraLab, onRemoveExtraLab,
     onField, onPickSegment, onSetCustom, onCalculateBmi,
@@ -164,6 +165,41 @@ export function InterviewFlow(props) {
           options={patients.map((p) => ({ value: String(p.id), label: `${p.full_name} (#${p.id})` }))}
         />
       )
+  } else if (node.kind === 'subject') {
+    /* Patient accounts: "Myself / Someone else" — picking one answers the
+       question and advances the flow immediately (no Continue button). */
+    body = (
+      <div className="grid gap-3 sm:grid-cols-2">
+        {subjectOptions.map((option) => {
+          const active = subjectValue === option.id
+          return (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => onSelectSubject(option.id)}
+              aria-pressed={active}
+              className={cn(
+                'flex items-start gap-3 rounded-xl border p-4 text-left transition-all',
+                active
+                  ? 'border-cyan-500 bg-cyan-50/70 ring-2 ring-cyan-400 dark:border-cyan-500 dark:bg-cyan-950/40 dark:ring-cyan-600'
+                  : 'border-slate-200 bg-white hover:border-cyan-300 hover:bg-cyan-50/40 dark:border-slate-700 dark:bg-[#0b0b16] dark:hover:border-cyan-700 dark:hover:bg-cyan-900/20',
+              )}
+            >
+              <option.icon className={cn('mt-0.5 h-5 w-5 shrink-0', active ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-400')} aria-hidden="true" />
+              <span className="min-w-0">
+                <span className={cn('block text-[0.98rem] font-bold', active ? 'text-cyan-900 dark:text-cyan-200' : 'text-slate-800 dark:text-slate-100')}>
+                  {t(option.labelKey, option.labelFallback)}
+                </span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                  {t(option.descKey, option.descFallback)}
+                </span>
+              </span>
+              {active ? <Check className="ml-auto h-4.5 w-4.5 shrink-0 text-cyan-600 dark:text-cyan-400" strokeWidth={2.5} /> : null}
+            </button>
+          )
+        })}
+      </div>
+    )
   } else if (node.kind === 'number') {
     continueEnabled = String(form[node.field] || '').trim() !== ''
     body = (
@@ -300,7 +336,7 @@ export function InterviewFlow(props) {
             {t('assessment.interview.skip', 'Skip')}
           </button>
         ) : null}
-        {node.kind !== 'patient' && node.kind !== 'yesno' && node.kind !== 'choice' ? (
+        {node.kind !== 'patient' && node.kind !== 'subject' && node.kind !== 'yesno' && node.kind !== 'choice' ? (
           <button type="button" className="btn-primary gap-1.5" disabled={!continueEnabled || analyzing} onClick={onContinue}>
             {analyzing ? t('assessment.status.analyzing', 'Analyzing...') : continueLabel}
           </button>

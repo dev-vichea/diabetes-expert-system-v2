@@ -276,7 +276,9 @@ export function DiagnosisPage() {
   const isPatientAccount = userRoles.size > 0 && [...userRoles].every((role) => String(role).toLowerCase() === 'patient')
   const needsPatient = userRoles.size > 0 && !isPatientAccount
   /* Patient accounts only — "self" prefills from the saved profile, "other" asks every question. */
-  const [subjectMode, setSubjectMode] = useState('self')
+  /* Patient accounts answer "Who is this assessment for?" as the FIRST
+     interview question. null = unanswered (the question is on screen). */
+  const [subjectMode, setSubjectMode] = useState(null)
   const selectedPatient = useMemo(
     () => patients.find((p) => String(p.id) === String(form.patient_id)),
     [patients, form.patient_id],
@@ -298,8 +300,8 @@ export function DiagnosisPage() {
   /* Settled node ids ride along so grids can shrink by "already asked by a
      probe" (node id) instead of by form values. */
   const interviewCtx = useMemo(
-    () => ({ form, needsPatient, doneIds: interviewDone, skippedIds: interviewSkipped }),
-    [form, needsPatient, interviewDone, interviewSkipped],
+    () => ({ form, needsPatient, subject: subjectMode, doneIds: interviewDone, skippedIds: interviewSkipped }),
+    [form, needsPatient, subjectMode, interviewDone, interviewSkipped],
   )
   const autoCursor = useMemo(
     () => firstOpenNode(INTERVIEW_NODES, interviewCtx, interviewDone, interviewSkipped),
@@ -578,7 +580,10 @@ export function DiagnosisPage() {
     }
     f.sex = 'male'; f.has_labs = 'yes'; f.no_labs_available = false
     setForm(f); setQcm(q); setExtraLabs([]); setStep(1); setMaxReached(1); setResult(null)
-    setInterviewDone(['patient', 'age', 'sex', 'symptoms_core', 'symptoms_other', 'warning_signs', 'risk_factors', 'body', 'has_labs', 'labs'])
+    if (!needsPatient) setSubjectMode('self')
+    setInterviewDone(!needsPatient
+      ? ['subject', 'age', 'sex', 'symptoms_core', 'symptoms_other', 'warning_signs', 'risk_factors', 'body', 'has_labs', 'labs']
+      : ['patient', 'age', 'sex', 'symptoms_core', 'symptoms_other', 'warning_signs', 'risk_factors', 'body', 'has_labs', 'labs'])
     setInterviewSkipped([]); setCursorOverride(null)
   }
 
@@ -588,6 +593,7 @@ export function DiagnosisPage() {
     setForm({ ...DEFAULT_FORM, patient_id: pid }); setQcm(DEFAULT_QCM)
     setExtraLabs([]); setResult(null); setError(''); setStep(1); setMaxReached(1)
     setInterviewDone([]); setInterviewSkipped([]); setCursorOverride(null)
+    setSubjectMode(null)
   }
 
   function getStepErrors(s = step) {
@@ -696,6 +702,17 @@ export function DiagnosisPage() {
     if (currentNodeId) {
       settleNode(currentNodeId)
     }
+    setCursorOverride(null)
+  }
+
+  /* "Who is this assessment for?" — the first interview question for patient
+     accounts. Picking an option answers the node (settle → answered chip)
+     and advances; switching later re-runs the subject effect above, which
+     clears / re-applies the profile-derived answers. */
+  function handleSelectSubject(id) {
+    if (!beginAdvance()) return
+    setSubjectMode(id)
+    settleNode('subject')
     setCursorOverride(null)
   }
   function interviewBack() {
@@ -888,41 +905,7 @@ export function DiagnosisPage() {
               {/* ═══════════════ STEP 1 — Evidence Interview ═══════════════ */}
               {step === 1 ? (
                 <div>
-                  {!needsPatient && !result ? (
-                    <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
-                      <p className="text-[0.95rem] font-bold uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">
-                        {t('assessment.subject.title', 'Who is this assessment for?')}
-                      </p>
-                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                        {SUBJECT_OPTIONS.map((option) => (
-                          <button
-                            key={option.id}
-                            type="button"
-                            onClick={() => setSubjectMode(option.id)}
-                            aria-pressed={subjectMode === option.id}
-                            className={cn(
-                              'flex items-start gap-3 rounded-xl border p-3.5 text-left transition',
-                              subjectMode === option.id
-                                ? 'border-cyan-500 bg-cyan-50/70 ring-1 ring-cyan-400 dark:border-cyan-500 dark:bg-cyan-950/40 dark:ring-cyan-600'
-                                : 'border-slate-200 bg-white hover:border-cyan-300 hover:bg-cyan-50/40 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-cyan-700',
-                            )}
-                          >
-                            <option.icon className={cn('mt-0.5 h-5 w-5 shrink-0', subjectMode === option.id ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-400')} aria-hidden="true" />
-                            <span className="min-w-0">
-                              <span className={cn('block text-[0.98rem] font-bold', subjectMode === option.id ? 'text-cyan-900 dark:text-cyan-200' : 'text-slate-800 dark:text-slate-100')}>
-                                {t(option.labelKey, option.labelFallback)}
-                              </span>
-                              <span className="mt-0.5 block text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                                {t(option.descKey, option.descFallback)}
-                              </span>
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {!needsPatient && subjectMode === 'other' ? (
+                  {!needsPatient && subjectMode === 'other' && currentNodeId !== 'subject' ? (
                     <div className="mb-3 flex items-start gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-800 dark:bg-sky-900/20">
                       <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-sky-500" />
                       <p className="text-sm leading-relaxed text-sky-800 dark:text-sky-300">
@@ -965,6 +948,9 @@ export function DiagnosisPage() {
                       t={t}
                       patients={patients}
                       loadingPatients={loadingPatients}
+                      subjectOptions={SUBJECT_OPTIONS}
+                      subjectValue={subjectMode}
+                      onSelectSubject={handleSelectSubject}
                       ageOptions={AGE_OPTIONS.map(o => {
                         const keyMap = { under_18: 'under18', '18_30': 'age18to30', '31_45': 'age31to45', '46_60': 'age46to60', over_60: 'over60' };
                         return { ...o, label: t(`assessment.options.age.${keyMap[o.id] || o.id}`, o.label) };
