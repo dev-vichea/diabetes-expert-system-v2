@@ -1,0 +1,264 @@
+{
+  "summary.emergency": {
+    "en": "Emergency warning signs detected — this result should be treated as urgent. Please seek immediate medical attention.",
+    "km": "រកឃើញសញ្ញាមានគ្រោះថ្នាក់ — លទ្ធផលនេះគួរត្រូវចាត់ទុកថាបន្ទាន់។ សូមស្វែងរកការព្យាបាលវេជ្ជសាស្ត្រភ្លាមៗ។"
+  },
+  "summary.strong_labs": {
+    "en": "This assessment combined {s_count} reported symptom(s) with {lab_str} results{risk_part}. The evidence consistently points toward a diabetes pattern at {certainty_percent}% confidence.",
+    "km": "ការវាយតម្លៃនេះបានបញ្ចូលអាការៈដែលបានរាយការណ៍ចំនួន {s_count} ជាមួយលទ្ធផល{lab_str}{risk_part}។ ភស្តុតាងទាំងអស់ចង្អុលត្រួតគ្នាទៅទម្រង់ជំងឺទឹកនោមផ្អែម ដោយទំនុកចិត្ត {certainty_percent}%។"
+  },
+  "summary.labs_low_certainty": {
+    "en": "Lab results were included, but the values fall within or near the normal range. No strong diabetes signal was detected at this time.",
+    "km": "លទ្ធផលពិសោធន៍ត្រូវបានបញ្ចូល ប៉ុន្តែតម្លៃស្ថិតក្នុងឬជិតកម្រិតធម្មតា។ មិនមានសញ្ញាទឹកនោមផ្អែមខ្លាំងនៅពេលនេះទេ។"
+  },
+  "summary.symptom_only_ok": {
+    "en": "Based on {s_count} symptom(s){risk_part}, the screening indicates a {certainty_percent}% match with diabetes patterns. A fasting glucose or HbA1c test can make this more definitive.",
+    "km": "ផ្អែកតាមអាការៈចំនួន {s_count}{risk_part} ការពិនិត្យជាដំបូងបង្ហាញការផ្គូផ្គង {certainty_percent}% នឹងទម្រង់ជំងឺទឹកនោមផ្អែម។ ការធ្វើតេស្តស្ករឈាមអត់ចំណី ឬ HbA1c អាចធ្វើឱ្យលទ្ធផលច្បាស់លាស់ជាងមុន។"
+  },
+  "summary.symptom_only_low": {
+    "en": "Only {s_count} symptom(s) were reported without lab results. The current evidence is limited — a simple blood test is the best next step.",
+    "km": "មានតែអាការៈចំនួន {s_count} ដែលបានរាយការណ៍ដោយគ្មានលទ្ធផលពិសោធន៍ទេ។ ភស្តុតាងបច្ចុប្បន្នមានកម្រិត — ការធ្វើតេស្តឈាមសាមញ្ញគឺជាជំហានបន្ទាប់ដ៏ល្អបំផុត។"
+  },
+  "summary.risk_only": {
+    "en": "{r_count} risk factor(s) were identified without symptoms or labs. Consider routine diabetes screening to catch early signs.",
+    "km": "រកឃើញកត្តាប្រឈមចំនួន {r_count} ដោយគ្មានអាការៈ ឬការពិសោធន៍។ គួរពិនិត្យទឹកនោមផ្អែមជាប្រចាំដើម្បីចាប់យកសញ្ញាដំបូង។"
+  },
+  "summary.gestational": {
+    "en": "Symptoms during pregnancy warrant glucose testing. Contact your OB/GYN for a formal evaluation.",
+    "km": "អាការៈក្នុងអំឡុងពេលមានផ្ទៃពោះត្រូវការការពិនិត្យស្ករឈាម។ សូមទាក់ទងវេជ្ជបណ្ឌិតស្ត្រីសម្រាប់ការវាយតម្លៃជាផ្លូវការ។"
+  },
+  "summary.type1": {
+    "en": "The symptom pattern suggests possible Type 1 diabetes with rapid onset. Prompt medical evaluation is strongly recommended.",
+    "km": "ទម្រង់អាការៈបង្ហាញថាអាចជាទឹកនោមផ្អែមប្រភេទទី ១ ដែលវិវត្តរហ័ស។ សូមទៅពិនិត្យវេជ្ជសាស្ត្រឱ្យបានឆាប់រហ័ស។"
+  },
+  "summary.insufficient": {
+    "en": "Not enough evidence to produce a reliable confidence score. Providing more symptom details or a lab test would strengthen the result.",
+    "km": "ភស្តុតាងមិនគ្រប់គ្រាន់ដើម្បីគណនាពិន្ទុទំនុកចិត្តដ៏ជឿជាក់។ ការផ្តល់ព័ត៌មានអាការៈបន្ថែម ឬការធ្វើតេស្តពិសោធន៍នឹងធ្វើឱ្យលទ្ធផលខ្លាំងជាង។"
+  },
+  "summary.generic": {
+    "en": "Assessment completed using {evidence_str} — screening confidence reached {certainty_percent}%.",
+    "km": "ការវាយតម្លៃបានបញ្ចប់ដោយប្រើ{evidence_str} — ទំនុកចិត្តនៃការពិនិត្យជាដំបូងបានដល់ {certainty_percent}%។"
+  },
+  "part.risk_appendix": {
+    "en": " and {r_count} risk factor(s)",
+    "km": " និងកត្តាប្រឈម {r_count}"
+  },
+  "part.symptoms": {
+    "en": "{s_count} symptom(s)",
+    "km": "អាការៈ {s_count}"
+  },
+  "part.risk_factors": {
+    "en": "{r_count} risk factor(s)",
+    "km": "កត្តាប្រឈម {r_count}"
+  },
+  "part.laboratory_data": {
+    "en": "laboratory data",
+    "km": "ទិន្នន័យមន្ទីរពិសោធន៍"
+  },
+  "part.limited_data": {
+    "en": "limited data",
+    "km": "ទិន្នន័យមានកម្រិត"
+  },
+  "lab.fasting_glucose": {
+    "en": "fasting glucose",
+    "km": "ជាតិស្ករអត់ចំណី"
+  },
+  "lab.hba1c": {
+    "en": "HbA1c",
+    "km": "HbA1c"
+  },
+  "lab.fallback": {
+    "en": "lab values",
+    "km": "លទ្ធផល Lab"
+  },
+  "join.and": {
+    "en": " and ",
+    "km": " និង "
+  },
+  "headline.emergency": {
+    "en": "Urgent symptoms detected — immediate medical evaluation is recommended.",
+    "km": "រកឃើញអាការៈបន្ទាន់ — សូមទៅពិនិត្យវេជ្ជសាស្ត្រភ្លាមៗ។"
+  },
+  "headline.strong_labs": {
+    "en": "Lab values and symptoms together produce a strong diabetes signal.",
+    "km": "លទ្ធផលពិសោធន៍ និងអាការៈជួបប្រជុំគ្នាបង្ហាញសញ្ញាទឹកនោមផ្អែមខ្លាំង។"
+  },
+  "headline.strong_symptoms": {
+    "en": "{s_count} symptoms strongly match the classic diabetes pattern — lab confirmation advised.",
+    "km": "អាការៈ {s_count} ផ្គូផ្គងខ្លាំងនឹងទម្រង់ទឹកនោមផ្អែមទូទៅ — គួរបញ្ជាក់ដោយការពិសោធន៍។"
+  },
+  "headline.likely_labs": {
+    "en": "Your lab results combined with reported symptoms indicate a high probability of diabetes.",
+    "km": "លទ្ធផលពិសោធន៍របស់អ្នក រួមជាមួយអាការៈដែលបានរាយការណ៍ បង្ហាញឱកាសខ្ពស់នៃជំងឺទឹកនោមផ្អែម។"
+  },
+  "headline.likely_symptoms": {
+    "en": "Multiple symptoms align with diabetes — a fasting glucose test can confirm at {certainty_percent}% confidence.",
+    "km": "អាការៈជាច្រើនត្រូវនឹងជំងឺទឹកនោមផ្អែម — តេស្តស្ករឈាមអត់ចំណីអាចបញ្ជាក់ដោយទំនុកចិត្ត {certainty_percent}%។"
+  },
+  "headline.moderate_labs": {
+    "en": "Some lab markers are borderline — monitoring and a follow-up test are recommended.",
+    "km": "សណ្ឋានពិសោធន៍ខ្លះនៅជាប់ព្រំដែន — គួរតាមដាន ហើយធ្វើតេស្តឡើងវិញ។"
+  },
+  "headline.moderate_symptoms": {
+    "en": "{s_count} symptoms raise a moderate signal. Adding a blood test would sharpen the picture.",
+    "km": "អាការៈ {s_count} បង្ហាញសញ្ញាកម្រិតមធ្យម។ ការបន្ថែមតេស្តឈាមនឹងធ្វើឱ្យរូបភាពច្បាស់ជាង។"
+  },
+  "headline.moderate_generic": {
+    "en": "Some warning signs are present, but more information is needed for a clear assessment.",
+    "km": "មានសញ្ញាព្រមានខ្លះ ប៉ុន្តែត្រូវការព័ត៌មានបន្ថែមដើម្បីវាយតម្លៃឱ្យច្បាស់លាស់។"
+  },
+  "headline.risk_only": {
+    "en": "{r_count} risk factor(s) identified, but no active symptoms. Routine screening recommended.",
+    "km": "រកឃើញកត្តាប្រឈម {r_count} ប៉ុន្តែគ្មានអាការៈសកម្មទេ។ គួរពិនិត្យជាប្រចាំ។"
+  },
+  "headline.weak_symptoms": {
+    "en": "A few symptoms were reported but the overall signal is weak. Keep monitoring and consider a check-up.",
+    "km": "មានអាការៈខ្លះបានរាយការណ៍ ប៉ុន្តែសញ្ញាទូទៅមិនខ្លាំងទេ។ សូមតាមដានបន្ត ហើយពិចារណាធ្វើការពិនិត្យសុខភាព។"
+  },
+  "headline.gestational": {
+    "en": "Pregnancy-related symptoms detected — glucose testing with your OB/GYN is the recommended next step.",
+    "km": "រកឃើញអាការៈទាក់ទងនឹងការមានផ្ទៃពោះ — ជំហានបន្ទាប់គួរពិនិត្យស្ករឈាមជាមួយវេជ្ជបណ្ឌិតស្ត្រី។"
+  },
+  "headline.type1": {
+    "en": "Rapid-onset symptoms in a younger patient suggest a Type 1 pattern — seek evaluation soon.",
+    "km": "អាការៈវិវត្តរហ័សក្នុងអ្នកជំងឺវ័យក្មេងបង្ហាញទម្រង់ប្រភេទទី ១ — សូមទៅពិនិត្យឱ្យបានឆាប់។"
+  },
+  "headline.very_low": {
+    "en": "Very little diabetes evidence was found in this assessment.",
+    "km": "រកឃើញភស្តុតាងទឹកនោមផ្អែមតិចតួចណាស់ក្នុងការវាយតម្លៃនេះ។"
+  },
+  "headline.generic": {
+    "en": "Screening confidence stands at {certainty_percent}% based on the data you provided.",
+    "km": "ទំនុកចិត្តនៃការពិនិត្យជាដំបូងស្ថិតនៅ {certainty_percent}% ផ្អែកតាមទិន្នន័យដែលអ្នកបានផ្តល់។"
+  },
+  "conf.reason.rules": {
+    "en": "Confidence score is calculated from {support_count} matched diagnosis rule{s}",
+    "km": "ពិន្ទុទំនុកចិត្តគណនាពីច្បាប់វិនិច្ឆ័យដែលត្រូវគ្នាចំនួន {support_count}"
+  },
+  "conf.reason.linked": {
+    "en": " linked to conclusion '{top_conclusion}'.",
+    "km": " ដែលភ្ជាប់ទៅសន្និដ្ឋាន '{top_conclusion}'។"
+  },
+  "conf.reason.period": {
+    "en": ".",
+    "km": "។"
+  },
+  "conf.reason.symptoms": {
+    "en": "Confidence score is calculated from {s_count} reported symptom(s) and {r_count} risk factor(s).",
+    "km": "ពិន្ទុទំនុកចិត្តគណនាពីអាការៈដែលបានរាយការណ៍ {s_count} និងកត្តាប្រឈម {r_count}។"
+  },
+  "conf.reason.missing_labs": {
+    "en": " Core lab inputs still missing: {missing_inputs}.",
+    "km": " ទិន្នន័យពិសោធន៍សំខាន់ៗនៅខ្វះ៖ {missing_inputs}។"
+  },
+  "conf.insufficient_prefix": {
+    "en": "Confidence score could not be reliably calculated because ",
+    "km": "ពិន្ទុទំនុកចិត្តមិនអាចគណនាយ៉ាងជឿជាក់បាន ព្រោះ "
+  },
+  "conf.missing_core_labs": {
+    "en": "core lab inputs are missing ({missing_inputs})",
+    "km": "ខ្វះទិន្នន័យពិសោធន៍សំខាន់ៗ ({missing_inputs})"
+  },
+  "conf.limited_evidence": {
+    "en": "very limited symptom and risk-factor evidence was provided",
+    "km": "ភស្តុតាងអាការៈ និងកត្តាប្រឈមតិចពេកដែលបានផ្តល់"
+  },
+  "conf.rules_no_conclusion": {
+    "en": "rules fired, but none produced a diagnosis conclusion",
+    "km": "ច្បាប់ដំណើរការ ប៉ុន្តែគ្មានមួយផ្តល់សន្និដ្ឋានវិនិច្ឆ័យ"
+  },
+  "conf.no_rule_matched": {
+    "en": "no active rule was matched from the submitted facts",
+    "km": "គ្មានច្បាប់សកម្មណាមួយត្រូវនឹងហេតុផលដែលបានដាក់ស្នើ"
+  },
+  "conf.insufficient_evidence": {
+    "en": "diagnosis evidence is insufficient",
+    "km": "ភស្តុតាងវិនិច្ឆ័យមិនគ្រប់គ្រាន់"
+  },
+  "conf_level.very_high.title": {
+    "en": "Very high confidence",
+    "km": "ទំនុកចិត្តខ្ពស់ណាស់"
+  },
+  "conf_level.very_high.description": {
+    "en": "Multiple strong indicators align — lab values and symptoms both point toward diabetes.",
+    "km": "សញ្ញាខ្លាំងជាច្រើនត្រូវគ្នា — ទាំងលទ្ធផលពិសោធន៍ និងអាការៈចង្អុលទៅជំងឺទឹកនោមផ្អែម។"
+  },
+  "conf_level.high.title": {
+    "en": "High confidence",
+    "km": "ទំនុកចិត្តខ្ពស់"
+  },
+  "conf_level.high.description": {
+    "en": "Most evidence points in the same direction. A clinical follow-up can confirm.",
+    "km": "ភស្តុតាងភាគច្រើនចង្អុលទិសដៅតែមួយ។ ការតាមដានវេជ្ជសាស្ត្រអាចបញ្ជាក់បាន។"
+  },
+  "conf_level.moderate.title": {
+    "en": "Moderate confidence",
+    "km": "ទំនុកចិត្តមធ្យម"
+  },
+  "conf_level.moderate.description": {
+    "en": "Some warning signs are present. Additional lab work would sharpen this assessment.",
+    "km": "មានសញ្ញាព្រមានខ្លះ។ ការពិសោធន៍បន្ថែមនឹងធ្វើឱ្យការវាយតម្លៃនេះច្បាស់ជាង។"
+  },
+  "conf_level.low.title": {
+    "en": "Low confidence",
+    "km": "ទំនុកចិត្តទាប"
+  },
+  "conf_level.low.description": {
+    "en": "Limited evidence available — the data does not strongly point toward diabetes at this time.",
+    "km": "ភស្តុតាងមានកម្រិត — ទិន្នន័យមិនចង្អុលខ្លាំងទៅជំងឺទឹកនោមផ្អែមនៅពេលនេះទេ។"
+  },
+  "completeness.high": {
+    "en": "Evidence coverage is strong across symptoms and laboratory data.",
+    "km": "ភស្តុតាងគ្របដណ្តប់ខ្លាំងទាំងអាការៈ និងទិន្នន័យមន្ទីរពិសោធន៍។"
+  },
+  "completeness.medium": {
+    "en": "Evidence coverage is moderate; additional labs can improve confidence.",
+    "km": "ភស្តុតាងគ្របដណ្តប់កម្រិតមធ្យម — ការពិសោធន៍បន្ថែមអាចបង្កើនទំនុកចិត្ត។"
+  },
+  "completeness.low": {
+    "en": "Evidence coverage is limited and the assessment may be less reliable.",
+    "km": "ភស្តុតាងគ្របដណ្តប់មានកម្រិត ហើយការវាយតម្លៃអាចទុកចិត្តបានតិចជាង។"
+  },
+  "urgency.critical_fasting": {
+    "en": "Critical fasting glucose level",
+    "km": "កម្រិតស្ករឈាមអត់ចំណីធ្ងន់ធ្ងរខ្លាំង"
+  },
+  "urgency.critical_random": {
+    "en": "Critical random glucose level",
+    "km": "កម្រិតស្ករឈាមចម្រុះធ្ងន់ធ្ងរខ្លាំង"
+  },
+  "urgency.very_high_hba1c": {
+    "en": "Very high HbA1c",
+    "km": "HbA1c ខ្ពស់ខ្លាំង"
+  },
+  "urgency.acute_crisis": {
+    "en": "Patient appears in acute crisis",
+    "km": "អ្នកជំងឺហាក់ដូចជាស្ថិតក្នុងស្ថានភាពអាសន្នភ្លាមៗ"
+  },
+  "urgency.metabolic_complication": {
+    "en": "Symptoms may indicate urgent metabolic complication",
+    "km": "អាការៈអាចបង្ហាញផលវិបត្តិមេតាបូលីកបន្ទាន់"
+  },
+  "urgency.high_certainty_diabetes": {
+    "en": "High-certainty likely diabetes",
+    "km": "ទំនុកចិត្តខ្ពស់ថាជាជំងឺទឹកនោមផ្អែម"
+  },
+  "urgency.type1_pattern": {
+    "en": "Pattern consistent with Type 1 diabetes — rapid progression risk",
+    "km": "ទម្រង់ត្រូវនឹងទឹកនោមផ្អែមប្រភេទទី ១ — ហានិភ័យវិវត្តរហ័ស"
+  },
+  "urgency.gestational_criteria": {
+    "en": "Glucose criteria met during pregnancy — obstetric review needed",
+    "km": "លក្ខខណ្ឌស្ករឈាមពេញក្នុងអំឡុងពេលមានផ្ទៃពោះ — ត្រូវការពិនិត្យដោយវេជ្ជសាស្ត្រស្ត្រី"
+  },
+  "urgency.ketosis_signs": {
+    "en": "Possible ketosis signs reported",
+    "km": "មានរាយការណ៍សញ្ញាអាចជាគីតូស៊ីស"
+  },
+  "urgency.rule_asserted": {
+    "en": "Urgency asserted by rule action",
+    "km": "ភាពបន្ទាន់កំណត់ដោយសកម្មភាពច្បាប់"
+  }
+}
+
+

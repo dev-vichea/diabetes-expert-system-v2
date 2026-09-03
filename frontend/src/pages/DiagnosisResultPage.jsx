@@ -16,14 +16,16 @@ import {
   RotateCcw,
   FileText,
   Stethoscope,
+  History,
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
-import { EmptyState, StatusBadge, ConfirmDialog } from '@/components/ui'
+import { EmptyState, ErrorAlert, StatusBadge, ConfirmDialog } from '@/components/ui'
 import { ConditionEducationPanel } from '@/components/diagnosis/ConditionEducationPanel'
 import { PlainSummaryStrip } from '@/components/diagnosis/PlainSummaryStrip'
 import { getSymptomGuideKey } from '@/lib/symptom-guide'
 import { getRiskGuideKey } from '@/lib/risk-factor-guide'
+import { bilingualField } from '@/lib/i18n'
 import { TechnicalDetailsSection } from '@/components/diagnosis/TechnicalDetailsSection'
 import { readDiagnosisResultSnapshot, saveDiagnosisResultSnapshot } from '@/lib/diagnosis-result-storage'
 import { notify } from '@/lib/toast'
@@ -108,8 +110,12 @@ function getConfidenceMeta(result, percent, t, tExact) {
 
   if (!result?.confidence_level || typeof result.confidence_level !== 'object') return fallback
   return {
-    title: result.confidence_level.title ? (tExact ? tExact(result.confidence_level.title) : result.confidence_level.title) : fallback.title,
-    description: result.confidence_level.description ? (tExact ? tExact(result.confidence_level.description) : result.confidence_level.description) : fallback.description,
+    title: result.confidence_level.title
+      ? (tExact ? tExact(bilingualField(result.confidence_level.title, result.confidence_level.title_km)) : result.confidence_level.title)
+      : fallback.title,
+    description: result.confidence_level.description
+      ? (tExact ? tExact(bilingualField(result.confidence_level.description, result.confidence_level.description_km)) : result.confidence_level.description)
+      : fallback.description,
   }
 }
 
@@ -395,55 +401,63 @@ export function DiagnosisResultPage() {
   const [snapshot, setSnapshot] = useState(() => {
     const fromState = normalizeSnapshot(location.state)
     if (fromState) return fromState
+    // Viewing a specific saved result — start empty and fetch it from the
+    // database instead of falling back to a possibly stale local snapshot.
+    if (diagnosisResultId) return null
     return readDiagnosisResultSnapshot(user)
   })
 
   useEffect(() => {
+    // DB-first: when a specific result is requested, ALWAYS fetch it from the
+    // database so the report reflects the saved record — including later
+    // doctor annotations. A location.state snapshot (straight from a fresh
+    // assessment) may paint first and is then replaced by the fetched data.
+    if (diagnosisResultId) {
+      let cancelled = false
+
+      async function loadDiagnosisResult() {
+        setLoadingRemote(true)
+        setLoadError('')
+        try {
+          const response = await api.get(`/diagnosis/${diagnosisResultId}`)
+          const result = getApiData(response)
+          if (cancelled) return
+          const nextSnapshot = {
+            result,
+            context: {
+              patient_id: result?.patient_id ?? null,
+              patient_name: result?.patient_name ?? null,
+              assessment_mode: result?.assessment_session?.mode ?? null,
+            },
+            savedAt: result?.created_at || null,
+          }
+          setSnapshot(nextSnapshot)
+          saveDiagnosisResultSnapshot({ user, result, context: nextSnapshot.context })
+        } catch (err) {
+          if (cancelled) return
+          setLoadError(getApiErrorMessage(err, 'Failed to load diagnosis result'))
+        } finally {
+          if (!cancelled) {
+            setLoadingRemote(false)
+          }
+        }
+      }
+
+      loadDiagnosisResult()
+      return () => {
+        cancelled = true
+      }
+    }
+
+    // No specific result requested — fall back to the local snapshot of the
+    // latest assessment for this account.
     const fromState = normalizeSnapshot(location.state)
     if (fromState) {
       setSnapshot(fromState)
       return
     }
 
-    if (!diagnosisResultId) {
-      setSnapshot(readDiagnosisResultSnapshot(user))
-      return
-    }
-
-    let cancelled = false
-
-    async function loadDiagnosisResult() {
-      setLoadingRemote(true)
-      setLoadError('')
-      try {
-        const response = await api.get(`/diagnosis/${diagnosisResultId}`)
-        const result = getApiData(response)
-        const nextSnapshot = {
-          result,
-          context: {
-            patient_id: result?.patient_id ?? null,
-            patient_name: result?.patient_name ?? null,
-            assessment_mode: result?.assessment_session?.mode ?? null,
-          },
-          savedAt: result?.created_at || null,
-        }
-        if (cancelled) return
-        setSnapshot(nextSnapshot)
-        saveDiagnosisResultSnapshot({ user, result, context: nextSnapshot.context })
-      } catch (err) {
-        if (cancelled) return
-        setLoadError(getApiErrorMessage(err, 'Failed to load diagnosis result'))
-      } finally {
-        if (!cancelled) {
-          setLoadingRemote(false)
-        }
-      }
-    }
-
-    loadDiagnosisResult()
-    return () => {
-      cancelled = true
-    }
+    setSnapshot(readDiagnosisResultSnapshot(user))
   }, [diagnosisResultId, location.state, user])
 
   if (loadingRemote && !snapshot?.result) {
@@ -657,6 +671,9 @@ export function DiagnosisResultPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-10">
+      {/* Fetch failed but an older snapshot (route state) is still on screen —
+          surface the error instead of silently showing stale data. */}
+      {loadError && snapshot?.result ? <ErrorAlert message={loadError} /> : null}
 
       <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
@@ -738,9 +755,9 @@ export function DiagnosisResultPage() {
               ) : null}
               <p className="mt-4 max-w-md text-base font-medium leading-relaxed text-white/95 drop-shadow-sm sm:text-lg">
                 {result?.headline_explanation
-                  ? tExact(result.headline_explanation)
+                  ? tExact(bilingualField(result.headline_explanation, result.headline_explanation_km))
                   : result?.result_summary
-                    ? tExact(result.result_summary)
+                    ? tExact(bilingualField(result.result_summary, result.result_summary_km))
                     : (<>{t('diagnosisResult.probabilityBase', 'Screening confidence: ')}<strong className="font-extrabold text-white">{certaintyPercent}%</strong>{t('diagnosisResult.probabilityOf', ' — see the evidence breakdown below.')}</>)
                 }
               </p>
@@ -788,7 +805,7 @@ export function DiagnosisResultPage() {
                     {index + 1}
                   </span>
                   <p className="flex-1 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
-                    {tExact(item.text)}
+                    {tExact(bilingualField(item.text, item.text_km))}
                   </p>
                   {isUrgent ? (
                     <span className="mt-0.5 shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-rose-600 ring-1 ring-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:ring-rose-900/50">
@@ -803,7 +820,7 @@ export function DiagnosisResultPage() {
           <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
             <ClipboardList className="h-10 w-10 text-slate-300 dark:text-slate-700 mb-3" />
             <p className="text-base font-medium text-slate-600 dark:text-slate-400">
-              {tExact(result.recommendation) || t('diagnosisResult.noSpecificRecommendations', 'No specific recommendations were generated. Please consult with a physician.')}
+              {tExact(bilingualField(result.recommendation, result.recommendations?.[0]?.text === result.recommendation ? result.recommendations?.[0]?.text_km : undefined)) || t('diagnosisResult.noSpecificRecommendations', 'No specific recommendations were generated. Please consult with a physician.')}
             </p>
           </div>
         )}
@@ -1033,9 +1050,15 @@ export function DiagnosisResultPage() {
 
       <div className="rounded-xl bg-white px-4 py-3 dark:bg-[#050912]">
         <div className="flex items-start gap-2">
-          <Activity className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+          {diagnosisResultId ? (
+            <History className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+          ) : (
+            <Activity className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+          )}
           <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            {t('diagnosisResult.savedResultActive', 'Saved result snapshot is active for this account. Start a new assessment to replace it.')}
+            {diagnosisResultId
+              ? t('diagnosisResult.loadedFromHistory', 'This report was loaded from your saved assessment history.')
+              : t('diagnosisResult.savedResultActive', 'Saved result snapshot is active for this account. Start a new assessment to replace it.')}
           </p>
         </div>
       </div>

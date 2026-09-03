@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import {
-  Activity, AlertTriangle, Armchair, Baby, Bandage, BatteryLow, Bug, Building2, CalendarHeart,
+  Activity, AlertTriangle, ArrowLeft, Armchair, Baby, Bandage, BatteryLow, Bug, Building2, CalendarHeart,
   Check, Cigarette, ClipboardList, Contrast, Droplet, Droplets, Egg, Eye, FlaskConical, Flower2,
   GlassWater, Globe, Hand, HeartCrack, HeartPulse, PenTool, Plus, RefreshCw, Scale, Soup,
   Stethoscope, TestTube2, Timer, TrendingDown, Trash2, UserRound, Users, Vibrate, Waves, Weight, X,
@@ -136,7 +136,7 @@ export function InterviewFlow(props) {
     extraLabs, onAddExtraLab, onRemoveExtraLab,
     onField, onPickSegment, onSetCustom, onCalculateBmi,
     onYesNo, onChoice, onToggleMulti, onMultiNone,
-    onContinue, onSkip, onFinish, canFinish, analyzing, editing,
+    onContinue, onSkip, onBack, canBack = false, analyzing, editing,
     doneIds = [], skippedIds = [],
   } = props
 
@@ -322,13 +322,13 @@ export function InterviewFlow(props) {
       ) : null}
 
       <div className="mt-4 flex items-center justify-end gap-2 pb-2">
-        {canFinish && onFinish ? (
-          <button
-            type="button"
-            className="btn-primary gap-1.5 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500"
-            onClick={onFinish}
-          >
-            {t('assessment.interview.finishNow', 'Enough — see my result')}
+        {/* Back — jump to the previous question (or return to the natural
+            flow position while editing an earlier one). Hidden on the very
+            first question, when there is nothing to go back to. */}
+        {onBack && canBack ? (
+          <button type="button" className="btn-secondary mr-auto gap-1.5" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
+            {t('common.back', 'Back')}
           </button>
         ) : null}
         {node.skippable ? (

@@ -5,7 +5,7 @@ import { getLatestFacts, getRelativeCheckAge, getUrgencyLabel, toNumberOrNull } 
 import { useLanguage } from '@/contexts/LanguageContext'
 
 export function PatientSituationPanel({ patientResults, latestResult, urgentCount }) {
-  const { t } = useLanguage()
+  const { t, isKhmer } = useLanguage()
   const isUrgent = Boolean(latestResult?.is_urgent)
   const age = toNumberOrNull(getLatestFacts(patientResults).age)
   const chip = 'inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium'
@@ -44,7 +44,7 @@ export function PatientSituationPanel({ patientResults, latestResult, urgentCoun
 
       {isUrgent && latestResult?.urgent_reason ? (
         <p className="relative mt-3 inline-flex rounded-lg bg-black/25 px-2.5 py-1.5 text-xs font-medium">
-          {t('patientDashboard.situation.urgentReason', 'Reason: {{reason}}', { reason: latestResult.urgent_reason })}
+          {t('patientDashboard.situation.urgentReason', 'Reason: {{reason}}', { reason: isKhmer ? (latestResult.urgent_reason_km || latestResult.urgent_reason) : latestResult.urgent_reason })}
         </p>
       ) : null}
 

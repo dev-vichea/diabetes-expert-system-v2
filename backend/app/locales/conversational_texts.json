@@ -1,0 +1,94 @@
+{
+  "chat.greeting": {
+    "en": "Hello! I'm here to help assess your diabetes risk through a few questions. Let's start with some basic information.",
+    "km": "សូមស្វាគមន៍! ខ្ញុំនៅទីនេះដើម្បីជួយវាយតម្លៃហានិភ័យទឹកនោមផ្អែមរបស់អ្នកតាមរយៈសំណួរមួយចំនួន។ តោះចាប់ផ្តើមជាមួយព័ត៌មានមូលដ្ឋាន។"
+  },
+  "chat.complete": {
+    "en": "Thank you for answering these questions. Here's my assessment:",
+    "km": "អរគុណសម្រាប់ការឆ្លើយសំណួរទាំងនេះ។ នេះជាការវាយតម្លៃរបស់ខ្ញុំ៖"
+  },
+  "chat.critical": {
+    "en": "This is an important question to ensure you get appropriate care.",
+    "km": "នេះជាសំណួរសំខាន់ដើម្បីធានាថាអ្នកទទួលបានការថែទាំត្រឹមត្រូវ។"
+  },
+  "chat.important_symptoms": {
+    "en": "Based on what you've told me, this next question is important.",
+    "km": "ផ្អែកតាមអ្វីដែលអ្នកបានប្រាប់ខ្ញុំ សំណួរបន្ទាប់នេះសំខាន់។"
+  },
+  "chat.important_generic": {
+    "en": "Let me ask you about another key symptom.",
+    "km": "សូមឱ្យខ្ញុំសួរអំពីអាការៈសំខាន់មួយទៀត។"
+  },
+  "chat.emergency": {
+    "en": "I need to check for any urgent symptoms.",
+    "km": "ខ្ញុំត្រូវពិនិត្យរកអាការៈបន្ទាន់ណាមួយ។"
+  },
+  "chat.risk_factors": {
+    "en": "Now let's talk about your risk factors.",
+    "km": "ឥឡូវនេះ តោះពិភាក្សាអំពីកត្តាប្រឈមរបស់អ្នក។"
+  },
+  "chat.generic": {
+    "en": "Let me ask you one more question.",
+    "km": "សូមឱ្យខ្ញុំសួរសំណួរមួយទៀត។"
+  },
+  "chat.preliminary_note": {
+    "en": "This is a preliminary assessment based on symptoms. A medical professional should confirm any diabetes diagnosis with appropriate testing.",
+    "km": "នេះជាការវាយតម្លៃបឋមផ្អែកលើអាការៈ។ បុគ្គលិកវេជ្ជសាស្ត្រគួរបញ្ជាក់ការវិនិច្ឆ័យទឹកនោមផ្អែមដោយការត្រួតពិសោធន៍ត្រឹមត្រូវ។"
+  },
+  "label.emergency": {
+    "en": "EMERGENCY - Possible Diabetic Crisis",
+    "km": "អាសន្ន - អាចជាវិបត្តិទឹកនោមផ្អែម"
+  },
+  "label.high": {
+    "en": "Highly Likely Diabetes - Immediate Evaluation Needed",
+    "km": "ទំនងជាទឹកនោមផ្អែមខ្ពស់ - ត្រូវការវាយតម្លៃភ្លាមៗ"
+  },
+  "label.moderate_high": {
+    "en": "Likely Diabetes - Medical Evaluation Recommended",
+    "km": "ទំនងជាទឹកនោមផ្អែម - គួរទៅពិនិត្យវេជ្ជសាស្ត្រ"
+  },
+  "label.moderate": {
+    "en": "Possible Diabetes - Screening Recommended",
+    "km": "អាចជាទឹកនោមផ្អែម - គួរពិនិត្យជាដំបូង"
+  },
+  "label.low_moderate": {
+    "en": "Some Diabetes Risk - Consider Screening",
+    "km": "មានហានិភ័យទឹកនោមផ្អែមខ្លះ - គួរពិចារណាពិនិត្យជាដំបូង"
+  },
+  "label.low": {
+    "en": "Low Diabetes Indication - Routine Monitoring",
+    "km": "សញ្ញាទឹកនោមផ្អែមទាប - តាមដានជាប្រចាំ"
+  },
+  "urgency.emergency": {
+    "en": "Emergency symptoms detected requiring immediate medical attention",
+    "km": "រកឃើញអាការៈមានគ្រោះថ្នាក់ដែលត្រូវការការព្យាបាលពេទ្យភ្លាមៗ"
+  },
+  "urgency.high": {
+    "en": "Strong symptom pattern requires prompt medical evaluation",
+    "km": "ទម្រង់អាការៈខ្លាំងត្រូវការវាយតម្លៃវេជ្ជសាស្ត្រឱ្យបានរហ័ស"
+  },
+  "urgency.moderate_high": {
+    "en": "Multiple symptoms suggest medical evaluation within 1-2 weeks",
+    "km": "អាការៈជាច្រើនស្នើឱ្យទៅពិនិត្យវេជ្ជសាស្ត្រក្នុងរយៈពេល ១-២ សប្តាហ៍"
+  },
+  "urgency.moderate": {
+    "en": "Consider scheduling medical evaluation",
+    "km": "គួរពិចារណាកំណត់ពេលទៅពិនិត្យវេជ្ជសាស្ត្រ"
+  },
+  "urgency.routine": {
+    "en": "Routine screening based on symptoms and risk factors",
+    "km": "ការពិនិត្យជាប្រចាំផ្អែកលើអាការៈ និងកត្តាប្រឈម"
+  },
+  "step.monitor_worsen": {
+    "en": "Monitor symptoms and seek care immediately if they worsen",
+    "km": "តាមដានអាការៈ ហើយទៅពេទ្យភ្លាមៗប្រសិនបើធ្ងន់ធ្ងរជាងមុន"
+  },
+  "step.lifestyle": {
+    "en": "Maintain healthy diet and regular physical activity",
+    "km": "រក្សាអាហារសុខភាព និងសកម្មភាពរាងកាយជាប្រចាំ"
+  },
+  "step.track_new": {
+    "en": "Keep track of any new symptoms that develop",
+    "km": "កត់ត្រាអាការៈថ្មីណាមួយដែលកើតឡើង"
+  }
+}

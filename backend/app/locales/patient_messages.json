@@ -1,0 +1,250 @@
+{
+  "Take 15–20 g of fast-acting glucose (e.g., glucose tablets, juice). Recheck blood glucose in 15 minutes and repeat if still below 70 mg/dL.": {
+    "en": "Low blood sugar right now. Take 15–20 g of fast sugar (glucose tablets or juice), then recheck in 15 minutes — repeat if still under 70.",
+    "km": "ស្ករក្នុងឈាមទាបឥឡូវនេះ។ ទទួលទានស្ករលឿន 15–20 ក្រាម (គ្រាប់ Glucose ឬទឹកផ្លែឈើ) ហើយវាស់ម្តងទៀតក្នុង 15 នាទី — ធ្វើម្តងទៀតបើនៅតែក្រោម 70។"
+  },
+  "Clinically significant hypoglycemia. Administer fast-acting glucose immediately. If the patient is unable to swallow safely, administer glucagon and seek emergency medical care.": {
+    "en": "Very low blood sugar. Take fast-acting sugar immediately. If swallowing is not safe, that is an emergency — call for medical help.",
+    "km": "ស្ករក្នុងឈាមទាបខ្លាំង។ ទទួលទានស្ករលឿនភ្លាម។ បើលេបមិនបានសុវត្ថិភាព នោះជាអាសន្ន — ហៅជំនួយវេជ្ជសាស្ត្រ។"
+  },
+  "Critical blood glucose level. Seek emergency medical care immediately. Monitor for signs of dehydration, confusion, or loss of consciousness.": {
+    "en": "Dangerously high blood sugar. Seek emergency medical care now — watch for confusion, severe dehydration or fainting.",
+    "km": "ស្ករក្នុងឈាមខ្ពស់គាប់ជាងកម្រិតអន្តរាយ។ សូមទៅព្យាបាលបន្ទាន់ឥឡូវនេះ — ប្រយ័ត្នអាការៈវង្វេងស្មារតី រាងកាយស្ងួតខ្លាំង ឬស្គាំងស្ពឹត។"
+  },
+  "Severely elevated HbA1c. Consider early insulin therapy and urgent endocrine referral. Evaluate for DKA risk factors.": {
+    "en": "Your average blood sugar (HbA1c) is severely elevated. See a doctor urgently — treatment and a safety plan should start now.",
+    "km": "ស្ករមធ្យមក្នុងឈាម (HbA1c) របស់អ្នកខ្ពស់ខ្លាំង។ ជួបគ្រូពេទ្យបន្ទាន់ — ការព្យាបាល និងផែនការសុវត្ថិភាពគួរចាប់ផ្តើមឥឡូវនេះ។"
+  },
+  "High risk of diabetes progression. Enroll in a structured lifestyle intervention program (target: ≥7% weight loss and ≥150 min/week moderate physical activity). Consider metformin for chemoprevention (especially if BMI ≥35 or age <60).": {
+    "en": "High risk of progressing to type 2 diabetes. Losing about 7% of body weight, 150 minutes of activity a week, and a prevention talk with your doctor dramatically cut the risk.",
+    "km": "ហានិភ័យខ្ពស់ក្នុងការវិវត្តទៅជាទឹកនោមផ្អែមប្រភេទទី 2។ បន្ថយទម្ងន់ប្រហែល 7% ហាត់ប្រាណ 150 នាទី/សប្តាហ៍ ហើយពិភាក្សាការការពារជាមួយគ្រូពេទ្យ កាត់បន្ថយហានិភ័យខ្លាំងណាស់។"
+  },
+  "Possible diabetic ketoacidosis detected. Go to emergency care immediately. Do NOT delay. Blood ketone measurement, arterial blood gas, and IV fluids are likely needed.": {
+    "en": "Signs of diabetic ketoacidosis (DKA) — a medical emergency. Go to emergency care now; do not wait for test results.",
+    "km": "សញ្ញានៃ DKA (គីតូអាស៊ីត) — អាសន្នវេជ្ជសាស្ត្រ។ ទៅជំពូកសង្គ្រោះបន្ទាន់ឥឡូវនេះ។ កុំរង់ចាំលទ្ធផលតេស្ត។"
+  },
+  "Treat hypoglycemia with the 15/15 rule: take 15 g of fast-acting carbohydrate, wait 15 minutes, recheck glucose. Review diabetes medications with your doctor. If receiving insulin or sulfonylurea, dose adjustment may be needed.": {
+    "en": "You had a low blood sugar episode. Use the 15/15 rule: 15 g of fast sugar, wait 15 minutes, recheck. Ask your doctor if any medication doses need adjusting.",
+    "km": "អ្នកមានភាពស្ករទាបម្តង។ ប្រើច្បាប់ 15/15៖ ស្ករលឿន 15 ក្រាម រង់ចាំ 15 នាទី វាស់ម្តងទៀត។ សួរគ្រូពេទ្យថាតើត្រូវកែកម្រិតថ្នាំអត់។"
+  },
+  "Prediabetes detected. Recommendations: (1) Aim for ≥7% body weight loss through dietary changes. (2) Engage in ≥150 minutes per week of moderate-intensity physical activity. (3) Repeat HbA1c and fasting glucose in 3–6 months. (4) Consider referral to a Diabetes Prevention Program (DPP).": {
+    "en": "Prediabetes — a warning stage you can reverse. Lose about 7% of body weight, move 150 minutes a week, cut sugary drinks, and re-test in 3–6 months.",
+    "km": "មុនទឹកនោមផ្អែម — ដំណាក់កាលព្រមានដែលអ្នកអាចត្រឡប់វិញបាន។ បន្ថយទម្ងន់ប្រហែល 7% ហាត់ប្រាណ 150 នាទី/សប្តាហ៍ កាត់បន្ថយភេសជ្ជៈមានស្ករ ហើយតេស្តម្តងទៀតក្នុង 3–6 ខែ។"
+  },
+  "Diabetes diagnostic criteria met. Schedule clinical evaluation including: (1) Confirmatory lab test if single abnormal result. (2) HbA1c target goal setting. (3) Retinal and foot examination. (4) Lipid panel and blood pressure assessment. (5) Diabetes self-management education and support (DSMES).": {
+    "en": "Your results meet the diabetes criteria. Book a clinic visit within 1–2 weeks to confirm, set targets and start treatment.",
+    "km": "លទ្ធផលរបស់អ្នកបំពេញលក្ខខណ្ឌទឹកនោមផ្អែម។ កោះចូលគ្លីនិកក្នុង 1–2 សប្តាហ៍ ដើម្បីបញ្ជាក់ កំណត់គោលដៅ និងចាប់ផ្តើមព្យាបាល។"
+  },
+  "Assessment lacks laboratory data. A definitive diabetes diagnosis requires at least one of: (1) Fasting plasma glucose (≥8h fast). (2) HbA1c (NGSP-certified lab). (3) 75-g oral glucose tolerance test (2-hour value). Complete these tests to improve assessment reliability.": {
+    "en": "No blood test yet — that is fine for a first screening. A simple fasting glucose or HbA1c test at any lab will make the result far more certain.",
+    "km": "មិនទាន់មានតេស្តឈាមទេ — មិនអីទេសម្រាប់ការរុករកដំបូង។ តេស្តស្ករពេលតមអាហារ ឬ HbA1c សាមញ្ញនៅ Lab ណាមួយ នឹងធ្វើអោយលទ្ធផលច្បាស់លាស់ជាងខ្លាំង។"
+  },
+  "Type 2 diabetes risk factors identified. ADA recommends: (1) Routine diabetes screening every 3 years. (2) If prediabetes, repeat testing every 1–2 years. (3) Maintain healthy weight (BMI <25). (4) Exercise ≥150 min/week. (5) Follow a balanced diet rich in whole grains, vegetables, and lean proteins.": {
+    "en": "You carry type 2 risk factors. Keep a healthy weight, move 150 minutes a week, eat more whole foods, and screen every 1–3 years.",
+    "km": "អ្នកមានកត្តាហានិភ័យប្រភេទទី 2។ រក្សាទម្ងន់សុខភាពល្អ ហាត់ប្រាណ 150 នាទី/សប្តាហ៍ ទទួលទានម្ហូបធម្មជាតិច្រើន ហើយពិនិត្យរៀងរាល់ 1–3 ឆ្នាំ។"
+  },
+  "Obesity identified (BMI ≥30). Weight management recommendations: (1) Target initial weight loss of 5–10% of body weight. (2) Caloric deficit through reduced portions and healthier food choices. (3) At least 150 minutes per week of moderate-intensity exercise. (4) Consider referral to dietitian or weight management program. (5) Screen for obstructive sleep apnea and metabolic syndrome.": {
+    "en": "Weight is the biggest lever you control — a 5–10% loss lowers sugar, blood pressure and cholesterol together. A dietitian can help you build the plan.",
+    "km": "ទម្ងន់គឺជាកត្តាធំបំផុតដែលអ្នកគ្រប់គ្រងបាន — បន្ថយ 5–10% ធ្វើអោយស្ករ សម្ពាធឈាម និងខ្លាញ់ទាបទៅដូចគ្នា។ អ្នកជំនាញអាហារូបត្ថម្ភជួយបង្កើតផែនការអោយអ្នកបាន។"
+  },
+  "Diabetes confirmed by dual criteria. Comprehensive management plan: (1) Set individualized HbA1c target (generally <7% for most adults). (2) Initiate metformin as first-line therapy unless contraindicated. (3) Retinal screening within 5 years of diagnosis for T2D (at diagnosis for T1D). (4) Annual foot exam. (5) Lipid panel and statin therapy if indicated. (6) Blood pressure target <130/80 mmHg. (7) Diabetes self-management education. (8) Psychological well-being assessment.": {
+    "en": "Diabetes is confirmed by two matching tests. Book your doctor within 1–2 weeks: sugar targets, metformin first (usually), plus eye and foot checks.",
+    "km": "តេស្តពីរដូចគ្នាបញ្ជាក់ថាមានទឹកនោមផ្អែម។ កោះជួបគ្រូពេទ្យក្នុង 1–2 សប្តាហ៍៖ កំណត់គោលដៅស្ករ ថ្នាំ Metformin ជាដំបូង (ភាគច្រើន) ហើយពិនិត្យភ្នែក និងជើងផង។"
+  },
+  "Neuropathy Warning: Patient reports tingling in extremities. Recommend comprehensive foot exam, checking for peripheral pulse, and tuning fork/monofilament sensory assessment.": {
+    "en": "Tingling in hands or feet can mean nerves are irritated by years of high sugar. Tell your doctor, and check your feet daily for numbness or sores.",
+    "km": "ស្ពឹកចុងដៃ ឬចុងជើង អាចមានន័យថាសរសៃប្រសាទរំខានដោយស្ករខ្ពស់រាប់ឆ្នាំ។ ប្រាប់គ្រូពេទ្យរបស់អ្នក ហើយពិនិត្យជើងរបស់អ្នករៀងរាល់ថ្ងៃថាមានអារម្មណ៍ស្ពឹក ឬរបួសអត់។"
+  },
+  "Metabolic Syndrome identified. Recommend intensive lifestyle intervention, lipid panel monitoring, cardiovascular risk stratification, and aggressive blood pressure control.": {
+    "en": "Your blood pressure, weight and cholesterol pattern raise heart and diabetes risk. Move more, eat plainer, and treat blood pressure and cholesterol with your doctor.",
+    "km": "សម្ពាធឈាម ទម្ងន់ និងខ្លាញ់របស់អ្នក បង្កើនហានិភ័យបេះដូង និងទឹកនោមផ្អែម។ ហាត់ប្រាណច្រើនជាង ទទួលទានម្ហូបសាមញ្ញ ហើយព្យាបាលសម្ពាធឈាម និងខ្លាញ់តាមគ្រូពេទ្យ។"
+  },
+  "Patient has a history of Gestational Diabetes. ADA mandates lifelong screening for Type 2 Diabetes at least every 3 years, regardless of other risk factors.": {
+    "en": "Past gestational diabetes raises type 2 risk for life. A quick glucose or HbA1c check every 1–3 years keeps you ahead of it.",
+    "km": "ទឹកនោមផ្អែមពេលមានផ្ទៃពោះកន្លងមក បង្កើនហានិភ័យប្រភេទទី 2 ពេញជីវិត។ វាស់ស្ករ ឬ HbA1c រៀងរាល់ 1–3 ឆ្នាំ ជួយអ្នកនៅមុនគេ។"
+  },
+  "Classic diabetes symptoms present but no laboratory data available. Urgently obtain: (1) Fasting plasma glucose. (2) HbA1c. (3) Random plasma glucose if fasting not possible. These tests are required for definitive diagnosis.": {
+    "en": "Your symptoms are the classic diabetes signs, but a blood test is still needed to confirm. Book one this week — it takes minutes.",
+    "km": "រោគសញ្ញារបស់អ្នកគឺជាសញ្ញាទឹកនោមផ្អែមសំខាន់ៗ ប៉ុន្តែនៅតែត្រូវការតេស្តឈាមដើម្បីបញ្ជាក់។ កោះធ្វើក្នុងសប្តាហ៍នេះ — ចំណាយពេលប៉ុន្មាននាទីប៉ុណ្ណោះ។"
+  },
+  "Multiple diabetes-associated symptoms detected (neuropathy signs + frequent infections). Priority laboratory testing recommended: HbA1c and fasting glucose within 1 week.": {
+    "en": "Nerve tingling plus repeated infections suggests long-standing high sugar. Do an HbA1c and fasting glucose test within 1 week.",
+    "km": "ស្ពឹកចុងដៃចុងជើង រួមជាមួយមេរោគច្រើនដង បង្ហាញថាស្ករខ្ពស់យូរមកហើយ។ ធ្វើតេស្ត HbA1c និងស្ករពេលតមអាហារក្នុង 1 សប្តាហ៍។"
+  },
+  "Young patient with overweight/obesity and diabetes risk factors. ADA recommends screening regardless of age when BMI ≥25 with risk factors. Complete fasting glucose and HbA1c testing.": {
+    "en": "Young with overweight plus risk factors still deserves a check. A fasting glucose or HbA1c test now sets your baseline.",
+    "km": "វ័យក្មេងលើសទម្ងន់ រួមជាមួយកត្តាហានិភ័យ ក៏គួរពិនិត្យដែរ។ តេស្តស្ករពេលតមអាហារ ឬ HbA1c ឥឡូវនេះ កំណត់ចំណុចចាប់ផ្តើមរបស់អ្នក។"
+  },
+  "Very high diabetes risk: Prior gestational diabetes + current obesity. Recommend: (1) Annual HbA1c and fasting glucose screening. (2) Target ≥7% weight loss. (3) ≥150 min/week moderate exercise. (4) Consider metformin for prevention (ADA grade A recommendation).": {
+    "en": "Prior gestational diabetes with overweight is a high-risk combination. Annual sugar checks, about 7% weight loss and regular movement strongly cut the risk.",
+    "km": "ទឹកនោមផ្អែមពេលមានផ្ទៃពោះកន្លងមក រួមជាមួយលើសទម្ងន់ គឺជាការរួមបញ្ចូលហានិភ័យខ្ពស់។ ពិនិត្យស្កររៀងរាល់ឆ្នាំ បន្ថយទម្ងន់ប្រហែល 7% ហើយហាត់ប្រាណជាប្រចាំ កាត់បន្ថយហានិភ័យខ្លាំង។"
+  },
+  "EMERGENCY: Level 3 severe hypoglycemia (<40 mg/dL). Call emergency services immediately. Administer glucagon if available. Do NOT attempt to give oral glucose if patient is unconscious or unable to swallow safely.": {
+    "en": "EMERGENCY: severe low blood sugar. Call emergency services now. If unconscious, never give food or drink by mouth.",
+    "km": "អាសន្ន៖ ស្ករក្នុងឈាមទាបធ្ងន់ធ្ងរ។ ហៅសង្គ្រោះបន្ទាន់ឥឡូវនេះ។ បើដកហ៊ុតស្មារតី កុំបង្ខំអោយទទួលទានអាហារ ឬទឹកតាមមាត់ដាច់ខាត។"
+  },
+  "Diabetic neuropathy likely: Tingling extremities with confirmed hyperglycemia. Urgent referrals needed: (1) Comprehensive foot examination with monofilament testing. (2) Nerve conduction study. (3) Tight glycemic control to prevent progression. (4) Neuropathic pain management if symptomatic.": {
+    "en": "Nerve signs with confirmed high sugar mean early diabetic neuropathy. You need a foot exam and steadier sugar control — see your doctor within 2 weeks.",
+    "km": "សញ្ញាសរសៃប្រសាទជាមួយស្ករខ្ពស់ច្បាស់ មានន័យថាសរសៃប្រសាទពិការដំបូង។ អ្នកត្រូវពិនិត្យជើង និងគ្រប់គ្រងស្ករអោយនឹងជើង — ជួបគ្រូពេទ្យក្នុង 2 សប្តាហ៍។"
+  },
+  "High compound risk identified (smoking + obesity + family history). Urgent recommendations: (1) Smoking cessation program. (2) Weight management target 5-10% reduction. (3) Annual HbA1c and lipid monitoring. (4) CardioVascular risk assessment. (5) Consider aspirin therapy if CVD risk >10%.": {
+    "en": "Smoking, weight and family history multiply each other's risk. Quitting smoking is the single biggest step — then weight, movement and yearly checks.",
+    "km": "បំពក់បារី ទម្ងន់ និងប្រវត្តិគ្រួសារ ធ្វើអោយហានិភ័យខ្ពស់ដូចគុណគ្នា។ ការឈប់បំពក់បារីគឺជាជំហានធំបំផុត — បន្ទាប់មកទម្ងន់ ការហាត់ប្រាណ និងការពិនិត្យជាប្រចាំ។"
+  },
+  "PCOS + prediabetes: Accelerated diabetes risk. Recommend: (1) Metformin therapy (addresses both PCOS and diabetes prevention). (2) Weight management. (3) HbA1c monitoring every 6 months. (4) Endocrine referral for comprehensive PCOS management.": {
+    "en": "PCOS with prediabetes speeds up diabetes risk. Metformin helps both; recheck HbA1c every 6 months and ask for a PCOS care plan.",
+    "km": "PCOS រួមជាមួយមុនទឹកនោមផ្អែម ធ្វើអោយហានិភ័យលឿនជាង។ ថ្នាំ Metformin ជួយទាំងពីរ។ ពិនិត្យ HbA1c រៀងរាល់ 6 ខែ ហើយសុំផែនការថែទាំ PCOS។"
+  },
+  "Hidden diabetes pattern detected (tingling + frequent infections + fatigue). This combination suggests possible longstanding undiagnosed diabetes. Priority: Obtain HbA1c, fasting glucose, and complete blood count. Schedule comprehensive foot and neurological exam.": {
+    "en": "Tingling, infections and fatigue together can hide long-standing high sugar. Get HbA1c, fasting glucose and a basic check-up soon.",
+    "km": "ស្ពឹកចុងដៃ មេរោគ និងអស់កម្លាំងរួមគ្នា អាចបិទបាំងស្ករខ្ពស់យូរឆ្នាំ។ សូមធ្វើ HbA1c ស្ករពេលតមអាហារ និងត្រួតពិនិត្យសុខភាពទូទៅឆាប់ៗ។"
+  },
+  "PCOS + obesity: Elevated metabolic risk. Recommendations: (1) Annual OGTT preferred over HbA1c (PCOS affects HbA1c accuracy). (2) Lipid panel and liver function tests. (3) Weight management with target 5-10% reduction. (4) Screen for obstructive sleep apnea. (5) Consider myo-inositol supplementation.": {
+    "en": "With PCOS and overweight, aim for 5–10% weight loss and yearly glucose checks — an OGTT is often preferred with PCOS.",
+    "km": "នឹង PCOS និងលើសទម្ងន់ គោលដៅបន្ថយទម្ងន់ 5–10% ហើយពិនិត្យស្កររៀងរាល់ឆ្នាំ — គេនិយមប្រើតេស្ត OGTT សម្រាប់អ្នកមាន PCOS។"
+  },
+  "Young adult with diabetes risk factors. Prevention plan: (1) Target BMI <25 through sustainable lifestyle changes. (2) 150-300 min/week of moderate-to-vigorous exercise. (3) Limit added sugars and ultra-processed foods. (4) Annual fasting glucose and HbA1c screening. (5) Consider genetic counseling if strong family history.": {
+    "en": "A great time to prevent: keep BMI under 25, move 150–300 minutes a week, limit sugary and ultra-processed food, and check sugars yearly.",
+    "km": "ពេលវេលាល្អដើម្បីការពារ៖ រក្សា BMI ក្រោម 25 ហាត់ប្រាណ 150–300 នាទី/សប្តាហ៍ កាត់បន្ថយចំណីស្ករ និងម្ហូបកែច្នៃខ្លាំង ហើយពិនិត្យស្ករជាប្រចាំរៀងរាល់ឆ្នាំ។"
+  },
+  "Your fasting glucose and HbA1c are both within normal ranges. No diabetes or prediabetes detected at this time. Continue healthy lifestyle habits and schedule routine screening as recommended by your doctor.": {
+    "en": "Both blood tests are normal — no diabetes detected today. Keep your healthy habits and re-screen as your doctor advises.",
+    "km": "តេស្តឈាមទាំងពីរធម្មតា — ថ្ងៃនេះរកមិនឃើញទឹកនោមផ្អែមទេ។ រក្សាទម្លាប់ល្អរបស់អ្នក ហើយពិនិត្យស្ករតាមដែលគ្រូពេទ្យណែនាំ។"
+  },
+  "Your fasting glucose is within the normal range. Continue maintaining a healthy lifestyle. If you have risk factors (family history, obesity, etc.), schedule HbA1c testing for a more complete assessment.": {
+    "en": "Your fasting glucose is normal. Keep your lifestyle, and if you carry risk factors an HbA1c test adds a fuller picture.",
+    "km": "ស្ករពេលតមអាហាររបស់អ្នកធម្មតា។ រក្សាទម្លាប់ជីវិត ហើយបើអ្នកមានកត្តាហានិភ័យ តេស្ត HbA1c នឹងបង្ហាញរូបភាពពេញលេញជាង។"
+  },
+  "Prediabetes with classic diabetes symptoms detected. This combination suggests faster progression risk. Recommendations: (1) Repeat fasting glucose and HbA1c in 1–3 months (not 6 months). (2) Begin intensive lifestyle intervention immediately. (3) Discuss metformin with your doctor. (4) Monitor symptoms closely.": {
+    "en": "Prediabetes plus symptoms means faster progression risk. Re-test in 1–3 months instead of 6, and start lifestyle changes now.",
+    "km": "មុនទឹកនោមផ្អែមរួមជាមួយរោគសញ្ញា មានន័យថាហានិភ័យវិវត្តលឿន។ តេស្តម្តងទៀតក្នុង 1–3 ខែ (មិនមែន 6 ខែ) ហើយចាប់ផ្តើមផ្លាស់ប្តូរទម្លាប់ជីវិតឥឡូវនេះ។"
+  },
+  "Diabetes confirmed by all three diagnostic criteria (FPG, HbA1c, OGTT). Immediate action: (1) Schedule endocrinology or primary care appointment within 1-2 weeks. (2) Begin diabetes self-management education. (3) Comprehensive screening for complications (eyes, feet, kidneys, cardiovascular). (4) Treatment initiation based on clinical presentation.": {
+    "en": "All three lab criteria confirm diabetes. Book a clinic visit within 1–2 weeks to start treatment and complication screening.",
+    "km": "លក្ខខណ្ឌ Lab ទាំងបីបញ្ជាក់ថាមានទឹកនោមផ្អែម។ កោះចូលគ្លីនិកក្នុងរយៈពេល 1–2 សប្តាហ៍ ដើម្បីចាប់ផ្តើមព្យាបាល និងពិនិត្យផលប៉ះពាល់។"
+  },
+  "Your lab values are currently normal, but you report symptoms associated with diabetes. Recommendations: (1) Repeat fasting glucose in 1–3 months. (2) Request HbA1c if not already tested. (3) Consider OGTT for more sensitive detection. (4) Investigate other potential causes of your symptoms with your doctor. (5) Monitor symptom changes.": {
+    "en": "Your blood tests look normal today, but your symptoms are still classic diabetes signs — symptoms can appear before blood sugar rises. Keep watching them and re-test in 1–3 months.",
+    "km": "តេស្តឈាមរបស់អ្នកថ្ងៃនេះធម្មតា ប៉ុន្តែរោគសញ្ញារបស់អ្នកនៅតែជាសញ្ញាទឹកនោមផ្អែមសំខាន់ៗ — រោគសញ្ញាអាចបង្ហាញមុនពេលជាតិស្ករកើន។ តាមដានវាបន្តទៀត ហើយតេស្តម្តងទៀតក្នុង 1–3 ខែ។"
+  },
+  "Your fasting glucose is in the high-normal range (95-99 mg/dL). While technically normal, this is approaching the prediabetes threshold. Proactive steps: (1) Adopt a low-glycemic diet. (2) Regular physical activity. (3) Re-test in 6-12 months to track trends.": {
+    "en": "Your fasting glucose is in the upper-normal range (95–99) — close to the prediabetes line. A lower-sugar diet, regular movement, and a re-test in 6–12 months will track the trend.",
+    "km": "ស្ករពេលតមអាហាររបស់អ្នកនៅកម្រិតធម្មតាផ្នែកខ្ពស់ (95–99) — ជិតបន្ទាត់មុនទឹកនោមផ្អែម។ អាហារតិចស្ករ ហាត់ប្រាណជាប្រចាំ ហើយតេស្តម្តងទៀតក្នុង 6–12 ខែ ដើម្បីតាមដានទិសដៅ។"
+  },
+  "OGTT result combined with classic symptoms strongly indicates diabetes. Please schedule a comprehensive diabetes evaluation within 1-2 weeks. Treatment initiation should not be delayed.": {
+    "en": "The glucose test plus classic symptoms strongly indicates diabetes. Book a full diabetes evaluation within 1–2 weeks — treatment should not wait.",
+    "km": "តេស្តស្កររួមជាមួយរោគសញ្ញាសំខាន់ៗ ចង្អុលខ្លាំងទៅទឹកនោមផ្អែម។ កោះធ្វើការវាយតម្លៃពេញលេញក្នុង 1–2 សប្តាហ៍ — ការព្យាបាលកុំរង់ចាំ។"
+  },
+  "Diabetes confirmed. Your comprehensive care plan should include: (1) Individualized HbA1c target (generally <7% for most adults, <6.5% if low hypoglycemia risk). (2) Metformin as first-line therapy unless contraindicated. (3) SGLT2 inhibitor or GLP-1 receptor agonist if cardiovascular or renal disease risk. (4) Retinal screening within 5 years (or at diagnosis for T2D). (5) Annual foot exam and vaccination schedule. (6) Lipid panel — statin therapy if indicated. (7) Blood pressure target <130/80 mmHg. (8) Diabetes self-management education. (9) Psychological well-being assessment. (10) Ongoing HbA1c monitoring every 3 months until stable, then every 6 months.": {
+    "en": "Diabetes confirmed. Your care plan: sugar targets, metformin first (usually), eye and foot checks, blood pressure and cholesterol care, and diabetes education — start within 1–2 weeks.",
+    "km": "បញ្ជាក់ថាមានទឹកនោមផ្អែម។ ផែនការថែទាំ៖ គោលដៅស្ករ ថ្នាំ Metformin ជាដំបូង (ភាគច្រើន) ពិនិត្យភ្នែក និងជើង ថែសម្ពាធឈាម និងខ្លាញ់ ហើយរៀនគ្រប់គ្រងទឹកនោមផ្អែម — ចាប់ផ្តើមក្នុង 1–2 សប្តាហ៍។"
+  },
+  "Pregnancy detected. Screen for gestational diabetes with a 75g OGTT (ideally between weeks 24-28; earlier if risk factors such as prior GDM, obesity, or family history are present). Pregnancy glucose thresholds are stricter: fasting >= 92 mg/dL, 1h >= 180 mg/dL, or 2h >= 153 mg/dL on OGTT indicates GDM (IADPSG criteria).": {
+    "en": "Pregnancy detected. Gestational diabetes screening with a 75 g OGTT is advised — ideally between weeks 24–28, earlier if you have risk factors.",
+    "km": "រកឃើញថាមានផ្ទៃពោះ។ គួរធ្វើតេស្តរុករកទឹកនោមផ្អែមពេលមានផ្ទៃពោះដោយ OGTT 75 ក្រាម — ល្អបំផុតចន្លោះសប្តាហ៍ 24–28 ឬមុននោះបើមានកត្តាហានិភ័យ។"
+  },
+  "Fasting glucose meets pregnancy thresholds for gestational diabetes (>= 92 mg/dL per IADPSG). Schedule obstetric review within 1 week. Management starts with diet and glucose monitoring; insulin if targets are not met. Untreated GDM increases risks of macrosomia, pre-eclampsia, and neonatal hypoglycemia.": {
+    "en": "Your fasting glucose crosses the stricter pregnancy threshold. See your obstetric team within 1 week — diet and glucose monitoring come first, insulin only if needed.",
+    "km": "ស្ករពេលតមអាហាររបស់អ្នកកន្លងកម្រិតច្បាស់ពេលមានផ្ទៃពោះ។ ជួបពេទ្យស្ត្រីក្នុង 1 សប្តាហ៍ — ចាប់អាហារូបត្ថម្ភ និងតាមដានស្ករមុនគេ ប្រើអ៊ីនស៊ុលីនតែបើចាំបាច់។"
+  },
+  "OGTT result meets pregnancy thresholds for gestational diabetes (2h >= 153 mg/dL per IADPSG). Schedule obstetric review within 1 week for confirmation and a management plan.": {
+    "en": "Your OGTT crosses the pregnancy threshold for gestational diabetes. See your obstetric team within 1 week to confirm and plan.",
+    "km": "លទ្ធផល OGTT របស់អ្នកកន្លងកម្រិតទឹកនោមផ្អែមពេលមានផ្ទៃពោះ។ ជួបពេទ្យស្ត្រីរបស់អ្នកក្នុង 1 សប្តាហ៍ ដើម្បីបញ្ជាក់ និងធ្វើផែនការ។"
+  },
+  "Prior gestational diabetes with current pregnancy: arrange glucose testing at the first prenatal visit (not only at weeks 24-28), plus lifestyle counselling. Recurrence risk is high (30-70%).": {
+    "en": "Prior gestational diabetes in this pregnancy: glucose testing at the first prenatal visit (not only weeks 24–28) — recurrence risk is high.",
+    "km": "ធ្លាប់មានទឹកនោមផ្អែមពេលមានផ្ទៃពោះ ក្នុងការមានផ្ទៃពោះលើកនេះ៖ តេស្តស្ករតាំងពីការពិនិត្យផ្ទៃពោះលើកដំបូង (មិនមែនត្រឹមសប្តាហ៍ 24–28 ទេ) — ហានិភ័យកើតឡើងវិញខ្ពស់។"
+  },
+  "New bed-wetting with increased urination in a child is a diabetes red flag. Arrange same-day clinical review with a finger-prick glucose test.": {
+    "en": "New bed-wetting with extra urination in a child is a red flag for type 1 diabetes. Get a finger-prick glucose check today.",
+    "km": "ការលូតកន្ទក់ថ្មីជាមួយការឡើងទឹកច្រើនក្នុងកុមារ គឺជាសញ្ញាព្រមាននៃទឹកនោមផ្អែមប្រភេទទី 1។ សូមវាស់ស្ករដោយចុបម្រាមដៃថ្ងៃនេះ។"
+  },
+  "Recurrent infections with elevated glucose suggest glucose-driven infection risk. Treat the infection and improve glycemic control — discuss with the clinical team.": {
+    "en": "High sugar feeds infections. Treating the infection and lowering sugar work together — discuss both with your care team.",
+    "km": "ស្ករខ្ពស់ចំណីមេរោគ។ ការព្យាបាលមេរោគ និងបន្ថយស្ករទៅតាមគ្នា — សូមពិភាក្សាទាំងពីរជាមួយក្រុមថែទាំសុខភាព។"
+  },
+  "Sudden onset with weight loss fits a Type 1 pattern. This can progress to diabetic ketoacidosis quickly — urgent same-week medical review is required, do not wait for routine appointments.": {
+    "en": "Sudden symptoms with weight loss fit the type 1 pattern — it can worsen within days. Get a medical review this week; do not wait for a routine appointment.",
+    "km": "រោគសញ្ញាឡើងលឿនជាមួយការស្រកទម្ងន់ ស្របនឹងលំនាំប្រភេទទី 1 — អាចកាន់តែអាក្រក់ក្នុងរយៈពេលប៉ុន្មានថ្ងៃ។ សូមអោយគ្រូពេទ្យពិនិត្យក្នុងសប្តាហ៍នេះ។ កុំរង់ចាំការកោះជួបធម្មតា។"
+  },
+  "Ketosis signs with high blood glucose can indicate DKA. Seek emergency care now — do not wait for lab confirmation.": {
+    "en": "Ketone signs with high blood sugar can mean DKA. Seek emergency care now — do not wait for lab confirmation.",
+    "km": "សញ្ញាគីតូនជាមួយស្ករខ្ពស់ អាចមានន័យថា DKA។ ទៅព្យាបាលបន្ទាន់ឥឡូវនេះ — កុំរង់ចាំលទ្ធផល Lab ដាច់ខាត។"
+  },
+  "Lean body habitus with catabolic weight loss is atypical for Type 2. Ask the clinician about autoantibody (GAD) and C-peptide testing to distinguish Type 1 / LADA.": {
+    "en": "A lean body with rapid weight loss is unusual for type 2. Ask about GAD-antibody and C-peptide tests — they separate type 1/LADA from type 2.",
+    "km": "រាងកាយស្គាំងជាមួយការស្រកទម្ងន់លឿន មិនសូវស្របនឹងប្រភេទទី 2 ទេ។ សូមសួរពីតេស្ត GAD-antibody និង C-peptide — វាបែងចែកប្រភេទទី 1/LADA ពីប្រភេទទី 2 បាន។"
+  },
+  "The evidence pattern mixes features of Type 1 and Type 2. Ask about autoantibody (GAD) and C-peptide testing — overlapping presentations such as LADA are easily missed and are treated differently.": {
+    "en": "Your signs mix type 1 and type 2 features. Ask about GAD-antibody and C-peptide testing — overlapping patterns are treated differently.",
+    "km": "សញ្ញារបស់អ្នកលាយលំនាំប្រភេទទី 1 និងទី 2។ សូមសួរអំពីតេស្ត GAD-antibody និង C-peptide — លំនាំដែលដូចគ្នាត្រូវព្យាបាលខុសគ្នា។"
+  },
+  "Diabetes confirmed by concordant laboratory criteria. Please schedule an appointment with your physician within 1–2 weeks for: (1) Individualized HbA1c target setting. (2) First-line therapy initiation (typically metformin). (3) Retinal screening referral. (4) Comprehensive foot examination. (5) Lipid panel and cardiovascular risk assessment. (6) Diabetes self-management education enrollment.": {
+    "en": "Diabetes is confirmed by two matching tests. Book your doctor within 1–2 weeks: sugar targets, metformin first (usually), plus eye and foot checks.",
+    "km": "តេស្តពីរដូចគ្នាបញ្ជាក់ថាមានទឹកនោមផ្អែម។ កោះជួបគ្រូពេទ្យក្នុង 1–2 សប្តាហ៍៖ កំណត់គោលដៅស្ករ ថ្នាំ Metformin ជាដំបូង (ភាគច្រើន) ហើយពិនិត្យភ្នែក និងជើងផង។"
+  },
+  "Your test results are consistent with diabetes. A confirmatory test is recommended unless you have unequivocal hyperglycemia symptoms. Please see your healthcare provider within 1–2 weeks for confirmation and treatment planning.": {
+    "en": "Your results fit diabetes. A quick confirmatory test plus a doctor visit within 1–2 weeks settles it and starts treatment.",
+    "km": "លទ្ធផលរបស់អ្នកស្របនឹងទឹកនោមផ្អែម។ តេស្តបញ្ជាក់រហ័សម្តង រួមជាមួយការជួបគ្រូពេទ្យក្នុង 1–2 សប្តាហ៍ នឹងសំរេច និងចាប់ផ្តើមព្យាបាល។"
+  },
+  "Some of your results suggest possible diabetes, but a definitive diagnosis requires additional testing. Please schedule a follow-up within 2–4 weeks for: (1) Fasting plasma glucose or HbA1c confirmation. (2) Complete metabolic panel if not already done.": {
+    "en": "Some results suggest possible diabetes. A fasting glucose or HbA1c test within 2–4 weeks will settle it.",
+    "km": "លទ្ធផលខ្លះបង្ហាញថាអាចមានទឹកនោមផ្អែម។ តេស្តស្ករពេលតមអាហារ ឬ HbA1c ក្នុងរយៈពេល 2–4 សប្តាហ៍ នឹងសំរេចបាន។"
+  },
+  "Your results fall in the prediabetes range. This is an important window for prevention. Evidence-based recommendations: (1) Aim for ≥7% body weight loss through diet and exercise. (2) At least 150 minutes per week of moderate physical activity (e.g., brisk walking). (3) Limit refined carbohydrates and added sugars. (4) Repeat HbA1c and fasting glucose in 3–6 months. (5) Consider enrollment in a Diabetes Prevention Program (DPP).": {
+    "en": "Prediabetes — a warning stage you can reverse. Lose about 7% of body weight, move 150 minutes a week, cut sugary drinks, and re-test in 3–6 months.",
+    "km": "មុនទឹកនោមផ្អែម — ដំណាក់កាលព្រមានដែលអ្នកអាចត្រឡប់វិញបាន។ បន្ថយទម្ងន់ប្រហែល 7% ហាត់ប្រាណ 150 នាទី/សប្តាហ៍ កាត់បន្ថយភេសជ្ជៈមានស្ករ ហើយតេស្តម្តងទៀតក្នុង 3–6 ខែ។"
+  },
+  "You have prediabetes combined with additional risk factors, putting you at high risk for progression to diabetes. Intensive intervention recommended: (1) Structured lifestyle modification program. (2) Target ≥7% weight loss. (3) ≥150 min/week moderate exercise. (4) Discuss metformin with your doctor for chemoprevention (especially if BMI ≥35 or age <60). (5) Repeat testing every 6 months.": {
+    "en": "Prediabetes with extra risk factors — act now: structured lifestyle change, ask your doctor about metformin, and re-check every 6 months.",
+    "km": "មុនទឹកនោមផ្អែមជាមួយកត្តាហានិភ័យបន្ថែម — ដំណើរការឥឡូវនេះ៖ ផ្លាស់ប្តូរទម្លាប់ជីវិតជាប្រព័ន្ធ សួរគ្រូពេទ្យអំពីថ្នាំ Metformin ហើយពិនិត្យរៀងរាល់ 6 ខែ។"
+  },
+  "You have classic diabetes symptoms (increased urination, excessive thirst, unexplained weight loss). These warrant urgent laboratory testing: (1) Fasting plasma glucose. (2) HbA1c. (3) Random plasma glucose if fasting not possible. Please see a healthcare provider within 1 week.": {
+    "en": "Your symptoms are the classic diabetes signs, but a blood test is still needed to confirm. Book one this week — it takes minutes.",
+    "km": "រោគសញ្ញារបស់អ្នកគឺជាសញ្ញាទឹកនោមផ្អែមសំខាន់ៗ ប៉ុន្តែនៅតែត្រូវការតេស្តឈាមដើម្បីបញ្ជាក់។ កោះធ្វើក្នុងសប្តាហ៍នេះ — ចំណាយពេលប៉ុន្មាននាទីប៉ុណ្ណោះ។"
+  },
+  "You have diabetes-related symptoms but no laboratory data was available. Symptoms alone cannot confirm or rule out diabetes. Priority action: Obtain fasting glucose and HbA1c within 1 week for definitive assessment.": {
+    "en": "Your answers match common diabetes signs. A simple blood test (fasting glucose or HbA1c) will confirm — any lab, results usually the same day.",
+    "km": "ចម្លើយរបស់អ្នកដូចនឹងសញ្ញាទឹកនោមផ្អែមទូទៅ។ តេស្តឈាមសាមញ្ញ (ស្ករពេលតមអាហារ ឬ HbA1c) នឹងបញ្ជាក់ — Lab ណាមួយក៏បាន លទ្ធផលច្រើនតែមានថ្ងៃដូចគ្នា។"
+  },
+  "Signs of possible neuropathy have been detected. This may indicate longstanding undiagnosed diabetes. Recommended evaluations: (1) Comprehensive foot exam with monofilament testing. (2) HbA1c and fasting glucose (if not already done). (3) Nerve conduction study if symptoms persist. (4) Please see your doctor within 2 weeks.": {
+    "en": "Nerve signs with confirmed high sugar mean early diabetic neuropathy. You need a foot exam and steadier sugar control — see your doctor within 2 weeks.",
+    "km": "សញ្ញាសរសៃប្រសាទជាមួយស្ករខ្ពស់ច្បាស់ មានន័យថាសរសៃប្រសាទពិការដំបូង។ អ្នកត្រូវពិនិត្យជើង និងគ្រប់គ្រងស្ករអោយនឹងជើង — ជួបគ្រូពេទ្យក្នុង 2 សប្តាហ៍។"
+  },
+  "Your profile is consistent with metabolic syndrome — a cluster of conditions that significantly increase cardiovascular and diabetes risk. Recommendations: (1) Blood pressure monitoring and control (target <130/80 mmHg). (2) Lipid management (consider statin therapy if LDL elevated). (3) Weight management (target 5–10% reduction). (4) Regular physical activity. (5) Annual cardiovascular risk assessment.": {
+    "en": "Your blood pressure, weight and cholesterol pattern raise heart and diabetes risk. Move more, eat plainer, and treat blood pressure and cholesterol with your doctor.",
+    "km": "សម្ពាធឈាម ទម្ងន់ និងខ្លាញ់របស់អ្នក បង្កើនហានិភ័យបេះដូង និងទឹកនោមផ្អែម។ ហាត់ប្រាណច្រើនជាង ទទួលទានម្ហូបសាមញ្ញ ហើយព្យាបាលសម្ពាធឈាម និងខ្លាញ់តាមគ្រូពេទ្យ។"
+  },
+  "You have one or more risk factors for Type 2 diabetes. Preventive recommendations: (1) Maintain a healthy weight (BMI <25). (2) Exercise at least 150 minutes per week. (3) Follow a balanced diet rich in whole grains, vegetables, and lean proteins. (4) Routine diabetes screening every 3 years (or annually if prediabetes identified). (5) Discuss family history and personal risk with your healthcare provider.": {
+    "en": "You carry type 2 risk factors. Keep a healthy weight, move 150 minutes a week, eat more whole foods, and screen every 1–3 years.",
+    "km": "អ្នកមានកត្តាហានិភ័យប្រភេទទី 2។ រក្សាទម្ងន់សុខភាពល្អ ហាត់ប្រាណ 150 នាទី/សប្តាហ៍ ទទួលទានម្ហូបធម្មជាតិច្រើន ហើយពិនិត្យរៀងរាល់ 1–3 ឆ្នាំ។"
+  },
+  "Based on your age and demographic profile, routine diabetes screening is recommended. Please schedule: Fasting glucose or HbA1c test. If results are normal, repeat every 3 years.": {
+    "en": "Routine check: one fasting glucose or HbA1c test now — repeat every 3 years if normal.",
+    "km": "ពិនិត្យជាប្រចាំ៖ តេស្តស្ករពេលតមអាហារ ឬ HbA1c ម្តងឥឡូវនេះ — ធ្វើម្តងទៀតរៀងរាល់ 3 ឆ្នាំ បើធម្មតា។"
+  },
+  "Good news — your assessment shows no indication of diabetes or prediabetes at this time. To maintain your health: (1) Continue a balanced diet and regular physical activity. (2) Schedule routine health check-ups as recommended by your doctor. (3) If you develop new symptoms (excessive thirst, frequent urination, unexplained weight loss), seek medical evaluation promptly.": {
+    "en": "Good news — no signs of diabetes today. Keep your habits, re-screen routinely, and come back if new symptoms appear.",
+    "km": "ដំណឹងល្អ — ថ្ងៃនេះគ្មានសញ្ញាទឹកនោមផ្អែមទេ។ រក្សាទម្លាប់របស់អ្នក ពិនិត្យជាប្រចាំ ហើយត្រឡប់មកពិនិត្យវិញបើមានសញ្ញាថ្មី។"
+  },
+  "Your assessment did not reveal strong indicators of diabetes. Continue routine health monitoring and maintain a healthy lifestyle. If new symptoms develop, consult your healthcare provider.": {
+    "en": "No strong diabetes signs in this assessment. Keep healthy routines and re-check if anything changes.",
+    "km": "ក្នុងការវាយតម្លៃនេះ គ្មានសញ្ញាទឹកនោមផ្អែមខ្លាំងទេ។ រក្សាទម្លាប់សុខភាពល្អ ហើយពិនិត្យម្តងទៀតបើមានអ្វីផ្លាស់ប្តូរ។"
+  },
+  "Test results meet the diabetes diagnostic threshold. See a healthcare provider promptly to start treatment and a monitoring plan — bring these results with you.": {
+    "en": "Your test results meet the diabetes threshold. See a doctor soon to start treatment and a monitoring plan — bring these results with you.",
+    "km": "លទ្ធផលតេស្តរបស់អ្នកបំពេញកម្រិតនៃជំងឺទឹកនោមផ្អែម។ សូមជួបគ្រូពេទ្យឱ្យបានឆាប់ ដើម្បីចាប់ផ្តើមការព្យាបាល និងផែនការតាមដាន — យកលទ្ធផលទាំងនេះទៅជាមួយ។"
+  },
+  "NOTE_LAB_NORMAL_BUT_SYMPTOMS": {
+    "en": "Your blood tests look normal today, but your symptoms are still classic diabetes signs — symptoms can appear before blood sugar rises. Keep watching them and re-test in 1–3 months.",
+    "km": "តេស្តឈាមរបស់អ្នកថ្ងៃនេះធម្មតា ប៉ុន្តែរោគសញ្ញារបស់អ្នកនៅតែជាសញ្ញាទឹកនោមផ្អែមសំខាន់ៗ — រោគសញ្ញាអាចបង្ហាញមុនពេលជាតិស្ករកើន។ តាមដានវាបន្តទៀត ហើយតេស្តម្តងទៀតក្នុង 1–3 ខែ។"
+  },
+  "NOTE_NO_LABS_COMPLETENESS": {
+    "en": "No blood test yet — that is OK for a screening. Your answers already give a useful signal; a simple fasting glucose or HbA1c test anytime will sharpen it.",
+    "km": "មិនទាន់មានតេស្តឈាមទេ — មិនអីទេសម្រាប់ការរុករក។ ចម្លើយរបស់អ្នកផ្តល់សញ្ញាមានប្រយោជន៍រួចហើយ។ តេស្តស្ករពេលតមអាហារ ឬ HbA1c សាមញ្ញនៅពេលណាមួយនឹងធ្វើអោយលទ្ធផលច្បាស់ជាង។"
+  },
+  "NOTE_URGENT_SAFETY": {
+    "en": "Seek urgent in-person medical care now. If symptoms are severe or getting worse, go straight to emergency care.",
+    "km": "សូមទៅជួបគ្រូពេទ្យបន្ទាន់ឥឡូវនេះ។ បើរោគសញ្ញាធ្ងន់ធ្ងរ ឬកាន់តែអាក្រក់ ទៅត្រង់ជំពូកសង្គ្រោះបន្ទាន់។"
+  }
+}

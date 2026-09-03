@@ -10,6 +10,10 @@ from app.expert_system.symptom_based_rules import generate_symptom_rules, get_sy
 from app.expert_system.symptom_confidence import calculate_symptom_confidence, get_confidence_explanation
 from app.expert_system.enhanced_inference_engine import run_enhanced_inference
 from app.expert_system.symptom_database import get_cardinal_symptoms, get_emergency_symptoms
+from app.expert_system.patient_messaging import rewrite_recommendation_bilingual
+from app.utils.i18n import bilingual, text
+
+CT = "conversational_texts"
 
 
 class ConversationalAssessmentService:
@@ -40,7 +44,8 @@ class ConversationalAssessmentService:
         first_question = interview.get_next_question()
         
         return {
-            "message": "Hello! I'm here to help assess your diabetes risk through a few questions. Let's start with some basic information.",
+            "message": text(CT, "chat.greeting", lang="en"),
+            "message_km": text(CT, "chat.greeting", lang="km"),
             "question": first_question,
             "progress": interview.get_interview_progress(),
             "session_id": None,  # Generated on first answer
@@ -69,15 +74,18 @@ class ConversationalAssessmentService:
             # Interview complete - generate assessment
             return {
                 "status": "complete",
-                "message": "Thank you for answering these questions. Here's my assessment:",
+                "message": text(CT, "chat.complete", lang="en"),
+                "message_km": text(CT, "chat.complete", lang="km"),
                 "assessment": self._generate_assessment(answers),
                 "progress": progress,
             }
         
         # Continue interview
+        conv_message = self._generate_conversational_message(answers, next_q)
         return {
             "status": "in_progress",
-            "message": self._generate_conversational_message(answers, next_q),
+            "message": conv_message["en"],
+            "message_km": conv_message["km"],
             "question": next_q,
             "progress": progress,
             "can_complete_now": can_assess,
@@ -186,14 +194,17 @@ class ConversationalAssessmentService:
         urgency, urgent_reason = self._determine_urgency(symptoms, diagnosis)
         
         # Build comprehensive assessment
+        next_steps = self._generate_next_steps(confidence_data, symptoms)
         return {
             "diagnosis": diagnosis["label"],
+            "diagnosis_km": diagnosis.get("label_km", ""),
             "certainty": confidence_data["confidence_score"],
             "confidence_level": confidence_data["confidence_level"],
             "confidence_explanation": get_confidence_explanation(confidence_data),
             
             "urgency": urgency,
-            "urgent_reason": urgent_reason,
+            "urgent_reason": urgent_reason["en"] if isinstance(urgent_reason, dict) else urgent_reason,
+            "urgent_reason_km": urgent_reason["km"] if isinstance(urgent_reason, dict) else None,
             
             "symptom_analysis": {
                 "total_symptoms": len([s for s, v in symptoms.items() if v]),
@@ -219,9 +230,11 @@ class ConversationalAssessmentService:
             "assessment_quality": confidence_data["assessment_quality"],
             "quality_note": confidence_data["quality_note"],
             
-            "next_steps": self._generate_next_steps(confidence_data, symptoms),
+            "next_steps": next_steps["en"],
+            "next_steps_km": next_steps["km"],
             
-            "note": "This is a preliminary assessment based on symptoms. A medical professional should confirm any diabetes diagnosis with appropriate testing.",
+            "note": text(CT, "chat.preliminary_note", lang="en"),
+            "note_km": text(CT, "chat.preliminary_note", lang="km"),
         }
     
     def _determine_diagnosis(self, quick_assessment, confidence_data, inference_result, symptoms):
@@ -232,59 +245,65 @@ class ConversationalAssessmentService:
         
         if emergency_count > 0:
             return {
-                "label": "EMERGENCY - Possible Diabetic Crisis",
+                "label": text(CT, "label.emergency", lang="en"),
+                "label_km": text(CT, "label.emergency", lang="km"),
                 "severity": "emergency"
             }
         
         if cardinal_count >= 3 and confidence >= 0.75:
             return {
-                "label": "Highly Likely Diabetes - Immediate Evaluation Needed",
+                "label": text(CT, "label.high", lang="en"),
+                "label_km": text(CT, "label.high", lang="km"),
                 "severity": "high"
             }
         
         if cardinal_count >= 2 and confidence >= 0.60:
             return {
-                "label": "Likely Diabetes - Medical Evaluation Recommended",
+                "label": text(CT, "label.moderate_high", lang="en"),
+                "label_km": text(CT, "label.moderate_high", lang="km"),
                 "severity": "moderate_high"
             }
         
         if confidence >= 0.50:
             return {
-                "label": "Possible Diabetes - Screening Recommended",
+                "label": text(CT, "label.moderate", lang="en"),
+                "label_km": text(CT, "label.moderate", lang="km"),
                 "severity": "moderate"
             }
         
         if confidence >= 0.35:
             return {
-                "label": "Some Diabetes Risk - Consider Screening",
+                "label": text(CT, "label.low_moderate", lang="en"),
+                "label_km": text(CT, "label.low_moderate", lang="km"),
                 "severity": "low_moderate"
             }
         
         return {
-            "label": "Low Diabetes Indication - Routine Monitoring",
+            "label": text(CT, "label.low", lang="en"),
+            "label_km": text(CT, "label.low", lang="km"),
             "severity": "low"
         }
     
-    def _determine_urgency(self, symptoms, diagnosis) -> tuple[str, str | None]:
+    def _determine_urgency(self, symptoms, diagnosis) -> tuple[str, dict | None]:
         """Determine urgency level."""
         emergency_symptoms = get_emergency_symptoms()
         has_emergency = any(symptoms.get(s) is True for s in emergency_symptoms)
         
         if has_emergency:
-            return "emergency", "Emergency symptoms detected requiring immediate medical attention"
+            return "emergency", bilingual(CT, "urgency.emergency")
         
         severity = diagnosis.get("severity", "low")
         
         if severity == "high":
-            return "urgent", "Strong symptom pattern requires prompt medical evaluation"
+            return "urgent", bilingual(CT, "urgency.high")
         elif severity == "moderate_high":
-            return "soon", "Multiple symptoms suggest medical evaluation within 1-2 weeks"
+            return "soon", bilingual(CT, "urgency.moderate_high")
         elif severity == "moderate":
-            return "routine", "Consider scheduling medical evaluation"
+            return "routine", bilingual(CT, "urgency.moderate")
         else:
-            return "routine", "Routine screening based on symptoms and risk factors"
+            return "routine", bilingual(CT, "urgency.routine")
     
-    def _generate_next_steps(self, confidence_data, symptoms) -> list[str]:
+    def _generate_next_steps(self, confidence_data, symptoms) -> dict:
         """Generate actionable next steps."""
         steps = []
         
@@ -293,18 +312,31 @@ class ConversationalAssessmentService:
         
         # Add symptom monitoring
         if confidence_data["confidence_score"] >= 0.40:
-            steps.append("Monitor symptoms and seek care immediately if they worsen")
+            steps.append(text(CT, "step.monitor_worsen", lang="en"))
         
         # Add lifestyle advice
-        steps.append("Maintain healthy diet and regular physical activity")
+        steps.append(text(CT, "step.lifestyle", lang="en"))
         
         # Add follow-up advice
         if confidence_data["confidence_score"] < 0.70:
-            steps.append("Keep track of any new symptoms that develop")
+            steps.append(text(CT, "step.track_new", lang="en"))
         
-        return steps
+        steps_km = []
+        for s in steps:
+            for key in ("step.monitor_worsen", "step.lifestyle", "step.track_new"):
+                if s == text(CT, key, lang="en"):
+                    s = text(CT, key, lang="km")
+                    break
+            else:
+                # Dynamic steps (rewritten clinical recommendations) translate
+                # through the patient_messages catalog when known.
+                s = rewrite_recommendation_bilingual(s)["km"]
+            steps_km.append(s)
+        
+        return {"en": steps, "km": steps_km}
     
-    def _generate_conversational_message(self, answers: dict, next_question: dict) -> str:
+    def _generate_conversational_message(self, answers: dict, next_question: dict) -> dict:
+        """Bilingual conversational transition message: {"en", "km"}."""
         """Generate friendly conversational messages between questions."""
         importance = next_question.get("importance", "medium")
         category = next_question.get("category", "")
@@ -316,18 +348,18 @@ class ConversationalAssessmentService:
         )
         
         if importance == "critical":
-            return "This is an important question to ensure you get appropriate care."
+            return bilingual(CT, "chat.critical")
         elif importance == "high":
             if has_symptoms:
-                return "Based on what you've told me, this next question is important."
+                return bilingual(CT, "chat.important_symptoms")
             else:
-                return "Let me ask you about another key symptom."
+                return bilingual(CT, "chat.important_generic")
         elif category == "emergency":
-            return "I need to check for any urgent symptoms."
+            return bilingual(CT, "chat.emergency")
         elif category == "risk_factors":
-            return "Now let's talk about your risk factors."
+            return bilingual(CT, "chat.risk_factors")
         else:
-            return "Let me ask you one more question."
+            return bilingual(CT, "chat.generic")
     
     def _resolve_patient_id(self, answers: dict, current_user: dict) -> int | None:
         """Resolve patient ID if available."""

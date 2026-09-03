@@ -130,7 +130,7 @@ function DoctorNoteCard({ latestResult, t }) {
           </p>
           {isUrgent && latestResult.urgent_reason ? (
             <p className="mt-2 text-xs font-medium text-rose-700 dark:text-rose-300">
-              {t('patientDashboard.situation.urgentReason', 'Reason: {{reason}}', { reason: latestResult.urgent_reason })}
+              {t('patientDashboard.situation.urgentReason', 'Reason: {{reason}}', { reason: isKhmer ? (latestResult.urgent_reason_km || latestResult.urgent_reason) : latestResult.urgent_reason })}
             </p>
           ) : null}
         </div>
@@ -190,7 +190,7 @@ function SafetyCard({ t }) {
 }
 
 export function CarePlanPage() {
-  const { t } = useLanguage()
+  const { t, isKhmer } = useLanguage()
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -313,7 +313,7 @@ function CareHero({ latestResult, resultCount, urgentCount, t }) {
 
       {isUrgent && latestResult.urgent_reason ? (
         <p className="relative mt-3 inline-flex rounded-lg bg-black/25 px-2.5 py-1.5 text-xs font-medium">
-          {t('patientDashboard.situation.urgentReason', 'Reason: {{reason}}', { reason: latestResult.urgent_reason })}
+          {t('patientDashboard.situation.urgentReason', 'Reason: {{reason}}', { reason: isKhmer ? (latestResult.urgent_reason_km || latestResult.urgent_reason) : latestResult.urgent_reason })}
         </p>
       ) : null}
 

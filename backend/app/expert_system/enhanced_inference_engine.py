@@ -176,7 +176,7 @@ def run_enhanced_inference(payload: dict, rules: list) -> dict:
     suggested_questions = generate_suggested_questions(missing_facts_analysis)
     
     # 14. Generate confidence explanation
-    confidence_explanation = generate_confidence_explanation(uncertainty_analysis, certainty)
+    confidence_explanation = generate_confidence_explanation(uncertainty_analysis, certainty)  # {"en", "km"}
     
     # 15. Serialize triggered rules
     triggered_rules = [_serialize_triggered_rule(row) for row in inference_result.fired_rules]
@@ -187,7 +187,8 @@ def run_enhanced_inference(payload: dict, rules: list) -> dict:
         "diagnosis": diagnosis,
         "certainty": round(certainty, 2),
         "confidence_level": uncertainty_analysis["level"],
-        "confidence_explanation": confidence_explanation,
+        "confidence_explanation": confidence_explanation["en"],
+        "confidence_explanation_km": confidence_explanation["km"],
         
         # Evidence
         "facts": inference_result.final_facts,

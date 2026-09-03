@@ -1,0 +1,58 @@
+{
+  "factor.missing_critical_data": {
+    "en": "Missing {count} critical data point(s)",
+    "km": "ខ្វះទិន្នន័យសំខាន់ៗ {count} ចំណុច"
+  },
+  "factor.low_data_completeness": {
+    "en": "Only {percent}% of recommended data provided",
+    "km": "ផ្តល់ទិន្នន័យបានត្រឹមតែ {percent}% នៃទិន្នន័យដែលគួរ"
+  },
+  "factor.no_laboratory_confirmation": {
+    "en": "Assessment based on symptoms/history only, without lab confirmation",
+    "km": "ការវាយតម្លៃផ្អែកលើអាការៈ/ប្រវត្តិសុខភាពតែប៉ុណ្ណោះ ដោយគ្មានការបញ្ជាក់ពីមន្ទីរពិសោធន៍"
+  },
+  "factor.competing_patterns": {
+    "en": "Multiple patterns detected with similar confidence",
+    "km": "រកឃើញទម្រង់ជាច្រើនដោយទំនុកចិត្តស្រដៀងគ្នា"
+  },
+  "factor.low_conclusion_certainty": {
+    "en": "Top conclusion has only {percent}% confidence",
+    "km": "សន្និដ្ឋានកំពូលមានទំនុកចិត្តត្រឹមតែ {percent}%"
+  },
+  "factor.conflicting_evidence": {
+    "en": "Found {count} conflicting evidence point(s)",
+    "km": "រកឃើញភស្តុតាងផ្ទុយគ្នា {count} ចំណុច"
+  },
+  "summary.sufficient_low": {
+    "en": "High confidence ({percent}%) with supporting evidence. The pattern is clear and consistent.",
+    "km": "ទំនុកចិត្តខ្ពស់ ({percent}%) ជាមួយភស្តុតាងគាំទ្រ។ ទម្រង់ច្បាស់លាស់ និងស្មើគ្នា។"
+  },
+  "summary.sufficient_moderate": {
+    "en": "Moderate confidence ({percent}%). The pattern is identifiable but additional data would strengthen the assessment.",
+    "km": "ទំនុកចិត្តមធ្យម ({percent}%)។ ទម្រង់អាចសម្គាល់បាន ប៉ុន្តែទិន្នន័យបន្ថែមនឹងធ្វើឱ្យការវាយតម្លៃខ្លាំងជាង។"
+  },
+  "summary.insufficient_no_labs": {
+    "en": "Insufficient confidence for a reliable conclusion. Additional information is needed, particularly laboratory testing.",
+    "km": "ទំនុកចិត្តមិនគ្រប់គ្រាន់សម្រាប់សន្និដ្ឋានដែលជឿជាក់។ ត្រូវការព័ត៌មានបន្ថែម ជាពិសេសការត្រួតពិសោធន៍។"
+  },
+  "summary.insufficient_symptoms_only": {
+    "en": "This assessment is based on symptoms and risk factors only. Laboratory testing is essential to confirm or rule out diabetes.",
+    "km": "ការវាយតម្លៃនេះផ្អែកលើអាការៈ និងកត្តាប្រឈមតែប៉ុណ្ណោះ។ ការត្រួតពិសោធន៍មានសារសំខាន់ដើម្បីបញ្ជាក់ឬបដិសេធទឹកនោមផ្អែម។"
+  },
+  "summary.generic": {
+    "en": "Confidence level: {level}. Additional data recommended for more reliable assessment.",
+    "km": "កម្រិតទំនុកចិត្ត៖ {level}។ គួរបន្ថែមទិន្នន័យដើម្បីឱ្យការវាយតម្លៃទុកចិត្តបានជាង។"
+  },
+  "quality.missing_age": {
+    "en": "Missing age - essential for risk assessment",
+    "km": "ខ្វះអាយុ - សំខាន់សម្រាប់ការវាយតម្លៃហានិភ័យ"
+  },
+  "quality.no_labs": {
+    "en": "No laboratory values - clinical confirmation needed",
+    "km": "គ្មានតម្លៃមន្ទីរពិសោធន៍ - ត្រូវការការបញ្ជាក់ពីគ្រូពេទ្យ"
+  },
+  "quality.no_symptoms": {
+    "en": "No symptom information provided",
+    "km": "គ្មានព័ត៌មានអាការៈដែលបានផ្តល់"
+  }
+}

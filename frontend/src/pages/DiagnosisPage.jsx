@@ -41,7 +41,7 @@ import {
   SYMPTOM_ALL_FIELDS, SAFETY_FIELDS, RISK_FIELDS,
   FIELD_FALLBACKS, fieldLabelKey, nodeFields,
   firstOpenNode, interviewProgress, interviewPosition, applicableNodes,
-  hasEnoughEvidence, buildFactsFromAnswers,
+  buildFactsFromAnswers,
 } from '@/components/assessment/interview-flow'
 
 /* ── Constants ────────────────────────── */
@@ -316,12 +316,6 @@ export function DiagnosisPage() {
   const currentNode = useMemo(
     () => INTERVIEW_NODES.find((n) => n.id === currentNodeId) || null,
     [currentNodeId],
-  )
-  /* Adaptive loop stop rule — once the highest-value core questions are
-     answered (or consciously skipped), the user may finish early. */
-  const canFinishEarly = useMemo(
-    () => hasEnoughEvidence(INTERVIEW_NODES, interviewCtx, interviewDone, interviewSkipped),
-    [interviewCtx, interviewDone, interviewSkipped],
   )
   const activeBanners = useMemo(() => INSIGHT_BANNERS.filter((b) => b.when(form)), [form])
 
@@ -817,7 +811,13 @@ export function DiagnosisPage() {
       const data = getApiData(res)
       setResult(data); setStep(REVIEW_STEP); setMaxReached(REVIEW_STEP)
       saveDiagnosisResultSnapshot({ user, result: data, context: buildContext() })
-      navigate('/diagnosis/result', { state: { result: data, context: buildContext(), savedAt: new Date().toISOString() } })
+      // Put the saved result id in the URL so refreshing (or revisiting later)
+      // re-fetches the record from the database instead of relying on the
+      // in-memory/local snapshot.
+      const resultPath = data?.diagnosis_result_id
+        ? `/diagnosis/result?diagnosis_result_id=${data.diagnosis_result_id}`
+        : '/diagnosis/result'
+      navigate(resultPath, { state: { result: data, context: buildContext(), savedAt: new Date().toISOString() } })
     } catch (err) { setError(getApiErrorMessage(err, 'Assessment failed. Please try again.')) }
     finally { setSubmitting(false) }
   }
@@ -974,8 +974,8 @@ export function DiagnosisPage() {
                       onMultiNone={handleMultiNone}
                       onContinue={handleInterviewContinue}
                       onSkip={() => handleSkipNode(currentNode)}
-                      onFinish={() => { setStep(REVIEW_STEP); setMaxReached(p => Math.max(p, REVIEW_STEP)) }}
-                      canFinish={canFinishEarly}
+                      onBack={interviewBack}
+                      canBack={Boolean(cursorOverride) || interviewDone.length > 0}
                       analyzing={false}
                       editing={Boolean(cursorOverride)}
                       doneIds={interviewDone}
@@ -1037,7 +1037,7 @@ export function DiagnosisPage() {
                   {result ? (
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20 p-4">
                       <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">✅ {t('diagnosisResult.assessmentComplete', 'Assessment complete! Your results have been saved.')}</p>
-                      <button type="button" className="btn-primary mt-3 gap-1.5" onClick={() => navigate('/diagnosis/result')}>{t('diagnosisResult.viewReport', 'View Report →')}</button>
+                      <button type="button" className="btn-primary mt-3 gap-1.5" onClick={() => navigate(result?.diagnosis_result_id ? `/diagnosis/result?diagnosis_result_id=${result.diagnosis_result_id}` : '/diagnosis/result')}>{t('diagnosisResult.viewReport', 'View Report →')}</button>
                     </div>
                   ) : (
                     <p className="text-sm text-slate-500">{t('diagnosisResult.reviewBeforeSubmit', 'Review your answers above, then click "Run Assessment" to get your results.')}</p>

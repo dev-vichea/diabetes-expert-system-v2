@@ -7,12 +7,18 @@ from app.expert_system.final_assessment import generate_final_assessment
 from app.expert_system.inference_engine import run_inference
 from app.expert_system.symptom_confidence import calculate_symptom_confidence
 from app.expert_system.patient_messaging import (
-    COMPLETENESS_NOTE,
-    URGENT_SAFETY_NOTE,
+    NOTE_NO_LABS_COMPLETENESS_KEY,
+    NOTE_URGENT_SAFETY_KEY,
+    note_bilingual,
     rewrite_recommendation,
+    rewrite_recommendation_bilingual,
 )
 from app.models.entities import utc_now
 from app.services.diagnosis_report_service import render_diagnosis_report_pdf
+from app.utils.i18n import SUPPORTED_LANGUAGES, bilingual, join_bilingual, pick, text
+
+# Bilingual generated-text catalogs ({en, km} entries under app/locales/).
+DT = "diagnosis_texts"
 
 
 class DiagnosisService:
@@ -65,7 +71,8 @@ class DiagnosisService:
                 **(result.get("explanation_trace") or {}),
                 "adaptive_assessment": adaptive,
             }
-            is_urgent, urgent_reason = self._derive_urgency(normalized_payload, result)
+            is_urgent, urgent_reasons = self._derive_urgency(normalized_payload, result)
+            urgent_reason_en = pick(urgent_reasons, lang="en") if urgent_reasons else None
 
             diagnosis_record = self.diagnosis_repository.create_result(
                 assessment_session_id=session.id,
@@ -79,7 +86,7 @@ class DiagnosisService:
                 triggered_rules=result["triggered_rules"],
                 explanation_trace=result.get("explanation_trace"),
                 is_urgent=is_urgent,
-                urgent_reason=urgent_reason,
+                urgent_reason=urgent_reason_en,
             )
             self.assessment_repository.mark_completed(session)
         except Exception:
@@ -108,24 +115,154 @@ class DiagnosisService:
         response["assessment_mode"] = mode
         response["patient_id"] = patient_id
         response["is_urgent"] = is_urgent
-        response["urgent_reason"] = urgent_reason
+        response["urgent_reason"] = urgent_reason_en
+        response["urgent_reason_km"] = pick(urgent_reasons, lang="km") if urgent_reasons else None
         response["questionnaire_answers"] = questionnaire_answers
         return response
 
     def list_my_results(self, current_user: dict) -> list[dict]:
         patient_id = self._resolve_patient_id(payload={}, current_user=current_user, user_roles={"patient"})
-        return self.diagnosis_repository.list_by_patient_id(patient_id)
+        return [
+            self._normalize_persisted_texts(row)
+            for row in self.diagnosis_repository.list_by_patient_id(patient_id)
+        ]
 
     def list_review_results(self, limit: int = 100) -> list[dict]:
         safe_limit = max(1, min(int(limit or 100), 300))
-        return self.diagnosis_repository.list_recent(limit=safe_limit)
+        return [
+            self._normalize_persisted_texts(row)
+            for row in self.diagnosis_repository.list_recent(limit=safe_limit)
+        ]
 
     def get_result(self, diagnosis_result_id: int) -> dict:
         result = self.diagnosis_repository.get_result(diagnosis_result_id)
         if not result:
             raise NotFoundError("Diagnosis result not found.")
         serialized = self.diagnosis_repository.serialize_result(result)
-        return self._normalize_persisted_texts(serialized)
+        return self._rebuild_persisted_response(serialized)
+
+    def _rebuild_persisted_response(self, data: dict) -> dict:
+        """Rebuild the full assessment response from a persisted result row so
+        viewing a saved result (history / My Results → Medical Assessment
+        Report) renders exactly the same derived fields the original evaluate
+        response carried: matched symptoms, risk factors, key labs, evidence
+        completeness, bilingual summaries and structured recommendations."""
+        data = self._normalize_persisted_texts(data)
+
+        facts = data.get("facts") if isinstance(data.get("facts"), dict) else {}
+        trace = data.get("explanation_trace") if isinstance(data.get("explanation_trace"), dict) else {}
+        normalized_payload = self._reconstruct_normalized_payload(facts, data.get("questionnaire_answers"))
+
+        pseudo_result = {
+            "diagnosis": data.get("diagnosis"),
+            "certainty": data.get("certainty"),
+            "recommendation": data.get("recommendation"),
+            "facts": facts,
+            "triggered_rules": data.get("triggered_rules") or [],
+            "explanation_trace": trace,
+        }
+        enriched = self._apply_presentation_fields(pseudo_result, normalized_payload)
+
+        # Persisted values are authoritative — rules or message catalogs may
+        # have changed since the assessment originally ran.
+        try:
+            certainty = float(data.get("certainty") or 0)
+        except (TypeError, ValueError):
+            certainty = 0.0
+        enriched["id"] = data.get("id")
+        enriched["diagnosis"] = data.get("diagnosis")
+        enriched["certainty"] = certainty
+        enriched["certainty_percent"] = self._to_percent(certainty)
+        enriched["confidence_level"] = self._resolve_confidence_level(enriched["certainty_percent"])
+        enriched["recommendation"] = data.get("recommendation")
+        enriched["is_urgent"] = bool(data.get("is_urgent"))
+        enriched["urgent_reason"] = data.get("urgent_reason")
+        if enriched["is_urgent"] and not data.get("urgent_reason_km"):
+            _, urgent_reasons = self._derive_urgency(normalized_payload, enriched)
+            if urgent_reasons:
+                enriched["urgent_reason_km"] = pick(urgent_reasons, lang="km")
+
+        # Values preserved inside the explanation trace at save time.
+        enriched["suspected_type"] = trace.get("suspected_type")
+        enriched["adaptive_assessment"] = trace.get("adaptive_assessment")
+        confidence_trace = trace.get("confidence_calculation") if isinstance(trace.get("confidence_calculation"), dict) else {}
+        if confidence_trace.get("context_note"):
+            enriched["context_note"] = confidence_trace["context_note"]
+        if confidence_trace.get("conclusion_scores"):
+            enriched["all_conclusions"] = confidence_trace["conclusion_scores"]
+
+        # Row metadata (ids, names, review state, session, timestamps…).
+        for key in (
+            "assessment_session_id",
+            "assessment_session",
+            "patient_id",
+            "patient_name",
+            "diagnosed_by_user_id",
+            "diagnosed_by_name",
+            "reviewed_by_user_id",
+            "reviewed_by_name",
+            "review_note",
+            "reviewed_at",
+            "created_at",
+            "questionnaire_answers",
+        ):
+            if key in data:
+                enriched[key] = data[key]
+        if isinstance(enriched.get("assessment_session"), dict):
+            enriched["assessment_mode"] = enriched["assessment_session"].get("mode")
+
+        return enriched
+
+    @staticmethod
+    def _reconstruct_normalized_payload(facts: dict, questionnaire_answers) -> dict:
+        """Approximate the normalized assessment payload the result was run
+        with, from the persisted facts (normalized input + derived facts) and
+        the raw questionnaire answers."""
+        # Mirrored fact twins (fasting_glucose ↔ fasting_plasma_glucose,
+        # family_history ↔ family_history_diabetes, …) describe the SAME input
+        # fact — the fact preparer stores both. Keep only the canonical key so
+        # lab counts / risk labels match what the original payload produced.
+        mirrored_twin_keys = {
+            "fasting_plasma_glucose": "fasting_glucose",
+            "a1c": "hba1c",
+            "two_hour_ogtt_75g": "2h_ogtt_75g",
+            "polyuria": "frequent_urination",
+            "polydipsia": "excessive_thirst",
+            "no_lab_values_available": "no_labs_available",
+            "family_history_diabetes": "family_history",
+            "physical_activity_low": "sedentary_lifestyle",
+        }
+        payload = {}
+        for key, value in (facts or {}).items():
+            canonical = mirrored_twin_keys.get(key)
+            if canonical and canonical in facts:
+                continue
+            payload[key] = value
+
+        answers = questionnaire_answers.get("answers") if isinstance(questionnaire_answers, dict) else None
+        if isinstance(answers, dict):
+            for key, value in answers.items():
+                if key not in payload and value not in (None, ""):
+                    payload[str(key)] = value
+
+        # The risk-factor collector expects the grouped `risk_factors` dict the
+        # original payload carried; rebuild it from the flat booleans.
+        risk_keys = (
+            "family_history",
+            "sedentary_lifestyle",
+            "obesity",
+            "hypertension",
+            "gestational_history",
+            "smoking",
+            "high_cholesterol",
+            "pcos_history",
+            "ethnicity_high_risk",
+        )
+        risk_factors = {key: payload[key] for key in risk_keys if payload.get(key) not in (None, "", False)}
+        if risk_factors:
+            payload["risk_factors"] = risk_factors
+
+        return payload
 
     def _normalize_persisted_texts(self, payload: dict) -> dict:
         """Rewrite clinical recommendation strings stored in older results so
@@ -140,30 +277,30 @@ class DiagnosisService:
             if isinstance(trace_recommendations, list) and trace_recommendations:
                 data["recommendations"] = trace_recommendations
 
-        recs = data.get("recommendations")
-        if isinstance(recs, list):
-            data["recommendations"] = [
-                {**item, "text": rewrite_recommendation(str(item.get("text") or ""))}
-                if isinstance(item, dict)
-                else rewrite_recommendation(str(item))
-                if isinstance(item, str)
-                else item
-                for item in recs
-            ]
+        data["recommendations"] = self._bilingualize_recommendations(data.get("recommendations"))
 
         trace = data.get("explanation_trace")
         if isinstance(trace, dict) and isinstance(trace.get("recommendations"), list):
             trace = dict(trace)
-            trace["recommendations"] = [
-                {**item, "text": rewrite_recommendation(str(item.get("text") or ""))}
-                if isinstance(item, dict)
-                else rewrite_recommendation(str(item))
-                if isinstance(item, str)
-                else item
-                for item in trace["recommendations"]
-            ]
+            trace["recommendations"] = self._bilingualize_recommendations(trace.get("recommendations"))
             data["explanation_trace"] = trace
         return data
+
+    @staticmethod
+    def _bilingualize_recommendations(items) -> list:
+        """Attach Khmer `text_km` to every recommendation entry (idempotent —
+        already-rewritten strings resolve through the catalog value index)."""
+        out = []
+        for item in items or []:
+            if isinstance(item, dict):
+                bi = rewrite_recommendation_bilingual(str(item.get("text") or ""))
+                out.append({**item, "text": bi["en"], "text_km": bi.get("km", "")})
+            elif isinstance(item, str):
+                bi = rewrite_recommendation_bilingual(item)
+                out.append({"text": bi["en"], "text_km": bi.get("km", "")})
+            else:
+                out.append(item)
+        return out
 
     def generate_report_pdf(self, diagnosis_result_id: int) -> tuple[bytes, str]:
         result = self.diagnosis_repository.get_result(diagnosis_result_id)
@@ -690,7 +827,9 @@ class DiagnosisService:
         return None
 
     @staticmethod
-    def _derive_urgency(normalized_payload: dict, result: dict) -> tuple[bool, str | None]:
+    def _derive_urgency(normalized_payload: dict, result: dict) -> tuple[bool, dict | None]:
+        """Collect urgency reasons as bilingual {en, km} fragments from the
+        diagnosis_texts catalog and join them per language."""
         reasons = []
 
         fasting_glucose = float(normalized_payload.get("fasting_glucose", 0) or 0)
@@ -700,37 +839,34 @@ class DiagnosisService:
         diagnosis = str(result.get("diagnosis") or "")
 
         if fasting_glucose >= 250:
-            reasons.append("Critical fasting glucose level")
+            reasons.append(bilingual(DT, "urgency.critical_fasting"))
         if random_plasma_glucose >= 300:
-            reasons.append("Critical random glucose level")
+            reasons.append(bilingual(DT, "urgency.critical_random"))
         if hba1c >= 10:
-            reasons.append("Very high HbA1c")
+            reasons.append(bilingual(DT, "urgency.very_high_hba1c"))
         if bool(normalized_payload.get("crisis")):
-            reasons.append("Patient appears in acute crisis")
+            reasons.append(bilingual(DT, "urgency.acute_crisis"))
         if bool(normalized_payload.get("vomiting")) and bool(normalized_payload.get("abdominal_pain")):
-            reasons.append("Symptoms may indicate urgent metabolic complication")
+            reasons.append(bilingual(DT, "urgency.metabolic_complication"))
         if diagnosis == "Likely Diabetes" and certainty >= 0.9:
-            reasons.append("High-certainty likely diabetes")
+            reasons.append(bilingual(DT, "urgency.high_certainty_diabetes"))
         suspected_type = str((result.get("suspected_type") or {}).get("type") or "") if isinstance(result.get("suspected_type"), dict) else ""
         if suspected_type == "Type 1":
-            reasons.append("Pattern consistent with Type 1 diabetes — rapid progression risk")
+            reasons.append(bilingual(DT, "urgency.type1_pattern"))
         if suspected_type == "Gestational":
-            reasons.append("Glucose criteria met during pregnancy — obstetric review needed")
+            reasons.append(bilingual(DT, "urgency.gestational_criteria"))
         if bool((result.get("facts") or {}).get("ketosis_signs_present")):
-            reasons.append("Possible ketosis signs reported")
+            reasons.append(bilingual(DT, "urgency.ketosis_signs"))
         if bool((result.get("facts") or {}).get("urgent_flag")):
-            reasons.append("Urgency asserted by rule action")
+            reasons.append(bilingual(DT, "urgency.rule_asserted"))
 
         if not reasons:
             return False, None
 
-        return True, "; ".join(reasons)
+        return True, join_bilingual(reasons)
 
     def _enrich_inference_result(self, result: dict, normalized_payload: dict) -> dict:
         enriched = dict(result or {})
-
-        matched_symptoms = self._collect_matched_symptoms(normalized_payload)
-        matched_risk_factors = self._collect_matched_risk_factors(normalized_payload)
 
         # ── Symptom-based confidence fallback for symptom-only / low-certainty assessments ──
         symptoms_dict = {
@@ -771,6 +907,18 @@ class DiagnosisService:
                 elif current_certainty >= 0.25:
                     enriched["diagnosis"] = "Elevated Diabetes Risk — Screening Recommended"
 
+        return self._apply_presentation_fields(enriched, normalized_payload)
+
+    def _apply_presentation_fields(self, enriched: dict, normalized_payload: dict) -> dict:
+        """Compute every presentation field the result report renders — matched
+        symptoms/risk factors, evidence completeness, bilingual summaries and
+        structured recommendations. Runs at evaluate time AND when rebuilding a
+        persisted result from the database, so a saved assessment displays
+        exactly like the original assessment output."""
+        matched_symptoms = self._collect_matched_symptoms(normalized_payload)
+        matched_risk_factors = self._collect_matched_risk_factors(normalized_payload)
+
+        current_certainty = float(enriched.get("certainty", 0) or 0)
         certainty_percent = self._to_percent(current_certainty)
         confidence_level = self._resolve_confidence_level(certainty_percent)
 
@@ -796,7 +944,7 @@ class DiagnosisService:
             "risk_factors": bool(matched_risk_factors),
         }
 
-        confidence_status, confidence_reason = self._resolve_confidence_context(
+        confidence_status, confidence_reason_bi = self._resolve_confidence_context(
             result=enriched,
             certainty_percent=certainty_percent,
             missing_inputs=missing_inputs,
@@ -804,7 +952,7 @@ class DiagnosisService:
             matched_risk_factors=matched_risk_factors,
         )
 
-        summary = self._build_result_summary(
+        summary_bi = self._build_result_summary(
             diagnosis=enriched.get("diagnosis", ""),
             certainty_percent=certainty_percent,
             matched_symptoms=matched_symptoms,
@@ -815,7 +963,7 @@ class DiagnosisService:
             normalized_payload=normalized_payload,
         )
 
-        headline_explanation = self._build_headline_explanation(
+        headline_bi = self._build_headline_explanation(
             diagnosis=enriched.get("diagnosis", ""),
             certainty_percent=certainty_percent,
             matched_symptoms=matched_symptoms,
@@ -841,9 +989,12 @@ class DiagnosisService:
         enriched["missing_inputs"] = missing_inputs
         enriched["provided_inputs"] = provided_inputs
         enriched["confidence_status"] = confidence_status
-        enriched["confidence_reason"] = confidence_reason
-        enriched["result_summary"] = summary
-        enriched["headline_explanation"] = headline_explanation
+        enriched["confidence_reason"] = confidence_reason_bi["en"]
+        enriched["confidence_reason_km"] = confidence_reason_bi["km"]
+        enriched["result_summary"] = summary_bi["en"]
+        enriched["result_summary_km"] = summary_bi["km"]
+        enriched["headline_explanation"] = headline_bi["en"]
+        enriched["headline_explanation_km"] = headline_bi["km"]
         enriched["evidence_completeness"] = completeness
         enriched["recommendations"] = recommendation_items
         enriched["explanation"] = self._build_explanation_payload(enriched, normalized_payload)
@@ -920,13 +1071,11 @@ class DiagnosisService:
 
         if score >= 70:
             level = "high"
-            note = "Evidence coverage is strong across symptoms and laboratory data."
         elif score >= 40:
             level = "medium"
-            note = "Evidence coverage is moderate; additional labs can improve confidence."
         else:
             level = "low"
-            note = "Evidence coverage is limited and the assessment may be less reliable."
+        note_bi = bilingual(DT, f"completeness.{level}")
 
         recommended_lab_keys = ["fasting_glucose", "hba1c", "2h_ogtt_75g", "random_plasma_glucose"]
         missing_recommended_labs = [key for key in recommended_lab_keys if key not in normalized_payload]
@@ -934,7 +1083,8 @@ class DiagnosisService:
         return {
             "score": score,
             "level": level,
-            "note": note,
+            "note": note_bi["en"],
+            "note_km": note_bi["km"],
             "available_labs": unique_available_labs,
             "missing_recommended_labs": missing_recommended_labs,
         }
@@ -947,7 +1097,8 @@ class DiagnosisService:
         missing_inputs: list[str],
         matched_symptoms: list[str],
         matched_risk_factors: list[str],
-    ) -> tuple[str, str]:
+    ) -> tuple[str, dict]:
+        """Returns (status, {"en": …, "km": …}) from the diagnosis_texts catalog."""
         trace = (result.get("explanation_trace") or {}).get("confidence_calculation") or {}
         conclusion_scores = trace.get("conclusion_scores") or []
         top_conclusion = str(trace.get("top_conclusion") or "").strip()
@@ -956,29 +1107,33 @@ class DiagnosisService:
             if conclusion_scores:
                 top_supporting_rules = conclusion_scores[0].get("supporting_rules") or []
                 support_count = len(top_supporting_rules)
-                reason = (
-                    f"Confidence score is calculated from {support_count} matched diagnosis "
-                    f"rule{'s' if support_count != 1 else ''}"
-                )
-                if top_conclusion:
-                    reason += f" linked to conclusion '{top_conclusion}'."
-                else:
-                    reason += "."
+                reason = {
+                    lang: text(DT, "conf.reason.rules", lang=lang, support_count=support_count, s="s" if support_count != 1 else "")
+                    for lang in SUPPORTED_LANGUAGES
+                }
+                suffix_key = "conf.reason.linked" if top_conclusion else "conf.reason.period"
+                suffix_params = {"top_conclusion": top_conclusion} if top_conclusion else {}
+                reason = {
+                    lang: reason[lang] + text(DT, suffix_key, lang=lang, **suffix_params)
+                    for lang in SUPPORTED_LANGUAGES
+                }
             else:
-                s_count = len(matched_symptoms)
-                r_count = len(matched_risk_factors)
-                reason = f"Confidence score is calculated from {s_count} reported symptom(s) and {r_count} risk factor(s)."
+                reason = bilingual(DT, "conf.reason.symptoms", s_count=len(matched_symptoms), r_count=len(matched_risk_factors))
 
             if missing_inputs:
-                reason += f" Core lab inputs still missing: {', '.join(missing_inputs)}."
+                missing_str = ", ".join(missing_inputs)
+                reason = {
+                    lang: reason[lang] + text(DT, "conf.reason.missing_labs", lang=lang, missing_inputs=missing_str)
+                    for lang in SUPPORTED_LANGUAGES
+                }
             return "calculated", reason
 
         reasons = []
         if missing_inputs:
-            reasons.append(f"core lab inputs are missing ({', '.join(missing_inputs)})")
+            reasons.append(bilingual(DT, "conf.missing_core_labs", missing_inputs=", ".join(missing_inputs)))
 
         if not matched_symptoms and not matched_risk_factors:
-            reasons.append("very limited symptom and risk-factor evidence was provided")
+            reasons.append(bilingual(DT, "conf.limited_evidence"))
 
         fired_rules = result.get("triggered_rules") or []
         has_diagnosis_output = any(
@@ -987,14 +1142,18 @@ class DiagnosisService:
             for output in (rule.get("inferred_outputs") or [])
         )
         if fired_rules and not has_diagnosis_output:
-            reasons.append("rules fired, but none produced a diagnosis conclusion")
+            reasons.append(bilingual(DT, "conf.rules_no_conclusion"))
         elif not fired_rules:
-            reasons.append("no active rule was matched from the submitted facts")
+            reasons.append(bilingual(DT, "conf.no_rule_matched"))
 
         if not reasons:
-            reasons.append("diagnosis evidence is insufficient")
+            reasons.append(bilingual(DT, "conf.insufficient_evidence"))
 
-        reason = "Confidence score could not be reliably calculated because " + "; ".join(reasons) + "."
+        joined = join_bilingual(reasons) or {}
+        reason = {
+            lang: text(DT, "conf.insufficient_prefix", lang=lang) + joined.get(lang, "") + text(DT, "conf.reason.period", lang=lang)
+            for lang in SUPPORTED_LANGUAGES
+        }
         return "insufficient_evidence", reason
 
     @staticmethod
@@ -1008,9 +1167,9 @@ class DiagnosisService:
         confidence_status: str,
         suspected_type,
         normalized_payload: dict,
-    ) -> str:
-        """Build a unique, human-readable summary sentence that changes
-        based on the actual evidence and outcome — never the same boring text."""
+    ) -> dict:
+        """Bilingual summary sentence {"en": …, "km": …} from the diagnosis_texts
+        catalog — changes based on the actual evidence and outcome."""
         diag = str(diagnosis or "").lower()
         s_count = len(matched_symptoms)
         r_count = len(matched_risk_factors)
@@ -1019,88 +1178,85 @@ class DiagnosisService:
         if isinstance(suspected_type, dict):
             type_label = str(suspected_type.get("type") or "")
 
+        risk_part = {
+            lang: text(DT, "part.risk_appendix", lang=lang, r_count=r_count) if r_count else ""
+            for lang in SUPPORTED_LANGUAGES
+        }
+
+        def lab_str(lang: str) -> str:
+            names = []
+            if "fasting_glucose" in normalized_payload or "fasting_plasma_glucose" in normalized_payload:
+                names.append(text(DT, "lab.fasting_glucose", lang=lang))
+            if "hba1c" in normalized_payload:
+                names.append(text(DT, "lab.hba1c", lang=lang))
+            if not names:
+                return text(DT, "lab.fallback", lang=lang)
+            return text(DT, "join.and", lang=lang).join(names)
+
         # Emergency / urgent
         if any(normalized_payload.get(k) for k in ("vomiting", "abdominal_pain", "fruity_breath", "deep_rapid_breathing", "confusion")):
-            return (
-                "Emergency warning signs detected — this result should be treated as urgent. "
-                "Please seek immediate medical attention."
-            )
+            return bilingual(DT, "summary.emergency")
 
         # Full labs + symptoms → strong assessment
         if has_labs and s_count >= 2 and certainty_percent >= 70:
-            lab_names = []
-            if "fasting_glucose" in normalized_payload or "fasting_plasma_glucose" in normalized_payload:
-                lab_names.append("fasting glucose")
-            if "hba1c" in normalized_payload:
-                lab_names.append("HbA1c")
-            lab_str = " and ".join(lab_names) if lab_names else "lab values"
-            return (
-                f"This assessment combined {s_count} reported symptom(s) with {lab_str} results"
-                f"{f' and {r_count} risk factor(s)' if r_count else ''}. "
-                f"The evidence consistently points toward a diabetes pattern at {certainty_percent}% confidence."
-            )
+            return {
+                lang: text(
+                    DT, "summary.strong_labs", lang=lang,
+                    s_count=s_count, lab_str=lab_str(lang), risk_part=risk_part[lang],
+                    certainty_percent=certainty_percent,
+                )
+                for lang in SUPPORTED_LANGUAGES
+            }
 
         # Labs present but low certainty
         if has_labs and certainty_percent < 45:
-            return (
-                "Lab results were included, but the values fall within or near the normal range. "
-                "No strong diabetes signal was detected at this time."
-            )
+            return bilingual(DT, "summary.labs_low_certainty")
 
         # Symptom-only with decent confidence
         if not has_labs and s_count >= 2 and certainty_percent >= 45:
-            return (
-                f"Based on {s_count} symptom(s)"
-                f"{f' and {r_count} risk factor(s)' if r_count else ''}, "
-                f"the screening indicates a {certainty_percent}% match with diabetes patterns. "
-                "A fasting glucose or HbA1c test can make this more definitive."
-            )
+            return {
+                lang: text(
+                    DT, "summary.symptom_only_ok", lang=lang,
+                    s_count=s_count, risk_part=risk_part[lang], certainty_percent=certainty_percent,
+                )
+                for lang in SUPPORTED_LANGUAGES
+            }
 
         # Symptom-only low confidence
         if not has_labs and s_count >= 1 and certainty_percent < 45:
-            return (
-                f"Only {s_count} symptom(s) were reported without lab results. "
-                "The current evidence is limited — a simple blood test is the best next step."
-            )
+            return bilingual(DT, "summary.symptom_only_low")
 
         # Risk factors only
         if s_count == 0 and r_count >= 1 and not has_labs:
-            return (
-                f"{r_count} risk factor(s) were identified without symptoms or labs. "
-                "Consider routine diabetes screening to catch early signs."
-            )
+            return bilingual(DT, "summary.risk_only")
 
         # Gestational
         if type_label == "Gestational":
-            return (
-                "Symptoms during pregnancy warrant glucose testing. "
-                "Contact your OB/GYN for a formal evaluation."
-            )
+            return bilingual(DT, "summary.gestational")
 
         # Type 1 pattern
         if type_label == "Type 1":
-            return (
-                "The symptom pattern suggests possible Type 1 diabetes with rapid onset. "
-                "Prompt medical evaluation is strongly recommended."
-            )
+            return bilingual(DT, "summary.type1")
 
         # Insufficient evidence
         if confidence_status == "insufficient_evidence":
-            return (
-                "Not enough evidence to produce a reliable confidence score. "
-                "Providing more symptom details or a lab test would strengthen the result."
-            )
+            return bilingual(DT, "summary.insufficient")
 
         # Generic fallback with actual numbers
-        parts = []
-        if s_count:
-            parts.append(f"{s_count} symptom(s)")
-        if r_count:
-            parts.append(f"{r_count} risk factor(s)")
-        if has_labs:
-            parts.append("laboratory data")
-        evidence_str = ", ".join(parts) if parts else "limited data"
-        return f"Assessment completed using {evidence_str} — screening confidence reached {certainty_percent}%."
+        evidence_str = {}
+        for lang in SUPPORTED_LANGUAGES:
+            parts = []
+            if s_count:
+                parts.append(text(DT, "part.symptoms", lang=lang, s_count=s_count))
+            if r_count:
+                parts.append(text(DT, "part.risk_factors", lang=lang, r_count=r_count))
+            if has_labs:
+                parts.append(text(DT, "part.laboratory_data", lang=lang))
+            evidence_str[lang] = ", ".join(parts) if parts else text(DT, "part.limited_data", lang=lang)
+        return {
+            lang: text(DT, "summary.generic", lang=lang, evidence_str=evidence_str[lang], certainty_percent=certainty_percent)
+            for lang in SUPPORTED_LANGUAGES
+        }
 
     @staticmethod
     def _build_headline_explanation(
@@ -1112,9 +1268,9 @@ class DiagnosisService:
         missing_inputs: list[str],
         suspected_type,
         normalized_payload: dict,
-    ) -> str:
-        """Short, punchy explanation shown in the hero section of the result page.
-        Each combination of evidence gets a distinct sentence."""
+    ) -> dict:
+        """Short, punchy hero explanation — bilingual {"en": …, "km": …} from the
+        diagnosis_texts catalog. Each evidence combination gets a distinct sentence."""
         diag = str(diagnosis or "").lower()
         s_count = len(matched_symptoms)
         r_count = len(matched_risk_factors)
@@ -1125,53 +1281,53 @@ class DiagnosisService:
 
         # Emergency
         if any(normalized_payload.get(k) for k in ("vomiting", "fruity_breath", "deep_rapid_breathing", "confusion")):
-            return "Urgent symptoms detected — immediate medical evaluation is recommended."
+            return bilingual(DT, "headline.emergency")
 
         # High certainty with labs
         if certainty_percent >= 85 and has_labs:
-            return "Lab values and symptoms together produce a strong diabetes signal."
+            return bilingual(DT, "headline.strong_labs")
 
         # High certainty symptom-only
         if certainty_percent >= 85 and not has_labs:
-            return f"{s_count} symptoms strongly match the classic diabetes pattern — lab confirmation advised."
+            return bilingual(DT, "headline.strong_symptoms", s_count=s_count)
 
         # Likely diabetes with labs
         if certainty_percent >= 70 and has_labs:
-            return "Your lab results combined with reported symptoms indicate a high probability of diabetes."
+            return bilingual(DT, "headline.likely_labs")
 
         # Likely diabetes symptom-only
         if certainty_percent >= 70 and not has_labs:
-            return f"Multiple symptoms align with diabetes — a fasting glucose test can confirm at {certainty_percent}% confidence."
+            return bilingual(DT, "headline.likely_symptoms", certainty_percent=certainty_percent)
 
         # Moderate
         if certainty_percent >= 45:
             if has_labs:
-                return "Some lab markers are borderline — monitoring and a follow-up test are recommended."
+                return bilingual(DT, "headline.moderate_labs")
             if s_count >= 2:
-                return f"{s_count} symptoms raise a moderate signal. Adding a blood test would sharpen the picture."
-            return "Some warning signs are present, but more information is needed for a clear assessment."
+                return bilingual(DT, "headline.moderate_symptoms", s_count=s_count)
+            return bilingual(DT, "headline.moderate_generic")
 
         # Low with risk factors
         if r_count >= 1 and s_count == 0:
-            return f"{r_count} risk factor(s) identified, but no active symptoms. Routine screening recommended."
+            return bilingual(DT, "headline.risk_only", r_count=r_count)
 
         # Low with some symptoms
         if s_count >= 1 and certainty_percent < 45:
-            return "A few symptoms were reported but the overall signal is weak. Keep monitoring and consider a check-up."
+            return bilingual(DT, "headline.weak_symptoms")
 
         # Gestational
         if type_label == "Gestational":
-            return "Pregnancy-related symptoms detected — glucose testing with your OB/GYN is the recommended next step."
+            return bilingual(DT, "headline.gestational")
 
         # Type 1 pattern
         if type_label == "Type 1":
-            return "Rapid-onset symptoms in a younger patient suggest a Type 1 pattern — seek evaluation soon."
+            return bilingual(DT, "headline.type1")
 
         # Very low / no evidence
         if certainty_percent <= 15:
-            return "Very little diabetes evidence was found in this assessment."
+            return bilingual(DT, "headline.very_low")
 
-        return f"Screening confidence stands at {certainty_percent}% based on the data you provided."
+        return bilingual(DT, "headline.generic", certainty_percent=certainty_percent)
 
     @staticmethod
     def _should_apply_urgent_priority(result: dict, normalized_payload: dict) -> bool:
@@ -1201,8 +1357,9 @@ class DiagnosisService:
         candidates: list[dict] = []
         seen = set()
 
-        def add(text: str, urgency: str, source: str):
-            normalized_text = rewrite_recommendation(str(text or "").strip())
+        def add(raw_text, urgency: str, source: str, bilingual_text: dict | None = None):
+            bi = bilingual_text or rewrite_recommendation_bilingual(str(raw_text or "").strip())
+            normalized_text = bi.get("en", "")
             if not normalized_text:
                 return
             key = normalized_text.lower()
@@ -1212,6 +1369,7 @@ class DiagnosisService:
             candidates.append(
                 {
                     "text": normalized_text,
+                    "text_km": bi.get("km", ""),
                     "urgency": urgency,
                     "source": source,
                 }
@@ -1232,13 +1390,13 @@ class DiagnosisService:
                 add(str(value), urgency, f"rule:{stage}")
 
         if urgency := ("urgent" if urgent_priority else None):
-            add(URGENT_SAFETY_NOTE, urgency, "safety")
+            add(None, urgency, "safety", bilingual_text=note_bilingual(NOTE_URGENT_SAFETY_KEY))
 
         lab_keys = ("fasting_glucose", "fasting_plasma_glucose", "hba1c", "2h_ogtt_75g", "random_plasma_glucose")
         has_any_lab = any(key in normalized_payload for key in lab_keys)
         if not has_any_lab:
             # Gentle, non-alarming nudge — symptoms alone already give a signal.
-            add(COMPLETENESS_NOTE, "routine", "completeness")
+            add(None, "routine", "completeness", bilingual_text=note_bilingual(NOTE_NO_LABS_COMPLETENESS_KEY))
 
         urgency_rank = {"urgent": 0, "high": 1, "routine": 2}
         candidates.sort(key=lambda item: (urgency_rank.get(item["urgency"], 9), item["text"]))
@@ -1422,29 +1580,22 @@ class DiagnosisService:
 
     @staticmethod
     def _resolve_confidence_level(percent: int) -> dict:
+        """Confidence level label + bilingual title/description from the catalog."""
         safe = max(0, min(100, int(percent)))
         if safe >= 85:
-            return {
-                "label": "very_high",
-                "title": "Very high confidence",
-                "description": "Multiple strong indicators align — lab values and symptoms both point toward diabetes.",
-            }
-        if safe >= 70:
-            return {
-                "label": "high",
-                "title": "High confidence",
-                "description": "Most evidence points in the same direction. A clinical follow-up can confirm.",
-            }
-        if safe >= 45:
-            return {
-                "label": "moderate",
-                "title": "Moderate confidence",
-                "description": "Some warning signs are present. Additional lab work would sharpen this assessment.",
-            }
+            level = "very_high"
+        elif safe >= 70:
+            level = "high"
+        elif safe >= 45:
+            level = "moderate"
+        else:
+            level = "low"
         return {
-            "label": "low",
-            "title": "Low confidence",
-            "description": "Limited evidence available — the data does not strongly point toward diabetes at this time.",
+            "label": level,
+            "title": text(DT, f"conf_level.{level}.title", lang="en"),
+            "title_km": text(DT, f"conf_level.{level}.title", lang="km"),
+            "description": text(DT, f"conf_level.{level}.description", lang="en"),
+            "description_km": text(DT, f"conf_level.{level}.description", lang="km"),
         }
 
     @staticmethod

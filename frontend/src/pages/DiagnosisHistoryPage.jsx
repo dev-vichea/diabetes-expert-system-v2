@@ -287,7 +287,7 @@ export function DiagnosisHistoryPage() {
                         {result.is_urgent ? (
                           <span className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1.5 font-medium text-rose-700 dark:bg-rose-950/30 dark:text-rose-300">
                             <AlertTriangle className="h-4 w-4" />
-                            {result.urgent_reason || t('common.yes')}
+                            {((language === 'km' && result.urgent_reason_km) ? result.urgent_reason_km : result.urgent_reason) || t('common.yes')}
                           </span>
                         ) : null}
                       </div>

@@ -63,7 +63,15 @@ export function translate(language, key, valuesOrFallback, maybeValues) {
 }
 
 export function translateExact(language, exactEnglishText) {
-  if (!exactEnglishText) return exactEnglishText
+  if (exactEnglishText == null) return exactEnglishText
+  // Bilingual backend fields ({en, km} objects): pick the requested language
+  // directly — no catalog lookup needed.
+  if (typeof exactEnglishText === 'object' && (exactEnglishText.en || exactEnglishText.km)) {
+    const normalized = normalizeLanguage(language)
+    if (normalized === 'km') return exactEnglishText.km || exactEnglishText.en
+    return exactEnglishText.en || exactEnglishText.km
+  }
+  if (typeof exactEnglishText !== 'string') return exactEnglishText
   const rawText = String(exactEnglishText).trim()
   const normalized = normalizeLanguage(language)
 
@@ -82,4 +90,15 @@ export function translateExact(language, exactEnglishText) {
   }
 
   return rawText
+}
+
+/**
+ * Wrap a backend field pair (English + Khmer companion) into a single
+ * bilingual value that `translateExact` understands. When the Khmer
+ * companion is missing (older saved results), the plain English string is
+ * returned so the exact-text map can still translate it.
+ */
+export function bilingualField(en, km) {
+  if (en == null) return km ?? en
+  return km ? { en, km } : en
 }

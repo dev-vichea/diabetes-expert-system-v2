@@ -1289,6 +1289,7 @@
     "source": "Source",
     "processedValue": "Processed Value",
     "savedResultActive": "Saved result snapshot is active for this account. Start a new assessment to replace it.",
+    "loadedFromHistory": "This report was loaded from your saved assessment history.",
     "viewAssessmentResults": "View your assessment results and recommendations above.",
     "back": "Back",
     "restartAssessment": "Restart Assessment",

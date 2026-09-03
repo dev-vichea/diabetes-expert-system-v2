@@ -512,13 +512,3 @@ export function buildFactsFromAnswers(answers) {
   return facts;
 }
 
-/* ── Stop rule ──
-   Once this many questions have been answered (or consciously skipped),
-   the user may finish early and run the assessment. */
-export const CORE_QUESTIONS_FOR_SIGNAL = 6
-
-export function hasEnoughEvidence(nodes, ctx, doneIds, skippedIds) {
-  const applicable = applicableNodes(nodes, ctx)
-  const settled = applicable.filter((n) => isNodeDone(n, ctx, doneIds, skippedIds)).length
-  return settled >= CORE_QUESTIONS_FOR_SIGNAL
-}

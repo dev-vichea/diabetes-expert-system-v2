@@ -53,7 +53,7 @@ function getRiskTextColor(percent) {
 }
 
 export function ReviewPage() {
-  const { t, tExact } = useLanguage()
+  const { t, tExact, isKhmer } = useLanguage()
   const [results, setResults] = useState([])
   const [selectedResultId, setSelectedResultId] = useState(null)
 
@@ -304,7 +304,7 @@ export function ReviewPage() {
                   <div className="mt-5 rounded-lg bg-white/20 p-3 text-sm font-medium backdrop-blur-sm border border-white/30 flex items-start gap-2">
                     <AlertCircle className="h-5 w-5 shrink-0" />
                     <div>
-                      <strong>{t('reviewPage.details.criticalWarning', 'Critical Warning')}:</strong> {selectedResult.urgent_reason || t('reviewPage.details.defaultCriticalMsg', 'This case requires immediate attention.')}
+                      <strong>{t('reviewPage.details.criticalWarning', 'Critical Warning')}:</strong> {(isKhmer && selectedResult.urgent_reason_km) ? selectedResult.urgent_reason_km : (selectedResult.urgent_reason || t('reviewPage.details.defaultCriticalMsg', 'This case requires immediate attention.'))}
                     </div>
                   </div>
                 )}
