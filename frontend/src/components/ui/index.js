@@ -8,6 +8,19 @@ export { ErrorAlert } from './ErrorAlert'
 export { StatusBadge } from './StatusBadge'
 export { DataTable } from './DataTable'
 export { ConfirmDialog } from './ConfirmDialog'
+export {
+  Sheet,
+  SheetPortal,
+  SheetOverlay,
+  SheetTrigger,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+} from './sheet'
 export { FormSection } from './FormSection'
 export { SearchInput } from './SearchInput'
 export { FilterBar } from './FilterBar'

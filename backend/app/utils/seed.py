@@ -5,15 +5,19 @@ from flask import current_app
 from werkzeug.security import generate_password_hash
 
 from app.extensions import db
-from app.models import Permission, Patient, Role, Rule, RuleAction, RuleCategory, RuleCondition, User
+from app.models import Fact, Permission, Patient, Role, Rule, RuleAction, RuleCategory, RuleCondition, User
 from app.utils.diabetes_rule_seed_data import DIABETES_RULE_SEED
 from app.utils.diabetes_rule_seed_data_v2 import DIABETES_RULE_SEED_V2
+from app.utils.diabetes_rule_seed_data_v3 import DIABETES_RULE_SEED_V3
+from app.utils.diabetes_fact_seed_data import FACT_CATALOG_SEED
 
 # Structured seed versions. v1 = full historical rule set; v2 = minimal rule
 # set whose thresholds and clusters mirror the adaptive assessment engine
-# (see app.utils.diabetes_rule_seed_data_v2). Select via the RULES_SEED_VERSION
+# (see app.utils.diabetes_rule_seed_data_v2). v3 merges both: v2's
+# engine-mirroring architecture + the IADPSG pregnancy logic v2 was missing +
+# the strongest clinical knowledge from v1. Select via the RULES_SEED_VERSION
 # config value; v1 remains the default so existing deployments are unchanged.
-STRUCTURED_RULE_SEEDS = {"v1": DIABETES_RULE_SEED, "v2": DIABETES_RULE_SEED_V2}
+STRUCTURED_RULE_SEEDS = {"v1": DIABETES_RULE_SEED, "v2": DIABETES_RULE_SEED_V2, "v3": DIABETES_RULE_SEED_V3}
 
 DEFAULT_PERMISSIONS = [
     {"code": "user.view", "description": "View users"},
@@ -124,15 +128,52 @@ LEGACY_DEMO_RULE_CODES = {"triage-classic-symptoms"}
 
 
 def seed_demo_data():
+    # Seed-time schema healing: create_all() is idempotent and only adds tables
+    # that are missing, so a database created before a new model existed (e.g.
+    # `facts`) is brought up to date here instead of crashing on the first
+    # query — including deployments that run with DB_AUTO_CREATE=false.
+    db.create_all()
+
     _seed_rule_categories()
     _seed_permissions_roles_users()
     _seed_patient_profile()
+    _seed_fact_catalog()
     active_seed = _active_structured_seed()
     _archive_legacy_seed_rules(
         active_codes={str(rule["code"]).strip().lower() for rule in active_seed}
     )
     _seed_structured_rules(active_seed)
     db.session.commit()
+
+
+def _seed_fact_catalog() -> None:
+    """Insert fact-catalog rows that do not exist yet. Doctor edits are never
+    overwritten — the database is the source of truth once a row exists."""
+    for entry in FACT_CATALOG_SEED:
+        key = str(entry.get("key") or "").strip().lower()
+        if not key or Fact.query.filter_by(key=key).first():
+            continue
+        db.session.add(Fact(
+            key=key,
+            label=str(entry.get("label") or key),
+            label_km=entry.get("label_km"),
+            medical_term=entry.get("medical_term"),
+            category=str(entry.get("category") or "other"),
+            question=entry.get("question"),
+            meaning=entry.get("meaning"),
+            meaning_km=entry.get("meaning_km"),
+            prevention=entry.get("prevention"),
+            prevention_km=entry.get("prevention_km"),
+            weight=float(entry.get("weight", 0.05)),
+            type_indication=str(entry.get("type_indication") or "none"),
+            is_cardinal=bool(entry.get("is_cardinal", False)),
+            is_emergency=bool(entry.get("is_emergency", False)),
+            aliases=list(entry.get("aliases") or []),
+            is_active=True,
+            display_order=int(entry.get("display_order", 100)),
+            source="seed",
+        ))
+    db.session.flush()
 
 
 def _active_structured_seed() -> list:

@@ -296,6 +296,9 @@ export function DiagnosisPage() {
   const [interviewDone, setInterviewDone] = useState([])
   const [interviewSkipped, setInterviewSkipped] = useState([])
   const [cursorOverride, setCursorOverride] = useState(null)
+  /* Exact order the question cards were shown in — Back retraces THIS visit
+     path one step at a time (… → 3 → 2 → 1) instead of hopping around. */
+  const [interviewTrail, setInterviewTrail] = useState([])
 
   /* Settled node ids ride along so grids can shrink by "already asked by a
      probe" (node id) instead of by form values. */
@@ -311,8 +314,16 @@ export function DiagnosisPage() {
     () => interviewProgress(INTERVIEW_NODES, interviewCtx, interviewDone, interviewSkipped),
     [interviewCtx, interviewDone, interviewSkipped],
   )
-  const applicableCount = useMemo(() => applicableNodes(INTERVIEW_NODES, interviewCtx).length, [interviewCtx])
+  const applicableOrder = useMemo(() => applicableNodes(INTERVIEW_NODES, interviewCtx), [interviewCtx])
+  const applicableCount = applicableOrder.length
   const currentNodeId = cursorOverride ?? autoCursor
+
+  /* Record every card the user actually saw so Back can walk the visit path
+     in reverse. The last-entry guard keeps it idempotent under StrictMode. */
+  useEffect(() => {
+    if (!currentNodeId) return
+    setInterviewTrail((trail) => (trail[trail.length - 1] === currentNodeId ? trail : [...trail, currentNodeId]))
+  }, [currentNodeId])
   const currentNode = useMemo(
     () => INTERVIEW_NODES.find((n) => n.id === currentNodeId) || null,
     [currentNodeId],
@@ -578,7 +589,7 @@ export function DiagnosisPage() {
     setInterviewDone(!needsPatient
       ? ['subject', 'age', 'sex', 'symptoms_core', 'symptoms_other', 'warning_signs', 'risk_factors', 'body', 'has_labs', 'labs']
       : ['patient', 'age', 'sex', 'symptoms_core', 'symptoms_other', 'warning_signs', 'risk_factors', 'body', 'has_labs', 'labs'])
-    setInterviewSkipped([]); setCursorOverride(null)
+    setInterviewSkipped([]); setCursorOverride(null); setInterviewTrail([])
   }
 
   function startNew(opts = {}) {
@@ -586,7 +597,7 @@ export function DiagnosisPage() {
     window.localStorage.removeItem(storageKey)
     setForm({ ...DEFAULT_FORM, patient_id: pid }); setQcm(DEFAULT_QCM)
     setExtraLabs([]); setResult(null); setError(''); setStep(1); setMaxReached(1)
-    setInterviewDone([]); setInterviewSkipped([]); setCursorOverride(null)
+    setInterviewDone([]); setInterviewSkipped([]); setCursorOverride(null); setInterviewTrail([])
     setSubjectMode(null)
   }
 
@@ -709,14 +720,35 @@ export function DiagnosisPage() {
     settleNode('subject')
     setCursorOverride(null)
   }
+  const canInterviewBack = useMemo(() => {
+    if (!currentNodeId) return false
+    if (interviewTrail.lastIndexOf(currentNodeId) > 0) return true
+    return applicableOrder.findIndex((n) => n.id === currentNodeId) > 0
+  }, [currentNodeId, interviewTrail, applicableOrder])
+
   function interviewBack() {
-    if (cursorOverride) { setCursorOverride(null); return }
-    const last = interviewDone[interviewDone.length - 1]
-    if (!last) return
-    /* Keep the node marked done — only jump the card back to it. Removing it
-       from `done` made its chip (and Continue) behave like the question
-       vanished. */
-    setCursorOverride(last)
+    if (!currentNodeId) return
+    /* Retrace the user's actual visit path ONE step at a time (… → 3 → 2 → 1).
+       Fall back to the natural question order when no trail exists yet (e.g. a
+       restored draft), stepping over nodes that stopped applying because of
+       answers changed in the meantime. */
+    const applicableIds = new Set(applicableOrder.map((n) => n.id))
+    const candidates = []
+    const trailPos = interviewTrail.lastIndexOf(currentNodeId)
+    if (trailPos > 0) candidates.push(...interviewTrail.slice(0, trailPos).reverse())
+    const orderPos = applicableOrder.findIndex((n) => n.id === currentNodeId)
+    if (orderPos > 0) candidates.push(...applicableOrder.slice(0, orderPos).map((n) => n.id).reverse())
+    const previousNode = candidates.find((id) => applicableIds.has(id))
+    if (!previousNode) return
+    /* Trim the trail to end at the node we are moving to, so pressing Back
+       again keeps walking backwards instead of bouncing between two cards. */
+    setInterviewTrail((trail) => {
+      const pos = trail.lastIndexOf(previousNode)
+      return pos === -1 ? trail : trail.slice(0, pos + 1)
+    })
+    setCursorOverride(previousNode)
+    setError('')
+    setStep(1)
   }
   function editInterviewNode(nodeId) {
     /* Keep the node in `interviewDone` so its chip stays visible — the card
@@ -975,7 +1007,7 @@ export function DiagnosisPage() {
                       onContinue={handleInterviewContinue}
                       onSkip={() => handleSkipNode(currentNode)}
                       onBack={interviewBack}
-                      canBack={Boolean(cursorOverride) || interviewDone.length > 0}
+                      canBack={canInterviewBack}
                       analyzing={false}
                       editing={Boolean(cursorOverride)}
                       doneIds={interviewDone}

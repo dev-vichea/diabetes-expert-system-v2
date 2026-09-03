@@ -253,6 +253,43 @@ class RuleVersion(db.Model):
     changed_by_user = db.relationship("User", foreign_keys=[changed_by_user_id])
 
 
+class Fact(db.Model):
+    """Doctor-managed fact/symptom knowledge catalog row.
+
+    Each row is one fact key exchanged by the interview and the inference
+    engine (symptoms, risk factors, labs, profile flags). Doctors manage the
+    patient-facing education (meaning/prevention, EN + KM) and the reasoning
+    inputs (weight, type_indication, cardinal/emergency flags, aliases) from
+    the Knowledge Base. The reasoning fields are applied at inference time via
+    the overlay in app.expert_system.symptom_database; the education fields
+    are attached to diagnosis reports as ``fact_education``.
+    """
+
+    __tablename__ = "facts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    label = db.Column(db.String(255), nullable=False)
+    label_km = db.Column(db.String(255), nullable=True)
+    medical_term = db.Column(db.String(120), nullable=True)
+    category = db.Column(db.String(40), nullable=False, default="other", index=True)
+    question = db.Column(db.Text, nullable=True)
+    meaning = db.Column(db.Text, nullable=True)
+    meaning_km = db.Column(db.Text, nullable=True)
+    prevention = db.Column(db.Text, nullable=True)
+    prevention_km = db.Column(db.Text, nullable=True)
+    weight = db.Column(db.Float, nullable=False, default=0.05)
+    type_indication = db.Column(db.String(20), nullable=False, default="none")
+    is_cardinal = db.Column(db.Boolean, nullable=False, default=False)
+    is_emergency = db.Column(db.Boolean, nullable=False, default=False)
+    aliases = db.Column(db.JSON, nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    display_order = db.Column(db.Integer, nullable=False, default=100)
+    source = db.Column(db.String(20), nullable=False, default="seed")
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utc_now, onupdate=utc_now)
+
+
 class DiagnosisResult(db.Model):
     __tablename__ = "diagnosis_results"
 

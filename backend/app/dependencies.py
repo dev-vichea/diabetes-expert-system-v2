@@ -4,6 +4,7 @@ from app.repositories import (
     AssessmentRepository,
     AuditLogRepository,
     DiagnosisRepository,
+    FactRepository,
     PatientRepository,
     RuleRepository,
     TokenRepository,
@@ -12,6 +13,7 @@ from app.repositories import (
 from app.services.admin_service import AdminService
 from app.services.auth_service import AuthService
 from app.services.diagnosis_service import DiagnosisService
+from app.services.fact_service import FactService
 from app.services.patient_service import PatientService
 from app.services.rule_service import RuleService
 from app.services.dashboard_service import DashboardService
@@ -23,6 +25,7 @@ SERVICE_KEYS = {
     "unified_assessment": "unified_assessment_service",
     "conversational": "conversational_assessment_service",
     "rule": "rule_service",
+    "fact": "fact_service",
     "diagnosis": "diagnosis_service",
     "admin": "admin_service",
     "patient": "patient_service",
@@ -38,6 +41,7 @@ def init_dependencies(app):
     patient_repository = PatientRepository()
     audit_log_repository = AuditLogRepository()
     token_repository = TokenRepository()
+    fact_repository = FactRepository()
 
     services = {
         SERVICE_KEYS["auth"]: AuthService(
@@ -66,6 +70,10 @@ def init_dependencies(app):
         ),
         SERVICE_KEYS["rule"]: RuleService(
             rule_repository=rule_repository,
+            audit_log_repository=audit_log_repository,
+        ),
+        SERVICE_KEYS["fact"]: FactService(
+            fact_repository=fact_repository,
             audit_log_repository=audit_log_repository,
         ),
         SERVICE_KEYS["diagnosis"]: DiagnosisService(
@@ -103,6 +111,10 @@ def get_auth_service() -> AuthService:
 
 def get_rule_service() -> RuleService:
     return _get_service(SERVICE_KEYS["rule"])
+
+
+def get_fact_service() -> FactService:
+    return _get_service(SERVICE_KEYS["fact"])
 
 
 def get_unified_assessment_service() -> UnifiedAssessmentService:

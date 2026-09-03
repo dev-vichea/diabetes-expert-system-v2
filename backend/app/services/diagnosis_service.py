@@ -6,6 +6,8 @@ from app.errors import NotFoundError, ValidationError
 from app.expert_system.final_assessment import generate_final_assessment
 from app.expert_system.inference_engine import run_inference
 from app.expert_system.symptom_confidence import calculate_symptom_confidence
+from app.expert_system.symptom_database import apply_fact_overlay, clear_fact_overlay
+from app.repositories import FactRepository
 from app.expert_system.patient_messaging import (
     NOTE_NO_LABS_COMPLETENESS_KEY,
     NOTE_URGENT_SAFETY_KEY,
@@ -51,6 +53,10 @@ class DiagnosisService:
         )
         answer_records = self._build_assessment_answer_records(payload)
         self.assessment_repository.save_answers(session, answer_records)
+
+        # Doctor-managed fact knowledge (weights / type indications / flags)
+        # participates in the reasoning from this run onward.
+        self._refresh_fact_overlay()
 
         try:
             result = run_inference(normalized_payload, self.rule_repository.list_rules())
@@ -909,6 +915,50 @@ class DiagnosisService:
 
         return self._apply_presentation_fields(enriched, normalized_payload)
 
+    def _refresh_fact_overlay(self) -> None:
+        """Overlay doctor-managed fact knowledge (Fact catalog) over the static
+        symptom knowledge so edited weights / type indications / flags drive
+        the reasoning. Falls back to the static catalog if the DB is not
+        reachable (rule sandbox, bare test harness)."""
+        try:
+            apply_fact_overlay(FactRepository().get_active_fact_map())
+        except Exception:
+            clear_fact_overlay()
+
+    def _fact_education(self, matched_symptoms, matched_risk_factors) -> list[dict]:
+        """Doctor-managed education (meaning/prevention, EN + KM) for the
+        symptoms and risk factors this assessment matched. Rendered by the
+        report's symptom guide cards instead of the compiled locale strings.
+        Rebuilt on every result load, so doctor edits show on old reports too."""
+        try:
+            rows = FactRepository().list_facts(status="active")
+        except Exception:
+            return []
+        if not rows:
+            return []
+        wanted = {str(label or "").strip().lower() for label in list(matched_symptoms) + list(matched_risk_factors)}
+        wanted.discard("")
+        education = []
+        for row in rows:
+            match_labels = {str(row.get("label") or "").strip().lower()}
+            for alias in row.get("aliases") or []:
+                readable = self._to_readable_label(alias).strip().lower()
+                if readable:
+                    match_labels.add(readable)
+            if match_labels & wanted:
+                education.append({
+                    "key": row.get("key"),
+                    "label": row.get("label"),
+                    "label_km": row.get("label_km"),
+                    "medical_term": row.get("medical_term"),
+                    "meaning": row.get("meaning"),
+                    "meaning_km": row.get("meaning_km"),
+                    "prevention": row.get("prevention"),
+                    "prevention_km": row.get("prevention_km"),
+                })
+        education.sort(key=lambda item: str(item.get("label") or ""))
+        return education
+
     def _apply_presentation_fields(self, enriched: dict, normalized_payload: dict) -> dict:
         """Compute every presentation field the result report renders — matched
         symptoms/risk factors, evidence completeness, bilingual summaries and
@@ -986,6 +1036,7 @@ class DiagnosisService:
         enriched["confidence_level"] = confidence_level
         enriched["matched_symptoms"] = matched_symptoms
         enriched["matched_risk_factors"] = matched_risk_factors
+        enriched["fact_education"] = self._fact_education(matched_symptoms, matched_risk_factors)
         enriched["missing_inputs"] = missing_inputs
         enriched["provided_inputs"] = provided_inputs
         enriched["confidence_status"] = confidence_status

@@ -4,6 +4,7 @@ import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
 import { RuleSimulator } from '@/components/knowledge-base/RuleSimulator'
 import { KnowledgeBaseDashboard } from '@/components/knowledge-base/KnowledgeBaseDashboard'
+import { FactCatalog } from '@/components/knowledge-base/FactCatalog'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { LoadingState } from '@/components/ui/LoadingState'
 import {
@@ -464,6 +465,7 @@ export function RulesPage() {
           <TabsTrigger value="editor">{t('rules.tabs.editor', 'Rule Editor')}</TabsTrigger>
           <TabsTrigger value="visual">{t('rules.tabs.visual', 'Visual Graph')}</TabsTrigger>
           <TabsTrigger value="simulator">{t('rules.tabs.sandbox', 'Sandbox')}</TabsTrigger>
+          <TabsTrigger value="facts">{t('rules.tabs.facts', 'Facts')}</TabsTrigger>
         </TabsList>
       </div>
 
@@ -841,6 +843,10 @@ export function RulesPage() {
 
       <TabsContent value="simulator" className="mt-0">
         <RuleSimulator rules={rules} />
+      </TabsContent>
+
+      <TabsContent value="facts" className="mt-0">
+        <FactCatalog />
       </TabsContent>
     </Tabs>
   )

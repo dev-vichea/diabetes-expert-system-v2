@@ -8,6 +8,7 @@ Works entirely with symptoms - no lab results required.
 from app.expert_system.intelligent_interview import IntelligentInterview, generate_interview_questions
 from app.expert_system.symptom_based_rules import generate_symptom_rules, get_symptom_based_assessment
 from app.expert_system.symptom_confidence import calculate_symptom_confidence, get_confidence_explanation
+from app.expert_system.symptom_database import apply_fact_overlay, clear_fact_overlay
 from app.expert_system.enhanced_inference_engine import run_enhanced_inference
 from app.expert_system.symptom_database import get_cardinal_symptoms, get_emergency_symptoms
 from app.expert_system.patient_messaging import rewrite_recommendation_bilingual
@@ -161,6 +162,14 @@ class ConversationalAssessmentService:
         
         age = demographics.get("age")
         
+        # Doctor-managed fact knowledge overlays the static catalog so edited
+        # weights / type indications drive the confidence reasoning.
+        try:
+            from app.repositories import FactRepository
+            apply_fact_overlay(FactRepository().get_active_fact_map())
+        except Exception:
+            clear_fact_overlay()
+
         # Calculate symptom-based confidence
         confidence_data = calculate_symptom_confidence(symptoms, age, risk_factors)
         

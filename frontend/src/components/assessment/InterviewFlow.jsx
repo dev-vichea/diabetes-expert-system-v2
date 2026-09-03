@@ -322,9 +322,8 @@ export function InterviewFlow(props) {
       ) : null}
 
       <div className="mt-4 flex items-center justify-end gap-2 pb-2">
-        {/* Back — jump to the previous question (or return to the natural
-            flow position while editing an earlier one). Hidden on the very
-            first question, when there is nothing to go back to. */}
+        {/* Back — step back to the card the user saw just before this one,
+            retracing the visit path one question at a time. */}
         {onBack && canBack ? (
           <button type="button" className="btn-secondary mr-auto gap-1.5" onClick={onBack}>
             <ArrowLeft className="h-4 w-4" />

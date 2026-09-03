@@ -387,7 +387,7 @@ function SurfaceSection({ title, children, icon: Icon }) {
 
 export function DiagnosisResultPage() {
   const { user } = useAuth()
-  const { t, tExact } = useLanguage()
+  const { t, tExact, isKhmer } = useLanguage()
   const location = useLocation()
   const navigate = useNavigate()
   const [showRestartConfirm, setShowRestartConfirm] = useState(false)
@@ -490,6 +490,35 @@ export function DiagnosisResultPage() {
 
   const matchedSymptoms = Array.isArray(result?.matched_symptoms) ? result.matched_symptoms : []
   const matchedRiskFactors = Array.isArray(result?.matched_risk_factors) ? result.matched_risk_factors : []
+  // Doctor-managed fact education (Knowledge Base → Facts) rides on the result.
+  // It wins over the compiled locale guide so doctor edits reach patients even
+  // on previously saved reports; missing texts fall back to the locale strings.
+  const factEducationByLabel = useMemo(() => {
+    const map = {}
+    for (const item of Array.isArray(result?.fact_education) ? result.fact_education : []) {
+      if (item?.label) map[String(item.label).trim().toLowerCase()] = item
+    }
+    return map
+  }, [result?.fact_education])
+  const resolveGuide = (label, localeGuide) => {
+    const dbGuide = factEducationByLabel[String(label || '').trim().toLowerCase()]
+    if (!dbGuide) {
+      return {
+        name: localeGuide?.name || null,
+        term: localeGuide?.term,
+        meaning: localeGuide?.meaning,
+        prevention: localeGuide?.prevention,
+      }
+    }
+    return {
+      // Doctor-managed label wins over the compiled exact-text map, so Khmer
+      // reports show the Khmer name the doctor maintains in the fact catalog.
+      name: (isKhmer ? dbGuide.label_km : dbGuide.label) || localeGuide?.name || null,
+      term: dbGuide.medical_term || localeGuide?.term,
+      meaning: (isKhmer ? dbGuide.meaning_km : dbGuide.meaning) || dbGuide.meaning || localeGuide?.meaning,
+      prevention: (isKhmer ? dbGuide.prevention_km : dbGuide.prevention) || dbGuide.prevention || localeGuide?.prevention,
+    }
+  }
   const recommendations = Array.isArray(result?.recommendations) ? result.recommendations : []
   const adaptiveAssessment = result?.adaptive_assessment && typeof result.adaptive_assessment === 'object' ? result.adaptive_assessment : null
   const adaptivePatterns = Array.isArray(adaptiveAssessment?.patterns) ? adaptiveAssessment.patterns : []
@@ -912,13 +941,14 @@ export function DiagnosisResultPage() {
                 <ul className="mt-3 space-y-3">
                   {matchedSymptoms.map((symptom) => {
                     const guideKey = getSymptomGuideKey(symptom)
-                    const guide = guideKey ? t(`diagnosisResult.symptomGuide.items.${guideKey}`, null) : null
+                    const localeGuide = guideKey ? t(`diagnosisResult.symptomGuide.items.${guideKey}`, null) : null
+                    const guide = resolveGuide(symptom, localeGuide)
                     return (
                       <li key={symptom} className="flex items-start gap-2.5">
                         <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-500 dark:bg-cyan-400" aria-hidden="true" />
                         <div className="min-w-0">
                           <p className="text-[1.05rem] font-bold leading-snug text-slate-900 dark:text-slate-100">
-                            {tExact(symptom)}
+                            {(guide && guide.name) || tExact(symptom)}
                             {guide && guide.term ? (
                               <span className="ml-1.5 text-xs font-bold uppercase tracking-wide text-cyan-700 dark:text-cyan-400">{String(guide.term)}</span>
                             ) : null}
@@ -958,12 +988,13 @@ export function DiagnosisResultPage() {
                 <ul className="mt-3 space-y-3">
                   {matchedRiskFactors.map((risk) => {
                     const riskKey = getRiskGuideKey(risk)
-                    const riskGuide = riskKey ? t(`diagnosisResult.riskGuide.items.${riskKey}`, null) : null
+                    const localeRiskGuide = riskKey ? t(`diagnosisResult.riskGuide.items.${riskKey}`, null) : null
+                    const riskGuide = resolveGuide(risk, localeRiskGuide)
                     return (
                       <li key={risk} className="flex items-start gap-2.5">
                         <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500 dark:bg-amber-400" aria-hidden="true" />
                         <div className="min-w-0">
-                          <p className="text-[1.05rem] font-bold leading-snug text-slate-900 dark:text-slate-100">{tExact(risk)}</p>
+                          <p className="text-[1.05rem] font-bold leading-snug text-slate-900 dark:text-slate-100">{(riskGuide && riskGuide.name) || tExact(risk)}</p>
                           {riskGuide && riskGuide.meaning ? (
                             <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{String(riskGuide.meaning)}</p>
                           ) : null}
