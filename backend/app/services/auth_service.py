@@ -1,12 +1,14 @@
+from pathlib import Path
 import time
 from datetime import UTC, datetime
 from uuid import uuid4
 
+from flask import current_app
 import jwt
 from jwt import ExpiredSignatureError, InvalidTokenError
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from app.errors import UnauthorizedError, ValidationError
+from app.errors import NotFoundError, UnauthorizedError, ValidationError
 from app.extensions import db
 
 
@@ -282,3 +284,96 @@ class AuthService:
             user_id=int(payload["sub"]) if payload.get("sub") else None,
             expires_at=datetime.fromtimestamp(int(payload.get("exp", int(time.time()))), UTC),
         )
+
+    @staticmethod
+    def get_avatar_dir() -> Path:
+        avatar_dir = Path(current_app.instance_path) / "uploads" / "avatars"
+        avatar_dir.mkdir(parents=True, exist_ok=True)
+        return avatar_dir
+
+    def update_profile(self, user_id: int, payload: dict) -> dict:
+        if not isinstance(payload, dict):
+            raise ValidationError("Payload must be a JSON object.")
+
+        user = self.user_repository.get_by_id(user_id)
+        if not user:
+            raise NotFoundError("User not found.")
+
+        updates = {}
+        if "name" in payload:
+            name = str(payload.get("name") or "").strip()
+            if not name:
+                raise ValidationError("Name cannot be empty.")
+            updates["name"] = name
+
+        for field in ("phone", "department", "title", "hospital_affiliation", "license_number", "bio", "avatar_url"):
+            if field in payload:
+                val = payload.get(field)
+                if val is not None:
+                    val = str(val).strip()
+                    if val == "":
+                        val = None
+                updates[field] = val
+
+        if not updates:
+            raise ValidationError("At least one profile field is required to update.")
+
+        updated_user = self.user_repository.update_profile(user, updates)
+        public_user = self.user_repository.to_public_dict(updated_user)
+
+        if self.audit_log_repository:
+            self.audit_log_repository.create(
+                action="user.profile_update",
+                entity_type="user",
+                entity_id=str(user.id),
+                actor_user_id=user.id,
+                metadata={"updated_fields": sorted(updates.keys())},
+            )
+
+        return public_user
+
+    def save_avatar(self, user_id: int, file) -> dict:
+        if not file or not file.filename:
+            raise ValidationError("No image file provided.")
+
+        allowed_extensions = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+        original_ext = Path(file.filename).suffix.lower()
+        if original_ext not in allowed_extensions:
+            raise ValidationError(f"Invalid image format '{original_ext}'. Allowed formats: PNG, JPG, JPEG, WEBP, GIF.")
+
+        user = self.user_repository.get_by_id(user_id)
+        if not user:
+            raise NotFoundError("User not found.")
+
+        # Clean old local avatar file if exists
+        self._remove_local_avatar_file(user.avatar_url)
+
+        avatar_dir = self.get_avatar_dir()
+        filename = f"avatar_{user_id}_{int(time.time())}_{uuid4().hex[:8]}{original_ext}"
+        target_path = avatar_dir / filename
+        file.save(str(target_path))
+
+        avatar_url = f"/api/auth/avatar/{filename}"
+        updated_user = self.user_repository.update_profile(user, {"avatar_url": avatar_url})
+        return self.user_repository.to_public_dict(updated_user)
+
+    def delete_avatar(self, user_id: int) -> dict:
+        user = self.user_repository.get_by_id(user_id)
+        if not user:
+            raise NotFoundError("User not found.")
+
+        self._remove_local_avatar_file(user.avatar_url)
+        updated_user = self.user_repository.update_profile(user, {"avatar_url": None})
+        return self.user_repository.to_public_dict(updated_user)
+
+    def _remove_local_avatar_file(self, avatar_url: str | None):
+        if not avatar_url or not avatar_url.startswith("/api/auth/avatar/"):
+            return
+        filename = avatar_url.replace("/api/auth/avatar/", "")
+        file_path = self.get_avatar_dir() / filename
+        try:
+            if file_path.is_file():
+                file_path.unlink()
+        except OSError:
+            pass
+

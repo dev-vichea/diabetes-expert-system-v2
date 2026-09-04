@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Bell, ChevronDown, ChevronRight, Languages, LogOut, Menu, Moon, PanelLeft, Plus, Settings, Sun, UserRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { HeaderClock } from './HeaderClock'
+import { UserAvatar } from '@/components/ui'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 export function Topbar({
@@ -165,21 +166,30 @@ export function Topbar({
               className="dark-hover-border flex min-h-11 items-center gap-1 rounded-full border border-slate-200 bg-white px-1.5 py-1.5 text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-primary-50 dark:border-[#1e2234] dark:bg-[#101020] dark:text-slate-200 dark:hover:bg-[#181830] sm:gap-2 sm:px-2"
               onClick={() => setMenuOpen((prev) => !prev)}
             >
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-primary-500 to-sky-500 text-xs font-bold text-white">
-                {initials}
-              </span>
+              <UserAvatar
+                name={user?.name}
+                src={user?.avatar_url}
+                size="sm"
+              />
               <span className="hidden max-w-32 truncate text-sm font-semibold md:inline">{user?.name || t('common.user')}</span>
               <ChevronDown className="h-4 w-4" />
             </button>
 
             {menuOpen ? (
               <div className="dark-hover-border absolute right-0 z-30 mt-2 w-[min(16rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-[#1e2234] dark:bg-[#0d0d1c]">
-                <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-[#1e2234] dark:bg-[#101020]">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{user?.name || t('common.unknownUser')}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{user?.email || t('common.noEmail')}</p>
-                  <p className="mt-1 inline-flex rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-700 dark:bg-primary-500/10 dark:text-primary-300">
-                    {t(`roles.${activeRole}`)}
-                  </p>
+                <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-[#1e2234] dark:bg-[#101020]">
+                  <UserAvatar
+                    name={user?.name}
+                    src={user?.avatar_url}
+                    size="md"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{user?.name || t('common.unknownUser')}</p>
+                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user?.email || t('common.noEmail')}</p>
+                    <p className="mt-1 inline-flex rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-700 dark:bg-primary-500/10 dark:text-primary-300">
+                      {t(`roles.${activeRole}`)}
+                    </p>
+                  </div>
                 </div>
 
                 <button

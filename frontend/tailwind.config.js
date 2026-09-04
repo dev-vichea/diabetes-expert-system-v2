@@ -44,6 +44,9 @@ export default {
       boxShadow: {
         soft: '0 10px 25px -15px rgba(13, 42, 74, 0.35)',
       },
+      spacing: {
+        4.5: '1.125rem',
+      },
       fontFamily: {
         sans: ['var(--app-font-sans)', 'Manrope', 'Noto Sans Khmer', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },

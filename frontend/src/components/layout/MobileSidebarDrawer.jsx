@@ -11,6 +11,7 @@ export function MobileSidebarDrawer({ open, navItems, user, onLogout, onClose })
       >
         <Sidebar
           navItems={navItems}
+          user={user}
           userName={user?.name}
           userEmail={user?.email}
           activeRole={user?.roles?.[0] || user?.role || 'user'}

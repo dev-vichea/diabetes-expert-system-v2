@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import api, { clearAuthStorage, getAccessToken, getRefreshToken } from '../api/client'
+import api, { clearAuthStorage, getAccessToken, getApiData, getRefreshToken } from '../api/client'
 
 const AuthContext = createContext(null)
 
@@ -57,9 +57,18 @@ export function AuthProvider({ children }) {
     return nextUser
   }
 
+  const updateUser = (patch) => {
+    setUser((current) => {
+      const updated = { ...current, ...patch }
+      localStorage.setItem('user', JSON.stringify(updated))
+      return updated
+    })
+  }
+
   const value = useMemo(() => ({
     user,
     setUser,
+    updateUser,
     logout,
     refreshUser,
   }), [user])

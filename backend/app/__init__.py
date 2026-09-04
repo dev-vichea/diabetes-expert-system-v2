@@ -89,6 +89,31 @@ def _register_cli_commands(app: Flask):
             db.session.rollback()
 
 
+def _ensure_user_profile_columns():
+    """Ensure newly added columns to users table exist in existing database schemas."""
+    try:
+        inspector = inspect(db.engine)
+        if "users" not in inspector.get_table_names():
+            return
+        existing_cols = {col["name"] for col in inspector.get_columns("users")}
+        columns_to_add = [
+            ("avatar_url", "TEXT"),
+            ("phone", "VARCHAR(40)"),
+            ("department", "VARCHAR(120)"),
+            ("title", "VARCHAR(120)"),
+            ("hospital_affiliation", "VARCHAR(255)"),
+            ("license_number", "VARCHAR(80)"),
+            ("bio", "TEXT"),
+        ]
+        with db.engine.connect() as conn:
+            for col_name, col_type in columns_to_add:
+                if col_name not in existing_cols:
+                    conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
+            conn.commit()
+    except Exception as e:
+        logging.getLogger(__name__).warning("Could not auto-add user columns: %s", e)
+
+
 def create_app(config_object=Config):
     app = Flask(__name__)
     app.config.from_object(config_object)
@@ -109,6 +134,8 @@ def create_app(config_object=Config):
     with app.app_context():
         if app.config.get("DB_AUTO_CREATE", False):
             db.create_all()
+
+        _ensure_user_profile_columns()
 
         if app.config.get("SEED_DEMO_DATA", True):
             table_names = set(inspect(db.engine).get_table_names())

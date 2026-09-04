@@ -68,6 +68,22 @@ export function getGreetingKey(now = new Date()) {
   return 'greetingEvening'
 }
 
+/** Determines active daily routine phase (morning, afternoon, evening, bedtime) by ICT hour. */
+export function getActiveRoutinePhase(now = new Date()) {
+  const hour = Number(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: CAMBODIA_TIME_ZONE,
+      hour: 'numeric',
+      hourCycle: 'h23',
+    }).format(now)
+  )
+
+  if (hour >= 6 && hour < 11) return 'morning'
+  if (hour >= 11 && hour < 16) return 'afternoon'
+  if (hour >= 16 && hour < 21) return 'evening'
+  return 'bedtime'
+}
+
 function ictDayNumber(value) {
   // 'en-CA' renders as YYYY-MM-DD, which converts cleanly to a UTC day number.
   const dayKey = new Intl.DateTimeFormat('en-CA', {

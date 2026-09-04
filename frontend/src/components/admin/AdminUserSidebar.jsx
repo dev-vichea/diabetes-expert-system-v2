@@ -1,6 +1,6 @@
 import { CalendarDays, Mail, Shield, UserRound } from 'lucide-react'
 import { formatDateTime } from '@/lib/datetime'
-import { Avatar, AvatarBadge, AvatarFallback } from '@/components/ui'
+import { UserAvatar } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/contexts/LanguageContext'
 
@@ -29,10 +29,13 @@ export function AdminUserSidebar({ user, permissions = [], className }) {
     <aside className={cn('surface h-fit min-w-0 overflow-hidden p-0 xl:sticky xl:top-24', className)}>
       <div className="border-b border-slate-200 px-5 py-5 dark:border-slate-800">
         <div className="flex items-center gap-4">
-          <Avatar className="h-16 w-16">
-            <AvatarFallback className="text-2xl">{getInitials(user?.name)}</AvatarFallback>
-            <AvatarBadge className={user?.is_active ? 'bg-emerald-500' : 'bg-slate-400 dark:bg-slate-500'} />
-          </Avatar>
+          <UserAvatar
+            name={user?.name}
+            src={user?.avatar_url}
+            size="xl"
+            className="h-16 w-16 text-2xl shadow-md"
+            status={user?.is_active}
+          />
           <div className="min-w-0">
             <h2 className="truncate text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-50">
               {user?.name || t('userSidebar.userFallback')}

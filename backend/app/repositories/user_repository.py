@@ -179,6 +179,26 @@ class UserRepository:
             "created_at": serialize_datetime(permission.created_at),
         }
 
+    def update_profile(self, user: User, payload: dict) -> User:
+        allowed_fields = (
+            "name",
+            "avatar_url",
+            "phone",
+            "department",
+            "title",
+            "hospital_affiliation",
+            "license_number",
+            "bio",
+        )
+        for field in allowed_fields:
+            if field in payload:
+                val = payload[field]
+                if isinstance(val, str):
+                    val = val.strip() or None
+                setattr(user, field, val)
+        db.session.commit()
+        return user
+
     def to_public_dict(self, user: User) -> dict:
         role_names = sorted(role.name for role in user.roles)
         permissions = self.get_permissions(user)
@@ -187,6 +207,13 @@ class UserRepository:
             "id": user.id,
             "email": user.email,
             "name": user.name,
+            "avatar_url": getattr(user, "avatar_url", None),
+            "phone": getattr(user, "phone", None),
+            "department": getattr(user, "department", None),
+            "title": getattr(user, "title", None),
+            "hospital_affiliation": getattr(user, "hospital_affiliation", None),
+            "license_number": getattr(user, "license_number", None),
+            "bio": getattr(user, "bio", None),
             "is_active": user.is_active,
             "roles": role_names,
             "role": role_names[0] if role_names else "patient",

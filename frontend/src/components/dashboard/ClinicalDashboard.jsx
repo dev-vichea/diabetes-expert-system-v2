@@ -18,6 +18,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   SectionCard,
+  UserAvatar,
 } from '@/components/ui'
 import api, { getApiData } from '@/api/client'
 import { formatDateTime } from '@/lib/datetime'
@@ -318,7 +319,10 @@ export function ClinicalDashboard({ activeRole }) {
                           } hover:bg-primary-50 dark:hover:bg-primary-900/10`}
                       >
                         <td className="whitespace-nowrap px-6 py-4">
-                          <span className="font-medium text-slate-900 dark:text-slate-200">{caseItem.patient_name}</span>
+                          <div className="flex items-center gap-3">
+                            <UserAvatar name={caseItem.patient_name} size="sm" />
+                            <span className="font-medium text-slate-900 dark:text-slate-200">{caseItem.patient_name}</span>
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex min-w-0 flex-wrap items-center gap-2">

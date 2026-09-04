@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Activity, GraduationCap, Pill, Stethoscope } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 
@@ -194,23 +195,26 @@ export function LandingPage() {
         {/* ── 3. Glassmorphism Badges ── */}
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '3.5rem' }}>
           {[
-            { icon: '🩺', text: t('landing.badges.aiDiagnosis') },
-            { icon: '📊', text: t('landing.badges.riskAnalysis') },
-            { icon: '💊', text: t('landing.badges.treatmentPlan') }
-          ].map((b, i) => (
-            <div key={i} className="glass-badge" style={{
-              display: 'flex', alignItems: 'center', gap: '0.5rem',
-              padding: '0.6rem 1.4rem', borderRadius: '50px', 
-              background: C.glassBg, border: `1px solid ${C.glassBorder}`, 
-              boxShadow: C.glassShadow, backdropFilter: 'blur(12px)',
-              color: C.teal, fontWeight: 600, fontSize: '0.95rem',
-              opacity: visibleBadges > i ? 1 : 0, transform: `translateY(${visibleBadges > i ? 0 : 20}px) scale(${visibleBadges > i ? 1 : 0.95})`, 
-              transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            }}>
-              <span style={{ fontSize: '1.2rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.05))' }}>{b.icon}</span>
-              {b.text}
-            </div>
-          ))}
+            { icon: Stethoscope, text: t('landing.badges.aiDiagnosis') },
+            { icon: Activity, text: t('landing.badges.riskAnalysis') },
+            { icon: Pill, text: t('landing.badges.treatmentPlan') }
+          ].map((b, i) => {
+            const Icon = b.icon
+            return (
+              <div key={i} className="glass-badge" style={{
+                display: 'flex', alignItems: 'center', gap: '0.6rem',
+                padding: '0.6rem 1.4rem', borderRadius: '50px', 
+                background: C.glassBg, border: `1px solid ${C.glassBorder}`, 
+                boxShadow: C.glassShadow, backdropFilter: 'blur(12px)',
+                color: C.teal, fontWeight: 600, fontSize: '0.95rem',
+                opacity: visibleBadges > i ? 1 : 0, transform: `translateY(${visibleBadges > i ? 0 : 20}px) scale(${visibleBadges > i ? 1 : 0.95})`, 
+                transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+              }}>
+                <Icon className="h-4 w-4" style={{ color: C.teal }} />
+                {b.text}
+              </div>
+            )
+          })}
         </div>
 
         {/* ── 4. Premium CTA Button ── */}
@@ -258,7 +262,7 @@ export function LandingPage() {
             border: `1px solid ${C.glassBorder}`, color: C.gold, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.6rem',
             backdropFilter: 'blur(10px)', boxShadow: `0 8px 24px ${C.goldBg}`
           }}>
-            <span style={{ fontSize: '1.2rem', filter: 'drop-shadow(0 2px 4px rgba(245,158,11,0.2))' }}>👨‍🏫</span>
+            <GraduationCap className="h-4 w-4" style={{ color: C.gold }} />
             <span style={{ color: C.textSoft }}>{t('landing.supervisedBy')}</span>
             <b style={{ fontFamily: 'var(--font-latin-display)', fontWeight: 700 }}>{t('landing.supervisorName')}</b>
           </div>

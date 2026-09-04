@@ -27,6 +27,7 @@ export { FilterBar } from './FilterBar'
 export { Checkbox } from './checkbox'
 export { Toaster } from './sonner'
 export { Avatar, AvatarImage, AvatarFallback, AvatarBadge } from './avatar'
+export { UserAvatar, getAvatarGradient, getInitials } from './UserAvatar'
 export {
   Combobox,
   ComboboxInput,

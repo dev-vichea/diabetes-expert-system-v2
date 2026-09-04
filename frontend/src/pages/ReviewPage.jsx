@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
-import { EmptyState, ErrorAlert } from '@/components/ui'
+import { EmptyState, ErrorAlert, UserAvatar } from '@/components/ui'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 function toCertaintyPercent(certainty) {
@@ -198,11 +198,7 @@ export function ReviewPage() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 truncate">
-                    {isReviewed ? (
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                    ) : (
-                      <Circle className={`h-4 w-4 shrink-0 ${isCritical ? 'text-amber-500 fill-amber-500/10' : 'text-cyan-500 fill-cyan-500/10'}`} />
-                    )}
+                    <UserAvatar name={result.patient_name} size="xs" />
                     <span className={`truncate font-medium ${!isReviewed ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>
                       {result.patient_name || t('reviewPage.states.unknownPatient', 'Unknown Patient')}
                     </span>
@@ -254,7 +250,7 @@ export function ReviewPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <h1 className="flex items-center gap-3 break-words text-2xl font-bold text-slate-900 dark:text-white">
-                    <User className="h-6 w-6 text-slate-400" />
+                    <UserAvatar name={selectedResult.patient_name} size="lg" />
                     {selectedResult.patient_name || t('reviewPage.states.unknownPatient', 'Patient')}
                   </h1>
                   <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">

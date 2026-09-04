@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Activity, ChevronRight, Loader2, Pencil, Search, SlidersHorizontal, UserPlus, X } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
-import { AppSelect, ErrorAlert, StatusBadge } from '@/components/ui'
+import { AppSelect, ErrorAlert, StatusBadge, UserAvatar } from '@/components/ui'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 const DEFAULT_FILTERS = {
@@ -310,9 +310,11 @@ export function PatientsPage() {
                       onKeyDown={(event) => { if (event.key === 'Enter') navigate(`/patients/${patient.id}`) }}
                       className={`group flex cursor-pointer items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-500/10' : 'hover:bg-slate-50 dark:hover:bg-[#181830]'}`}
                     >
-                      <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-xs font-bold text-white ${avatarTone(patient.full_name)}`}>
-                        {initialsOf(patient.full_name)}
-                      </span>
+                      <UserAvatar
+                        name={patient.full_name}
+                        src={patient.avatar_url}
+                        size="md"
+                      />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{patient.full_name}</p>
                         <p className="truncate text-xs text-slate-500">{patient.phone || t('patientsPage.list.noPhone', 'No phone on file')}</p>
@@ -374,9 +376,11 @@ export function PatientsPage() {
 
         {isEditing && selectedPatient ? (
           <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 dark:border-[#1e2234] dark:bg-[#0d0d1c]">
-            <span className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-xs font-bold text-white ${avatarTone(selectedPatient.full_name)}`}>
-              {initialsOf(selectedPatient.full_name)}
-            </span>
+            <UserAvatar
+              name={selectedPatient.full_name}
+              src={selectedPatient.avatar_url}
+              className="h-11 w-11 text-xs"
+            />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{selectedPatient.full_name}</p>
               <p className="truncate text-xs text-slate-500">{selectedPatient.phone || t('patientsPage.list.noPhone', 'No phone on file')}</p>

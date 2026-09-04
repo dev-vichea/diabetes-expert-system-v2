@@ -43,6 +43,7 @@ import {
   Tabs,
   TabsList,
   TabsTrigger,
+  UserAvatar,
 } from '@/components/ui'
 
 const DEFAULT_EDITOR = {
@@ -805,9 +806,11 @@ export function AdminPage() {
                         <tr key={user.id} className="border-t border-slate-200 transition hover:bg-slate-50/70 dark:border-slate-800 dark:hover:bg-slate-950/40">
                           <td className="px-3 py-3">
                             <div className="flex items-center gap-2.5">
-                              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-xs font-semibold text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
-                                {getInitials(user.name)}
-                              </div>
+                              <UserAvatar
+                                name={user.name}
+                                src={user.avatar_url}
+                                className="h-9 w-9 text-xs"
+                              />
                               <div className="min-w-0">
                                 <p className="truncate text-sm font-semibold text-slate-950 dark:text-slate-50">{user.name}</p>
                                 <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-slate-500 dark:text-slate-400">

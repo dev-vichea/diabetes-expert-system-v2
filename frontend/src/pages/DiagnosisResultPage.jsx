@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
-import { EmptyState, ErrorAlert, StatusBadge, ConfirmDialog } from '@/components/ui'
+import { EmptyState, ErrorAlert, StatusBadge, ConfirmDialog, LoadingState } from '@/components/ui'
 import { ConditionEducationPanel } from '@/components/diagnosis/ConditionEducationPanel'
 import { PlainSummaryStrip } from '@/components/diagnosis/PlainSummaryStrip'
 import { getSymptomGuideKey } from '@/lib/symptom-guide'
@@ -392,12 +392,12 @@ export function DiagnosisResultPage() {
   const navigate = useNavigate()
   const [showRestartConfirm, setShowRestartConfirm] = useState(false)
   const [loadError, setLoadError] = useState('')
-  const [loadingRemote, setLoadingRemote] = useState(false)
-  const [downloadingReport, setDownloadingReport] = useState(false)
   const diagnosisResultId = useMemo(() => {
     const params = new URLSearchParams(location.search)
     return params.get('diagnosis_result_id')
   }, [location.search])
+  const [loadingRemote, setLoadingRemote] = useState(() => Boolean(new URLSearchParams(location.search).get('diagnosis_result_id')))
+  const [downloadingReport, setDownloadingReport] = useState(false)
   const [snapshot, setSnapshot] = useState(() => {
     const fromState = normalizeSnapshot(location.state)
     if (fromState) return fromState
@@ -449,6 +449,7 @@ export function DiagnosisResultPage() {
       }
     }
 
+    setLoadingRemote(false)
     // No specific result requested — fall back to the local snapshot of the
     // latest assessment for this account.
     const fromState = normalizeSnapshot(location.state)
@@ -460,11 +461,25 @@ export function DiagnosisResultPage() {
     setSnapshot(readDiagnosisResultSnapshot(user))
   }, [diagnosisResultId, location.state, user])
 
-  if (loadingRemote && !snapshot?.result) {
-    return <div className="text-sm text-slate-500">{t('diagnosisResult.loading', 'Loading diagnosis result...')}</div>
+  const result = snapshot?.result
+  const context = snapshot?.context || {}
+
+  // Doctor-managed fact education (Knowledge Base → Facts) rides on the result.
+  // It wins over the compiled locale guide so doctor edits reach patients even
+  // on previously saved reports; missing texts fall back to the locale strings.
+  const factEducationByLabel = useMemo(() => {
+    const map = {}
+    for (const item of Array.isArray(result?.fact_education) ? result.fact_education : []) {
+      if (item?.label) map[String(item.label).trim().toLowerCase()] = item
+    }
+    return map
+  }, [result?.fact_education])
+
+  if (loadingRemote && !result) {
+    return <LoadingState label={t('diagnosisResult.loading', 'Loading diagnosis result...')} className="py-16" />
   }
 
-  if (!snapshot?.result) {
+  if (!result) {
     return (
       <div className="space-y-4">
         <EmptyState
@@ -481,8 +496,6 @@ export function DiagnosisResultPage() {
     )
   }
 
-  const result = snapshot.result
-  const context = snapshot.context || {}
   const certaintyPercent = result?.certainty_percent != null
     ? Math.max(0, Math.min(100, Number(result.certainty_percent) || 0))
     : toCertaintyPercent(result?.certainty)
@@ -490,16 +503,6 @@ export function DiagnosisResultPage() {
 
   const matchedSymptoms = Array.isArray(result?.matched_symptoms) ? result.matched_symptoms : []
   const matchedRiskFactors = Array.isArray(result?.matched_risk_factors) ? result.matched_risk_factors : []
-  // Doctor-managed fact education (Knowledge Base → Facts) rides on the result.
-  // It wins over the compiled locale guide so doctor edits reach patients even
-  // on previously saved reports; missing texts fall back to the locale strings.
-  const factEducationByLabel = useMemo(() => {
-    const map = {}
-    for (const item of Array.isArray(result?.fact_education) ? result.fact_education : []) {
-      if (item?.label) map[String(item.label).trim().toLowerCase()] = item
-    }
-    return map
-  }, [result?.fact_education])
   const resolveGuide = (label, localeGuide) => {
     const dbGuide = factEducationByLabel[String(label || '').trim().toLowerCase()]
     if (!dbGuide) {

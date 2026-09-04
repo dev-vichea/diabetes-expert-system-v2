@@ -33,10 +33,11 @@ function splitNavGroups(navItems) {
 
 const BRAND_LOGO_SRC = '/images/logo.png'
 
-export function Sidebar({ navItems, userName, userEmail, activeRole, onLogout, onClose, collapsed = false }) {
+export function Sidebar({ navItems, user, userName, userEmail, activeRole, onLogout, onClose, collapsed = false }) {
   const { t } = useLanguage()
   const { workspace, system, documents } = splitNavGroups(navItems)
   const [logoVisible, setLogoVisible] = useState(true)
+  const effectiveUser = user || { name: userName, email: userEmail, role: activeRole }
 
   return (
     <SidebarRoot className="h-full min-h-0 overflow-hidden border-r border-slate-200 bg-white dark:border-[#1e2234] dark:bg-[#070712]">
@@ -86,7 +87,7 @@ export function Sidebar({ navItems, userName, userEmail, activeRole, onLogout, o
 
       <SidebarFooter className={`border-t border-slate-200 dark:border-[#1e2234] ${collapsed ? 'p-2 pt-2' : 'p-3 pt-2'}`}>
         <NavUser
-          user={{ name: userName, email: userEmail, role: activeRole }}
+          user={effectiveUser}
           collapsed={collapsed}
           onLogout={onLogout}
         />

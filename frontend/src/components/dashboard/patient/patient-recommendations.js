@@ -108,7 +108,7 @@ export function buildAutoRecommendations({ latestResult, results = [], t, daysSi
   if (flag('sedentary_lifestyle')) {
     push('stayActive', 3, Footprints, 'stayActiveTitle', 'stayActiveText', null, 'basisRiskFactor')
   }
-  push('balancedDiet', 3, Salad, 'balancedDietTitle', 'balancedDietText', null, null)
+  push('balancedDiet', 3, Salad, 'balancedDietTitle', 'balancedDietText', null, 'basisDietGuidelines')
 
   recs.sort((a, b) => a.priority - b.priority)
   return recs

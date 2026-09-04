@@ -19,6 +19,7 @@ import {
   Stethoscope,
   TestTube2,
   ClipboardList,
+  CheckCircle2,
   PenTool,
   PlusCircle,
   Building2,
@@ -490,12 +491,14 @@ export function DiagnosisPage() {
       navigate({ pathname: '/diagnosis', search: location.search }, { replace: true, state: null })
       return
     }
-    if (forceRestart) { startNew({ preservePatient: false }); navigate({ pathname: '/diagnosis', search: location.search }, { replace: true, state: null }); return }
+    /* forceRestart / New Assessment drop the patient too — strip any
+       ?patient_id= from the URL so it can't silently re-select the old one. */
+    if (forceRestart) { startNew({ preservePatient: false }); navigate({ pathname: '/diagnosis' }, { replace: true, state: null }); return }
     if (!restartRequestId) return
     if (handledRestartRef.current === restartRequestId) return
     handledRestartRef.current = restartRequestId
     if (isDraftPristine) startNew(); else setShowRestart(true)
-    navigate({ pathname: '/diagnosis', search: location.search }, { replace: true, state: null })
+    navigate({ pathname: '/diagnosis' }, { replace: true, state: null })
   }, [draftReady, forceRestart, isDraftPristine, location.search, navigate, restartRequestId, restartRequested])
 
   useEffect(() => { if (needsPatient) loadPatients() }, [needsPatient])
@@ -593,12 +596,19 @@ export function DiagnosisPage() {
   }
 
   function startNew(opts = {}) {
-    const pid = (opts.preservePatient ?? needsPatient) ? form.patient_id : ''
+    /* Restart always lands back on question 1 ("Who is this assessment for?")
+       — the previously selected patient is NOT kept, so a doctor can pick a
+       different person. Explicit preservePatient is for special flows only. */
+    const pid = opts.preservePatient ? form.patient_id : ''
     window.localStorage.removeItem(storageKey)
     setForm({ ...DEFAULT_FORM, patient_id: pid }); setQcm(DEFAULT_QCM)
     setExtraLabs([]); setResult(null); setError(''); setStep(1); setMaxReached(1)
     setInterviewDone([]); setInterviewSkipped([]); setCursorOverride(null); setInterviewTrail([])
     setSubjectMode(null)
+    /* Let the patient-record / profile prefills run again after the reset,
+       even if the same person (or "myself") is chosen once more. */
+    prefilledPatientRef.current = null
+    profilePrefilledRef.current = false
   }
 
   function getStepErrors(s = step) {
@@ -1032,7 +1042,7 @@ export function DiagnosisPage() {
               {step === REVIEW_STEP ? (
                 <div className="assessment-step-list space-y-5">
                   <p className="text-xs text-slate-500">
-                    {t('assessment.labs.mode', 'Mode')}: <span className="font-semibold">{assessmentMode === 'diagnostic' ? t('assessment.labs.diagnosticMode', '🔬 Diagnostic') : t('assessment.labs.screeningMode', '📋 Screening')}</span>
+                    {t('assessment.labs.mode', 'Mode')}: <span className="font-semibold">{assessmentMode === 'diagnostic' ? (<span className="inline-flex items-center gap-1 text-cyan-700 dark:text-cyan-300"><FlaskConical className="h-3.5 w-3.5" />{t('assessment.labs.diagnosticMode', 'Diagnostic')}</span>) : (<span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300"><ClipboardList className="h-3.5 w-3.5" />{t('assessment.labs.screeningMode', 'Screening')}</span>)}</span>
                     {' · '}
                     <button type="button" className="font-semibold text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 transition-colors" onClick={() => { setStep(1); setCursorOverride(null) }}>
                       {t('assessment.interview.editAnswers', 'Edit interview answers')}
@@ -1049,13 +1059,13 @@ export function DiagnosisPage() {
                         {[
                           [t('assessment.review.patient', 'Patient'), needsPatient ? (selectedPatient ? `${selectedPatient.full_name} (#${selectedPatient.id})` : t('assessment.patient.noSelection', 'Not selected')) : user?.name || 'Current user'],
                           ...(!needsPatient ? [[t('assessment.review.assessedFor', 'Assessed for'), subjectMode === 'other' ? t('assessment.review.forOther', 'Someone else') : t('assessment.review.forSelf', 'Myself')]] : []),
-                          [t('assessment.review.mode', 'Mode'), assessmentMode === 'diagnostic' ? t('assessment.labs.diagnosticMode', '🔬 Diagnostic') : t('assessment.labs.screeningMode', '📋 Screening')],
+                          [t('assessment.review.mode', 'Mode'), assessmentMode === 'diagnostic' ? t('assessment.labs.diagnosticMode', 'Diagnostic') : t('assessment.labs.screeningMode', 'Screening')],
                           [t('assessment.review.sexPregnancy', 'Sex / Pregnancy'), form.sex === 'female' ? `${sexLabel} · ${form.currently_pregnant ? t('assessment.interview.pregnantShort', 'Pregnant') : t('assessment.interview.notPregnant', 'Not pregnant')}` : sexLabel],
                           [t('assessment.review.profile', 'Age / BMI / Waist'), `${form.age || '-'} yrs / ${form.bmi || '-'} / ${form.waist_circumference || '-'} cm`],
                           [t('assessment.review.glucose', 'Glucose Tests'), `FPG: ${form.fasting_glucose || '-'} — A1c: ${form.hba1c || '-'} — OGTT: ${form.ogtt_2h || '-'} — RPG: ${form.random_plasma_glucose || '-'}`],
                           [t('assessment.review.symptoms', 'Symptoms'), `${selectedSymptoms.length + customSymptoms.length} ${t('common.selected', 'selected')}`],
                           [t('assessment.review.risks', 'Risk Factors'), `${selectedRisks.length} ${t('common.selected', 'selected')}`],
-                          [t('assessment.review.flags', 'Flags'), `Hypo: ${hasHypoTrigger ? t('common.yes', '🟡 Yes') : '—'} | Urgent: ${hasUrgentTrigger ? t('common.yes', '🔴 Yes') : '—'}`],
+                          [t('assessment.review.flags', 'Flags'), `Hypo: ${hasHypoTrigger ? t('common.yes', 'Yes') : '—'} | Urgent: ${hasUrgentTrigger ? t('common.yes', 'Yes') : '—'}`],
                         ].map(([label, value]) => (
                           <div key={label} className="grid gap-1 px-4 py-2.5 sm:grid-cols-[11rem_1fr] sm:items-center">
                             <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
@@ -1068,7 +1078,10 @@ export function DiagnosisPage() {
 
                   {result ? (
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20 p-4">
-                      <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">✅ {t('diagnosisResult.assessmentComplete', 'Assessment complete! Your results have been saved.')}</p>
+                      <p className="flex items-center gap-2 text-sm font-medium text-emerald-800 dark:text-emerald-300">
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                        <span>{t('diagnosisResult.assessmentComplete', 'Assessment complete! Your results have been saved.')}</span>
+                      </p>
                       <button type="button" className="btn-primary mt-3 gap-1.5" onClick={() => navigate(result?.diagnosis_result_id ? `/diagnosis/result?diagnosis_result_id=${result.diagnosis_result_id}` : '/diagnosis/result')}>{t('diagnosisResult.viewReport', 'View Report →')}</button>
                     </div>
                   ) : (
@@ -1083,8 +1096,9 @@ export function DiagnosisPage() {
             {/* ── Footer Navigation (review step only — the interview has its own actions) ── */}
             {step === REVIEW_STEP ? (
               <div className="flex flex-col gap-3 border-t border-slate-200 pt-5 dark:border-slate-700 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-                <span className="text-xs text-slate-400">
-                  {result ? t('assessment.footerHintSubmitted', '✅ Assessment submitted') : t('assessment.footerHintReady', '🚀 Ready to submit')}
+                <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
+                  {result ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> : <Sparkles className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />}
+                  <span>{result ? t('assessment.footerHintSubmitted', 'Assessment submitted') : t('assessment.footerHintReady', 'Ready to submit')}</span>
                 </span>
                 <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <button type="button" className="btn-secondary gap-1.5" onClick={() => { setStep(1); setCursorOverride(null) }}>
@@ -1092,7 +1106,7 @@ export function DiagnosisPage() {
                   </button>
                   <button type="submit" className="btn-primary gap-1.5" disabled={submitting}>
                     <Send className="h-4 w-4" />
-                    {submitting ? t('assessment.status.analyzing', 'Analyzing...') : result ? t('assessment.status.runAgain', 'Run Again') : t('assessment.status.runAssessment', '🔬 Run Assessment')}
+                    {submitting ? t('assessment.status.analyzing', 'Analyzing...') : result ? t('assessment.status.runAgain', 'Run Again') : t('assessment.status.runAssessment', 'Run Assessment')}
                   </button>
                   {result ? (
                     <button type="button" className="btn-secondary gap-1.5" onClick={() => setShowRestart(true)}>

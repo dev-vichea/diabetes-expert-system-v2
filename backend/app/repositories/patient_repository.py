@@ -183,6 +183,7 @@ class PatientRepository:
             "id": patient.id,
             "user_id": patient.user_id,
             "full_name": patient.full_name,
+            "avatar_url": getattr(patient.user, "avatar_url", None) if getattr(patient, "user", None) else None,
             "gender": patient.gender,
             "date_of_birth": patient.date_of_birth.isoformat() if patient.date_of_birth else None,
             "phone": patient.phone,

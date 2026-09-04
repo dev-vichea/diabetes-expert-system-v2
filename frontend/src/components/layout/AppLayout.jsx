@@ -48,6 +48,7 @@ export function AppLayout() {
       <aside className="hidden h-[100dvh] min-h-0 overflow-hidden border-r border-slate-200 bg-white dark:border-[#161b31] dark:bg-[#030309] lg:static lg:block lg:w-auto">
         <Sidebar
           navItems={navItems}
+          user={user}
           userName={user?.name}
           userEmail={user?.email}
           activeRole={activeRole}

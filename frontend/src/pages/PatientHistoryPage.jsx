@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, FileText, FlaskConical, LayoutDashboard, Thermometer, UserCog } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
-import { AppSelect, Sparkline, StatusBadge } from '@/components/ui'
+import { AppSelect, Sparkline, StatusBadge, UserAvatar } from '@/components/ui'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 const EMPTY_SYMPTOM_FORM = {
@@ -217,9 +217,12 @@ export function PatientHistoryPage() {
       <section className="surface p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex min-w-0 items-center gap-4">
-            <span className={`inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-lg font-bold text-white ${avatarTone(patient?.full_name)}`}>
-              {initialsOf(patient?.full_name)}
-            </span>
+            <UserAvatar
+              name={patient?.full_name}
+              src={patient?.avatar_url}
+              size="xl"
+              className="h-16 w-16 text-lg shadow-md"
+            />
             <div className="min-w-0">
               <h2 className="truncate text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-2xl">
                 {patient?.full_name || '—'}
