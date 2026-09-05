@@ -178,6 +178,15 @@ export function FactCatalog() {
   })
   const [showColumnMenu, setShowColumnMenu] = useState(false)
 
+  const factCategoryOptions = useMemo(
+    () =>
+      CATEGORIES.map((val) => ({
+        value: val,
+        label: t(`knowledgeBase.facts.categories.${val}`, CATEGORY_FALLBACKS[val] || val),
+      })),
+    [t]
+  )
+
   // Sheet Editor state
   const [form, setForm] = useState(null)
   const [editingId, setEditingId] = useState(null)
@@ -494,19 +503,15 @@ export function FactCatalog() {
           </div>
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
-            <select
-              className="input-base h-10 w-auto rounded-full py-0 pl-4 pr-9 text-sm"
+            <AppSelect
+              className="h-10 min-w-[11rem] w-auto rounded-full px-4 text-sm"
               value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              aria-label={t('knowledgeBase.facts.allCategories', 'All categories')}
-            >
-              <option value="">{t('knowledgeBase.facts.allCategories', 'All categories')}</option>
-              {CATEGORIES.map((value) => (
-                <option key={value} value={value}>
-                  {t(`knowledgeBase.facts.categories.${value}`, CATEGORY_FALLBACKS[value] || value)}
-                </option>
-              ))}
-            </select>
+              onValueChange={setCategory}
+              options={factCategoryOptions}
+              includeEmpty
+              emptyLabel={t('knowledgeBase.facts.allCategories', 'All categories')}
+              placeholder={t('knowledgeBase.facts.allCategories', 'All categories')}
+            />
 
             <div className="relative">
               <button
@@ -747,17 +752,16 @@ export function FactCatalog() {
           <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
               {t('rules.table.rows', 'Rows')}
-              <select
-                className="input-base h-9 w-[4.5rem] rounded-lg py-0 pl-2 pr-7 text-sm"
-                value={pageSize}
-                onChange={(event) => setPageSize(Number(event.target.value) || 10)}
-              >
-                {[10, 20, 50].map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
+              <AppSelect
+                className="h-9 w-20 rounded-lg px-2.5 text-xs font-semibold"
+                value={String(pageSize)}
+                onValueChange={(val) => setPageSize(Number(val) || 10)}
+                options={[
+                  { value: '10', label: '10' },
+                  { value: '20', label: '20' },
+                  { value: '50', label: '50' },
+                ]}
+              />
             </label>
             <button
               type="button"

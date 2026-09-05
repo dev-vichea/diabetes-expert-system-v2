@@ -4,7 +4,7 @@ from app.errors import ForbiddenError, NotFoundError, ValidationError
 
 
 class AdminService:
-    BUILT_IN_ROLE_NAMES = {'patient', 'doctor', 'admin', 'super_admin'}
+    BUILT_IN_ROLE_NAMES = {'patient', 'doctor', 'nurse', 'admin', 'super_admin'}
 
     def __init__(
         self,
@@ -237,6 +237,27 @@ class AdminService:
             )
 
         return self.user_repository.to_role_dict(updated)
+
+    def delete_role(self, role_id: int, actor_user_id: int | None = None) -> None:
+        role = self.user_repository.get_role_by_id(role_id)
+        if not role:
+            raise NotFoundError('Role not found.')
+        if role.name in self.BUILT_IN_ROLE_NAMES:
+            raise ForbiddenError('Built-in roles cannot be deleted.')
+        if len(role.users) > 0:
+            raise ValidationError(f"Cannot delete role '{role.name}' because {len(role.users)} user(s) are assigned to it.")
+
+        role_name = role.name
+        self.user_repository.delete_role(role)
+
+        if self.audit_log_repository:
+            self.audit_log_repository.create(
+                action='role.delete',
+                entity_type='role',
+                entity_id=str(role_id),
+                actor_user_id=actor_user_id,
+                metadata={'name': role_name},
+            )
 
     def update_user_roles(
         self,

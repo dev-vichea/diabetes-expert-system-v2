@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm 16mm 14mm;
+    @bottom-center {
+      content: "Page " counter(page) " / " counter(pages);
+      font-size: 7.5pt;
+      color: #94A3B8;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 8.5pt;
+    color: #1E293B;
+    line-height: 1.5;
+  }
+
+  /* ── Header ── */
+  .header-bar {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2.5px solid #0F294A;
+    margin-bottom: 12px;
+  }
+  .header-logo { width: 50px; height: 50px; object-fit: contain; }
+  .header-left { flex: 1; }
+  .header-badge {
+    font-size: 7.5pt;
+    font-weight: 700;
+    color: #2563EB;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .header-title {
+    font-size: 13.5pt;
+    font-weight: 800;
+    color: #0F294A;
+    margin: 2px 0;
+    line-height: 1.25;
+  }
+  .header-clinic { font-size: 7.5pt; color: #64748B; }
+  .header-right {
+    text-align: right;
+    font-size: 7.5pt;
+    color: #1E293B;
+    min-width: 150px;
+    line-height: 1.45;
+  }
+  .header-right strong { color: #0F294A; }
+
+  /* ── Section Headings ── */
+  .section-heading {
+    font-size: 9.5pt;
+    font-weight: 700;
+    color: #0F294A;
+    margin: 11px 0 5px 0;
+    padding-bottom: 3px;
+    border-bottom: 1.5px solid #2563EB;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+    font-size: 8.5pt;
+  }
+  th, td {
+    border: 0.5px solid #CBD5E1;
+    padding: 5px 8px;
+    vertical-align: top;
+    text-align: left;
+  }
+  th {
+    background: #F8FAFC;
+    font-weight: 700;
+    color: #1E293B;
+  }
+  .four-col th { width: 18%; font-size: 8pt; color: #475569; }
+  .four-col td { width: 32%; }
+
+  /* ── Lab Table ── */
+  .lab-table th {
+    background: #1E3A8A;
+    color: #fff;
+    font-weight: 700;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .flag-high { color: #DC2626; font-weight: 700; }
+  .flag-normal { color: #16A34A; font-weight: 700; }
+
+  /* ── Dual-column boxes ── */
+  .dual-box { display: flex; gap: 10px; margin-bottom: 8px; }
+  .dual-box .box {
+    flex: 1;
+    border: 0.5px solid #CBD5E1;
+    background: #F8FAFC;
+    padding: 8px 10px;
+    border-radius: 4px;
+  }
+  .dual-box .box-title {
+    font-weight: 700;
+    font-size: 8pt;
+    color: #0F294A;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .dual-box ul { list-style: none; padding: 0; margin: 0; }
+  .dual-box li { padding: 1.5px 0; font-size: 8pt; }
+  .dual-box li::before { content: "• "; color: #2563EB; font-weight: bold; }
+
+  /* ── Impression Card ── */
+  .impression-card {
+    border: 0.5px solid #CBD5E1;
+    background: #F8FAFC;
+    margin-bottom: 8px;
+  }
+  .impression-card td { padding: 6px 8px; }
+  .impression-card .label { font-weight: 700; width: 28%; color: #475569; font-size: 8pt; }
+  .impression-card .value { color: #1E293B; }
+
+  /* ── Recommendations ── */
+  .rec-list { counter-reset: rec-counter; margin-bottom: 8px; }
+  .rec-item {
+    display: flex;
+    gap: 10px;
+    padding: 6px 10px;
+    border: 0.5px solid #CBD5E1;
+    background: #F8FAFC;
+    margin-bottom: 4px;
+    align-items: flex-start;
+    border-radius: 3px;
+  }
+  .rec-num {
+    font-weight: 800;
+    color: #0F294A;
+    font-size: 10.5pt;
+    min-width: 24px;
+    text-align: center;
+  }
+  .rec-text { flex: 1; font-size: 8.5pt; line-height: 1.45; }
+
+  /* ── Verification / Auth ── */
+  .auth-table td { vertical-align: top; }
+  .auth-label { font-weight: 700; font-size: 8pt; background: #F8FAFC; color: #475569; }
+
+  /* ── Status colors ── */
+  .status-urgent { color: #DC2626; font-weight: 700; }
+  .status-routine { color: #16A34A; font-weight: 700; }
+
+  /* ── Disclaimer ── */
+  .disclaimer {
+    font-size: 7pt;
+    color: #94A3B8;
+    margin-top: 12px;
+    padding-top: 6px;
+    border-top: 0.5px solid #E2E8F0;
+    line-height: 1.45;
+  }
+
+  .text-navy { color: #0F294A; }
+  .text-blue { color: #2563EB; }
+  .text-muted { color: #64748B; }
+  strong { font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<div class="header-bar">
+  {% if logo_path %}
+  <img src="{{ logo_path }}" class="header-logo" alt="Logo" />
+  {% endif %}
+  <div class="header-left">
+    <div class="header-badge">Clinical Decision Support & Expert System</div>
+    <div class="header-title">Diabetes Diagnosis & Assessment Report</div>
+    <div class="header-clinic">
+      <strong>{{ clinic_name }}</strong> · {{ clinic_address }} · Tel: {{ clinic_phone }}
+    </div>
+  </div>
+  <div class="header-right">
+    <div><strong>Report No:</strong> {{ report_number }}</div>
+    <div><strong>Date:</strong> {{ issue_date }}</div>
+    <div><strong>Type:</strong> Comprehensive Evaluation</div>
+  </div>
+</div>
+
+<!-- ═══════════ 1. PATIENT DEMOGRAPHICS ═══════════ -->
+<div class="section-heading">Patient Information & Demographics</div>
+<table class="four-col">
+  <tr>
+    <th>Patient Name</th><td><strong>{{ patient_name }}</strong></td>
+    <th>Patient ID</th><td>{{ patient_id }}</td>
+  </tr>
+  <tr>
+    <th>Sex</th><td>{{ patient_gender }}</td>
+    <th>Age / Birth Date</th><td>{{ patient_age }}</td>
+  </tr>
+  <tr>
+    <th>Submitted At</th><td>{{ submitted_date }}</td>
+    <th>Assessed By</th><td>{{ clinician_name }}</td>
+  </tr>
+  <tr>
+    <th>Assessment Ref</th><td>#{{ assessment_id }}</td>
+    <th>Status</th><td>Completed Evaluation</td>
+  </tr>
+</table>
+
+<!-- ═══════════ 2. CLINICAL IMPRESSION ═══════════ -->
+<div class="section-heading">Clinical Impression & Diagnostic Evaluation</div>
+<table class="impression-card">
+  <tr>
+    <td class="label">Primary Diagnosis</td>
+    <td class="value"><strong class="text-navy" style="font-size:11pt;">{{ display_diagnosis }}</strong></td>
+  </tr>
+  <tr>
+    <td class="label">Clinical Status</td>
+    <td class="value">
+      {% if is_urgent %}
+        <span class="status-urgent">Urgent Action Required</span>{% if urgent_reason %} · {{ urgent_reason }}{% endif %}
+      {% else %}
+        <span class="status-routine">Standard Clinical Care</span>
+      {% endif %}
+    </td>
+  </tr>
+  <tr>
+    <td class="label">Certainty Factor</td>
+    <td class="value"><strong>{{ certainty_pct }}% Confidence</strong> · <span class="text-muted">Automated Rule Engine Consensus</span></td>
+  </tr>
+  <tr>
+    <td class="label">Clinical Summary</td>
+    <td class="value">
+      {{ impression_summary }}
+      {% if primary_recommendation %}
+        <br><br><strong>Primary Recommendation:</strong> {{ primary_recommendation }}
+      {% endif %}
+    </td>
+  </tr>
+</table>
+
+<!-- ═══════════ 3. LAB FINDINGS ═══════════ -->
+{% if lab_rows %}
+<div class="section-heading">Laboratory Findings & Biomarkers</div>
+<table class="lab-table">
+  <tr>
+    <th>Test / Indicator</th>
+    <th>Result</th>
+    <th>Unit</th>
+    <th>Status</th>
+    <th>Reference Range</th>
+  </tr>
+  {% for lab in lab_rows %}
+  <tr>
+    <td>{{ lab.label }}</td>
+    <td><strong>{{ lab.value }}</strong></td>
+    <td>{{ lab.unit }}</td>
+    <td class="{{ lab.flag_class }}">{{ lab.flag }}</td>
+    <td class="text-muted" style="font-size:7.5pt;">{{ lab.reference }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+<!-- ═══════════ 4. VITAL METRICS ═══════════ -->
+{% if metric_rows %}
+<table>
+  {% for met in metric_rows %}
+  <tr><th style="width:40%;">{{ met.label }}</th><td><strong>{{ met.value }}</strong> {{ met.unit }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+<!-- ═══════════ 5. SYMPTOMS & RISK FACTORS ═══════════ -->
+<div class="section-heading">Reported Symptoms & Risk Factors</div>
+<div class="dual-box">
+  <div class="box">
+    <div class="box-title">Documented Symptoms</div>
+    <ul>
+      {% if symptoms %}
+        {% for s in symptoms %}<li>{{ s }}</li>{% endfor %}
+      {% else %}
+        <li style="color:#94A3B8;">No classic symptoms reported in this assessment.</li>
+      {% endif %}
+    </ul>
+  </div>
+  <div class="box">
+    <div class="box-title">Risk Factors & Medical History</div>
+    <ul>
+      {% if risk_factors %}
+        {% for r in risk_factors %}<li>{{ r }}</li>{% endfor %}
+      {% else %}
+        <li style="color:#94A3B8;">No additional clinical risk factors recorded.</li>
+      {% endif %}
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════ 6. RECOMMENDATIONS ═══════════ -->
+<div class="section-heading">Clinical Recommendations & Care Actions</div>
+<div class="rec-list">
+  {% for rec in recommendations %}
+  <div class="rec-item">
+    <div class="rec-num">#{{ loop.index }}</div>
+    <div class="rec-text">{{ rec }}</div>
+  </div>
+  {% endfor %}
+  {% if not recommendations %}
+  <div class="rec-item">
+    <div class="rec-num">#1</div>
+    <div class="rec-text">{{ primary_recommendation }}</div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ═══════════ 7. CLINICIAN REVIEW & AUTHENTICATION ═══════════ -->
+<div class="section-heading">Clinician Review & CDS Authentication</div>
+<table class="auth-table">
+  <tr>
+    <td class="auth-label" style="width:50%;">Reviewer Clinical Notes</td>
+    <td class="auth-label">Authentication & Verification Seal</td>
+  </tr>
+  <tr>
+    <td>
+      {{ review_note }}<br><br>
+      <span class="text-muted" style="font-size:7.5pt;">Review Status: {{ status_label }} | Date: {{ review_date }}</span>
+    </td>
+    <td>
+      <strong>Reviewing Clinician:</strong> {{ clinician_name_auth }}<br>
+      <strong>Assessment Record:</strong> #{{ assessment_id }}<br>
+      <strong>Security Seal:</strong> <u>VALIDATED CLINICAL DECISION SUPPORT RECORD</u><br>
+      <span class="text-muted" style="font-size:7.5pt;">Electronically authenticated under clinical protocols.</span><br><br>
+      <strong>Authorized Signature:</strong> <em>{{ clinician_name_auth }}</em>
+    </td>
+  </tr>
+</table>
+
+<!-- ═══════════ DISCLAIMER ═══════════ -->
+<div class="disclaimer">
+  ⚠ DISCLAIMER: This report was generated automatically by the Diabetes Clinical Decision Support Expert System. It is an auxiliary screening and decision support tool — not a standalone diagnostic determination. It must be reviewed and confirmed by a licensed healthcare professional. Do not initiate or modify any medical treatment without consulting a qualified physician.
+  <br>
+  © {{ year }} Diabetes Clinical Decision Support System — Confidential Medical Record.
+</div>
+
+</body>
+</html>

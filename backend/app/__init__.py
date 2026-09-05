@@ -17,6 +17,7 @@ from .routes.admin_routes import admin_bp
 from .routes.assessment_routes import assessment_bp
 from .routes.auth_routes import auth_bp
 from .routes.fact_routes import fact_bp
+from .routes.notification_routes import notification_bp
 from .routes.patient_routes import patient_bp
 from .routes.rule_routes import rule_bp
 from .routes.dashboard_routes import dashboard_bp
@@ -167,6 +168,7 @@ def create_app(config_object=Config):
     app.register_blueprint(patient_bp, url_prefix="/api/patients")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
     app.register_blueprint(dashboard_bp, url_prefix="/api/dashboard")
+    app.register_blueprint(notification_bp, url_prefix="/api/notifications")
 
     register_error_handlers(app)
     init_dependencies(app)

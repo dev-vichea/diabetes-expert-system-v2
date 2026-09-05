@@ -104,6 +104,14 @@ def update_role(role_id: int):
     return success_response(data=role, message='Role updated.')
 
 
+@admin_bp.delete('/roles/<int:role_id>')
+@require_auth(permissions=['permission.manage'])
+def delete_role(role_id: int):
+    actor_user_id = _current_actor_user_id()
+    get_admin_service().delete_role(role_id=role_id, actor_user_id=actor_user_id)
+    return success_response(message='Role deleted.')
+
+
 @admin_bp.get('/permissions')
 @require_auth(permissions=['permission.view'])
 def list_permissions():

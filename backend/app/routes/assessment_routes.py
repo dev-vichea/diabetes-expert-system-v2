@@ -27,6 +27,19 @@ def evaluate_assessment():
     return success_response(data=result)
 
 
+@assessment_bp.post("/submit-to-care-team")
+@assessment_bp.post("/submit")
+@require_auth(permissions=["diagnosis.run"])
+def submit_assessment_to_care_team():
+    """
+    Official Care Team Submission Endpoint - persists diagnosis result, attaches
+    patient notes, and triggers care team alert.
+    """
+    payload = request.get_json(silent=True) or {}
+    result = get_diagnosis_service().submit_to_care_team(payload, current_user=g.current_user)
+    return success_response(data=result)
+
+
 @assessment_bp.get("/mine")
 @require_auth(permissions=["diagnosis.view_own"])
 def get_my_assessments():
@@ -57,13 +70,22 @@ def get_assessment_result(diagnosis_result_id: int):
 @require_auth(permissions=["diagnosis.run"])
 def download_assessment_report(diagnosis_result_id: int):
     """Generate and download PDF assessment report."""
-    pdf_bytes, file_name = get_diagnosis_service().generate_report_pdf(diagnosis_result_id)
+    lang = request.args.get("lang", "en").lower().strip()
+    pdf_bytes, file_name = get_diagnosis_service().generate_report_pdf(diagnosis_result_id, lang=lang)
     return send_file(
         BytesIO(pdf_bytes),
         mimetype="application/pdf",
         as_attachment=True,
         download_name=file_name,
     )
+
+
+@assessment_bp.get("/rule-explanation/<path:rule_identifier>")
+@optional_auth
+def get_rule_explanation(rule_identifier: str):
+    """Retrieve explanation/doctor guidance for a rule by ID, code, or name."""
+    rule_info = get_diagnosis_service().get_rule_explanation(rule_identifier)
+    return success_response(data=rule_info)
 
 
 @assessment_bp.patch("/<int:diagnosis_result_id>/review")

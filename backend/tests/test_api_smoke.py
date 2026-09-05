@@ -147,6 +147,15 @@ def test_diagnosis_report_pdf_download(client, doctor_auth):
     assert "attachment;" in content_disposition
     assert ".pdf" in content_disposition
 
+    # Also test Khmer PDF download
+    report_km = client.get(
+        f"/api/diagnosis/{diagnosis_result_id}/report.pdf?lang=km",
+        headers=_auth_header(doctor_auth["access_token"]),
+    )
+    assert report_km.status_code == 200
+    assert report_km.mimetype == "application/pdf"
+    assert report_km.data.startswith(b"%PDF")
+
 
 def test_diagnosis_persists_questionnaire_answers(client, doctor_auth, app):
     patient_id = doctor_auth["user"]["patient_id"]
@@ -913,3 +922,86 @@ def _get_demo_patient_id(client):
     assert me_response.status_code == 200
     data = me_response.get_json()["data"]
     return data["user"]["patient_id"]
+
+
+def test_draft_evaluation_does_not_save_and_submit_to_care_team_persists(client, patient_auth, doctor_auth):
+    # 1. Check initial count in patient's results
+    initial_mine = client.get(
+        "/api/diagnosis/mine",
+        headers=_auth_header(patient_auth["access_token"]),
+    )
+    assert initial_mine.status_code == 200
+    initial_count = len(initial_mine.get_json()["data"])
+
+    # 2. Run draft evaluation multiple times with save: false (spamming the assessment)
+    for _ in range(3):
+        draft_response = client.post(
+            "/api/diagnosis/",
+            headers=_auth_header(patient_auth["access_token"]),
+            json={
+                "save": False,
+                "fasting_glucose": 135,
+                "hba1c": 7.1,
+                "frequent_urination": True,
+                "excessive_thirst": True,
+            },
+        )
+        assert draft_response.status_code == 200
+        draft_data = draft_response.get_json()["data"]
+        assert draft_data.get("is_draft") is True
+        assert draft_data.get("diagnosis_result_id") is None
+        assert draft_data.get("is_submitted_to_care_team") is False
+        assert "diagnosis" in draft_data
+
+    # 3. Verify NO new records were added to patient's history
+    after_drafts = client.get(
+        "/api/diagnosis/mine",
+        headers=_auth_header(patient_auth["access_token"]),
+    )
+    assert len(after_drafts.get_json()["data"]) == initial_count
+
+    # 4. Now submit to care team with patient note
+    note_text = "I have noticed increased thirst and dry mouth for the past week."
+    submit_response = client.post(
+        "/api/diagnosis/submit-to-care-team",
+        headers=_auth_header(patient_auth["access_token"]),
+        json={
+            "patient_note": note_text,
+            "payload": {
+                "fasting_glucose": 135,
+                "hba1c": 7.1,
+                "frequent_urination": True,
+                "excessive_thirst": True,
+            },
+        },
+    )
+    assert submit_response.status_code == 200
+    submitted_data = submit_response.get_json()["data"]
+    assert submitted_data.get("is_draft") is False
+    assert submitted_data.get("is_submitted_to_care_team") is True
+    assert submitted_data.get("patient_note") == note_text
+    assert submitted_data.get("diagnosis_result_id") is not None
+    res_id = submitted_data["diagnosis_result_id"]
+
+    # 5. Verify it now appears in /mine
+    after_submit = client.get(
+        "/api/diagnosis/mine",
+        headers=_auth_header(patient_auth["access_token"]),
+    )
+    mine_rows = after_submit.get_json()["data"]
+    assert len(mine_rows) == initial_count + 1
+    newest = next(r for r in mine_rows if r["id"] == res_id)
+    assert newest["patient_note"] == note_text
+    assert newest["is_submitted_to_care_team"] is True
+
+    # 6. Verify doctor review queue sees it with patient note
+    review_resp = client.get(
+        "/api/diagnosis/review?limit=50",
+        headers=_auth_header(doctor_auth["access_token"]),
+    )
+    assert review_resp.status_code == 200
+    review_rows = review_resp.get_json()["data"]
+    reviewed_item = next((r for r in review_rows if r["id"] == res_id), None)
+    assert reviewed_item is not None
+    assert reviewed_item["patient_note"] == note_text
+

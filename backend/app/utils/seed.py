@@ -5,7 +5,7 @@ from flask import current_app
 from werkzeug.security import generate_password_hash
 
 from app.extensions import db
-from app.models import Fact, Permission, Patient, Role, Rule, RuleAction, RuleCategory, RuleCondition, User
+from app.models import Fact, Notification, Permission, Patient, Role, Rule, RuleAction, RuleCategory, RuleCondition, User
 from app.utils.diabetes_rule_seed_data import DIABETES_RULE_SEED
 from app.utils.diabetes_rule_seed_data_v2 import DIABETES_RULE_SEED_V2
 from app.utils.diabetes_rule_seed_data_v3 import DIABETES_RULE_SEED_V3
@@ -24,6 +24,7 @@ DEFAULT_PERMISSIONS = [
     {"code": "user.manage", "description": "Manage users"},
     {"code": "permission.view", "description": "View roles and permissions"},
     {"code": "permission.manage", "description": "Create and update roles"},
+    {"code": "audit.view", "description": "View system audit logs"},
     {"code": "patient.view", "description": "View patient records"},
     {"code": "patient.manage", "description": "Create and update patient records"},
     {"code": "patient.view_own", "description": "View own patient record"},
@@ -36,6 +37,8 @@ DEFAULT_PERMISSIONS = [
     {"code": "diagnosis.run", "description": "Run diagnosis"},
     {"code": "diagnosis.review_any", "description": "Review all diagnosis results"},
     {"code": "diagnosis.view_own", "description": "View own diagnosis results"},
+    {"code": "report.export", "description": "Export clinical reports and data"},
+    {"code": "analytics.view", "description": "View clinic analytics and dashboards"},
 ]
 
 DEFAULT_ROLES = {
@@ -50,6 +53,7 @@ DEFAULT_ROLES = {
             "user.manage",
             "permission.view",
             "permission.manage",
+            "audit.view",
             "patient.view",
             "patient.manage",
             "patient.view_own",
@@ -62,6 +66,8 @@ DEFAULT_ROLES = {
             "diagnosis.run",
             "diagnosis.review_any",
             "diagnosis.view_own",
+            "report.export",
+            "analytics.view",
         ],
     },
     "doctor": {
@@ -78,6 +84,22 @@ DEFAULT_ROLES = {
             "diagnosis.run",
             "diagnosis.review_any",
             "diagnosis.view_own",
+            "report.export",
+            "analytics.view",
+        ],
+    },
+    "nurse": {
+        "description": "Clinical care and triage nurse",
+        "permissions": [
+            "patient.view",
+            "patient.manage",
+            "symptom.view",
+            "symptom.manage",
+            "lab.view",
+            "lab.manage",
+            "diagnosis.run",
+            "diagnosis.view_own",
+            "report.export",
         ],
     },
     "patient": {
@@ -102,6 +124,12 @@ DEMO_USERS = [
         "password": "doctor123",
         "name": "Dr. Lina",
         "roles": ["doctor"],
+    },
+    {
+        "email": "nurse@example.com",
+        "password": "nurse123",
+        "name": "Nurse Sarah",
+        "roles": ["nurse"],
     },
     {
         "email": "admin@example.com",
@@ -143,7 +171,147 @@ def seed_demo_data():
         active_codes={str(rule["code"]).strip().lower() for rule in active_seed}
     )
     _seed_structured_rules(active_seed)
+    _seed_notifications()
     db.session.commit()
+
+
+def _seed_notifications() -> None:
+    """Seed initial clinical and administrative notifications for demo accounts."""
+    if Notification.query.first():
+        return
+
+    users_by_email = {u.email: u for u in User.query.all()}
+    notifications_data = []
+
+    # Doctor alerts
+    doctor = users_by_email.get("doctor@example.com")
+    if doctor:
+        notifications_data.extend([
+            {
+                "user_id": doctor.id,
+                "title": "Urgent Triage Alert: Acute Symptoms",
+                "message": "Patient John Patient presented with polydipsia, polyuria, and fatigue (Certainty 92%). Clinical review recommended.",
+                "type": "urgent",
+                "link": "/review",
+                "is_read": False,
+            },
+            {
+                "user_id": doctor.id,
+                "title": "Lab Results Recorded",
+                "message": "New HbA1c test (8.2%) recorded for patient John Patient. Requires treatment plan update.",
+                "type": "lab",
+                "link": "/patients",
+                "is_read": False,
+            },
+            {
+                "user_id": doctor.id,
+                "title": "Clinical Review Completed",
+                "message": "Your review for Gestational Diabetes screening session #104 has been finalized.",
+                "type": "review",
+                "link": "/patient-review",
+                "is_read": True,
+            },
+        ])
+
+    # Nurse alerts
+    nurse = users_by_email.get("nurse@example.com")
+    if nurse:
+        notifications_data.extend([
+            {
+                "user_id": nurse.id,
+                "title": "New Assessment Pending Vitals",
+                "message": "Patient John Patient submitted self-assessment. Fasting glucose verification needed.",
+                "type": "diagnosis",
+                "link": "/patients",
+                "is_read": False,
+            },
+            {
+                "user_id": nurse.id,
+                "title": "Lab Schedule Reminder",
+                "message": "Follow-up OGTT test scheduled for 2 patients tomorrow morning at 08:30 AM.",
+                "type": "lab",
+                "link": "/patients",
+                "is_read": False,
+            },
+        ])
+
+    # Patient alerts
+    patient = users_by_email.get("patient@example.com")
+    if patient:
+        notifications_data.extend([
+            {
+                "user_id": patient.id,
+                "title": "Assessment Report Ready",
+                "message": "Your diabetes risk evaluation report is ready to view and download as PDF.",
+                "type": "diagnosis",
+                "link": "/my-results",
+                "is_read": False,
+            },
+            {
+                "user_id": patient.id,
+                "title": "Doctor Care Recommendations Added",
+                "message": "Dr. Lina reviewed your health summary and recommended physical activity adjustments.",
+                "type": "review",
+                "link": "/care-plan",
+                "is_read": False,
+            },
+            {
+                "user_id": patient.id,
+                "title": "Care Plan Routine Reminder",
+                "message": "Daily 30-minute moderate walking and hydration routine recommended for today.",
+                "type": "info",
+                "link": "/care-plan",
+                "is_read": True,
+            },
+        ])
+
+    # Admin alerts
+    admin = users_by_email.get("admin@example.com")
+    if admin:
+        notifications_data.extend([
+            {
+                "user_id": admin.id,
+                "title": "New Staff Member Registered",
+                "message": "Nurse Sarah joined the clinic workspace with role 'nurse'.",
+                "type": "system",
+                "link": "/users",
+                "is_read": False,
+            },
+            {
+                "user_id": admin.id,
+                "title": "Roles & Permissions Matrix Updated",
+                "message": "System permissions matrix refreshed with 19 active capabilities.",
+                "type": "system",
+                "link": "/roles-permissions",
+                "is_read": False,
+            },
+        ])
+
+    # Super Admin alerts
+    super_admin = users_by_email.get("superadmin@example.com")
+    if super_admin:
+        notifications_data.extend([
+            {
+                "user_id": super_admin.id,
+                "title": "Platform Health Status: Optimal",
+                "message": "Rule engine, database connections, and PDF export worker operating normally.",
+                "type": "system",
+                "link": "/admin/dashboard",
+                "is_read": False,
+            },
+            {
+                "user_id": super_admin.id,
+                "title": "Security Audit Log Entry",
+                "message": "Role permissions updated by administrator. 0 unauthorized attempts.",
+                "type": "system",
+                "link": "/roles-permissions",
+                "is_read": True,
+            },
+        ])
+
+    for item in notifications_data:
+        db.session.add(Notification(**item))
+    db.session.flush()
 
 
 def _seed_fact_catalog() -> None:

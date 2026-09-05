@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
-import { EmptyState, ErrorAlert, LoadingState, SearchInput, StatCard, StatusBadge, UserAvatar } from '@/components/ui'
+import { AppSelect, EmptyState, ErrorAlert, LoadingState, SearchInput, StatCard, StatusBadge, UserAvatar } from '@/components/ui'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { userHasStaffRole } from '@/lib/nav-config'
@@ -473,15 +473,16 @@ export function DiagnosisHistoryPage() {
               {/* Sort Selector */}
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-slate-400 dark:text-slate-500">Sort:</span>
-                <select
+                <AppSelect
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm focus:border-primary-500 focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                >
-                  <option value="newest">{t('myResults.timeline.sortNewest', 'Newest first')}</option>
-                  <option value="oldest">{t('myResults.timeline.sortOldest', 'Oldest first')}</option>
-                  <option value="certainty">{t('myResults.timeline.sortHighestCertainty', 'Highest confidence')}</option>
-                </select>
+                  onValueChange={setSortBy}
+                  options={[
+                    { value: 'newest', label: t('myResults.timeline.sortNewest', 'Newest first') },
+                    { value: 'oldest', label: t('myResults.timeline.sortOldest', 'Oldest first') },
+                    { value: 'certainty', label: t('myResults.timeline.sortHighestCertainty', 'Highest confidence') },
+                  ]}
+                  className="h-8 w-auto min-w-[9.5rem] rounded-lg border-slate-200 bg-white px-2.5 py-0 text-xs font-semibold text-slate-700 shadow-sm dark:border-slate-800 dark:bg-[#0c1024] dark:text-slate-200"
+                />
               </div>
             </div>
 

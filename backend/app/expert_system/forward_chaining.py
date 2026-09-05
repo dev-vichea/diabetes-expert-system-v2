@@ -199,6 +199,8 @@ class ForwardChainer:
                         "id": rule.rule_id,
                         "code": rule.code,
                         "name": rule.name,
+                        "description": getattr(rule, "description", "") or "",
+                        "explanation": getattr(rule, "explanation", "") or "",
                         "priority": rule.priority,
                         "condition": rule.condition_expression,
                         "facts_used": facts_used,

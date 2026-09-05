@@ -91,6 +91,7 @@
     "user": "User",
     "patient": "Patient",
     "doctor": "Doctor",
+    "nurse": "Nurse",
     "admin": "Admin",
     "super_admin": "Super Admin"
   },
@@ -294,21 +295,41 @@
       "userCount_plural": "{{count}} users",
       "builtIn": "Built-in",
       "custom": "Custom",
-      "newRole": "New Role"
+      "newRole": "New Role",
+      "searchRoles": "Filter roles..."
     },
     "form": {
       "detailsTitle": "Role Details",
       "newRoleTitle": "New Role",
-      "builtInNotice": "Built-in roles are read-only. Review permissions here, but create a new role to customize access.",
+      "builtInNotice": "Built-in system roles are protected to ensure clinical workflows and patient privacy. Review permissions below or duplicate as a custom role.",
       "newRoleDesc": "Set the role name and choose the permissions that role should grant.",
       "roleName": "Role Name",
-      "roleNamePlaceholder": "Enter role name",
-      "permissions": "Permissions",
+      "roleNamePlaceholder": "e.g. Clinical Auditor, Care Manager",
+      "roleDescription": "Role Description",
+      "roleDescriptionPlaceholder": "Describe the clinical purpose and scope of this role...",
+      "roleIdentifier": "Role Identifier",
+      "permissions": "Permissions Matrix",
+      "searchPermissions": "Search permissions by name, key, or category...",
+      "permissionsCounter": "{{selected}} of {{total}} permissions granted",
+      "selectAll": "Select All",
+      "deselectAll": "Deselect All",
+      "selectAllCategory": "Select All",
+      "deselectAllCategory": "Deselect All",
+      "duplicateRole": "Duplicate as Custom",
+      "deleteRole": "Delete Role",
+      "deleteConfirmTitle": "Delete Role",
+      "deleteConfirmMessage": "Are you sure you want to delete this custom role? This action cannot be undone.",
+      "deleteConfirmAction": "Delete Role",
+      "assignedMembers": "Assigned Members",
+      "noAssignedMembers": "No users currently assigned to this role.",
+      "builtInBadge": "Built-in",
+      "customBadge": "Custom",
       "saving": "Saving...",
       "saveRole": "Save Role",
       "createRole": "Create Role",
       "noPermissionsTitle": "No permissions found",
-      "noPermissionsDesc": "Permission options will appear here once they are available."
+      "noPermissionsDesc": "Permission options will appear here once they are available.",
+      "noSearchMatch": "No permissions match your search query."
     },
     "groups": {
       "user": "Users",
@@ -316,19 +337,26 @@
       "patient": "Patients",
       "symptom": "Symptoms",
       "lab": "Lab Results",
-      "rule": "Rules",
-      "diagnosis": "Diagnosis"
+      "rule": "Rules & Knowledge",
+      "diagnosis": "Diagnosis",
+      "audit": "Audit Logs",
+      "report": "Reports & Export",
+      "analytics": "Analytics & Dashboards"
     },
     "notifications": {
       "nameRequired": "Role name is required.",
       "permissionRequired": "Select at least one permission.",
       "saving": "Saving role...",
       "creating": "Creating role...",
+      "deleting": "Deleting role...",
       "saveSuccess": "Role updated successfully.",
       "createSuccess": "Role created successfully.",
+      "deleteSuccess": "Role deleted successfully.",
+      "duplicateSuccess": "Role duplicated as custom draft. Make your changes and click Create Role.",
       "loadError": "Failed to load roles and permissions",
       "saveError": "Failed to update role",
-      "createError": "Failed to create role"
+      "createError": "Failed to create role",
+      "deleteError": "Failed to delete role"
     }
   },
   "permissions": {
@@ -361,6 +389,15 @@
     "symptom": {
       "manage": "Create symptom records",
       "view": "View symptom history"
+    },
+    "audit": {
+      "view": "View system audit logs"
+    },
+    "report": {
+      "export": "Export clinical reports and data"
+    },
+    "analytics": {
+      "view": "View clinic analytics and dashboards"
     }
   },
   "userSidebar": {
@@ -404,6 +441,31 @@
     "profileSettings": "Settings",
     "profile": "Profile",
     "logOut": "Log out"
+  },
+  "notificationPanel": {
+    "title": "Notifications",
+    "unreadCount": "{{count}} unread",
+    "markAllRead": "Mark all as read",
+    "filterAll": "All",
+    "filterUnread": "Unread",
+    "filterUrgent": "Urgent",
+    "emptyTitle": "All caught up!",
+    "emptyDesc": "You have no unread notifications right now.",
+    "emptyFilterDesc": "No notifications match this filter.",
+    "clearAllRead": "Clear read",
+    "viewAll": "View all notifications",
+    "types": {
+      "urgent": "Urgent Alert",
+      "diagnosis": "Diagnosis",
+      "review": "Clinical Review",
+      "lab": "Lab Result",
+      "system": "System Update",
+      "info": "Information"
+    },
+    "markAsRead": "Mark as read",
+    "delete": "Delete notification",
+    "today": "Today",
+    "earlier": "Earlier"
   },
   "profileSetup": {
     "stepProgress": "Step {{current}} of {{total}}",
@@ -799,6 +861,323 @@
       },
       "symptoms": {
         "title": "Symptoms from your latest assessment"
+      },
+      "prevention": {
+        "sectionTitle": "Prevention & Care Strategy",
+        "sectionSubtitle": "Evidence-based lifestyle interventions and clinical goals tailored to your result.",
+        "evidenceBadge": "Evidence-based (ADA / DPP Guidelines)",
+        "tabNutrition": "Nutrition & Diet Strategy",
+        "tabActivity": "Physical Activity Protocol",
+        "tabBiomarkers": "Biomarker Target Goals",
+        "tabMilestones": "Milestone Timeline",
+        "targetFasting": "Fasting Glucose",
+        "targetPostMeal": "Post-Meal Glucose",
+        "targetHba1c": "Target HbA1c",
+        "targetBmi": "Weight & BMI Target",
+        "day30Label": "30 Days",
+        "day90Label": "90 Days (3 Months)",
+        "month6Label": "6 Months",
+        "year1Label": "1 Year",
+        "reversalCalloutTitle": "Clinical Insight & Reversal Guidance",
+        "actionProtocolTitle": "Key Implementation Steps",
+        "targetNumbersTitle": "Clinical Biomarker Benchmarks",
+        "timelineTitle": "Progress & Checkpoint Milestones"
+      },
+      "conditions": {
+        "prediabetes": {
+          "title": "Prediabetes (Impaired Glucose Regulation)",
+          "tagline": "Active Metabolic Reversal & Progression Prevention Strategy",
+          "goalBadge": "Goal: Reverse HbA1c to < 5.7% & 5–7% Weight Loss",
+          "checklist": [
+            "Schedule confirmatory Fasting Plasma Glucose and HbA1c laboratory testing within 30 days.",
+            "Adopt the Diabetes Prevention Plate Method (50% non-starchy vegetables, 25% lean protein, 25% whole grains).",
+            "Engage in at least 150 minutes of moderate-intensity aerobic physical activity per week.",
+            "Target a 5% to 7% reduction in body weight if currently overweight or BMI > 25 kg/m².",
+            "Schedule a medical consultation with your doctor or dietitian to build a personalized prevention roadmap."
+          ],
+          "nutrition": {
+            "title": "Metabolic Plate & Carbohydrate Optimization",
+            "focus": "Low Glycemic Index, High Soluble Fiber & Zero Sugary Drinks",
+            "items": [
+              "Fill half your plate with non-starchy greens (spinach, broccoli, cucumbers) to blunt glycemic spikes.",
+              "Completely substitute refined white sugars and sweetened beverages with water, unsweetened green tea, or sparkling water.",
+              "Pair all carbohydrates with protein or healthy fats (nuts, seeds, olive oil) to slow digestion and prevent surges."
+            ]
+          },
+          "activity": {
+            "title": "Cardio Resistance & Post-Meal Movement",
+            "focus": "150 mins/week Moderate Aerobic + 10-min Postprandial Walks",
+            "items": [
+              "Take a brisk 10–15 minute walk immediately after your largest meal to activate insulin-independent glucose clearance.",
+              "Accumulate 30 minutes of moderate cardio (brisk walking, cycling, swimming) at least 5 days every week.",
+              "Incorporate 2 days of bodyweight or resistance training weekly to build muscle glycogen storage capacity."
+            ]
+          },
+          "biomarkers": {
+            "fasting": "< 100 mg/dL (Normal)",
+            "postMeal": "< 140 mg/dL (Normal)",
+            "hba1c": "< 5.7% (Reversal Zone)",
+            "bmi": "18.5 – 24.9 kg/m² (-5% to -7%)"
+          },
+          "milestones": {
+            "day30": "Establish consistent daily dietary habits and log baseline fasting glucose readings.",
+            "day90": "Repeat HbA1c laboratory screening; expect 0.2%–0.5% drop with sustained lifestyle intervention.",
+            "month6": "Comprehensive physician review, lipid panel check, and reassessment of cardiovascular risk factors.",
+            "year1": "Annual oral glucose tolerance or HbA1c test to certify sustained metabolic normalcy."
+          },
+          "routine": {
+            "morning": "Check fasting glucose if advised, eat a protein and fiber-rich breakfast, and do a 10-minute stretch.",
+            "afternoon": "Enjoy a balanced fiber-dense lunch, followed by a 15-minute brisk walk to blunt post-meal spikes.",
+            "evening": "Nutrient-rich dinner with leafy greens and lean protein; eliminate late-night snacking.",
+            "bedtime": "Wind down with water or herbal tea, review daily activity goals, and aim for 7–8 hours of sound sleep."
+          },
+          "insight": "Clinical trials from the Diabetes Prevention Program (DPP) demonstrate that comprehensive lifestyle modification reduces the risk of progressing to Type 2 diabetes by 58% (and 71% in adults aged 60+)."
+        },
+        "type2": {
+          "title": "Type 2 Diabetes Mellitus",
+          "tagline": "Glycemic Control, Organ Protection & Complication Prevention",
+          "goalBadge": "Goal: HbA1c < 7.0% & Multi-Organ Vascular Protection",
+          "checklist": [
+            "Schedule an appointment with your primary care clinician or endocrinologist to finalize your treatment plan.",
+            "Routinely monitor and record your fasting and 2-hour postprandial blood glucose as prescribed.",
+            "Adhere strictly to all prescribed antihyperglycemic medications (such as Metformin, SGLT2i, or GLP-1 RA).",
+            "Complete comprehensive baseline labs: HbA1c, lipid panel, kidney function (eGFR, uACR), and dilated eye exam.",
+            "Perform daily foot examinations for sores, blisters, or temperature changes, and protect feet with proper footwear."
+          ],
+          "nutrition": {
+            "title": "Carbohydrate Management & Vascular Health",
+            "focus": "Consistent Carb Distribution, Lean Proteins & Heart-Healthy Fats",
+            "items": [
+              "Maintain consistent carbohydrate portions across meals to avoid wide swings in daytime blood glucose.",
+              "Emphasize whole foods: legumes, leafy vegetables, berries, and omega-3 fatty fish (salmon, sardines).",
+              "Limit dietary sodium to < 2,300 mg/day and minimize saturated fats to protect cardiovascular and renal health."
+            ]
+          },
+          "activity": {
+            "title": "Aerobic Conditioning & Muscle Glycogen Depletion",
+            "focus": "150–300 mins/week Aerobic + 2–3 Days Resistance Training",
+            "items": [
+              "Perform at least 150 minutes weekly of moderate-to-vigorous aerobic exercise without going more than 2 consecutive days without activity.",
+              "Perform resistance training 2–3 times per week targeting all major muscle groups to boost insulin sensitivity.",
+              "Avoid prolonged sitting; break up sedentary periods every 30 minutes with 2–3 minutes of walking or standing."
+            ]
+          },
+          "biomarkers": {
+            "fasting": "80 – 130 mg/dL",
+            "postMeal": "< 180 mg/dL",
+            "hba1c": "< 7.0% (Personalized)",
+            "bmi": "18.5 – 24.9 kg/m²"
+          },
+          "milestones": {
+            "day30": "Review glucose log with your healthcare team and adjust medication dosages if targets are not met.",
+            "day90": "Quarterly HbA1c check and assessment of glycemic variability and medication tolerance.",
+            "month6": "Comprehensive metabolic review, blood pressure check, and lifestyle habit reinforcement.",
+            "year1": "Annual dilated retinal eye exam, comprehensive podiatry exam, and microalbuminuria urine test."
+          },
+          "routine": {
+            "morning": "Check fasting blood sugar, take morning diabetes medication as prescribed, and enjoy a low-GI breakfast.",
+            "afternoon": "Balanced lunch, take a 15–20 minute walk to manage postprandial glucose, and stay well hydrated.",
+            "evening": "Portion-controlled dinner with complex carbs, take evening medication, and log your post-meal reading.",
+            "bedtime": "Inspect both feet for cuts, redness, or blisters; prepare tomorrow's supplies; maintain restful sleep."
+          },
+          "insight": "Maintaining HbA1c below 7.0% significantly reduces microvascular complications (retinopathy, neuropathy, nephropathy) by up to 40% and slows cardiovascular progression."
+        },
+        "type1": {
+          "title": "Type 1 Diabetes Mellitus",
+          "tagline": "Precision Insulin Replacement & Acute Complication Defense",
+          "goalBadge": "Goal: Time in Range (TIR 70-180 mg/dL) > 70% & DKA Prevention",
+          "checklist": [
+            "Consult urgently with an endocrinologist for comprehensive insulin regimen formulation and diabetes education.",
+            "Master basal-bolus insulin administration, timing, and individual carbohydrate-to-insulin (I:C) ratios.",
+            "Check blood glucose 4–10 times daily, or set up and calibrate a Continuous Glucose Monitor (CGM).",
+            "Keep fast-acting carbohydrates (15g glucose tablets, fruit juice) with you at all times for hypoglycemia treatment.",
+            "Obtain blood or urine ketone testing supplies and establish a clear sick-day management protocol to prevent DKA."
+          ],
+          "nutrition": {
+            "title": "Accurate Carbohydrate Counting & Bolus Matching",
+            "focus": "Carb-to-Insulin Matching, Glycemic Index Awareness & Hypo Readiness",
+            "items": [
+              "Accurately calculate total grams of carbohydrates per meal to administer the correct pre-meal bolus dose.",
+              "Account for high-protein and high-fat meals which can cause delayed glucose rises 3–5 hours after eating.",
+              "Follow the Rule of 15 for hypoglycemia: consume 15g fast sugar, wait 15 minutes, recheck, and repeat if < 70 mg/dL."
+            ]
+          },
+          "activity": {
+            "title": "Safe Exercise & Glycemic Trend Management",
+            "focus": "Pre-Exercise Glucose Planning, CGM Alerts & Hypo Prevention",
+            "items": [
+              "Check blood glucose or CGM arrows before starting exercise; consume 15–30g carbs if glucose is < 90–100 mg/dL.",
+              "Keep emergency fast-acting glucose, snacks, and a glucagon rescue kit accessible during all workouts.",
+              "Note that anaerobic/sprint exercise may temporarily spike glucose while prolonged cardio tends to lower it."
+            ]
+          },
+          "biomarkers": {
+            "fasting": "80 – 130 mg/dL",
+            "postMeal": "< 180 mg/dL",
+            "hba1c": "< 7.0% (TIR > 70%)",
+            "bmi": "18.5 – 24.9 kg/m²"
+          },
+          "milestones": {
+            "day30": "Review CGM Ambulatory Glucose Profile (AGP) or glucose logs with diabetes educator to refine insulin sensitivity factors.",
+            "day90": "Quarterly HbA1c test and CGM Time-in-Range (TIR) analysis; verify severe hypoglycemia frequency is < 1%.",
+            "month6": "Endocrine specialist follow-up, injection site inspection (checking for lipohypertrophy), and thyroid function screening.",
+            "year1": "Annual screening for celiac disease, thyroid antibodies, diabetic retinopathy, and urine microalbumin."
+          },
+          "routine": {
+            "morning": "Check fasting glucose/CGM, calculate insulin bolus for breakfast carbs, administer dose 10–15 mins before eating.",
+            "afternoon": "Pre-lunch glucose check, calculate carb ratio for lunch, ensure hypo rescue supplies are in your bag.",
+            "evening": "Pre-dinner glucose test, administer mealtime insulin, verify bedtime basal dose timing.",
+            "bedtime": "Check glucose before sleep (target 100–140 mg/dL to prevent nighttime lows), keep juice/glucose tabs at bedside."
+          },
+          "insight": "Utilizing Continuous Glucose Monitoring (CGM) combined with structured carbohydrate matching improves Time in Range (70-180 mg/dL) while minimizing both severe hypoglycemia and ketoacidosis."
+        },
+        "gestational": {
+          "title": "Gestational Diabetes Mellitus (GDM)",
+          "tagline": "Maternal-Fetal Metabolic Health & Safe Pregnancy Protocol",
+          "goalBadge": "Goal: Fasting < 95 mg/dL & 1-Hr Post-Meal < 140 mg/dL",
+          "checklist": [
+            "Schedule an urgent visit with your obstetrician and a maternal-fetal diabetes educator.",
+            "Monitor and log blood glucose 4 times daily: fasting and 1 hour (or 2 hours) after each main meal.",
+            "Work with a prenatal registered dietitian to design an eating plan that supports healthy fetal growth.",
+            "Engage in safe, moderate physical activity (such as a 15-minute walk after meals) with obstetric clearance.",
+            "Schedule a repeat 75g Oral Glucose Tolerance Test (OGTT) at 4 to 12 weeks postpartum."
+          ],
+          "nutrition": {
+            "title": "Prenatal Glycemic Nutrition & Steady Energy",
+            "focus": "Complex Carbohydrates, Adequate Fetal Fuel & Protein Balance",
+            "items": [
+              "Distribute carbohydrates evenly across 3 moderate meals and 2–3 small snacks to avoid high glucose spikes.",
+              "Prioritize whole grains, dairy, legumes, and lean poultry while avoiding concentrated fruit juices and syrups.",
+              "Include a bedtime snack with protein and complex carbs (e.g. Greek yogurt or peanut butter on whole wheat) to prevent morning ketones."
+            ]
+          },
+          "activity": {
+            "title": "Pregnancy-Safe Physical Movement",
+            "focus": "Low-Impact Cardio, Pelvic Health & Post-Meal Walks",
+            "items": [
+              "Take a gentle 10–15 minute walk after breakfast, lunch, and dinner to stimulate muscle glucose uptake.",
+              "Engage in prenatal swimming, stationary cycling, or guided prenatal yoga 3–4 days per week.",
+              "Stay well-hydrated, avoid overheating, and stop immediately if experiencing dizziness, contractions, or shortness of breath."
+            ]
+          },
+          "biomarkers": {
+            "fasting": "< 95 mg/dL",
+            "postMeal": "< 140 mg/dL (1-hr) / < 120 (2-hr)",
+            "hba1c": "< 6.0% (Target)",
+            "bmi": "Target Gestational Weight Gain"
+          },
+          "milestones": {
+            "day30": "Evaluate maternal glucose logs with your obstetrician; determine if insulin or oral therapy is required.",
+            "day90": "Monitor fetal growth ultrasounds for macrosomia and amniotic fluid levels; maintain strict glucose logs.",
+            "month6": "Delivery planning with obstetric team; establish intrapartum blood glucose protocol.",
+            "year1": "Postpartum 4–12 week 75g OGTT screening, followed by annual diabetes screening for maternal prevention."
+          },
+          "routine": {
+            "morning": "Check fasting blood sugar upon waking, eat a balanced prenatal breakfast, and record reading in your log.",
+            "afternoon": "Check 1-hr post-lunch glucose, take a gentle 15-minute walk, and enjoy a healthy mid-afternoon snack.",
+            "evening": "Nutritious dinner with balanced carbs and protein, check 1-hr post-dinner glucose, and stay hydrated.",
+            "bedtime": "Eat a recommended bedtime snack (complex carb + protein) to maintain overnight glucose stability."
+          },
+          "insight": "Maintaining tight maternal glucose targets prevents macrosomia (large birth weight), neonatal hypoglycemia, and significantly lowers long-term metabolic risks for both child and mother."
+        },
+        "no_strong_indication": {
+          "title": "Low Risk / No Strong Indication of Diabetes",
+          "tagline": "Proactive Metabolic Wellness & Long-Term Prevention Protocol",
+          "goalBadge": "Goal: Maintain Optimal Insulin Sensitivity & Vitality",
+          "checklist": [
+            "Continue your healthy lifestyle habits with balanced, whole-food nutrition and daily movement.",
+            "Schedule routine annual preventative wellness check-ups and fasting metabolic screenings.",
+            "Stay aware of subtle warning signs such as excessive thirst, frequent nighttime urination, or unexplained fatigue.",
+            "Prioritize 7 to 8 hours of restorative sleep each night to maintain optimal cellular insulin sensitivity.",
+            "Retake this assessment whenever your health metrics, body weight, or symptom profile changes."
+          ],
+          "nutrition": {
+            "title": "Proactive Metabolic & Whole-Food Nutrition",
+            "focus": "Mediterranean Pattern, High Fiber & Minimally Processed Foods",
+            "items": [
+              "Base your daily diet on whole, unprocessed foods: vegetables, fruits, legumes, whole grains, nuts, and extra virgin olive oil.",
+              "Avoid sugary beverages, energy drinks, and ultra-processed snacks to protect metabolic flexibility.",
+              "Stay well hydrated with 2 liters of water daily, supporting natural metabolic clearance and digestive health."
+            ]
+          },
+          "activity": {
+            "title": "Functional Fitness & Lifelong Movement",
+            "focus": "150–300 mins/week Moderate Movement + Functional Strength",
+            "items": [
+              "Aim for at least 150–300 minutes of moderate aerobic activity (e.g. brisk walking, jogging, cycling) each week.",
+              "Incorporate strength and resistance training 2–3 times weekly to maintain muscle mass and metabolic rate.",
+              "Practice daily active habits: take the stairs, walk during phone calls, and minimize continuous screen sitting."
+            ]
+          },
+          "biomarkers": {
+            "fasting": "< 100 mg/dL (Optimal)",
+            "postMeal": "< 140 mg/dL (Optimal)",
+            "hba1c": "< 5.7% (Normal)",
+            "bmi": "18.5 – 24.9 kg/m²"
+          },
+          "milestones": {
+            "day30": "Review current diet and exercise habits to reinforce sustainable, enjoyable daily health routines.",
+            "day90": "Check in on fitness benchmarks, energy levels, resting heart rate, and body composition.",
+            "month6": "Mid-year wellness self-check: verify weight stability, blood pressure, and symptom-free vitality.",
+            "year1": "Annual physical examination, comprehensive blood chemistry panel, and metabolic risk reassessment."
+          },
+          "routine": {
+            "morning": "Hydrate with a tall glass of water, enjoy a balanced fiber-rich breakfast, and engage in morning movement.",
+            "afternoon": "Wholesome lunch with diverse vegetables and protein, take a 10-minute stretch or walk outside.",
+            "evening": "Light home-cooked dinner, unwind with relaxing activities or light physical recreation.",
+            "bedtime": "Limit screen exposure 30 minutes before sleep, relax in a cool room, and rest 7–8 hours."
+          },
+          "insight": "Maintaining normal metabolic markers through lifelong whole-food nutrition and consistent physical activity prevents over 90% of type 2 diabetes cases."
+        },
+        "urgent": {
+          "title": "Urgent Clinical Attention Needed",
+          "tagline": "Immediate Medical Assessment & Emergency Stabilisation Protocol",
+          "goalBadge": "Goal: Urgent Clinical Triage & Immediate Medical Safety",
+          "checklist": [
+            "Seek immediate medical evaluation or emergency care for acute symptoms or extreme glucose levels.",
+            "Do not drive yourself to the hospital if experiencing dizziness, confusion, weakness, or vision changes.",
+            "Bring all current medications, prior lab results, and symptom history to the emergency or urgent care clinic.",
+            "Maintain hydration with small sips of water unless vomiting or instructed otherwise by medical personnel.",
+            "Follow all physician triage instructions strictly and schedule immediate follow-up care."
+          ],
+          "nutrition": {
+            "title": "Emergency Stabilization Hydration",
+            "focus": "Medical Direction, Hydration Safety & Avoiding Extreme Sugars",
+            "items": [
+              "Follow immediate instructions from medical personnel regarding food and fluid intake.",
+              "If experiencing hypoglycemia (shaking, sweating, confusion), consume 15g fast sugar immediately.",
+              "If blood sugar is severely elevated, drink plain water and avoid all juices, sodas, and heavy carbohydrates."
+            ]
+          },
+          "activity": {
+            "title": "Rest & Vital Sign Monitoring",
+            "focus": "Complete Rest, Avoid Exertion & Emergency Contact Access",
+            "items": [
+              "Cease all strenuous exercise immediately; rest in a safe, seated or lying position.",
+              "Have a family member, friend, or coworker stay with you while arranging medical transportation.",
+              "Keep your emergency medical contacts and phone readily accessible at all times."
+            ]
+          },
+          "biomarkers": {
+            "fasting": "Immediate Lab Triage",
+            "postMeal": "Emergency Assessment",
+            "hba1c": "Comprehensive Blood Panel",
+            "bmi": "Clinical Evaluation"
+          },
+          "milestones": {
+            "day30": "Attend required post-emergency follow-up consultation and review adjusted medication regimen.",
+            "day90": "Comprehensive secondary prevention review and stabilization assessment with specialist.",
+            "month6": "Cardiometabolic status check and evaluation of ongoing safety protocols.",
+            "year1": "Annual specialized clinical audit and preventive care maintenance."
+          },
+          "routine": {
+            "morning": "Check symptoms and glucose immediately; adhere to urgent physician recommendations without delay.",
+            "afternoon": "Rest, monitor for warning signs (nausea, confusion, chest discomfort), contact clinic if symptoms persist.",
+            "evening": "Light hydration and easily digestible nourishment; confirm access to emergency contacts.",
+            "bedtime": "Ensure family or care partners are informed of your condition; have emergency numbers ready."
+          },
+          "insight": "Acute hyperglycemic or hypoglycemic emergencies require immediate professional evaluation to prevent life-threatening complications such as Diabetic Ketoacidosis (DKA) or Hyperosmolar Hyperglycemic State (HHS)."
+        }
       }
     },
     "nextSteps": {
@@ -1146,6 +1525,8 @@
       "openReport": "Open Result Report",
       "submitHint": "Submit this assessment to generate diagnosis output.",
       "overview": "Assessment Overview",
+      "overviewPatientProfile": "Patient & Profile Information",
+      "overviewClinicalData": "Clinical Evidence & Lab Indicators",
       "profile": "Age / BMI / Waist",
       "sexPregnancy": "Sex / Pregnancy",
       "glucose": "Glucose Tests",
@@ -1154,7 +1535,19 @@
       "flags": "Flags",
       "assessedFor": "Assessed for",
       "forSelf": "Myself",
-      "forOther": "Someone else"
+      "forOther": "Someone else",
+      "forPatient": "Registered Patient",
+      "age": "Age",
+      "bmi": "BMI",
+      "waist": "Waist",
+      "sex": "Sex",
+      "pregnancy": "Pregnancy",
+      "fastingGlucose": "Fasting Glucose (FPG)",
+      "hba1c": "HbA1c",
+      "ogtt": "Oral Glucose (OGTT 2h)",
+      "rpg": "Random Glucose (RPG)",
+      "hypoFlag": "Hypoglycemia Risk",
+      "urgentFlag": "Urgent Warning Flag"
     },
     "footer": {
       "continueHint": "Answer each section, then continue.",
@@ -1296,6 +1689,18 @@
     "patient": "Patient",
     "generatedOn": "Generated on",
     "printPdf": "Print PDF",
+    "generatePdf": "Generate PDF",
+    "generatingPdf": "Generating PDF...",
+    "pdfMenu": {
+      "title": "Choose Report Language",
+      "englishTitle": "English PDF Report",
+      "englishDesc": "Standard clinical PDF for records & EMR",
+      "khmerTitle": "Khmer PDF Report",
+      "khmerDesc": "Official clinical PDF report in Khmer",
+      "printTitle": "Print / Save as PDF",
+      "printBadge": "Best Font",
+      "printDesc": "Native browser font shaping for perfect Khmer typography"
+    },
     "restartConfirmTitle": "Restart Assessment?",
     "restartConfirmDesc": "This will clear the current assessment result and take you back to start a new assessment. Are you sure?",
     "restart": "Restart",
@@ -1356,6 +1761,25 @@
     "ruleConditionMatched": "Rule condition matched.",
     "contribution": "Contribution",
     "noDetailedRule": "No detailed rule reasoning is available for this run.",
+    "doctorGuidance": "Doctor guidance",
+    "loadingExplanation": "Loading doctor guidance...",
+    "noExplanation": "No clinical explanation recorded for this rule.",
+    "clickToViewExplanation": "Click to view doctor explanation",
+    "submitToCareTeamTitle": "Submit to Care Team",
+    "submitToCareTeamDesc": "Save this assessment report to your medical chart and alert your care team for clinical review.",
+    "draftStatusBadge": "Unsaved Draft · Not yet sent",
+    "submittedStatusBadge": "Submitted to Care Team",
+    "patientNoteLabel": "Notes or Questions for Care Team (Optional)",
+    "patientNotePlaceholder": "Share any current symptoms, recent changes, medications, or questions you would like your doctor to review...",
+    "submitToCareTeamBtn": "Submit to Care Team",
+    "submittingToCareTeam": "Submitting...",
+    "submittedSuccessToast": "Assessment submitted to care team! Your clinical staff has been alerted.",
+    "yourNoteToDoctor": "Your Note to Doctor",
+    "submittedAt": "Submitted on",
+    "submitToCareTeamHint": "Submitting saves this report to your permanent history and alerts clinical staff to review your case.",
+    "submitFirstToDownload": "Please submit your assessment to the care team first to save and download the official PDF report.",
+    "pendingReview": "Pending Doctor Review",
+    "doctorReviewed": "Doctor Reviewed",
     "diagnosticReasoning": "Diagnostic Reasoning",
     "diagnosticReasoningP1": "The system compares this assessment against structured diabetes rules from symptom, laboratory, and risk-factor evidence.",
     "diagnosticReasoningP2": "Confidence is calculated from the strength and priority of matched rules, then adjusted by evidence completeness.",
@@ -1418,6 +1842,7 @@
     "viewAssessmentResults": "View your assessment results and recommendations above.",
     "back": "Back",
     "restartAssessment": "Restart Assessment",
+    "openCarePlan": "Open Care Plan",
     "currentPatient": "Current patient",
     "assessmentComplete": "Assessment complete! Your results have been saved.",
     "viewReport": "View Report →",
@@ -1629,116 +2054,168 @@
     "education": {
       "titlePrefix": "Understanding",
       "whatTitle": "What is it?",
-      "symptomsTitle": "Common symptoms",
-      "careTitle": "Treatment & care",
+      "causesTitle": "What causes it?",
+      "symptomsTitle": "Common signs",
+      "careTitle": "Can it be reversed / What to do",
       "learnMore": "Full guide on MedlinePlus",
       "disclaimer": "Educational background only — always follow your healthcare provider's advice.",
       "conditions": {
-        "general": {
-          "name": "diabetes",
-          "tagline": "Blood sugar stays too high when the body can't make or use insulin well.",
+        "no_strong_indication": {
+          "name": "Normal Healthy Range",
+          "tagline": "Your biomarkers and symptoms show no significant signs of diabetes.",
           "what": [
-            "Insulin moves glucose (sugar) from your blood into your cells for energy.",
-            "With diabetes, the body makes little or no insulin, can't use it well, or both — so glucose builds up in the blood.",
-            "Over time, high blood glucose can harm the heart, kidneys, eyes, and nerves.",
-            "It can be managed — early treatment lowers the risk of complications."
+            "Your blood sugar levels are within normal reference ranges (Fasting glucose < 100 mg/dL, HbA1c < 5.7%).",
+            "Your body's cells are properly using insulin to process glucose from food.",
+            "No acute or classic diabetic symptoms were reported in this assessment.",
+            "Routine preventive screening helps ensure your metabolism stays healthy over time."
+          ],
+          "causes": [
+            "Healthy insulin sensitivity: Your cells absorb glucose efficiently from the bloodstream.",
+            "Balanced metabolism: Your liver and pancreas are regulating blood sugar smoothly.",
+            "Absence of acute genetic, hormonal, or environmental diabetes risk triggers."
           ],
           "symptoms": [
-            "Feeling very thirsty or very hungry",
-            "Urinating more often, including at night",
-            "Tired all the time; blurry vision",
-            "Tingling or numb feet; sores that heal slowly"
+            "Normal sustained daily energy levels without unusual fatigue.",
+            "Absence of excessive thirst (polydipsia) or frequent urination (polyuria).",
+            "Stable body weight and healthy wound healing response."
           ],
           "care": [
-            "Confirm with lab tests: A1C, fasting glucose, or an oral glucose tolerance test.",
-            "Eat well, stay physically active, and keep a healthy weight.",
-            "Take prescribed medicines and monitor blood sugar as directed.",
-            "Get regular checkups for eyes, kidneys, nerves, and feet."
-          ]
-        },
-        "type1": {
-          "name": "Type 1 diabetes",
-          "tagline": "An autoimmune condition — the body makes little or no insulin.",
-          "what": [
-            "The immune system mistakenly attacks the pancreas cells that make insulin.",
-            "Without insulin, glucose builds up in the blood instead of feeding your cells.",
-            "It often starts in children, teens, or young adults — but can appear at any age.",
-            "It is not caused by lifestyle, and it cannot be prevented."
-          ],
-          "symptoms": [
-            "Very thirsty, very hungry, urinating often (including at night)",
-            "Losing weight without trying; tired all the time",
-            "Blurry vision; tingling in feet or hands",
-            "Emergency signs: deep rapid breathing, fruity breath, vomiting, stomach pain — seek care immediately"
-          ],
-          "care": [
-            "Daily insulin for life, by injection or an insulin pump.",
-            "Check blood glucose regularly (fingerstick or a wearable sensor).",
-            "Match insulin to food (carbohydrate counting) and activity.",
-            "Regular clinic visits to adjust doses and screen for complications."
-          ]
-        },
-        "type2": {
-          "name": "Type 2 diabetes",
-          "tagline": "The most common type — the body resists insulin.",
-          "what": [
-            "Cells don't respond to insulin normally (insulin resistance), so glucose stays in the blood.",
-            "It develops slowly over years — many people feel fine at first.",
-            "Risk rises with excess weight, low activity, age over 35–45, and family history.",
-            "Healthy habits can control it — and sometimes prevent or delay it."
-          ],
-          "symptoms": [
-            "Often no early symptoms — screening matters.",
-            "Increased thirst, urination, and hunger",
-            "Feeling tired; blurred vision",
-            "Numb or tingling hands and feet; sores that heal slowly"
-          ],
-          "care": [
-            "Healthy eating, regular activity, and weight management come first.",
-            "Medicines such as metformin are common; insulin can be added later.",
-            "Monitor blood glucose and A1C as your provider advises.",
-            "Yearly checks of eyes, kidneys, nerves, feet, and heart."
-          ]
-        },
-        "gestational": {
-          "name": "gestational diabetes",
-          "tagline": "High blood sugar that develops during pregnancy.",
-          "what": [
-            "Pregnancy hormones can block insulin, so blood sugar rises.",
-            "It usually appears midway through pregnancy and is found by screening at 24–28 weeks.",
-            "Most women feel no symptoms — that is why testing matters.",
-            "It often goes away after delivery, but it raises the chance of type 2 diabetes later."
-          ],
-          "symptoms": [
-            "Usually none — detected by routine prenatal testing",
-            "Mild increased thirst or shakiness",
-            "Sometimes fatigue, blurred vision, or frequent infections"
-          ],
-          "care": [
-            "A healthy meal plan and regular gentle activity.",
-            "Check blood sugar at home as your provider directs.",
-            "Insulin or safe medicines if diet alone isn't enough.",
-            "Extra monitoring of the baby, and a glucose test after delivery."
+            "Continue eating balanced, nutrient-rich meals with vegetables, whole grains, and lean proteins.",
+            "Maintain at least 150 minutes of moderate physical activity every week.",
+            "Schedule regular annual checkups to keep tracking your health numbers.",
+            "Re-screen if you ever experience unexplained weight loss or persistent thirst."
           ]
         },
         "prediabetes": {
-          "name": "prediabetes",
-          "tagline": "Blood sugar is above normal — but not diabetes yet.",
+          "name": "Prediabetes",
+          "tagline": "Blood sugar is elevated above normal — but not yet diabetes. This stage is reversible.",
           "what": [
-            "Glucose is higher than normal (A1C 5.7–6.4% or fasting 100–125 mg/dL).",
-            "Usually there are no clear symptoms — it is found through testing.",
-            "Without changes, it often progresses to type 2 diabetes.",
-            "Acting now can delay or even prevent type 2 diabetes."
+            "Blood glucose levels are higher than normal (Fasting 100–125 mg/dL or HbA1c 5.7–6.4%).",
+            "It indicates your cells are beginning to resist insulin, causing excess sugar to stay in the blood.",
+            "It is an early warning stage: without changes, up to 70% of people with prediabetes develop Type 2 diabetes.",
+            "Importantly, prediabetes can often be completely reversed with lifestyle adjustments."
+          ],
+          "causes": [
+            "Insulin resistance: Muscle, fat, and liver cells stop responding effectively to insulin, forcing the pancreas to work overtime.",
+            "Excess abdominal body weight: Visceral fat around the organs releases inflammatory signals that block insulin action.",
+            "Sedentary lifestyle: Inactive muscles consume less glucose and become resistant to insulin.",
+            "Genetics and family history: Having a parent or sibling with diabetes increases your biological predisposition.",
+            "Diet high in refined carbs and sweetened drinks: Frequent glucose spikes place constant stress on the pancreas."
           ],
           "symptoms": [
-            "Most people feel completely normal",
-            "Some notice darkened, velvety skin patches on the neck or under the arms"
+            "Prediabetes is usually silent — most people feel completely normal for years.",
+            "Acanthosis nigricans: Darkened, velvety skin patches on the neck, armpits, or groin.",
+            "Mild post-meal sluggishness or afternoon energy crashes.",
+            "Slightly increased thirst or urination in some individuals."
           ],
           "care": [
-            "Losing 5–7% of body weight greatly lowers the risk.",
-            "Aim for about 150 minutes of brisk activity each week.",
-            "Choose more vegetables, whole grains, and lean protein.",
-            "Recheck blood sugar at least once a year."
+            "High reversal potential: Losing just 5–7% of your body weight lowers the risk of developing diabetes by 58%.",
+            "Engage in at least 150 minutes of moderate activity weekly (e.g., 30 minutes of brisk walking 5 days a week).",
+            "Swap refined sugars, sodas, and white bread for leafy greens, legumes, whole grains, and lean protein.",
+            "Re-check laboratory glucose biomarkers every 6 to 12 months with your doctor."
+          ]
+        },
+        "type2": {
+          "name": "Type 2 Diabetes",
+          "tagline": "The most common form of diabetes — cells resist insulin, causing persistent high blood sugar.",
+          "what": [
+            "Cells do not respond normally to insulin (insulin resistance), and the pancreas cannot produce enough to overcome it.",
+            "Diagnostic criteria: Fasting glucose ≥ 126 mg/dL or HbA1c ≥ 6.5% on multiple tests.",
+            "Over time, untreated high blood glucose can damage blood vessels, nerves, eyes, heart, and kidneys.",
+            "Effective medical management, medications, and lifestyle changes can control it and prevent complications."
+          ],
+          "causes": [
+            "Progressive insulin resistance coupled with gradual decline in pancreatic beta-cell insulin secretion.",
+            "Excess body weight and high visceral fat percentage.",
+            "Strong genetic predisposition and family medical history.",
+            "Chronic inflammation, poor sleep, long-term stress, and age over 35–45."
+          ],
+          "symptoms": [
+            "Frequent urination, particularly waking up multiple times during the night (polyuria).",
+            "Persistent, unquenchable thirst (polydipsia) and constant dry mouth.",
+            "Persistent fatigue, sluggishness, and blurred vision.",
+            "Slow-healing cuts, tingling or numbness in feet or fingers."
+          ],
+          "care": [
+            "Consult your physician promptly for personalized medical management and medication (e.g. Metformin).",
+            "Adopt structured medical nutrition therapy focusing on low glycemic index foods.",
+            "Monitor blood glucose levels as recommended by your healthcare provider.",
+            "Undergo annual clinical screenings for retinal eye health, kidney function, and foot nerve circulation."
+          ]
+        },
+        "type1": {
+          "name": "Type 1 Diabetes",
+          "tagline": "An autoimmune condition where the body's immune system stops insulin production.",
+          "what": [
+            "An autoimmune disorder where the immune system mistakenly attacks the insulin-producing beta cells in the pancreas.",
+            "Without insulin, glucose cannot enter cells for energy and accumulates to dangerous levels in the blood.",
+            "It often starts in children, teens, or young adults — but can appear at any age.",
+            "It is not caused by diet, sugar intake, or lifestyle, and cannot be prevented."
+          ],
+          "causes": [
+            "Autoimmune destruction of pancreatic beta cells by self-reactive T-cells.",
+            "Genetic susceptibility combined with environmental triggers (such as viral infections).",
+            "It is not caused by lifestyle, diet, or lack of exercise."
+          ],
+          "symptoms": [
+            "Rapid onset of severe thirst, extreme hunger, and frequent urination.",
+            "Sudden unexplained weight loss despite eating normally or more.",
+            "Extreme exhaustion, weakness, and blurry vision.",
+            "Emergency signs (DKA): Fruity breath, nausea, vomiting, rapid deep breathing, abdominal pain — seek emergency care immediately."
+          ],
+          "care": [
+            "Daily insulin therapy for life via multiple daily injections or continuous insulin pump.",
+            "Frequent blood glucose monitoring (fingersticks or continuous glucose monitor / CGM).",
+            "Carbohydrate counting to match insulin doses with meals.",
+            "Regular follow-ups with an endocrinologist."
+          ]
+        },
+        "gestational": {
+          "name": "Gestational Diabetes",
+          "tagline": "Elevated blood sugar that first develops during pregnancy.",
+          "what": [
+            "Hormones produced by the placenta interfere with insulin, leading to insulin resistance during pregnancy.",
+            "Typically diagnosed through oral glucose tolerance testing (OGTT) around the 24th to 28th week of pregnancy.",
+            "Usually resolves after giving birth, but increases future risk for Type 2 diabetes.",
+            "Proper management protects both the mother's health and baby's safe development."
+          ],
+          "causes": [
+            "Placental hormones (such as human placental lactogen) naturally increasing insulin resistance.",
+            "Inability of the maternal pancreas to produce 2–3 times more insulin to meet pregnancy demands.",
+            "Risk increases with maternal age over 25, pre-pregnancy BMI ≥ 25, PCOS, or family diabetes history."
+          ],
+          "symptoms": [
+            "Most expectant mothers feel zero symptoms — which is why routine prenatal screening is standard.",
+            "Mild fatigue, unusual thirst, or slightly increased urination beyond typical pregnancy changes."
+          ],
+          "care": [
+            "Follow a balanced prenatal meal plan guided by a clinical dietitian.",
+            "Engage in doctor-approved gentle activity such as walking or prenatal swimming.",
+            "Monitor blood sugar daily before and after meals.",
+            "Insulin or safe oral medications if diet and exercise do not keep glucose within targets."
+          ]
+        },
+        "general": {
+          "name": "Diabetes Spectrum",
+          "tagline": "Understanding blood sugar regulation and metabolic health.",
+          "what": [
+            "Insulin is a hormone made by the pancreas that allows glucose to enter your cells for energy.",
+            "When insulin is absent or ineffective, glucose remains trapped in the blood, leading to high blood sugar.",
+            "Chronic hyperglycemia can affect blood vessels, circulation, heart, and vital organs over time.",
+            "Early identification and proactive care significantly improve long-term outcomes."
+          ],
+          "causes": [
+            "Varies by condition: Autoimmune (Type 1), metabolic & lifestyle (Type 2/Prediabetes), or hormonal (Gestational).",
+            "Complex interaction of genetics, physical activity, nutrition, and body composition."
+          ],
+          "symptoms": [
+            "Increased thirst, frequent urination, fatigue, and blurred vision.",
+            "Tingling in extremities or slow-healing cuts."
+          ],
+          "care": [
+            "Laboratory diagnostic testing: Fasting plasma glucose, HbA1c, or OGTT.",
+            "Adopting nutrient-dense eating patterns and consistent weekly movement.",
+            "Partnering with a licensed healthcare provider for tailored medical guidance."
           ]
         }
       }
@@ -2047,6 +2524,15 @@
       "dateRange": "Date Range",
       "refresh": "Refresh"
     },
+    "ranges": {
+      "last7Days": "Last 7 Days",
+      "last30Days": "Last 30 Days",
+      "last90Days": "Last 90 Days",
+      "thisYear": "This Year",
+      "allTime": "All Time"
+    },
+    "loading": "Loading dashboard data...",
+    "errorLoad": "Could not load dashboard statistics.",
     "kpi": {
       "clickToView": "Click to view details →",
       "assessments": "Assessments",
@@ -2055,7 +2541,14 @@
       "urgentCases": "Urgent Cases",
       "awaitingReview": "Awaiting review",
       "treatmentPlans": "Treatment Plans",
-      "allTime": "All Time"
+      "allTime": "All Time",
+      "recommendationsIssued": "Recommendations issued",
+      "trendYesterday": "{{pct}} from yesterday",
+      "trendPrevDays": "{{pct}} from prev {{days}}d",
+      "trendNew": "+{{count}} new",
+      "trendToday": "+{{count}} today",
+      "totalConducted": "Total conducted",
+      "trendNoData": "No data in period"
     },
     "recent": {
       "title": "Recent Cases",
@@ -2074,11 +2567,21 @@
       "pending": "Pending"
     },
     "charts": {
-      "volume": "Diagnosis Volume vs Pending",
-      "volumeDesc": "Monthly clinical throughput (live data).",
+      "volume": "Diagnosis Volume vs. Pending Review",
+      "volumeDesc": "Clinical throughput: total evaluations conducted, cases awaiting review, and completed sign-offs.",
       "noTrendData": "No trend data available yet. Create some assessments to see trends.",
       "risk": "Risk Classification",
-      "riskDesc": "Click a slice to filter patients by risk level."
+      "riskDesc": "Click a slice to filter patients by risk level.",
+      "diagnosed": "Total Diagnosed",
+      "pending": "Pending Review",
+      "reviewed": "Reviewed",
+      "totalDiagnosed": "Total Diagnosed",
+      "pendingReview": "Pending Review",
+      "patients": "Patients",
+      "normalRisk": "Normal Risk",
+      "prediabetes": "Prediabetes",
+      "diabetes": "Diabetes",
+      "noData": "No Data"
     }
   },
   "sandbox": {
@@ -2255,7 +2758,8 @@
       "title": "Clinical Evidence",
       "recommendations": "Recommendations",
       "noRecommendations": "No specific recommendations provided by the engine.",
-      "triggeredRules": "Triggered Rules"
+      "triggeredRules": "Triggered Rules",
+      "patientNote": "Patient Notes / Reported Symptoms"
     },
     "doctorReview": {
       "title": "Doctor's Review",
@@ -2267,6 +2771,59 @@
       "submit": "Sign & Submit Review",
       "saving": "Saving Review...",
       "submitNotice": "Submitting this form will mark the assessment as Reviewed."
+    },
+    "viewModes": {
+      "byPatient": "By Patient",
+      "allSubmissions": "All Submissions"
+    },
+    "filters": {
+      "all": "All",
+      "pending": "Pending",
+      "urgent": "Urgent",
+      "reviewed": "Reviewed"
+    },
+    "sorting": {
+      "label": "Sort by",
+      "newest": "Newest First",
+      "highestRisk": "Highest Risk",
+      "urgentFirst": "Urgent First",
+      "patientName": "Patient Name (A-Z)"
+    },
+    "patientCard": {
+      "submissionsCount": "{{count}} assessments",
+      "pendingBadge": "{{count}} pending",
+      "latestDate": "Latest: {{date}}",
+      "patientId": "ID: {{id}}"
+    },
+    "timeline": {
+      "title": "Assessment History",
+      "submissionNumber": "Record #{{id}}",
+      "latest": "Latest",
+      "switchHint": "Switch between assessments submitted by this patient"
+    },
+    "biomarkers": {
+      "title": "Clinical Biomarkers & Metrics",
+      "fastingGlucose": "Fasting Glucose",
+      "hba1c": "HbA1c",
+      "ogtt": "2h OGTT",
+      "rpg": "Random Glucose",
+      "bmi": "BMI",
+      "waist": "Waist",
+      "ageSex": "Age / Sex",
+      "symptomsCount": "{{count}} symptoms",
+      "noLabs": "No laboratory measurements provided in this submission."
+    },
+    "quickNotes": {
+      "title": "Quick Presets",
+      "routine": "Routine findings — maintain healthy diet and annual checkup.",
+      "followUp": "Schedule 3-month fasting glucose & HbA1c lab repeat.",
+      "urgent": "Immediate endocrinology referral and glycemic monitoring required.",
+      "lifestyle": "Initiate medical nutrition therapy and 150 min/week exercise."
+    },
+    "actions": {
+      "viewReport": "Official PDF Report",
+      "downloadPdf": "Download PDF",
+      "patientHistory": "Patient Records"
     }
   },
   "landing": {

@@ -28,24 +28,63 @@ import { useLanguage } from '@/contexts/LanguageContext'
 /* ------------------------------------------------------------------ */
 /*  Date-range presets                                                  */
 /* ------------------------------------------------------------------ */
-const DATE_RANGES = [
-  { label: 'Last 7 Days', value: 7 },
-  { label: 'Last 30 Days', value: 30 },
-  { label: 'Last 90 Days', value: 90 },
-  { label: 'This Year', value: 365 },
-  { label: 'All Time', value: null },
+const DATE_RANGE_CONFIG = [
+  { key: 'dashboard.ranges.last7Days', fallback: 'Last 7 Days', value: 7 },
+  { key: 'dashboard.ranges.last30Days', fallback: 'Last 30 Days', value: 30 },
+  { key: 'dashboard.ranges.last90Days', fallback: 'Last 90 Days', value: 90 },
+  { key: 'dashboard.ranges.thisYear', fallback: 'This Year', value: 365 },
+  { key: 'dashboard.ranges.allTime', fallback: 'All Time', value: null },
 ]
 
-/* ------------------------------------------------------------------ */
-/*  Chart configs (static)                                             */
-/* ------------------------------------------------------------------ */
-const areaChartConfig = {
-  diagnosed: { label: 'Diagnosed', color: '#1f76e8' },
-  pending: { label: 'Pending', color: '#64748b' },
-}
+function translateTrend(trend, t) {
+  if (!trend) return ''
+  const str = String(trend).trim()
 
-const pieChartConfig = {
-  value: { label: 'Patients' },
+  if (str === 'Total registered') {
+    return t('dashboard.kpi.totalRegistered', 'Total registered')
+  }
+  if (str === 'Awaiting review') {
+    return t('dashboard.kpi.awaitingReview', 'Awaiting review')
+  }
+  if (str === 'Recommendations issued') {
+    return t('dashboard.kpi.recommendationsIssued', 'Recommendations issued')
+  }
+
+  // Matches "-25% from yesterday", "+10% from yesterday", "0% from yesterday"
+  const yesterdayMatch = str.match(/^([+-]?\d+%)\s+from\s+yesterday$/i)
+  if (yesterdayMatch) {
+    return t('dashboard.kpi.trendYesterday', '{{pct}} from yesterday', { pct: yesterdayMatch[1] })
+  }
+
+  // Matches "+10% from prev 7d", "-5% from prev 30d"
+  const prevDaysMatch = str.match(/^([+-]?\d+%)\s+from\s+prev\s+(\d+)d$/i)
+  if (prevDaysMatch) {
+    return t('dashboard.kpi.trendPrevDays', '{{pct}} from prev {{days}}d', { pct: prevDaysMatch[1], days: prevDaysMatch[2] })
+  }
+
+  // Matches "+3 new"
+  const newMatch = str.match(/^\+(\d+)\s+new$/i)
+  if (newMatch) {
+    return t('dashboard.kpi.trendNew', '+{{count}} new', { count: newMatch[1] })
+  }
+
+  // Matches "+9 today"
+  const todayMatch = str.match(/^\+(\d+)\s+today$/i)
+  if (todayMatch) {
+    return t('dashboard.kpi.trendToday', '+{{count}} today', { count: todayMatch[1] })
+  }
+
+  // Matches "Total conducted"
+  if (/^total conducted$/i.test(str)) {
+    return t('dashboard.kpi.totalConducted', 'Total conducted')
+  }
+
+  // Matches "No data in ..."
+  if (/^no data in/i.test(str)) {
+    return t('dashboard.kpi.trendNoData', 'No data in period')
+  }
+
+  return str
 }
 
 const defaultRiskData = [
@@ -64,6 +103,31 @@ export function ClinicalDashboard({ activeRole }) {
   const [loading, setLoading] = useState(true)
   const [selectedRange, setSelectedRange] = useState(null) // null = all-time
 
+  const dateRanges = useMemo(
+    () =>
+      DATE_RANGE_CONFIG.map((r) => ({
+        label: t(r.key, r.fallback),
+        value: r.value,
+      })),
+    [t]
+  )
+
+  const areaChartConfig = useMemo(
+    () => ({
+      diagnosed: { label: t('dashboard.charts.diagnosed', 'Total Diagnosed'), color: '#2563eb' },
+      pending: { label: t('dashboard.charts.pending', 'Pending Review'), color: '#f59e0b' },
+      reviewed: { label: t('dashboard.charts.reviewed', 'Reviewed'), color: '#10b981' },
+    }),
+    [t]
+  )
+
+  const pieChartConfig = useMemo(
+    () => ({
+      value: { label: t('dashboard.charts.patients', 'Patients') },
+    }),
+    [t]
+  )
+
   const fetchStats = useCallback(async (days) => {
     try {
       setLoading(true)
@@ -73,11 +137,11 @@ export function ClinicalDashboard({ activeRole }) {
       setStats(data)
     } catch (err) {
       console.error('Failed to load dashboard stats:', err)
-      notify.error('Could not load dashboard statistics.')
+      notify.error(t('dashboard.errorLoad', 'Could not load dashboard statistics.'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     fetchStats(selectedRange)
@@ -85,13 +149,14 @@ export function ClinicalDashboard({ activeRole }) {
 
   const statsCards = useMemo(() => {
     if (!stats) return []
-    const rangeLabel = DATE_RANGES.find((r) => r.value === selectedRange)?.label || t('dashboard.kpi.allTime', 'All Time')
+    const activeRange = dateRanges.find((r) => r.value === selectedRange)
+    const rangeLabel = activeRange?.label || t('dashboard.kpi.allTime', 'All Time')
     return [
       {
         title: t('dashboard.kpi.assessments', 'Assessments'),
         description: rangeLabel,
         value: stats.assessments.value,
-        trend: stats.assessments.trend,
+        trend: translateTrend(stats.assessments.trend, t),
         icon: Microscope,
         iconClass: 'bg-primary-100/20 text-primary-700 ring-1 ring-primary-200 dark:bg-primary-900/10 dark:text-primary-300 dark:ring-primary-500/30',
         chartColor: '#1f76e8',
@@ -102,7 +167,7 @@ export function ClinicalDashboard({ activeRole }) {
         title: t('dashboard.kpi.activePatients', 'Active Patients'),
         description: t('dashboard.kpi.totalRegistered', 'Total registered'),
         value: stats.active_patients.value,
-        trend: stats.active_patients.trend,
+        trend: translateTrend(stats.active_patients.trend, t),
         icon: Users,
         iconClass: 'bg-sky-100/20 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-900/10 dark:text-sky-300 dark:ring-sky-500/30',
         chartColor: '#0ea5e9',
@@ -113,7 +178,7 @@ export function ClinicalDashboard({ activeRole }) {
         title: t('dashboard.kpi.urgentCases', 'Urgent Cases'),
         description: t('dashboard.kpi.awaitingReview', 'Awaiting review'),
         value: stats.urgent_cases.value,
-        trend: stats.urgent_cases.trend,
+        trend: translateTrend(stats.urgent_cases.trend, t),
         icon: AlertTriangle,
         iconClass: 'bg-amber-100/20 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/10 dark:text-amber-300 dark:ring-amber-500/30',
         chartColor: '#d97706',
@@ -124,7 +189,7 @@ export function ClinicalDashboard({ activeRole }) {
         title: t('dashboard.kpi.treatmentPlans', 'Treatment Plans'),
         description: rangeLabel,
         value: stats.treatment_plans.value,
-        trend: stats.treatment_plans.trend,
+        trend: translateTrend(stats.treatment_plans.trend, t),
         icon: Pill,
         iconClass: 'bg-emerald-100/20 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/10 dark:text-emerald-300 dark:ring-emerald-500/30',
         chartColor: '#059669',
@@ -132,9 +197,38 @@ export function ClinicalDashboard({ activeRole }) {
         href: '/patients?has_diagnosis=true',
       },
     ]
-  }, [stats, selectedRange])
+  }, [stats, selectedRange, t, dateRanges])
+
+  const riskClassificationData = useMemo(() => {
+    const raw = stats?.risk_classification || defaultRiskData
+    return raw.map((entry) => {
+      let displayName = entry.name
+      if (entry.name === 'Normal Risk') {
+        displayName = t('dashboard.charts.normalRisk', 'Normal Risk')
+      } else if (entry.name === 'Prediabetes') {
+        displayName = t('dashboard.charts.prediabetes', 'Prediabetes')
+      } else if (entry.name === 'Diabetes') {
+        displayName = t('dashboard.charts.diabetes', 'Diabetes')
+      } else if (entry.name === 'No Data') {
+        displayName = t('dashboard.charts.noData', 'No Data')
+      }
+      return {
+        ...entry,
+        rawName: entry.name,
+        name: displayName,
+      }
+    })
+  }, [stats?.risk_classification, t])
 
   const monthlyTrendData = stats?.monthly_trend?.length ? stats.monthly_trend : null
+
+  const throughputSummary = useMemo(() => {
+    if (!monthlyTrendData?.length) return null
+    const totalDiagnosed = monthlyTrendData.reduce((acc, curr) => acc + (curr.diagnosed || 0), 0)
+    const totalPending = monthlyTrendData.reduce((acc, curr) => acc + (curr.pending || 0), 0)
+    const totalReviewed = monthlyTrendData.reduce((acc, curr) => acc + (curr.reviewed || 0), 0)
+    return { totalDiagnosed, totalPending, totalReviewed }
+  }, [monthlyTrendData])
 
   return (
     <div className="w-full space-y-6">
@@ -166,9 +260,9 @@ export function ClinicalDashboard({ activeRole }) {
         </div>
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
           <div className="flex max-w-full items-center overflow-x-auto rounded-lg border border-slate-200 bg-white dark:border-[#1b2342] dark:bg-[#0c1024]">
-            {DATE_RANGES.map((range) => (
+            {dateRanges.map((range) => (
               <button
-                key={range.label}
+                key={range.value ?? 'all'}
                 type="button"
                 onClick={() => setSelectedRange(range.value)}
                 className={`min-h-10 shrink-0 px-3 py-1.5 text-xs font-medium transition-all duration-200 ${selectedRange === range.value
@@ -196,7 +290,7 @@ export function ClinicalDashboard({ activeRole }) {
       {loading ? (
         <div className="flex h-64 items-center justify-center surface gap-3 text-slate-500">
           <Activity className="h-5 w-5 animate-spin" />
-          Loading dashboard data...
+          {t('dashboard.loading', 'Loading dashboard data...')}
         </div>
       ) : (
         <>
@@ -234,16 +328,77 @@ export function ClinicalDashboard({ activeRole }) {
 
           {/* Charts row */}
           <div className="grid items-stretch gap-5 xl:grid-cols-2">
-            <SectionCard className="h-full" title={t('dashboard.charts.volume', 'Diagnosis Volume vs Pending')} description={t('dashboard.charts.volumeDesc', 'Monthly clinical throughput (live data).')}>
+            <SectionCard
+              className="h-full"
+              title={t('dashboard.charts.volume', 'Diagnosis Volume vs. Pending Review')}
+              description={t('dashboard.charts.volumeDesc', 'Clinical throughput: total evaluations conducted, cases awaiting review, and completed sign-offs.')}
+              actions={
+                throughputSummary ? (
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                      <span className="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
+                      {throughputSummary.totalDiagnosed} {t('dashboard.charts.totalDiagnosed', 'Total Diagnosed')}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-600 dark:bg-amber-400" />
+                      {throughputSummary.totalPending} {t('dashboard.charts.pendingReview', 'Pending Review')}
+                    </span>
+                    {throughputSummary.totalReviewed > 0 && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
+                        {throughputSummary.totalReviewed} {t('dashboard.charts.reviewed', 'Reviewed')}
+                      </span>
+                    )}
+                  </div>
+                ) : null
+              }
+            >
               <ChartContainer config={areaChartConfig} className="h-[300px] w-full">
                 {monthlyTrendData ? (
                   <AreaChart data={monthlyTrendData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorDiagnosed" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#2563eb" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#2563eb" stopOpacity={0.0} />
+                      </linearGradient>
+                      <linearGradient id="colorPending" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
+                      </linearGradient>
+                      <linearGradient id="colorReviewed" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="month" tickLine={false} axisLine={false} />
                     <YAxis tickLine={false} axisLine={false} />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Area type="monotone" dataKey="diagnosed" stroke="var(--color-diagnosed)" fill="var(--color-diagnosed)" fillOpacity={0.2} strokeWidth={2} />
-                    <Area type="monotone" dataKey="pending" stroke="var(--color-pending)" fill="var(--color-pending)" fillOpacity={0.12} strokeWidth={2} />
+                    <Area
+                      type="monotone"
+                      dataKey="diagnosed"
+                      stroke="#2563eb"
+                      fill="url(#colorDiagnosed)"
+                      strokeWidth={2.5}
+                      activeDot={{ r: 5 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="pending"
+                      stroke="#f59e0b"
+                      fill="url(#colorPending)"
+                      strokeWidth={2}
+                      strokeDasharray="4 2"
+                      activeDot={{ r: 4 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="reviewed"
+                      stroke="#10b981"
+                      fill="url(#colorReviewed)"
+                      strokeWidth={2}
+                      activeDot={{ r: 4 }}
+                    />
                     <ChartLegend content={<ChartLegendContent />} />
                   </AreaChart>
                 ) : (
@@ -259,23 +414,24 @@ export function ClinicalDashboard({ activeRole }) {
                 <PieChart>
                   <ChartTooltip content={<ChartTooltipContent hideLabel />} />
                   <Pie
-                    data={stats?.risk_classification || defaultRiskData}
+                    data={riskClassificationData}
                     cx="50%" cy="50%"
                     innerRadius={62} outerRadius={100}
                     paddingAngle={4}
                     dataKey="value" nameKey="name"
                     style={{ cursor: 'pointer' }}
                     onClick={(entry) => {
-                      if (!entry || entry.name === 'No Data') return
+                      if (!entry || entry.rawName === 'No Data' || entry.name === 'No Data') return
                       const searchMap = {
                         'Normal Risk': 'search=low+risk',
                         'Prediabetes': 'search=prediabetes',
                         'Diabetes': 'search=diabetes',
                       }
-                      navigate(`/patients?has_diagnosis=true&${searchMap[entry.name] || ''}`)
+                      const key = entry.rawName || entry.name
+                      navigate(`/patients?has_diagnosis=true&${searchMap[key] || ''}`)
                     }}
                   >
-                    {(stats?.risk_classification || defaultRiskData).map((entry) => (
+                    {riskClassificationData.map((entry) => (
                       <Cell key={entry.name} fill={entry.fill} className="transition-opacity hover:opacity-80" />
                     ))}
                   </Pie>
@@ -309,7 +465,7 @@ export function ClinicalDashboard({ activeRole }) {
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white dark:divide-[#1b2342] dark:bg-[#050816]">
                   {stats?.recent_cases?.length === 0 ? (
-                    <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">No diagnoses found for this period.</td></tr>
+                    <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">{t('dashboard.recent.noDiagnoses', 'No diagnoses found for this period.')}</td></tr>
                   ) : (
                     stats?.recent_cases?.map((caseItem, index) => (
                       <tr

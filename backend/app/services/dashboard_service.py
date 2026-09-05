@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import extract, func
 
 from app.extensions import db
-from app.models.entities import AssessmentSession, DiagnosisResult, Patient, User
+from app.models.entities import AssessmentSession, DiagnosisResult, Patient, Rule, User
 
 
 class DashboardService:
@@ -51,7 +51,10 @@ class DashboardService:
         risk_classification = self._risk_classification(range_start)
 
         # --- Monthly trend area chart ----------------------------------------
-        monthly_trend = self._monthly_diagnosis_trend(range_start)
+        monthly_trend = self._throughput_trend(range_start, days, now)
+
+        # --- Rules analytics ------------------------------------------------
+        rules_analytics = self._rules_analytics(range_start)
 
         return {
             "assessments": assessments,
@@ -61,6 +64,7 @@ class DashboardService:
             "recent_cases": recent_cases,
             "risk_classification": risk_classification,
             "monthly_trend": monthly_trend,
+            "rules_analytics": rules_analytics,
         }
 
     # ------------------------------------------------------------------ #
@@ -71,6 +75,12 @@ class DashboardService:
     def _count_assessments(range_start, now, yesterday_start, today_start, prev_range_start, days):
         """Build assessments KPI with trend text."""
         q = db.session.query(func.count(AssessmentSession.id))
+        today_count = (
+            db.session.query(func.count(AssessmentSession.id))
+            .filter(AssessmentSession.created_at >= today_start)
+            .scalar()
+            or 0
+        )
         if range_start:
             count = q.filter(AssessmentSession.created_at >= range_start).scalar() or 0
             # compare to the same-length previous window
@@ -82,12 +92,11 @@ class DashboardService:
                 ).scalar() or 0
             trend = DashboardService._trend_text(count, prev_count, f"prev {days}d")
         else:
-            count = q.filter(AssessmentSession.created_at >= today_start).scalar() or 0
-            prev_count = q.filter(
-                AssessmentSession.created_at >= yesterday_start,
-                AssessmentSession.created_at < today_start,
-            ).scalar() or 0
-            trend = DashboardService._trend_text(count, prev_count, "yesterday")
+            count = q.scalar() or 0
+            if today_count > 0:
+                trend = f"+{today_count} today"
+            else:
+                trend = "Total conducted"
 
         return {"value": count, "trend": trend}
 
@@ -175,36 +184,110 @@ class DashboardService:
         ]
 
     @staticmethod
-    def _monthly_diagnosis_trend(range_start):
-        """Group diagnoses by month for the area chart."""
-        q = db.session.query(
-            extract("year", DiagnosisResult.created_at).label("yr"),
-            extract("month", DiagnosisResult.created_at).label("mo"),
-            func.count(DiagnosisResult.id).label("diagnosed"),
-            func.sum(
-                func.cast(DiagnosisResult.reviewed_at.is_(None), db.Integer)
-            ).label("pending"),
-        ).group_by("yr", "mo").order_by("yr", "mo")
+    def _throughput_trend(range_start, days, now):
+        """Build continuous clinical throughput trend for area chart.
 
-        if range_start:
-            q = q.filter(DiagnosisResult.created_at >= range_start)
+        - If days <= 30 (e.g. 7 or 30 days): builds a continuous daily timeline
+          (e.g., 'Aug 30', 'Aug 31', 'Sep 01'...) so short periods show rich daily movement.
+        - If days > 30 or days is None (All Time, 90d, 365d): builds a continuous
+          rolling monthly timeline of at least 6 months up to the current month
+          (e.g., 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep').
 
+        Guarantees that multiple data points are ALWAYS present so an AreaChart never
+        renders an isolated single dot.
+        """
         month_names = [
             "", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
             "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
         ]
-        rows = q.all()
-        if not rows:
-            return []
 
-        return [
-            {
-                "month": month_names[int(r.mo)],
-                "diagnosed": int(r.diagnosed or 0),
-                "pending": int(r.pending or 0),
+        if days and days <= 30:
+            start_date = (now - timedelta(days=days - 1)).date()
+            start_dt = datetime.combine(start_date, datetime.min.time())
+
+            q = (
+                db.session.query(
+                    extract("year", DiagnosisResult.created_at).label("yr"),
+                    extract("month", DiagnosisResult.created_at).label("mo"),
+                    extract("day", DiagnosisResult.created_at).label("dy"),
+                    func.count(DiagnosisResult.id).label("diagnosed"),
+                    func.sum(
+                        func.cast(DiagnosisResult.reviewed_at.is_(None), db.Integer)
+                    ).label("pending"),
+                )
+                .filter(DiagnosisResult.created_at >= start_dt)
+                .group_by("yr", "mo", "dy")
+                .all()
+            )
+
+            counts = {
+                (int(r.yr), int(r.mo), int(r.dy)): (
+                    int(r.diagnosed or 0),
+                    int(r.pending or 0),
+                )
+                for r in q
             }
-            for r in rows
-        ]
+
+            trend = []
+            for i in range(days):
+                d = start_date + timedelta(days=i)
+                diag, pend = counts.get((d.year, d.month, d.day), (0, 0))
+                trend.append({
+                    "month": d.strftime("%b %d"),
+                    "diagnosed": diag,
+                    "pending": pend,
+                    "reviewed": max(0, diag - pend),
+                })
+            return trend
+
+        # Monthly timeline: rolling window of at least 6 months up to current month
+        num_months = 12 if (days and days >= 365) else 6
+        months = []
+        curr_y = now.year
+        curr_m = now.month
+        for i in range(num_months - 1, -1, -1):
+            m = curr_m - i
+            y = curr_y
+            while m <= 0:
+                m += 12
+                y -= 1
+            months.append((y, m))
+
+        earliest_y, earliest_m = months[0]
+        earliest_dt = datetime(earliest_y, earliest_m, 1)
+
+        q = (
+            db.session.query(
+                extract("year", DiagnosisResult.created_at).label("yr"),
+                extract("month", DiagnosisResult.created_at).label("mo"),
+                func.count(DiagnosisResult.id).label("diagnosed"),
+                func.sum(
+                    func.cast(DiagnosisResult.reviewed_at.is_(None), db.Integer)
+                ).label("pending"),
+            )
+            .filter(DiagnosisResult.created_at >= earliest_dt)
+            .group_by("yr", "mo")
+            .all()
+        )
+
+        counts = {
+            (int(r.yr), int(r.mo)): (
+                int(r.diagnosed or 0),
+                int(r.pending or 0),
+            )
+            for r in q
+        }
+
+        trend = []
+        for y, m in months:
+            diag, pend = counts.get((y, m), (0, 0))
+            trend.append({
+                "month": month_names[m],
+                "diagnosed": diag,
+                "pending": pend,
+                "reviewed": max(0, diag - pend),
+            })
+        return trend
 
     @staticmethod
     def _trend_text(current: int, previous: int, label: str) -> str:
@@ -215,3 +298,133 @@ class DashboardService:
         pct = round(((current - previous) / previous) * 100)
         sign = "+" if pct >= 0 else ""
         return f"{sign}{pct}% from {label}"
+
+    @staticmethod
+    def _rules_analytics(range_start):
+        total_rules = db.session.query(func.count(Rule.id)).scalar() or 0
+        active_rules = (
+            db.session.query(func.count(Rule.id))
+            .filter(Rule.status == "active")
+            .scalar()
+            or 0
+        )
+
+        cat_counts = (
+            db.session.query(Rule.category, func.count(Rule.id))
+            .group_by(Rule.category)
+            .all()
+        )
+        cat_colors = {
+            "diagnosis": "#f43f5e",
+            "triage": "#f59e0b",
+            "classification": "#06b6d4",
+            "recommendation": "#10b981",
+        }
+        rule_distribution = [
+            {
+                "name": str(cat or "Other").capitalize(),
+                "value": int(count),
+                "color": cat_colors.get(str(cat or "").lower(), "#8b5cf6"),
+            }
+            for cat, count in cat_counts
+        ]
+
+        q = db.session.query(DiagnosisResult)
+        if range_start:
+            q = q.filter(DiagnosisResult.created_at >= range_start)
+        diagnoses = q.order_by(DiagnosisResult.created_at.desc()).limit(300).all()
+
+        n = len(diagnoses)
+        total_triggered = 0
+        rule_hits = {}
+        cert_sum = 0.0
+
+        for d in diagnoses:
+            rules = d.triggered_rules_json or []
+            total_triggered += len(rules)
+            cert_sum += float(d.certainty or 0.0)
+            for r in rules:
+                code = r.get("code") or r.get("id") or r.get("name")
+                if not code:
+                    continue
+                name = r.get("name") or code
+                category = r.get("category") or "diagnosis"
+                if code not in rule_hits:
+                    rule_hits[code] = {
+                        "id": code,
+                        "name": name,
+                        "category": category,
+                        "hits": 0,
+                    }
+                rule_hits[code]["hits"] += 1
+
+        avg_rules = round(total_triggered / n, 1) if n > 0 else 0.0
+        avg_accuracy = round((cert_sum / n) * 100, 1) if n > 0 else 0.0
+
+        all_rules = db.session.query(Rule).all()
+        rule_models = {r.code: r for r in all_rules}
+
+        top_rules = []
+        for rank_idx, (code, data) in enumerate(
+            sorted(rule_hits.items(), key=lambda x: x[1]["hits"], reverse=True)[:5],
+            start=1,
+        ):
+            rule_obj = rule_models.get(code)
+            top_rules.append({
+                "id": rank_idx,
+                "name": (rule_obj.name if rule_obj else data["name"]),
+                "category": (rule_obj.category if rule_obj else data["category"]),
+                "hits": data["hits"],
+            })
+
+        exec_points = []
+        rule_points = []
+        acc_points = []
+
+        if diagnoses:
+            chronological = list(reversed(diagnoses))
+            chunk_size = max(1, len(chronological) // 5)
+            for i in range(0, len(chronological), chunk_size):
+                chunk = chronological[i : i + chunk_size]
+                if not chunk:
+                    continue
+                chunk_rules = sum(len(c.triggered_rules_json or []) for c in chunk)
+                chunk_avg = round(chunk_rules / len(chunk), 1)
+                chunk_cert = round(
+                    sum(float(c.certainty or 0.0) for c in chunk) / len(chunk) * 100, 1
+                )
+                exec_points.append({"value": len(chunk)})
+                rule_points.append({"value": chunk_avg})
+                acc_points.append({"value": chunk_cert})
+
+        if not exec_points:
+            exec_points = [{"value": 0}]
+        if not rule_points:
+            rule_points = [{"value": avg_rules}]
+        if not acc_points:
+            acc_points = [{"value": avg_accuracy}]
+
+        return {
+            "active_rules": {
+                "value": str(active_rules),
+                "total": total_rules,
+                "trend": f"{active_rules} active of {total_rules} rules",
+                "chart_data": [{"value": active_rules}] * 5,
+            },
+            "avg_rules": {
+                "value": str(avg_rules),
+                "trend": f"Avg over {n} evaluations" if n > 0 else "No evaluations yet",
+                "chart_data": rule_points,
+            },
+            "accuracy": {
+                "value": f"{avg_accuracy}%",
+                "trend": f"Mean certainty ({n} cases)" if n > 0 else "No evaluations yet",
+                "chart_data": acc_points,
+            },
+            "executions": {
+                "chart_data": exec_points,
+            },
+            "rule_distribution": rule_distribution,
+            "top_triggered_rules": top_rules,
+        }
+

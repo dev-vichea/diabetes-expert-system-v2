@@ -85,7 +85,7 @@ export function Sidebar({ navItems, user, userName, userEmail, activeRole, onLog
         <NavSecondary collapsed={collapsed} />
       </SidebarContent>
 
-      <SidebarFooter className={`border-t border-slate-200 dark:border-[#1e2234] ${collapsed ? 'p-2 pt-2' : 'p-3 pt-2'}`}>
+      <SidebarFooter className={collapsed ? 'p-2' : 'p-2'}>
         <NavUser
           user={effectiveUser}
           collapsed={collapsed}

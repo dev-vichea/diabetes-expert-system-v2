@@ -25,14 +25,18 @@ export function NavDocuments({ title, items, collapsed = false }) {
     <SidebarGroup>
       {!collapsed ? <SidebarGroupLabel>{title}</SidebarGroupLabel> : null}
       <SidebarMenu>
-        {items.map((item) => (
-          <SidebarMenuItem key={item.to}>
-            <NavLink to={item.to} className={({ isActive }) => getDocClass(isActive, collapsed)} title={item.label}>
-              <FileText className="h-4 w-4 shrink-0" />
-              {!collapsed ? <span className="truncate">{item.label}</span> : null}
-            </NavLink>
-          </SidebarMenuItem>
-        ))}
+        {items.map((item) => {
+          const Icon = item.icon || FileText
+
+          return (
+            <SidebarMenuItem key={item.to}>
+              <NavLink to={item.to} className={({ isActive }) => getDocClass(isActive, collapsed)} title={item.label}>
+                <Icon className="h-4 w-4 shrink-0" />
+                {!collapsed ? <span className="truncate">{item.label}</span> : null}
+              </NavLink>
+            </SidebarMenuItem>
+          )
+        })}
       </SidebarMenu>
     </SidebarGroup>
   )

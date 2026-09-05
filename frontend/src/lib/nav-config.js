@@ -1,11 +1,12 @@
 import {
-  ActivitySquare,
-  BookMarked,
-  ClipboardList,
+  BookOpen,
+  ClipboardCheck,
+  FileSpreadsheet,
   HeartPulse,
   LayoutDashboard,
   Microscope,
   ShieldCheck,
+  UserCog,
   Users,
 } from 'lucide-react'
 import { translate } from '@/lib/i18n'
@@ -14,12 +15,12 @@ export const NAV_ITEMS = [
   { to: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, section: 'workspace' },
   { to: '/diagnosis', labelKey: 'nav.assessment', icon: Microscope, section: 'workspace', permissions: ['diagnosis.run'] },
   { to: '/patients', labelKey: 'nav.patients', icon: Users, section: 'workspace', permissions: ['patient.view'] },
-  { to: '/rules', labelKey: 'nav.knowledgeBase', icon: BookMarked, section: 'workspace', permissions: ['rule.view'] },
-  { to: '/review', labelKey: 'nav.patientReview', icon: ClipboardList, section: 'workspace', permissions: ['diagnosis.review_any'] },
-  { to: '/my-results', labelKey: 'nav.myResults', icon: ActivitySquare, section: 'workspace', roles: ['patient'], permissions: ['diagnosis.view_own'] },
-  { to: '/my-results', labelKey: 'nav.patientResults', icon: ActivitySquare, section: 'workspace', notRoles: ['patient'], permissions: ['diagnosis.view_own'] },
+  { to: '/rules', labelKey: 'nav.knowledgeBase', icon: BookOpen, section: 'workspace', permissions: ['rule.view'] },
+  { to: '/review', labelKey: 'nav.patientReview', icon: ClipboardCheck, section: 'workspace', permissions: ['diagnosis.review_any'] },
+  { to: '/my-results', labelKey: 'nav.myResults', icon: FileSpreadsheet, section: 'workspace', roles: ['patient'], permissions: ['diagnosis.view_own'] },
+  { to: '/my-results', labelKey: 'nav.patientResults', icon: FileSpreadsheet, section: 'workspace', notRoles: ['patient'], permissions: ['diagnosis.view_own'] },
   { to: '/care-plan', labelKey: 'nav.carePlan', icon: HeartPulse, section: 'workspace', roles: ['patient'], permissions: ['diagnosis.view_own'] },
-  { to: '/users', labelKey: 'nav.users', icon: ShieldCheck, section: 'system', permissions: ['user.view', 'permission.view'], permissionMode: 'any' },
+  { to: '/users', labelKey: 'nav.users', icon: UserCog, section: 'system', permissions: ['user.view', 'permission.view'], permissionMode: 'any' },
   { to: '/roles-permissions', labelKey: 'nav.roles', icon: ShieldCheck, section: 'system', permissions: ['permission.view'] },
 ]
 

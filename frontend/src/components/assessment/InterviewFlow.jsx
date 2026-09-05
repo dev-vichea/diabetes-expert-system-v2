@@ -372,22 +372,13 @@ function LabsSection({ form, qcm, t, labOptions, renderBadge, extraLabs, onAddEx
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="q-section">
-          <div className="q-section-title"><TestTube2 className="h-5 w-5 text-slate-500" /> {t('assessment.labs.ogttTitle', '2-Hour OGTT (optional)')}</div>
-          <div className="mt-3">
-            <SegmentButtons options={labOptions.ogtt} value={qcm.ogtt_group} onChange={(opt) => onPickSegment('ogtt_group', opt, 'ogtt_2h')} />
-            <label className="mt-3 block">
-              <span className="label-text">{t('assessment.exactValueMgDl', 'Exact value (mg/dL)')}</span>
-              <input className="input-base" type="number" placeholder="e.g. 165" value={form.ogtt_2h} onChange={(e) => onSetCustom('ogtt_group', 'ogtt_2h', e.target.value)} />
-            </label>
-          </div>
-        </div>
-        <div className="q-section">
-          <div className="q-section-title"><TestTube2 className="h-5 w-5 text-slate-500" /> {t('assessment.labs.rpgTitle', 'Random Blood Glucose (optional)')}</div>
+      <div className="q-section">
+        <div className="q-section-title"><TestTube2 className="h-5 w-5 text-slate-500" /> {t('assessment.labs.ogttTitle', '2-Hour OGTT (optional)')}</div>
+        <div className="mt-3">
+          <SegmentButtons options={labOptions.ogtt} value={qcm.ogtt_group} onChange={(opt) => onPickSegment('ogtt_group', opt, 'ogtt_2h')} />
           <label className="mt-3 block">
-            <span className="label-text">{t('assessment.valueMgDl', 'Value (mg/dL)')}</span>
-            <input className="input-base" type="number" min={30} max={1000} placeholder="e.g. 180" value={form.random_plasma_glucose} onChange={(e) => onField('random_plasma_glucose', e.target.value)} />
+            <span className="label-text">{t('assessment.exactValueMgDl', 'Exact value (mg/dL)')}</span>
+            <input className="input-base" type="number" placeholder="e.g. 165" value={form.ogtt_2h} onChange={(e) => onSetCustom('ogtt_group', 'ogtt_2h', e.target.value)} />
           </label>
         </div>
       </div>

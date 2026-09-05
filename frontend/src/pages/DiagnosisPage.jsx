@@ -849,17 +849,17 @@ export function DiagnosisPage() {
       if (!form.no_labs_available && extraLabs.length) payload.labs = extraLabs
       if (needsPatient) payload.patient_id = Number(form.patient_id)
 
+      // Run assessment in preview/evaluation mode to avoid spamming duplicate reports in database
+      payload.save = false
       const res = await api.post('/diagnosis/', payload)
       const data = getApiData(res)
       setResult(data); setStep(REVIEW_STEP); setMaxReached(REVIEW_STEP)
-      saveDiagnosisResultSnapshot({ user, result: data, context: buildContext() })
-      // Put the saved result id in the URL so refreshing (or revisiting later)
-      // re-fetches the record from the database instead of relying on the
-      // in-memory/local snapshot.
+      saveDiagnosisResultSnapshot({ user, result: data, payload, context: buildContext() })
+
       const resultPath = data?.diagnosis_result_id
         ? `/diagnosis/result?diagnosis_result_id=${data.diagnosis_result_id}`
         : '/diagnosis/result'
-      navigate(resultPath, { state: { result: data, context: buildContext(), savedAt: new Date().toISOString() } })
+      navigate(resultPath, { state: { result: data, payload, context: buildContext(), isDraft: true, savedAt: new Date().toISOString() } })
     } catch (err) { setError(getApiErrorMessage(err, 'Assessment failed. Please try again.')) }
     finally { setSubmitting(false) }
   }
@@ -1051,28 +1051,73 @@ export function DiagnosisPage() {
 
                   {/* ── Review Summary ──────────────────────── */}
                   <QSection icon={<ClipboardList className="h-5 w-5 text-slate-500" />} title={t('assessment.reviewSummary', 'Review Summary')} sub={t('assessment.reviewSummarySub', 'Double-check before submitting')}>
-                    <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xs">
                       <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 px-4 py-2.5 text-white">
                         <p className="text-sm font-semibold uppercase tracking-[0.08em]">{t('assessment.review.overview', 'Assessment Overview')}</p>
                       </div>
-                      <dl className="divide-y divide-slate-200 dark:divide-slate-700 text-sm">
-                        {[
-                          [t('assessment.review.patient', 'Patient'), needsPatient ? (selectedPatient ? `${selectedPatient.full_name} (#${selectedPatient.id})` : t('assessment.patient.noSelection', 'Not selected')) : user?.name || 'Current user'],
-                          ...(!needsPatient ? [[t('assessment.review.assessedFor', 'Assessed for'), subjectMode === 'other' ? t('assessment.review.forOther', 'Someone else') : t('assessment.review.forSelf', 'Myself')]] : []),
-                          [t('assessment.review.mode', 'Mode'), assessmentMode === 'diagnostic' ? t('assessment.labs.diagnosticMode', 'Diagnostic') : t('assessment.labs.screeningMode', 'Screening')],
-                          [t('assessment.review.sexPregnancy', 'Sex / Pregnancy'), form.sex === 'female' ? `${sexLabel} · ${form.currently_pregnant ? t('assessment.interview.pregnantShort', 'Pregnant') : t('assessment.interview.notPregnant', 'Not pregnant')}` : sexLabel],
-                          [t('assessment.review.profile', 'Age / BMI / Waist'), `${form.age || '-'} yrs / ${form.bmi || '-'} / ${form.waist_circumference || '-'} cm`],
-                          [t('assessment.review.glucose', 'Glucose Tests'), `FPG: ${form.fasting_glucose || '-'} — A1c: ${form.hba1c || '-'} — OGTT: ${form.ogtt_2h || '-'} — RPG: ${form.random_plasma_glucose || '-'}`],
-                          [t('assessment.review.symptoms', 'Symptoms'), `${selectedSymptoms.length + customSymptoms.length} ${t('common.selected', 'selected')}`],
-                          [t('assessment.review.risks', 'Risk Factors'), `${selectedRisks.length} ${t('common.selected', 'selected')}`],
-                          [t('assessment.review.flags', 'Flags'), `Hypo: ${hasHypoTrigger ? t('common.yes', 'Yes') : '—'} | Urgent: ${hasUrgentTrigger ? t('common.yes', 'Yes') : '—'}`],
-                        ].map(([label, value]) => (
-                          <div key={label} className="grid gap-1 px-4 py-2.5 sm:grid-cols-[11rem_1fr] sm:items-center">
-                            <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
-                            <dd className="break-words text-slate-800 dark:text-slate-100">{value}</dd>
+                      <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-slate-700">
+                        {/* Column 1: Patient & Profile Information */}
+                        <div className="flex flex-col">
+                          <div className="bg-slate-50/80 dark:bg-slate-800/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700">
+                            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                              {t('assessment.review.overviewPatientProfile', 'Patient & Profile Information')}
+                            </span>
                           </div>
-                        ))}
-                      </dl>
+                          <table className="w-full border-collapse">
+                            <tbody className="divide-y divide-slate-200 dark:divide-slate-700 text-sm">
+                              {[
+                                [t('assessment.review.patient', 'Patient'), needsPatient ? (selectedPatient ? `${selectedPatient.full_name} (#${selectedPatient.id})` : t('assessment.patient.noSelection', 'Not selected')) : user?.name || 'Current user'],
+                                [t('assessment.review.assessedFor', 'Assessed for'), needsPatient ? t('assessment.review.forPatient', 'Registered Patient') : (subjectMode === 'other' ? t('assessment.review.forOther', 'Someone else') : t('assessment.review.forSelf', 'Myself'))],
+                                [t('assessment.review.mode', 'Mode'), assessmentMode === 'diagnostic' ? t('assessment.labs.diagnosticMode', 'Diagnostic') : t('assessment.labs.screeningMode', 'Screening')],
+                                [t('assessment.review.sex', 'Sex'), form.sex === 'female' ? `${sexLabel} · ${form.currently_pregnant ? t('assessment.interview.pregnantShort', 'Pregnant') : t('assessment.interview.notPregnant', 'Not pregnant')}` : sexLabel],
+                                [t('assessment.review.age', 'Age'), form.age ? `${form.age} ${t('common.yearsUnit', 'yrs')}` : '—'],
+                                [t('assessment.review.bmi', 'BMI'), form.bmi ? String(form.bmi) : '—'],
+                                [t('assessment.review.waist', 'Waist'), form.waist_circumference ? `${form.waist_circumference} cm` : '—'],
+                              ].map(([label, value]) => (
+                                <tr key={label} className="h-[42px] hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                  <th scope="row" className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 w-px">
+                                    {label}
+                                  </th>
+                                  <td className="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-100 break-words">
+                                    {value}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Column 2: Clinical Evidence & Lab Indicators */}
+                        <div className="flex flex-col">
+                          <div className="bg-slate-50/80 dark:bg-slate-800/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700">
+                            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                              {t('assessment.review.overviewClinicalData', 'Clinical Evidence & Lab Indicators')}
+                            </span>
+                          </div>
+                          <table className="w-full border-collapse">
+                            <tbody className="divide-y divide-slate-200 dark:divide-slate-700 text-sm">
+                              {[
+                                [t('assessment.review.fastingGlucose', 'Fasting Glucose (FPG)'), form.fasting_glucose ? `${form.fasting_glucose} mg/dL` : '—'],
+                                [t('assessment.review.hba1c', 'HbA1c'), form.hba1c ? `${form.hba1c} %` : '—'],
+                                [t('assessment.review.ogtt', 'Oral Glucose (OGTT 2h)'), form.ogtt_2h ? `${form.ogtt_2h} mg/dL` : '—'],
+                                [t('assessment.review.symptoms', 'Symptoms'), `${selectedSymptoms.length + customSymptoms.length} ${t('common.selected', 'selected')}`],
+                                [t('assessment.review.risks', 'Risk Factors'), `${selectedRisks.length} ${t('common.selected', 'selected')}`],
+                                [t('assessment.review.hypoFlag', 'Hypoglycemia Risk'), hasHypoTrigger ? t('common.yes', 'Yes') : '—'],
+                                [t('assessment.review.urgentFlag', 'Urgent Warning Flag'), hasUrgentTrigger ? t('common.yes', 'Yes') : '—'],
+                              ].map(([label, value]) => (
+                                <tr key={label} className="h-[42px] hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                  <th scope="row" className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 w-px">
+                                    {label}
+                                  </th>
+                                  <td className="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-100 break-words">
+                                    {value}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
                     </div>
                   </QSection>
 

@@ -13,7 +13,6 @@ import {
   FileText,
   HeartPulse,
   Plus,
-  Printer,
   ShieldAlert,
   Siren,
   Sparkles,
@@ -24,6 +23,7 @@ import api, { getApiData, getApiErrorMessage } from '@/api/client'
 import { ErrorAlert, LoadingState, StatusBadge } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { CarePlanChecklist } from '@/components/dashboard/patient/CarePlanChecklist'
+import { CarePlanPrevention } from '@/components/dashboard/patient/CarePlanPrevention'
 import { CarePlanRoutine } from '@/components/dashboard/patient/CarePlanRoutine'
 import { CarePlanWatchlist } from '@/components/dashboard/patient/CarePlanWatchlist'
 import { PatientRecommendations } from '@/components/dashboard/patient/PatientRecommendations'
@@ -286,10 +286,6 @@ function CareHero({ latestResult, resultCount, urgentCount, t }) {
   const age = toNumberOrNull(facts.age)
   const confidence = toPercentValue(latestResult?.certainty)
 
-  const handlePrint = () => {
-    window.print()
-  }
-
   return (
     <section
       className={cn(
@@ -360,22 +356,13 @@ function CareHero({ latestResult, resultCount, urgentCount, t }) {
             </Link>
 
             <Link
-              to={`/my-results/${latestResult.id}`}
+              to={latestResult?.id ? `/diagnosis/result?diagnosis_result_id=${latestResult.id}` : '/my-results'}
               className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-xs transition hover:bg-white/20"
             >
               <FileText className="h-4 w-4" />
               {t('patientDashboard.carePlanPage.hero.viewFullReport', 'View Full Report')}
               <ArrowRight className="h-4 w-4" />
             </Link>
-
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-xs transition hover:bg-white/20"
-            >
-              <Printer className="h-4 w-4" />
-              {t('patientDashboard.carePlanPage.hero.printPlan', 'Print Care Plan')}
-            </button>
           </div>
         </div>
 
@@ -488,7 +475,8 @@ export function CarePlanPage() {
                 resultId={latestResult.id}
                 t={t}
               />
-              <CarePlanRoutine t={t} />
+              <CarePlanPrevention latestResult={latestResult} t={t} />
+              <CarePlanRoutine latestResult={latestResult} t={t} />
               <PatientRecommendations recommendations={recommendations} t={t} variant="full" />
               <DoctorNoteCard latestResult={latestResult} t={t} />
               <SymptomsCard symptoms={getReportedSymptomLabels(latestResult, t)} t={t} />

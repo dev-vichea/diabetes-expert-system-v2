@@ -29,6 +29,7 @@ def app(tmp_path):
         SQLALCHEMY_DATABASE_URI = f"sqlite:///{db_path}"
         DB_AUTO_CREATE = True
         SEED_DEMO_DATA = True
+        RULES_SEED_VERSION = "v1"
         JWT_ACCESS_EXPIRES_SECONDS = 300
         JWT_REFRESH_EXPIRES_SECONDS = 1800
 

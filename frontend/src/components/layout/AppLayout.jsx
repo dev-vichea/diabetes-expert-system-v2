@@ -44,7 +44,7 @@ export function AppLayout() {
   const sidebarWidth = desktopSidebarCollapsed ? 'lg:grid-cols-[5rem_1fr]' : 'lg:grid-cols-[15rem_1fr]'
 
   return (
-    <div className={`h-[100dvh] min-w-0 overflow-hidden bg-[#f5f8fc] dark:bg-[#030309] lg:grid ${sidebarWidth}`}>
+    <div className={`app-layout-root h-[100dvh] min-w-0 overflow-hidden bg-[#f5f8fc] dark:bg-[#030309] lg:grid ${sidebarWidth}`}>
       <aside className="hidden h-[100dvh] min-h-0 overflow-hidden border-r border-slate-200 bg-white dark:border-[#161b31] dark:bg-[#030309] lg:static lg:block lg:w-auto">
         <Sidebar
           navItems={navItems}
@@ -65,7 +65,7 @@ export function AppLayout() {
         onClose={() => setMobileNavOpen(false)}
       />
 
-      <div className="relative z-10 flex h-[100dvh] min-w-0 min-h-0 flex-col overflow-hidden">
+      <div className="app-layout-content relative z-10 flex h-[100dvh] min-w-0 min-h-0 flex-col overflow-hidden">
         <Topbar
           page={page}
           user={user}

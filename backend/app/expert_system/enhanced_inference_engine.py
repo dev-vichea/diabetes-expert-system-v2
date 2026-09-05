@@ -455,6 +455,8 @@ def _serialize_triggered_rule(fired_rule: dict) -> dict:
         "id": fired_rule.get("id"),
         "code": fired_rule.get("code"),
         "name": fired_rule.get("name"),
+        "description": fired_rule.get("description") or "",
+        "explanation": fired_rule.get("explanation") or fired_rule.get("explanation_text") or "",
         "stage": fired_rule.get("stage"),
         "priority": fired_rule.get("priority"),
         "condition": fired_rule.get("condition"),

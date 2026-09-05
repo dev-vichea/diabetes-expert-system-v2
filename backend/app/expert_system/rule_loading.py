@@ -40,6 +40,7 @@ class RuleSpec:
     condition_expression: str
     conditions: tuple[dict, ...]
     actions: tuple[RuleActionSpec, ...]
+    explanation: str = ""
 
 
 @dataclass
@@ -133,6 +134,7 @@ class RuleLoader:
                     condition_expression=condition_expression,
                     conditions=tuple(normalized_conditions),
                     actions=tuple(actions),
+                    explanation=str(raw_rule.get("explanation_text") or raw_rule.get("explanation") or "").strip(),
                 )
             )
 

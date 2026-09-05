@@ -43,6 +43,7 @@ export {
   ComboboxClear,
   ComboboxValue,
   useComboboxAnchor,
+  AppCombobox,
 } from './combobox'
 export { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem, CommandSeparator } from './command'
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './accordion'
@@ -57,6 +58,7 @@ export {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,

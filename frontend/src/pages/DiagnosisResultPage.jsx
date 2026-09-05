@@ -12,21 +12,42 @@ import {
   Info,
   TestTube,
   Heart,
+  HeartPulse,
   Zap,
   RotateCcw,
   FileText,
+  FileDown,
+  Printer,
+  ChevronDown,
   Stethoscope,
   History,
+  Send,
+  CheckCircle2,
+  Clock,
+  MessageSquare,
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
-import { EmptyState, ErrorAlert, StatusBadge, ConfirmDialog, LoadingState } from '@/components/ui'
+import {
+  EmptyState,
+  ErrorAlert,
+  StatusBadge,
+  ConfirmDialog,
+  LoadingState,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui'
 import { ConditionEducationPanel } from '@/components/diagnosis/ConditionEducationPanel'
 import { PlainSummaryStrip } from '@/components/diagnosis/PlainSummaryStrip'
 import { getSymptomGuideKey } from '@/lib/symptom-guide'
 import { getRiskGuideKey } from '@/lib/risk-factor-guide'
 import { bilingualField } from '@/lib/i18n'
 import { TechnicalDetailsSection } from '@/components/diagnosis/TechnicalDetailsSection'
+import PrintableClinicalReport from '@/components/assessment/PrintableClinicalReport'
 import { readDiagnosisResultSnapshot, saveDiagnosisResultSnapshot } from '@/lib/diagnosis-result-storage'
 import { notify } from '@/lib/toast'
 import { useAuth } from '@/contexts/AuthContext'
@@ -156,44 +177,77 @@ function getTypeLabelKey(type) {
   return 'undetermined'
 }
 
-function getRiskGradient(percent) {
-  percent = Number(percent) || 0
-
-  if (percent >= 85) {
-    return 'bg-gradient-to-r from-red-700 to-red-600'
+function getRiskCategory(diagnosis, percent) {
+  const d = String(diagnosis || '').toLowerCase()
+  if (
+    d.includes('no strong') ||
+    d.includes('healthy') ||
+    d.includes('normal') ||
+    d.includes('low risk') ||
+    d.includes('insufficient') ||
+    d.includes('negative')
+  ) {
+    return 'normal'
   }
-  if (percent >= 70) {
-    return 'bg-gradient-to-r from-orange-700 to-orange-600'
+  if (d.includes('prediabetes') || d.includes('early')) {
+    return 'prediabetes'
   }
-  if (percent >= 45) {
-    return 'bg-gradient-to-r from-amber-700 to-amber-600'
+  if (d.includes('urgent') || d.includes('emergency')) {
+    return 'urgent'
   }
-  if (percent >= 25) {
-    return 'bg-gradient-to-r from-yellow-700 to-yellow-600'
+  if (d.includes('type 1') || d.includes('type 2') || d.includes('likely') || d.includes('gestational')) {
+    return 'diabetes'
   }
-  return 'bg-gradient-to-r from-emerald-700 to-emerald-600'
+  const p = Number(percent) || 0
+  if (p >= 80) return 'urgent'
+  if (p >= 50) return 'prediabetes'
+  return 'normal'
 }
 
-function getGaugeColor(score) {
-  score = Number(score) || 0
+function getRiskGradient(percent, diagnosis) {
+  const category = getRiskCategory(diagnosis, percent)
+  if (category === 'normal') {
+    return 'bg-gradient-to-br from-emerald-600 via-teal-700 to-emerald-800'
+  }
+  if (category === 'prediabetes') {
+    return 'bg-gradient-to-br from-amber-600 via-amber-700 to-orange-600'
+  }
+  if (category === 'urgent') {
+    return 'bg-gradient-to-br from-rose-700 via-red-700 to-red-800'
+  }
+  return 'bg-gradient-to-br from-rose-700 via-pink-800 to-red-700'
+}
 
-  if (score >= 85) {
-    return { light: 'stroke-red-600', dark: 'stroke-red-400' }
+function getGaugeColor(score, diagnosis) {
+  const category = getRiskCategory(diagnosis, score)
+  if (category === 'normal') {
+    return { light: 'stroke-emerald-600', dark: 'stroke-emerald-400' }
   }
-  if (score >= 70) {
-    return { light: 'stroke-orange-600', dark: 'stroke-orange-400' }
-  }
-  if (score >= 45) {
+  if (category === 'prediabetes') {
     return { light: 'stroke-amber-600', dark: 'stroke-amber-400' }
   }
-  if (score >= 25) {
-    return { light: 'stroke-yellow-600', dark: 'stroke-yellow-400' }
+  if (category === 'urgent') {
+    return { light: 'stroke-red-600', dark: 'stroke-red-400' }
   }
-  return { light: 'stroke-emerald-600', dark: 'stroke-emerald-400' }
+  return { light: 'stroke-rose-600', dark: 'stroke-rose-400' }
 }
 
 function formatCertaintyContribution(rule) {
   return Number(rule?.effective_certainty ?? rule?.certainty_factor ?? 0).toFixed(2)
+}
+
+export function cleanRuleName(name) {
+  if (!name) return ''
+  return String(name)
+    // English prefixes (e.g., "V2 Diagnosis: ", "V2 Recommendation: ", "V2 Type 2 Pattern: ", "Classification: ", "Diagnosis: ")
+    .replace(/^V\d+\s+(Diagnosis|Recommendation|Pattern|Classification|Triage|Type\s+\d+\s+Pattern|Gestational\s+Pattern|Risk)[\s:：៖\-–—\u17D6]+/i, '')
+    .replace(/^V\d+[\s:：៖\-–—\u17D6]+/i, '')
+    .replace(/^(Diagnosis|Recommendation|Classification|Triage|Pattern|Risk)[\s:：៖\-–—\u17D6]+/i, '')
+    // Khmer prefixes (e.g., "V2 ការវិភាគរោគ៖ ", "V2 ការណែនាំ៖ ", "V2 ទម្រង់ប្រភេទទី ២៖ ", "ការវិភាគរោគ៖ ")
+    .replace(/^V\d+\s+(ការវិភាគរោគ|ការណែនាំ|ការសង្គ្រោះបឋម|ទម្រង់\s*Gestational|ទម្រង់ប្រភេទទី\s*\d+|ទម្រង់ប្រភេទ\s*\d+|ទម្រង់|ការចាត់ថ្នាក់|ការត្រួតពិនិត្យបន្ទាន់)[\s:：\-–—\u17D6]+/i, '')
+    .replace(/^V\d+[\s:：\-–—\u17D6]+/i, '')
+    .replace(/^(ការវិភាគរោគ|ការណែនាំ|ការសង្គ្រោះបឋម|ទម្រង់\s*Gestational|ទម្រង់ប្រភេទទី\s*\d+|ទម្រង់ប្រភេទ\s*\d+|ទម្រង់|ការចាត់ថ្នាក់)[\s:：\-–—\u17D6]+/i, '')
+    .trim()
 }
 
 function getPrimaryHeadline(result, percent, t, tExact) {
@@ -266,14 +320,18 @@ function getScalePercent(labKey, rawValue) {
   return 66.6666 + zone * 33.3334
 }
 
-function CertaintyRing({ percent, size = 140, stroke = 12 }) {
+function CertaintyRing({ percent, diagnosis, size = 140, stroke = 12 }) {
   const safePercent = Math.max(0, Math.min(100, Number(percent) || 0))
   const radius = (size - stroke * 2) / 2
   const center = size / 2
   const circumference = 2 * Math.PI * radius
   const offset = circumference * (1 - safePercent / 100)
 
-  const colorClass = safePercent >= 85 ? 'text-red-500' : safePercent >= 70 ? 'text-orange-500' : safePercent >= 45 ? 'text-amber-500' : 'text-emerald-500'
+  const category = getRiskCategory(diagnosis, safePercent)
+  let colorClass = 'text-emerald-500'
+  if (category === 'urgent') colorClass = 'text-red-500'
+  else if (category === 'diabetes') colorClass = 'text-rose-500'
+  else if (category === 'prediabetes') colorClass = 'text-amber-500'
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
@@ -331,18 +389,18 @@ function LabIndicatorCard({ title, valueLabel, status, subtitle, pointerPercent,
     ? null
     : Math.max(1.5, Math.min(98.5, Number(pointerPercent)))
   return (
-    <div className="min-w-0 rounded-lg bg-white p-3 dark:bg-slate-900">
+    <div className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 dark:border-slate-800/80 dark:bg-[#0a0f1c]/50">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex items-center gap-2">
-          {Icon && <Icon className="h-5 w-5 text-slate-700 dark:text-slate-300" />}
-          <p className="break-words text-[1.05rem] font-bold leading-snug text-slate-900 dark:text-slate-100">{title}</p>
+          {Icon && <Icon className="h-4 w-4 text-slate-600 dark:text-slate-400" />}
+          <p className="break-words text-sm font-semibold leading-snug text-slate-900 dark:text-slate-100">{title}</p>
         </div>
         <StatusBadge tone={status.tone} size="sm">{status.label}</StatusBadge>
       </div>
 
-      <p className="mt-2 break-words text-3xl font-extrabold leading-none text-slate-900 dark:text-slate-100 sm:text-[2.2rem]">{valueLabel}</p>
+      <p className="mt-2.5 break-words text-2xl font-bold leading-none text-slate-900 dark:text-slate-100">{valueLabel}</p>
 
-      <div className="mt-5">
+      <div className="mt-4">
         <div className="relative h-2 rounded-full bg-slate-200 dark:bg-slate-700">
           <div className="absolute inset-0 overflow-hidden rounded-full">
             <div className="h-full w-1/3 bg-emerald-500" />
@@ -351,7 +409,7 @@ function LabIndicatorCard({ title, valueLabel, status, subtitle, pointerPercent,
           </div>
           {markerPercent != null ? (
             <span
-              className="pointer-events-none absolute -top-4 -translate-x-1/2 text-base leading-none text-red-600 drop-shadow-sm dark:text-red-400"
+              className="pointer-events-none absolute -top-4 -translate-x-1/2 text-base leading-none text-red-600 drop-shadow-xs dark:text-red-400"
               style={{ left: `${markerPercent}%` }}
             >
               ▼
@@ -359,35 +417,53 @@ function LabIndicatorCard({ title, valueLabel, status, subtitle, pointerPercent,
           ) : null}
         </div>
 
-        <div className="mt-0.5 grid grid-cols-3 text-[0.72rem] font-semibold text-slate-500 dark:text-slate-400">
+        <div className="mt-1.5 grid grid-cols-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
           {ticks.map((tick) => (
             <span key={tick} className="text-center">{tick}</span>
           ))}
         </div>
       </div>
 
-      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{subtitle}</p>
+      <p className="mt-2.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{subtitle}</p>
     </div>
   )
 }
 
-function SurfaceSection({ title, children, icon: Icon }) {
+function SurfaceSection({ title, subtitle, children, icon: Icon, action, className = '' }) {
   return (
-    <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100 dark:bg-[#070b15] dark:ring-slate-800/60">
-      <header className="border-b border-slate-100 bg-slate-50/50 px-5 py-3.5 dark:border-slate-800 dark:bg-[#0a0f1c]/50">
-        <div className="flex items-center gap-2.5">
-          {Icon && <Icon className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />}
-          <p className="text-sm font-extrabold uppercase tracking-[0.1em] text-slate-900 dark:text-slate-100">{title}</p>
+    <section className={`space-y-2.5 ${className}`}>
+      {title && (
+        <div className="flex flex-wrap items-center justify-between gap-2.5 px-1">
+          <div className="flex items-center gap-2.5">
+            {Icon && (
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cyan-100/70 text-cyan-700 ring-1 ring-cyan-200/60 dark:bg-cyan-900/40 dark:text-cyan-300 dark:ring-cyan-800/60">
+                <Icon className="h-4 w-4" />
+              </div>
+            )}
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white sm:text-lg">
+                {title}
+              </h3>
+              {subtitle && (
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
+                  {subtitle}
+                </p>
+              )}
+            </div>
+          </div>
+          {action && <div>{action}</div>}
         </div>
-      </header>
-      <div className="p-4 sm:p-5">{children}</div>
+      )}
+      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800/70 dark:bg-[#070b15] sm:p-6">
+        {children}
+      </div>
     </section>
   )
 }
 
 export function DiagnosisResultPage() {
   const { user } = useAuth()
-  const { t, tExact, isKhmer } = useLanguage()
+  const { t, tExact, isKhmer, language } = useLanguage()
   const location = useLocation()
   const navigate = useNavigate()
   const [showRestartConfirm, setShowRestartConfirm] = useState(false)
@@ -406,6 +482,46 @@ export function DiagnosisResultPage() {
     if (diagnosisResultId) return null
     return readDiagnosisResultSnapshot(user)
   })
+
+  const [expandedRules, setExpandedRules] = useState({})
+  const [ruleExplanations, setRuleExplanations] = useState({})
+  const [loadingRuleExplanations, setLoadingRuleExplanations] = useState({})
+
+  const [submittingToCareTeam, setSubmittingToCareTeam] = useState(false)
+  const [patientNote, setPatientNote] = useState(() => location.state?.patientNote || '')
+  const [submittedCareTeamResult, setSubmittedCareTeamResult] = useState(null)
+
+  const toggleRuleExplanation = async (ruleKey, rule) => {
+    const isCurrentlyExpanded = Boolean(expandedRules[ruleKey])
+    setExpandedRules((prev) => ({ ...prev, [ruleKey]: !isCurrentlyExpanded }))
+
+    // If opening and not yet fetched
+    if (!isCurrentlyExpanded && !ruleExplanations[ruleKey]) {
+      if (rule?.explanation) {
+        setRuleExplanations((prev) => ({ ...prev, [ruleKey]: rule.explanation }))
+      }
+
+      const identifier = rule?.id || rule?.code || rule?.name
+      if (identifier) {
+        if (!rule?.explanation) {
+          setLoadingRuleExplanations((prev) => ({ ...prev, [ruleKey]: true }))
+        }
+        try {
+          const response = await api.get(`/diagnosis/rule-explanation/${encodeURIComponent(identifier)}`)
+          const data = getApiData(response)
+          if (data?.explanation) {
+            setRuleExplanations((prev) => ({ ...prev, [ruleKey]: data.explanation }))
+          } else if (!rule?.explanation && data?.description) {
+            setRuleExplanations((prev) => ({ ...prev, [ruleKey]: data.description }))
+          }
+        } catch (err) {
+          console.warn('Failed to fetch rule explanation:', err)
+        } finally {
+          setLoadingRuleExplanations((prev) => ({ ...prev, [ruleKey]: false }))
+        }
+      }
+    }
+  }
 
   useEffect(() => {
     // DB-first: when a specific result is requested, ALWAYS fetch it from the
@@ -461,8 +577,24 @@ export function DiagnosisResultPage() {
     setSnapshot(readDiagnosisResultSnapshot(user))
   }, [diagnosisResultId, location.state, user])
 
-  const result = snapshot?.result
+  const activeResult = submittedCareTeamResult || snapshot?.result
+  const result = activeResult
   const context = snapshot?.context || {}
+
+  useEffect(() => {
+    if (activeResult?.patient_note && !patientNote) {
+      setPatientNote(activeResult.patient_note)
+    }
+  }, [activeResult?.patient_note])
+
+  const isDraft = Boolean(
+    location.state?.isDraft ||
+    activeResult?.is_draft ||
+    (activeResult && activeResult.is_submitted_to_care_team === false)
+  )
+  const isSubmittedToCareTeam = !isDraft || Boolean(submittedCareTeamResult)
+  const submittedAt = activeResult?.submitted_to_care_team_at || submittedCareTeamResult?.submitted_to_care_team_at || (isSubmittedToCareTeam ? activeResult?.created_at : null)
+  const patientNoteSaved = activeResult?.patient_note || submittedCareTeamResult?.patient_note || (isSubmittedToCareTeam ? patientNote.trim() : '')
 
   // Doctor-managed fact education (Knowledge Base → Facts) rides on the result.
   // It wins over the compiled locale guide so doctor edits reach patients even
@@ -659,7 +791,63 @@ export function DiagnosisResultPage() {
     || null
   const patientName = context?.patient_name || t('diagnosisResult.currentPatient', 'Current patient')
   const reportTime = result?.created_at || snapshot?.savedAt
-  const reportDownloadId = diagnosisResultId || result?.id || result?.diagnosis_result_id
+  const reportDownloadId = diagnosisResultId || result?.id || result?.diagnosis_result_id || submittedCareTeamResult?.diagnosis_result_id || submittedCareTeamResult?.id
+
+  const handleSubmitToCareTeam = async () => {
+    if (submittingToCareTeam) return
+    setSubmittingToCareTeam(true)
+    try {
+      const payloadData =
+        location.state?.payload ||
+        snapshot?.payload ||
+        activeResult?.provided_payload ||
+        null
+
+      const res = await api.post('/diagnosis/submit-to-care-team', {
+        diagnosis_result_id: diagnosisResultId || activeResult?.diagnosis_result_id || activeResult?.id || null,
+        patient_note: patientNote.trim(),
+        payload: payloadData,
+      })
+      const savedData = getApiData(res)
+      setSubmittedCareTeamResult(savedData)
+
+      const nextContext = {
+        patient_id: savedData?.patient_id ?? context?.patient_id ?? null,
+        patient_name: savedData?.patient_name ?? context?.patient_name ?? null,
+        assessment_mode: savedData?.assessment_session?.mode ?? context?.assessment_mode ?? null,
+      }
+
+      setSnapshot({
+        result: savedData,
+        context: nextContext,
+        savedAt: savedData?.created_at || new Date().toISOString(),
+      })
+
+      saveDiagnosisResultSnapshot({
+        user,
+        result: savedData,
+        context: nextContext,
+      })
+
+      notify.success(t('diagnosisResult.submittedSuccessToast', 'Assessment submitted to care team! Your clinical staff has been alerted.'))
+
+      const targetId = savedData?.diagnosis_result_id || savedData?.id
+      if (targetId) {
+        navigate(`/diagnosis/result?diagnosis_result_id=${targetId}`, {
+          replace: true,
+          state: {
+            result: savedData,
+            context: nextContext,
+            isDraft: false,
+          },
+        })
+      }
+    } catch (err) {
+      notify.error(getApiErrorMessage(err, 'Failed to submit to care team. Please try again.'))
+    } finally {
+      setSubmittingToCareTeam(false)
+    }
+  }
 
   const handleRestartConfirm = () => {
     localStorage.removeItem('diagnosisResultSnapshot')
@@ -667,15 +855,17 @@ export function DiagnosisResultPage() {
     navigate('/diagnosis', { state: { keepData: true } })
   }
 
-  const handleDownloadReport = async () => {
+  const handleDownloadReport = async (langOverride) => {
     if (!reportDownloadId) {
-      notify.error(t('diagnosisResult.downloadPdfMissingId', 'This result is missing a report identifier. Reload the page and try again.'))
+      notify.info(t('diagnosisResult.submitFirstToDownload', 'Please submit your assessment to the care team first to save and download the official PDF report.'))
       return
     }
 
-    setDownloadingReport(true)
+    const targetLang = typeof langOverride === 'string' ? langOverride : (language || 'en')
+    setDownloadingReport(targetLang)
     try {
       const response = await api.get(`/diagnosis/${reportDownloadId}/report.pdf`, {
+        params: { lang: targetLang },
         responseType: 'blob',
       })
 
@@ -683,7 +873,7 @@ export function DiagnosisResultPage() {
         ? response.data
         : new Blob([response?.data], { type: 'application/pdf' })
 
-      const fallbackFileName = `assessment-report-${reportDownloadId}.pdf`
+      const fallbackFileName = `assessment-report-${reportDownloadId}-${targetLang}.pdf`
       const contentDisposition = response?.headers?.['content-disposition']
       const fileName = getDownloadFilename(contentDisposition, fallbackFileName)
       const objectUrl = window.URL.createObjectURL(blob)
@@ -697,7 +887,7 @@ export function DiagnosisResultPage() {
     } catch (err) {
       notify.error(await getDownloadErrorMessage(err, t('diagnosisResult.downloadPdfFailed', 'Failed to download PDF report')))
     } finally {
-      setDownloadingReport(false)
+      setDownloadingReport(null)
     }
   }
 
@@ -707,31 +897,152 @@ export function DiagnosisResultPage() {
           surface the error instead of silently showing stale data. */}
       {loadError && snapshot?.result ? <ErrorAlert message={loadError} /> : null}
 
-      <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      {/* Printable Clinical Report - Full clinical layout that mirrors PDF templates */}
+      <div className="print-only">
+        <PrintableClinicalReport
+          result={result}
+          snapshot={snapshot}
+          context={context}
+          isKhmer={isKhmer}
+          reportDownloadId={reportDownloadId}
+          patientName={patientName}
+          reportTime={reportTime}
+          user={user}
+        />
+      </div>
+
+      {/* Screen Interactive UI - hidden during print */}
+      <div className="no-print space-y-6">
+        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="break-words text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
+          <h1 className="break-words text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
             {t('diagnosisResult.pageTitle', 'Medical Assessment Report')}
           </h1>
-          <p className="mt-1.5 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-500">
-            <span>{t('diagnosisResult.patient', 'Patient')}: <strong className="text-slate-700 dark:text-slate-300 uppercase tracking-wide">{patientName}</strong></span>
+          <p className="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+            <span>{t('diagnosisResult.patient', 'Patient')}: <strong className="font-semibold text-slate-800 dark:text-slate-200">{patientName}</strong></span>
             <span className="text-slate-300 dark:text-slate-700">&bull;</span>
             <span>{t('diagnosisResult.generatedOn', 'Generated on')}: {formatDateTime(reportTime)}</span>
           </p>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex flex-wrap items-center gap-2 no-print">
+          {/* Open Care Plan Button */}
+          <Link
+            to="/care-plan"
+            className="btn-secondary gap-2 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 shadow-sm border-slate-200 dark:border-slate-700 h-10 px-4 text-sm font-semibold transition-all text-slate-700 dark:text-slate-200 inline-flex items-center"
+          >
+            <HeartPulse className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+            <span>{t('diagnosisResult.openCarePlan', 'Open Care Plan')}</span>
+          </Link>
+
+          {/* Print Button */}
           <button
             type="button"
-            onClick={handleDownloadReport}
-            disabled={downloadingReport}
-            className="btn-secondary gap-2 bg-white hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-slate-900 dark:hover:bg-slate-800 shadow-sm border-slate-200 dark:border-slate-700 h-10 px-4 transition-all"
+            onClick={() => window.print()}
+            className="btn-secondary gap-2 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 shadow-sm border-slate-200 dark:border-slate-700 h-10 px-4 text-sm font-semibold transition-all text-slate-700 dark:text-slate-200"
+            title={t('diagnosisResult.printTooltip', 'Print or save as PDF with native browser font rendering (Recommended for Khmer)')}
           >
-            <FileText className="h-4 w-4 text-slate-500" />
-            <span className="font-semibold">
-              {downloadingReport
-                ? t('diagnosisResult.generatingPdf', 'Generating PDF...')
-                : t('diagnosisResult.downloadPdf', 'Download PDF Report')}
-            </span>
+            <Printer className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+            <span>{isKhmer ? 'បោះពុម្ព' : t('diagnosisResult.print', 'Print')}</span>
           </button>
+
+          {/* Generate PDF Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                disabled={Boolean(downloadingReport)}
+                className="btn-primary gap-2 h-10 px-4 shadow-sm transition-all text-sm font-semibold inline-flex items-center"
+              >
+                {downloadingReport ? (
+                  <RotateCcw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileDown className="h-4 w-4" />
+                )}
+                <span>
+                  {downloadingReport
+                    ? t('diagnosisResult.generatingPdf', 'Generating PDF...')
+                    : isKhmer
+                    ? 'ទាញយក PDF'
+                    : t('diagnosisResult.generatePdf', 'Generate PDF')}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 opacity-80" />
+              </button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="end" className="w-80 p-2 shadow-xl z-50">
+              <DropdownMenuLabel className="text-xs text-slate-500 dark:text-slate-400 font-semibold px-2 py-1">
+                {t('diagnosisResult.pdfMenu.title', isKhmer ? 'ជ្រើសរើសទម្រង់របាយការណ៍' : 'Choose Report Language')}
+              </DropdownMenuLabel>
+
+              <DropdownMenuItem
+                onClick={() => handleDownloadReport('en')}
+                disabled={Boolean(downloadingReport)}
+                className="flex items-start gap-3 p-2.5 rounded-xl cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/40 transition"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 font-bold text-xs">
+                  EN
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                      {t('diagnosisResult.pdfMenu.englishTitle', isKhmer ? 'របាយការណ៍ជាភាសាអង់គ្លេស (PDF)' : 'English PDF Report')}
+                    </p>
+                    {downloadingReport === 'en' && <RotateCcw className="h-3.5 w-3.5 animate-spin text-blue-500" />}
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {t('diagnosisResult.pdfMenu.englishDesc', isKhmer ? 'របាយការណ៍គ្លីនិកស្តង់ដារសម្រាប់កំណត់ត្រា និង EMR' : 'Standard clinical PDF for records & EMR')}
+                  </p>
+                </div>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => handleDownloadReport('km')}
+                disabled={Boolean(downloadingReport)}
+                className="flex items-start gap-3 p-2.5 rounded-xl cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                  ខ្មែរ
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                      {t('diagnosisResult.pdfMenu.khmerTitle', isKhmer ? 'របាយការណ៍ជាភាសាខ្មែរ (PDF)' : 'Khmer PDF Report')}
+                    </p>
+                    {downloadingReport === 'km' && <RotateCcw className="h-3.5 w-3.5 animate-spin text-emerald-500" />}
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {t('diagnosisResult.pdfMenu.khmerDesc', isKhmer ? 'របាយការណ៍គ្លីនិកជាភាសាខ្មែរផ្លូវការ' : 'Official clinical PDF report in Khmer')}
+                  </p>
+                </div>
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator className="my-1.5" />
+
+              <DropdownMenuItem
+                onClick={() => window.print()}
+                className="flex items-start gap-3 p-2.5 rounded-xl cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400">
+                  <Printer className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                      {t('diagnosisResult.pdfMenu.printTitle', isKhmer ? 'បោះពុម្ព / រក្សាទុកជា PDF' : 'Print / Save as PDF')}
+                    </p>
+                    <span className="rounded bg-indigo-100 dark:bg-indigo-900/60 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-300">
+                      {t('diagnosisResult.pdfMenu.printBadge', isKhmer ? 'ណែនាំ' : 'Best Font')}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {t('diagnosisResult.pdfMenu.printDesc', isKhmer
+                      ? 'ប្រើប្រព័ន្ធ font របស់ browser សម្រាប់អក្សរខ្មែរច្បាស់ 100%'
+                      : 'Native browser font shaping for perfect Khmer typography')}
+                  </p>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -748,80 +1059,95 @@ export function DiagnosisResultPage() {
 
       <PlainSummaryStrip result={result} />
 
-      <div className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-100 dark:bg-[#070b15] dark:ring-slate-800/60">
-        <div className="grid lg:grid-cols-5">
-          <article className={`relative overflow-hidden px-5 py-8 text-white sm:px-8 md:py-14 lg:col-span-3 ${getRiskGradient(certaintyPercent)}`}>
-            <div className="absolute inset-0 bg-black/10 mix-blend-overlay"></div>
-            <img src="/images/disease.png" alt="Disease illustration" className="absolute -right-10 top-0 hidden h-full w-auto opacity-[0.15] object-cover mix-blend-luminosity sm:block" />
-
-            <div className="relative z-10 flex h-full flex-col justify-center">
-              <span className="mb-4 flex items-center gap-1.5 w-fit rounded-full bg-white/20 px-3 py-1 text-xs font-black uppercase tracking-widest text-white backdrop-blur-md shadow-sm border border-white/10">
-                <ShieldCheck className="h-3.5 w-3.5" />
+      <section className="space-y-2.5">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-100/70 text-primary-700 ring-1 ring-primary-200/60 dark:bg-primary-900/40 dark:text-primary-300 dark:ring-primary-800/60">
+              <ShieldCheck className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white sm:text-lg">
                 {t('diagnosisResult.diagnosticOutput', 'Diagnostic Output')}
-              </span>
-              <h2 className="break-words text-3xl font-black uppercase leading-tight drop-shadow-sm sm:text-4xl md:text-5xl">{primaryHeadline}</h2>
-              {suspectedType?.type ? (
-                <div className="mt-4 w-fit max-w-md rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-md">
-                  <p className="flex flex-wrap items-center gap-2 text-sm font-bold text-white">
-                    <Dna className="h-4 w-4 shrink-0" />
-                    <span className="uppercase tracking-wide">{t('diagnosisResult.suspectedType', 'Suspected type')}:</span>
-                    <span className="rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-black">
-                      {tExact(t(`diagnosisResult.type.${getTypeLabelKey(suspectedType.type)}`, suspectedType.type))}
-                      {suspectedType.type !== 'Undetermined' && Number.isFinite(Number(suspectedType.certainty)) ? ` · ${Math.round(Number(suspectedType.certainty) * 100)}%` : ''}
-                    </span>
-                  </p>
-                  {suspectedType.note ? (
-                    <p className="mt-1.5 text-xs leading-relaxed text-white/85">{tExact(String(suspectedType.note))}</p>
-                  ) : null}
-                  {Array.isArray(suspectedType.candidates) && suspectedType.candidates.length ? (
-                    <p className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-white/90">
-                      {t('diagnosisResult.couldFit', 'Could fit:')}
-                      {suspectedType.candidates.slice(0, 3).map((candidate) => (
-                        <span key={candidate.type} className="rounded-full bg-white/20 px-2 py-0.5">
-                          {tExact(t(`diagnosisResult.type.${getTypeLabelKey(candidate.type)}`, candidate.type))} {Math.round(Number(candidate.certainty || 0) * 100)}%
-                        </span>
-                      ))}
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
-              <p className="mt-4 max-w-md text-base font-medium leading-relaxed text-white/95 drop-shadow-sm sm:text-lg">
-                {result?.headline_explanation
-                  ? tExact(bilingualField(result.headline_explanation, result.headline_explanation_km))
-                  : result?.result_summary
-                    ? tExact(bilingualField(result.result_summary, result.result_summary_km))
-                    : (<>{t('diagnosisResult.probabilityBase', 'Screening confidence: ')}<strong className="font-extrabold text-white">{certaintyPercent}%</strong>{t('diagnosisResult.probabilityOf', ' — see the evidence breakdown below.')}</>)
-                }
-              </p>
-              {result?.context_note ? (
-                <p className="mt-3 flex max-w-md items-start gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold leading-relaxed text-white/95 backdrop-blur-sm">
-                  <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>{tExact(String(result.context_note))}</span>
-                </p>
-              ) : null}
+              </h3>
             </div>
-          </article>
-
-          <article className="relative flex flex-col items-center justify-center bg-slate-50 px-5 py-8 dark:bg-[#0a0f1c] sm:px-8 sm:py-10 lg:col-span-2">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-black/5 to-transparent dark:via-white/5"></div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-8 mt-2">{t('diagnosisResult.overallScore', 'Screening Confidence')}</p>
-
-            <div className="relative flex items-center justify-center">
-              <CertaintyRing percent={certaintyPercent} size={180} stroke={14} />
-              <div className="absolute inset-0 flex flex-col items-center justify-center drop-shadow-md">
-                <span className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white leading-none">{certaintyPercent}</span>
-                <span className="text-[10px] font-black text-slate-400 uppercase mt-1 tracking-widest">/ 100</span>
-              </div>
-            </div>
-
-            <div className="mt-8 text-center bg-white dark:bg-slate-900/50 rounded-2xl py-3 px-6 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-slate-800 max-w-[240px]">
-              <p className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-slate-200">
-                {tExact(confidenceMeta.title)}
-              </p>
-            </div>
-          </article>
+          </div>
+          <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+            Primary Screening
+          </span>
         </div>
-      </div>
+
+        <div className="overflow-hidden rounded-3xl bg-white shadow-xs ring-1 ring-slate-100 dark:bg-[#070b15] dark:ring-slate-800/60">
+          <div className="grid lg:grid-cols-5">
+            <article className={`relative overflow-hidden px-6 py-8 text-white sm:px-9 md:py-12 lg:col-span-3 ${getRiskGradient(certaintyPercent, result?.diagnosis)}`}>
+              <div className="absolute inset-0 bg-gradient-to-tr from-black/15 via-transparent to-white/10 pointer-events-none" />
+              <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+
+              <div className="relative z-10 flex h-full flex-col justify-center">
+                <h2 className="break-words text-2xl font-bold tracking-tight text-white drop-shadow-xs sm:text-3xl lg:text-4xl">{primaryHeadline}</h2>
+                {suspectedType?.type ? (
+                  <div className="mt-4 w-fit max-w-md rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-md">
+                    <p className="flex flex-wrap items-center gap-2 text-sm font-bold text-white">
+                      <Dna className="h-4 w-4 shrink-0" />
+                      <span className="tracking-wide">{t('diagnosisResult.suspectedType', 'Suspected type')}:</span>
+                      <span className="rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-bold">
+                        {tExact(t(`diagnosisResult.type.${getTypeLabelKey(suspectedType.type)}`, suspectedType.type))}
+                        {suspectedType.type !== 'Undetermined' && Number.isFinite(Number(suspectedType.certainty)) ? ` · ${Math.round(Number(suspectedType.certainty) * 100)}%` : ''}
+                      </span>
+                    </p>
+                    {suspectedType.note ? (
+                      <p className="mt-1.5 text-xs leading-relaxed text-white/85">{tExact(String(suspectedType.note))}</p>
+                    ) : null}
+                    {Array.isArray(suspectedType.candidates) && suspectedType.candidates.length ? (
+                      <p className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-white/90">
+                        {t('diagnosisResult.couldFit', 'Could fit:')}
+                        {suspectedType.candidates.slice(0, 3).map((candidate) => (
+                          <span key={candidate.type} className="rounded-full bg-white/20 px-2 py-0.5">
+                            {tExact(t(`diagnosisResult.type.${getTypeLabelKey(candidate.type)}`, candidate.type))} {Math.round(Number(candidate.certainty || 0) * 100)}%
+                          </span>
+                        ))}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+                <p className="mt-4 max-w-lg text-sm font-normal leading-relaxed text-white/95 sm:text-base">
+                  {result?.headline_explanation
+                    ? tExact(bilingualField(result.headline_explanation, result.headline_explanation_km))
+                    : result?.result_summary
+                      ? tExact(bilingualField(result.result_summary, result.result_summary_km))
+                      : (<>{t('diagnosisResult.probabilityBase', 'Screening confidence: ')}<strong className="font-bold text-white">{certaintyPercent}%</strong>{t('diagnosisResult.probabilityOf', ' — see the evidence breakdown below.')}</>)
+                  }
+                </p>
+                {result?.context_note ? (
+                  <p className="mt-3 flex max-w-lg items-start gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-medium leading-relaxed text-white/95 backdrop-blur-sm">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>{tExact(String(result.context_note))}</span>
+                  </p>
+                ) : null}
+              </div>
+            </article>
+
+            <article className="relative flex flex-col items-center justify-center bg-slate-50/80 px-6 py-8 dark:bg-[#0a0f1c] sm:px-8 sm:py-10 lg:col-span-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-6 mt-1">{t('diagnosisResult.overallScore', 'Screening Confidence')}</p>
+
+              <div className="relative flex items-center justify-center">
+                <CertaintyRing percent={certaintyPercent} diagnosis={result?.diagnosis} size={170} stroke={13} />
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-none">{certaintyPercent}</span>
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase mt-1 tracking-wider">/ 100</span>
+                </div>
+              </div>
+
+              <div className="mt-6 text-center bg-white dark:bg-slate-900/60 rounded-2xl py-2.5 px-5 shadow-xs border border-slate-100 dark:border-slate-800 max-w-[240px]">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                  {tExact(confidenceMeta.title)}
+                </p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <ConditionEducationPanel result={result} defaultOpen={true} />
 
       <SurfaceSection title={t('diagnosisResult.actionableRecommendations', 'What you should do next')} icon={ClipboardList}>
         {recommendations.length ? (
@@ -831,16 +1157,16 @@ export function DiagnosisResultPage() {
               return (
                 <li
                   key={`${item.text}-${index}`}
-                  className="flex items-start gap-3 py-3.5"
+                  className="flex items-start gap-3 py-3.5 first:pt-0 last:pb-0"
                 >
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-50 text-xs font-black text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-50 text-xs font-bold text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
                     {index + 1}
                   </span>
-                  <p className="flex-1 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
+                  <p className="flex-1 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
                     {tExact(bilingualField(item.text, item.text_km))}
                   </p>
                   {isUrgent ? (
-                    <span className="mt-0.5 shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-rose-600 ring-1 ring-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:ring-rose-900/50">
+                    <span className="mt-0.5 shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-600 ring-1 ring-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:ring-rose-900/50">
                       {t('diagnosisResult.urgentTag', 'Urgent')}
                     </span>
                   ) : null}
@@ -851,38 +1177,38 @@ export function DiagnosisResultPage() {
         ) : (
           <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
             <ClipboardList className="h-10 w-10 text-slate-300 dark:text-slate-700 mb-3" />
-            <p className="text-base font-medium text-slate-600 dark:text-slate-400">
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
               {tExact(bilingualField(result.recommendation, result.recommendations?.[0]?.text === result.recommendation ? result.recommendations?.[0]?.text_km : undefined)) || t('diagnosisResult.noSpecificRecommendations', 'No specific recommendations were generated. Please consult with a physician.')}
             </p>
           </div>
         )}
         {showPrevention && preventionContent ? (
-          <div className="mt-6 rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-900/15 sm:p-5">
-            <h4 className="flex items-center gap-2 text-lg font-black tracking-tight text-slate-900 dark:text-slate-100">
-              <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <div className="mt-6 border-t border-slate-100 pt-5 dark:border-slate-800">
+            <h4 className="flex items-center gap-2 text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+              <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
               {preventionContent.title}
             </h4>
-            <p className="mt-2 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
+            <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
               {preventionContent.intro}
             </p>
             {preventionContent.listIntro ? (
-              <p className="mt-3 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
+              <p className="mt-2.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
                 {preventionContent.listIntro}
               </p>
             ) : null}
-            <ul className="mt-2 space-y-2.5">
+            <ul className="mt-2.5 space-y-2">
               {preventionContent.items.map((item) => (
-                <li key={item.lead} className="flex items-start gap-2.5 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 dark:bg-emerald-400" />
+                <li key={item.lead} className="flex items-start gap-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                  <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 dark:bg-emerald-400" />
                   <span>
-                    <strong className="font-bold text-slate-900 dark:text-slate-100">{item.lead}</strong>{' '}
+                    <strong className="font-semibold text-slate-900 dark:text-white">{item.lead}</strong>{' '}
                     {item.text}
                   </span>
                 </li>
               ))}
             </ul>
             {preventionContent.note ? (
-              <p className="mt-3 text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
+              <p className="mt-2.5 text-xs sm:text-sm leading-relaxed text-slate-500 dark:text-slate-400">
                 {preventionContent.note}
               </p>
             ) : null}
@@ -890,12 +1216,21 @@ export function DiagnosisResultPage() {
         ) : null}
       </SurfaceSection>
 
-      <div className="flex items-center gap-3 pt-6 pb-2">
-        <Stethoscope className="h-6 w-6 text-slate-400" />
-        <h3 className="text-xl font-black tracking-tight text-slate-800 dark:text-slate-100">{t('diagnosisResult.clinicalEvidence', 'The evidence behind this result')}</h3>
+      <div className="flex items-center gap-2.5 pt-4 px-1">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+          <Stethoscope className="h-4.5 w-4.5" />
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white sm:text-xl">
+            {t('diagnosisResult.clinicalEvidence', 'The evidence behind this result')}
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Biomarkers, symptoms, and risk factors that influenced this assessment
+          </p>
+        </div>
       </div>
 
-      <div className="mt-3 grid min-w-0 gap-3">
+      <div className="space-y-6">
         <article>
           <SurfaceSection title={t('diagnosisResult.keyDiagnosticIndicators', 'Key Diagnostic Indicators')} icon={FlaskConical}>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -919,15 +1254,15 @@ export function DiagnosisResultPage() {
               />
             </div>
 
-            <div className="mt-3 rounded-lg bg-white p-3 dark:bg-slate-900">
-              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+            <div className="mt-5 border-t border-slate-100 pt-5 dark:border-slate-800">
+              <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{t('diagnosisResult.evidenceCompleteness', 'Evidence Completeness')}</p>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                    {t('diagnosisResult.availableLabs', 'available labs:')} {(evidenceCompleteness?.available_labs || []).map(l => tExact(toReadableLabel(l))).join(', ') || t('diagnosisResult.none', 'none')}
+                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{t('diagnosisResult.evidenceCompleteness', 'Evidence Completeness')}</p>
+                  <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">{t('diagnosisResult.availableLabs', 'Available labs:')}</span> {(evidenceCompleteness?.available_labs || []).map(l => tExact(toReadableLabel(l))).join(', ') || t('diagnosisResult.none', 'none')}
                   </p>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                    {t('diagnosisResult.missing', 'missing:')} {(evidenceCompleteness?.missing_recommended_labs || missingLabs).map(l => tExact(toReadableLabel(l))).join(', ') || t('diagnosisResult.none', 'none')}
+                  <p className="mt-0.5 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">{t('diagnosisResult.missing', 'Missing:')}</span> {(evidenceCompleteness?.missing_recommended_labs || missingLabs).map(l => tExact(toReadableLabel(l))).join(', ') || t('diagnosisResult.none', 'none')}
                   </p>
                 </div>
                 <EvidenceRangeGauge score={evidenceCompleteness?.score || 0} level={evidenceCompleteness?.level || 'low'} />
@@ -940,7 +1275,7 @@ export function DiagnosisResultPage() {
           <SurfaceSection title={t('diagnosisResult.relevantHistory', 'Relevant History & Symptoms')} icon={Heart}>
             {matchedSymptoms.length ? (
               <div>
-                <p className="text-sm font-bold text-slate-600 dark:text-slate-400">{t('diagnosisResult.knownSymptoms', 'You reported:')}</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t('diagnosisResult.knownSymptoms', 'You reported:')}</p>
                 <ul className="mt-3 space-y-3">
                   {matchedSymptoms.map((symptom) => {
                     const guideKey = getSymptomGuideKey(symptom)
@@ -950,20 +1285,20 @@ export function DiagnosisResultPage() {
                       <li key={symptom} className="flex items-start gap-2.5">
                         <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-500 dark:bg-cyan-400" aria-hidden="true" />
                         <div className="min-w-0">
-                          <p className="text-[1.05rem] font-bold leading-snug text-slate-900 dark:text-slate-100">
+                          <p className="text-sm font-semibold leading-snug text-slate-900 dark:text-slate-100">
                             {(guide && guide.name) || tExact(symptom)}
                             {guide && guide.term ? (
-                              <span className="ml-1.5 text-xs font-bold uppercase tracking-wide text-cyan-700 dark:text-cyan-400">{String(guide.term)}</span>
+                              <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-400">{String(guide.term)}</span>
                             ) : null}
                           </p>
                           {guide && guide.meaning ? (
-                            <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{String(guide.meaning)}</p>
+                            <p className="mt-0.5 text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-400">{String(guide.meaning)}</p>
                           ) : null}
                           {guide && guide.prevention ? (
-                            <p className="mt-1.5 flex items-start gap-1.5 text-sm leading-relaxed text-emerald-700 dark:text-emerald-400">
-                              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                            <p className="mt-1 flex items-start gap-1.5 text-xs sm:text-sm leading-relaxed text-emerald-700 dark:text-emerald-400">
+                              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                               <span>
-                                <span className="font-bold">{t('diagnosisResult.symptomGuide.preventionLabel', 'Prevention:')}</span>{' '}
+                                <span className="font-semibold">{t('diagnosisResult.symptomGuide.preventionLabel', 'Prevention:')}</span>{' '}
                                 {String(guide.prevention)}
                               </span>
                             </p>
@@ -973,12 +1308,12 @@ export function DiagnosisResultPage() {
                     )
                   })}
                 </ul>
-                <p className="mt-4 pt-3 text-sm text-slate-700 dark:text-slate-300">
+                <p className="mt-4 border-t border-slate-100 pt-3 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                   {t('diagnosisResult.symptomAlign', "The patient's reported symptoms align with the matched diabetes pattern shown by the inference engine.")}
                 </p>
               </div>
             ) : (
-              <p className="text-base text-slate-600 dark:text-slate-300">{t('diagnosisResult.noSymptom', 'No prominent symptom pattern was selected.')}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{t('diagnosisResult.noSymptom', 'No prominent symptom pattern was selected.')}</p>
             )}
           </SurfaceSection>
         </article>
@@ -987,7 +1322,7 @@ export function DiagnosisResultPage() {
           <SurfaceSection title={t('diagnosisResult.riskFactors', 'Risk Factors')} icon={Zap}>
             {matchedRiskFactors.length ? (
               <div>
-                <p className="text-sm font-bold text-slate-600 dark:text-slate-400">{t('diagnosisResult.knownHistory', 'Known history includes:')}</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t('diagnosisResult.knownHistory', 'Known history includes:')}</p>
                 <ul className="mt-3 space-y-3">
                   {matchedRiskFactors.map((risk) => {
                     const riskKey = getRiskGuideKey(risk)
@@ -997,9 +1332,9 @@ export function DiagnosisResultPage() {
                       <li key={risk} className="flex items-start gap-2.5">
                         <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500 dark:bg-amber-400" aria-hidden="true" />
                         <div className="min-w-0">
-                          <p className="text-[1.05rem] font-bold leading-snug text-slate-900 dark:text-slate-100">{(riskGuide && riskGuide.name) || tExact(risk)}</p>
+                          <p className="text-sm font-semibold leading-snug text-slate-900 dark:text-slate-100">{(riskGuide && riskGuide.name) || tExact(risk)}</p>
                           {riskGuide && riskGuide.meaning ? (
-                            <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{String(riskGuide.meaning)}</p>
+                            <p className="mt-0.5 text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-400">{String(riskGuide.meaning)}</p>
                           ) : null}
                         </div>
                       </li>
@@ -1008,79 +1343,239 @@ export function DiagnosisResultPage() {
                 </ul>
               </div>
             ) : (
-              <p className="text-base text-slate-600 dark:text-slate-300">{t('diagnosisResult.noRisk', 'No risk factors were flagged in this submission.')}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{t('diagnosisResult.noRisk', 'No risk factors were flagged in this submission.')}</p>
             )}
           </SurfaceSection>
         </article>
       </div>
 
-      <ConditionEducationPanel result={result} />
-
       <TechnicalDetailsSection>
-      <div className="grid gap-3 xl:grid-cols-2">
-        <SurfaceSection title={t('diagnosisResult.reasoningKeyRules', 'Reasoning & Key Rules')} icon={ShieldCheck}>
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <ShieldCheck className="h-4 w-4 text-cyan-700 dark:text-cyan-400" />
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+              {t('diagnosisResult.reasoningKeyRules', 'Matched rules — technical')}
+            </h4>
+          </div>
           {sortedRules.length ? (
-            <ol className="space-y-2">
-              {sortedRules.slice(0, 6).map((rule, index) => (
-                <li
-                  key={rule.id || `${rule.code || 'rule'}-${index}`}
-                  className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-900"
-                >
-                  <p className="text-[1.02rem] leading-snug text-slate-900 dark:text-slate-100">
-                    <span className="font-extrabold">{index + 1}. {tExact(rule.name) || t('diagnosisResult.matchedRule', 'Matched Rule')}:</span>{' '}
-                    {tExact(rule.description) || t('diagnosisResult.ruleConditionMatched', 'Rule condition matched.')}{' '}
-                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">
-                      {t('diagnosisResult.contribution', 'Contribution')} +{formatCertaintyContribution(rule)}
-                    </span>
-                  </p>
-                </li>
-              ))}
+            <ol className="divide-y divide-slate-100 dark:divide-slate-800">
+              {sortedRules.map((rule, index) => {
+                const ruleKey = String(rule.id || rule.code || `${rule.name || 'rule'}-${index}`)
+                const rawTranslated = tExact(rule.name) || rule.name || ''
+                const cleanedName = cleanRuleName(rawTranslated) || cleanRuleName(rule.name) || t('diagnosisResult.matchedRule', 'Matched Rule')
+                const isExpanded = Boolean(expandedRules[ruleKey])
+                const explanationText = ruleExplanations[ruleKey] || rule.explanation || ''
+                const isLoadingExplanation = Boolean(loadingRuleExplanations[ruleKey])
+
+                return (
+                  <li
+                    key={ruleKey}
+                    className="py-3 first:pt-0 last:pb-0"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                          <span className="text-slate-400 font-normal text-sm">{index + 1}.</span>
+                          <button
+                            type="button"
+                            onClick={() => toggleRuleExplanation(ruleKey, rule)}
+                            className="group inline-flex items-center gap-1.5 text-left text-sm font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 hover:underline focus:outline-none focus:ring-2 focus:ring-sky-500/30 rounded transition-colors"
+                            title={t('diagnosisResult.clickToViewExplanation', 'Click to view doctor explanation')}
+                          >
+                            <span>{cleanedName}</span>
+                            <ChevronDown
+                              className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 text-sky-500/70 group-hover:text-sky-600 ${
+                                isExpanded ? 'rotate-180' : ''
+                              }`}
+                            />
+                          </button>
+                        </div>
+                        <p className="mt-1 text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-400 pl-4 sm:pl-5">
+                          {tExact(rule.description) || t('diagnosisResult.ruleConditionMatched', 'Rule condition matched.')}
+                        </p>
+
+                        {isExpanded && (
+                          <div className="mt-2.5 ml-4 sm:ml-5 rounded-xl border border-sky-200/80 bg-sky-50/70 p-3.5 text-xs sm:text-sm text-slate-700 shadow-xs dark:border-sky-800/60 dark:bg-sky-950/30 dark:text-slate-300">
+                            <div className="flex items-center gap-2 font-semibold text-sky-900 dark:text-sky-200 mb-1.5">
+                              <Stethoscope className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                              <span>{t('diagnosisResult.doctorGuidance', 'Doctor guidance')}</span>
+                            </div>
+                            {isLoadingExplanation ? (
+                              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 py-1">
+                                <RotateCcw className="h-3.5 w-3.5 animate-spin text-sky-600 dark:text-sky-400" />
+                                <span>{t('diagnosisResult.loadingExplanation', 'Loading doctor guidance...')}</span>
+                              </div>
+                            ) : explanationText ? (
+                              <p className="leading-relaxed whitespace-pre-line text-slate-800 dark:text-slate-200">
+                                {tExact(explanationText) || explanationText}
+                              </p>
+                            ) : (
+                              <p className="italic text-slate-500 dark:text-slate-400">
+                                {t('diagnosisResult.noExplanation', 'No clinical explanation recorded for this rule.')}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <span className="shrink-0 text-xs font-semibold text-emerald-600 dark:text-emerald-400 pt-0.5">
+                        +{formatCertaintyContribution(rule)}
+                      </span>
+                    </div>
+                  </li>
+                )
+              })}
             </ol>
           ) : (
-            <p className="text-base text-slate-600 dark:text-slate-300">{t('diagnosisResult.noDetailedRule', 'No detailed rule reasoning is available for this run.')}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t('diagnosisResult.noDetailedRule', 'No detailed rule reasoning is available for this run.')}</p>
           )}
-        </SurfaceSection>
+        </div>
 
-        <SurfaceSection title={t('diagnosisResult.diagnosticReasoning', 'Diagnostic Reasoning')} icon={Beaker}>
-          <div className="space-y-2 text-[1.05rem] leading-relaxed text-slate-700 dark:text-slate-300">
-            <p>
-              {t('diagnosisResult.diagnosticReasoningP1', 'The system compares this assessment against structured diabetes rules from symptom, laboratory, and risk-factor evidence.')}
-            </p>
-            <p>
-              {t('diagnosisResult.diagnosticReasoningP2', 'Confidence is calculated from the strength and priority of matched rules, then adjusted by evidence completeness.')}
-            </p>
-            <p>
-              {t('diagnosisResult.diagnosticReasoningP3', 'This output is a decision-support summary and should be reviewed with a qualified healthcare professional.')}
-            </p>
-          </div>
-        </SurfaceSection>
-      </div>
-
-      {result?.fact_preparation_trace?.length ? (
-        <SurfaceSection title={t('diagnosisResult.factPreparation', 'Fact Preparation')} icon={FlaskConical}>
-        <div className="table-wrap border-0">
-            <table className="w-full min-w-[680px] text-left text-sm">
-              <thead>
-                <tr className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-700">
-                  <th className="px-2 py-2">{t('diagnosisResult.factKey', 'Fact Key')}</th>
-                  <th className="px-2 py-2">{t('diagnosisResult.source', 'Source')}</th>
-                  <th className="px-2 py-2">{t('diagnosisResult.processedValue', 'Processed Value')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.fact_preparation_trace.map((row, index) => (
-                  <tr key={`${row.fact_key || 'fact'}-${index}`} className="dark:text-slate-800">
-                    <td className="px-2 py-2 font-medium text-slate-800 dark:text-slate-100">{toReadableLabel(row.fact_key)}</td>
-                    <td className="px-2 py-2 text-slate-600 dark:text-slate-300">{row.source_path || 'n/a'}</td>
-                    <td className="px-2 py-2 text-slate-800 dark:text-slate-100">{String(row.processed_value ?? 'n/a')}</td>
+        {result?.fact_preparation_trace?.length ? (
+          <div className="border-t border-slate-100 pt-5 dark:border-slate-800">
+            <div className="flex items-center gap-2 mb-3">
+              <FlaskConical className="h-4 w-4 text-cyan-700 dark:text-cyan-400" />
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                {t('diagnosisResult.factPreparation', 'Fact Preparation')}
+              </h4>
+            </div>
+            <div className="table-wrap border-0">
+              <table className="w-full min-w-[680px] text-left text-xs sm:text-sm">
+                <thead>
+                  <tr className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <th className="px-2 py-2">{t('diagnosisResult.factKey', 'Fact Key')}</th>
+                    <th className="px-2 py-2">{t('diagnosisResult.source', 'Source')}</th>
+                    <th className="px-2 py-2">{t('diagnosisResult.processedValue', 'Processed Value')}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {result.fact_preparation_trace.map((row, index) => (
+                    <tr key={`${row.fact_key || 'fact'}-${index}`}>
+                      <td className="px-2 py-2 font-medium text-slate-800 dark:text-slate-200">{toReadableLabel(row.fact_key)}</td>
+                      <td className="px-2 py-2 text-slate-600 dark:text-slate-400">{row.source_path || 'n/a'}</td>
+                      <td className="px-2 py-2 text-slate-800 dark:text-slate-200">{String(row.processed_value ?? 'n/a')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </SurfaceSection>
-      ) : null}
+        ) : null}
       </TechnicalDetailsSection>
+
+      {/* ── Submit to Care Team Card (Draft or Submitted State) ── */}
+      {!isSubmittedToCareTeam ? (
+        <section className="relative overflow-hidden rounded-3xl border-2 border-primary-200 bg-gradient-to-br from-primary-50/70 via-white to-sky-50/50 p-6 shadow-sm dark:border-primary-900/60 dark:from-primary-950/40 dark:via-[#070b15] dark:to-slate-900">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="flex items-start gap-3.5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-md shadow-primary-500/25 dark:bg-primary-500">
+                <Send className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white sm:text-lg">
+                    {t('diagnosisResult.submitToCareTeamTitle', 'Submit to Care Team')}
+                  </h3>
+                  <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-800/60">
+                    {t('diagnosisResult.draftStatusBadge', 'Unsaved Draft · Not yet sent')}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 sm:text-sm max-w-2xl leading-relaxed">
+                  {t(
+                    'diagnosisResult.submitToCareTeamDesc',
+                    'Save this assessment report to your medical chart and alert your care team for clinical review.'
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            <div>
+              <label htmlFor="patient-note-input" className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
+                <MessageSquare className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
+                <span>{t('diagnosisResult.patientNoteLabel', 'Notes or Questions for Care Team (Optional)')}</span>
+              </label>
+              <textarea
+                id="patient-note-input"
+                rows={3}
+                value={patientNote}
+                onChange={(e) => setPatientNote(e.target.value)}
+                placeholder={t(
+                  'diagnosisResult.patientNotePlaceholder',
+                  'Share any current symptoms, recent changes, medications, or questions you would like your doctor to review...'
+                )}
+                className="w-full rounded-2xl border border-slate-200 bg-white/90 p-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 transition-all resize-none shadow-xs"
+              />
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>{t('diagnosisResult.submitToCareTeamHint', 'Submitting saves this report to your permanent history and alerts clinical staff to review your case.')}</span>
+              </p>
+
+              <button
+                type="button"
+                onClick={handleSubmitToCareTeam}
+                disabled={submittingToCareTeam}
+                className="btn-primary gap-2 h-11 px-6 text-sm font-semibold shadow-md shadow-primary-600/20 shrink-0 inline-flex items-center justify-center cursor-pointer"
+              >
+                {submittingToCareTeam ? (
+                  <>
+                    <RotateCcw className="h-4 w-4 animate-spin" />
+                    <span>{t('diagnosisResult.submittingToCareTeam', 'Submitting...')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4" />
+                    <span>{t('diagnosisResult.submitToCareTeamBtn', 'Submit to Care Team')}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section className="relative overflow-hidden rounded-3xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/50 p-5 shadow-sm dark:border-emerald-900/60 dark:from-emerald-950/30 dark:via-[#070b15] dark:to-slate-900">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-500/20 dark:bg-emerald-500">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    {t('diagnosisResult.submittedStatusBadge', 'Submitted to Care Team')}
+                  </h3>
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 ring-1 ring-emerald-200 dark:ring-emerald-800/60 flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {t('diagnosisResult.pendingReview', 'Pending Doctor Review')}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 sm:text-sm">
+                  {t(
+                    'diagnosisResult.submittedSuccessToast',
+                    'Assessment submitted to care team! Your clinical staff has been alerted.'
+                  )}
+                  {submittedAt ? ` · ${formatDateTime(submittedAt)}` : ''}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {patientNoteSaved ? (
+            <div className="mt-3.5 rounded-2xl border border-emerald-100 bg-white/80 p-3.5 dark:border-emerald-900/40 dark:bg-slate-950/60 shadow-xs">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-400">
+                <MessageSquare className="h-3.5 w-3.5" />
+                <span>{t('diagnosisResult.yourNoteToDoctor', 'Your Note to Doctor')}:</span>
+              </p>
+              <p className="mt-1 text-sm text-slate-700 dark:text-slate-300 italic">
+                "{patientNoteSaved}"
+              </p>
+            </div>
+          ) : null}
+        </section>
+      )}
 
       <div className="rounded-xl bg-white px-4 py-3 dark:bg-[#050912]">
         <div className="flex items-start gap-2">
@@ -1104,13 +1599,21 @@ export function DiagnosisResultPage() {
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <button type="button" className="btn-secondary gap-1.5" onClick={() => navigate('/diagnosis')}>
             <ArrowLeft className="h-4 w-4" />
-            Back
+            {t('diagnosisResult.back', 'Back')}
           </button>
-          <button type="button" className="btn-primary gap-1.5" onClick={() => setShowRestartConfirm(true)}>
+          <Link
+            to="/care-plan"
+            className="btn-secondary gap-2 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 shadow-sm border-slate-200 dark:border-slate-700 inline-flex items-center"
+          >
+            <HeartPulse className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+            <span>{t('diagnosisResult.openCarePlan', 'Open Care Plan')}</span>
+          </Link>
+          <button type="button" className="btn-secondary gap-1.5" onClick={() => setShowRestartConfirm(true)}>
             <RotateCcw className="h-4 w-4" />
             {t('diagnosisResult.restartAssessment', 'Restart Assessment')}
           </button>
         </div>
+      </div>
       </div>
     </div>
   )

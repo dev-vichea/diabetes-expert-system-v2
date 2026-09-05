@@ -5,6 +5,7 @@ from app.repositories import (
     AuditLogRepository,
     DiagnosisRepository,
     FactRepository,
+    NotificationRepository,
     PatientRepository,
     RuleRepository,
     TokenRepository,
@@ -138,3 +139,12 @@ def get_conversational_assessment_service() -> ConversationalAssessmentService:
 
 def get_dashboard_service() -> DashboardService:
     return _get_service(SERVICE_KEYS["dashboard"])
+
+
+def get_notification_repository() -> NotificationRepository:
+    repos = current_app.extensions.get("repositories", {})
+    if "notification" not in repos:
+        repos["notification"] = NotificationRepository()
+        current_app.extensions["repositories"] = repos
+    return repos["notification"]
+

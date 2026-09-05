@@ -1224,23 +1224,99 @@
   }
 }
 
+.print-only {
+  display: none !important;
+}
+
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm 14mm 12mm;
+  }
+
+  html,
   body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 8.5pt !important;
+    line-height: 1.45 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Reset outer layout shells so CSS Grid doesn't constrain content to sidebar width */
+  #root,
+  .app-layout-root,
+  .app-layout-content,
+  main,
+  .app-main,
+  .page-open-motion {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    grid-template-columns: none !important;
+    transform: none !important;
+    animation: none !important;
+    background: #ffffff !important;
   }
 
   nav,
   header,
   aside,
+  footer,
   .sidebar,
-  .topbar {
+  .topbar,
+  .no-print,
+  button,
+  a.btn-secondary,
+  a.btn-primary,
+  [role="dialog"],
+  [role="tooltip"],
+  .sonner-toast,
+  #portal-root {
     display: none !important;
   }
 
-  main {
+  .print-only {
+    display: block !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+
+  /* Prevent awkward page cuts */
+  .card,
+  article,
+  section,
+  table,
+  tr,
+  .print-avoid-break,
+  .dual-box,
+  .rec-item,
+  .auth-table {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Clear shadows and ensure crisp borders on white paper */
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg,
+  .shadow-xl {
+    box-shadow: none !important;
+  }
+
+  .ring-1,
+  .ring-2 {
+    --tw-ring-color: #cbd5e1 !important;
   }
 }

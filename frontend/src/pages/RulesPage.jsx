@@ -686,17 +686,15 @@ export function RulesPage() {
             </div>
 
             <div className="ml-auto flex flex-wrap items-center gap-2">
-              <select
-                className="input-base h-10 w-auto rounded-full py-0 pl-4 pr-9 text-sm"
+              <AppSelect
+                className="h-10 min-w-[11rem] w-auto rounded-full px-4 text-sm"
                 value={filters.category}
-                onChange={(event) => setFilters({ ...filters, category: event.target.value })}
-                aria-label={t('rules.dashboard.allCategories', 'All categories')}
-              >
-                <option value="">{t('rules.dashboard.allCategories', 'All categories')}</option>
-                {categoryOptions.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
+                onValueChange={(val) => setFilters({ ...filters, category: val })}
+                options={categoryOptions}
+                includeEmpty
+                emptyLabel={t('rules.dashboard.allCategories', 'All categories')}
+                placeholder={t('rules.dashboard.allCategories', 'All categories')}
+              />
 
               <div className="relative">
                 <button type="button" className="btn-secondary h-10 gap-1.5 rounded-full px-4 text-sm" onClick={() => setShowColumnMenu((open) => !open)}>
@@ -824,13 +822,16 @@ export function RulesPage() {
             <div className="flex flex-wrap items-center gap-2">
               <label className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                 {t('rules.table.rows', 'Rows')}
-                <select
-                  className="input-base h-9 w-[4.5rem] rounded-lg py-0 pl-2 pr-7 text-sm"
-                  value={pageSize}
-                  onChange={(event) => setPageSize(Number(event.target.value) || 10)}
-                >
-                  {[10, 20, 50].map((size) => <option key={size} value={size}>{size}</option>)}
-                </select>
+                <AppSelect
+                  className="h-9 w-20 rounded-lg px-2.5 text-xs font-semibold"
+                  value={String(pageSize)}
+                  onValueChange={(val) => setPageSize(Number(val) || 10)}
+                  options={[
+                    { value: '10', label: '10' },
+                    { value: '20', label: '20' },
+                    { value: '50', label: '50' },
+                  ]}
+                />
               </label>
               <button type="button" className="btn-secondary h-9 px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>
                 {t('rules.table.previous', 'Previous')}

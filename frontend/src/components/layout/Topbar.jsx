@@ -3,8 +3,10 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Bell, ChevronDown, ChevronRight, Languages, LogOut, Menu, Moon, PanelLeft, Plus, Settings, Sun, UserRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { HeaderClock } from './HeaderClock'
+import { NotificationDropdown } from './NotificationDropdown'
 import { UserAvatar } from '@/components/ui'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useNotifications } from '@/contexts/NotificationContext'
 
 export function Topbar({
   page,
@@ -18,6 +20,7 @@ export function Topbar({
   onOpenMobileNav,
 }) {
   const { language, setLanguage, t } = useLanguage()
+  const { unreadCount } = useNotifications()
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -151,14 +154,7 @@ export function Topbar({
             {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4 text-amber-500" />}
           </button>
 
-          <button
-            type="button"
-            className="relative hidden h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:bg-primary-50 hover:text-primary-700 dark:border-[#1e2234] dark:bg-[#101020] dark:text-slate-400 dark:hover:bg-[#181830] dark:hover:text-primary-300 md:inline-flex"
-            aria-label={t('topbar.notifications')}
-          >
-            <Bell className="h-4 w-4" />
-            <span className="absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-rose-500" />
-          </button>
+          <NotificationDropdown />
 
           <div className="relative" ref={menuRef}>
             <button
@@ -203,18 +199,19 @@ export function Topbar({
                   <UserRound className="h-4 w-4" />
                   {t('topbar.profile', 'Profile')}
                 </button>
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-[#1e2234] dark:text-slate-200 dark:hover:bg-[#181830]"
-                >
+                <div className="flex w-full items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 text-left text-sm font-medium text-slate-700 dark:border-[#1e2234] dark:text-slate-200">
                   <span className="inline-flex items-center gap-2">
                     <Bell className="h-4 w-4" />
                     {t('topbar.notifications')}
                   </span>
-                  <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-100 px-1 text-[11px] font-semibold text-primary-700 dark:bg-primary-500/10 dark:text-primary-300">
-                    4
-                  </span>
-                </button>
+                  {unreadCount > 0 ? (
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-100 px-1.5 text-[11px] font-semibold text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
+                      {unreadCount}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-slate-400">0</span>
+                  )}
+                </div>
                 <button
                   type="button"
                   className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-950/30"

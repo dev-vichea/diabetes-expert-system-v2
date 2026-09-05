@@ -56,65 +56,59 @@ export function KnowledgeBaseDashboard() {
   const statsCards = useMemo(() => {
     const rangeLabel = dateRanges.find((r) => r.value === selectedRange)?.label || t('kbDashboard.ranges.allTime', 'All Time')
     const assessments = stats?.assessments?.value || 0
+    const rulesAnalytics = stats?.rules_analytics
+
     return [
       {
         title: t('kbDashboard.cards.engineExecutions.title', 'Engine Executions'),
         description: rangeLabel,
         value: assessments,
-        trend: t('kbDashboard.cards.engineExecutions.trend', '+12% from previous'),
+        trend: stats?.assessments?.trend || t('kbDashboard.cards.engineExecutions.trend', '+12% from previous'),
         icon: Zap,
         iconClass: 'bg-violet-100/20 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-900/10 dark:text-violet-300',
         chartColor: '#8b5cf6',
-        chartData: [{ value: 2 }, { value: 5 }, { value: 3 }, { value: 6 }, { value: assessments }],
+        chartData: rulesAnalytics?.executions?.chart_data || [{ value: assessments }],
       },
       {
         title: t('kbDashboard.cards.avgRules.title', 'Avg. Rules Triggered'),
         description: t('kbDashboard.cards.avgRules.desc', 'Per assessment'),
-        value: '5.2',
-        trend: t('kbDashboard.cards.avgRules.trend', 'Stable'),
+        value: rulesAnalytics?.avg_rules?.value ?? '0',
+        trend: rulesAnalytics?.avg_rules?.trend ?? t('kbDashboard.cards.avgRules.trend', 'Stable'),
         icon: Target,
         iconClass: 'bg-cyan-100/20 text-cyan-700 ring-1 ring-cyan-200 dark:bg-cyan-900/10 dark:text-cyan-300',
         chartColor: '#06b6d4',
-        chartData: [{ value: 5.1 }, { value: 5.0 }, { value: 5.3 }, { value: 5.2 }, { value: 5.2 }],
+        chartData: rulesAnalytics?.avg_rules?.chart_data || [{ value: 0 }],
       },
       {
         title: t('kbDashboard.cards.activeRules.title', 'Active Rules'),
         description: t('kbDashboard.cards.activeRules.desc', 'System-wide logic'),
-        value: '39',
-        trend: t('kbDashboard.cards.activeRules.trend', '+2 this month'),
+        value: rulesAnalytics?.active_rules?.value ?? '0',
+        trend: rulesAnalytics?.active_rules?.trend ?? 'System-wide logic',
         icon: BookOpen,
         iconClass: 'bg-emerald-100/20 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/10 dark:text-emerald-300',
         chartColor: '#10b981',
-        chartData: [{ value: 37 }, { value: 37 }, { value: 38 }, { value: 39 }, { value: 39 }],
+        chartData: rulesAnalytics?.active_rules?.chart_data || [{ value: 0 }],
       },
       {
         title: t('kbDashboard.cards.accuracy.title', 'System Accuracy'),
         description: t('kbDashboard.cards.accuracy.desc', 'Estimated match rate'),
-        value: '98.5%',
-        trend: t('kbDashboard.cards.accuracy.trend', '+0.5% optimization'),
+        value: rulesAnalytics?.accuracy?.value ?? '0%',
+        trend: rulesAnalytics?.accuracy?.trend ?? 'Estimated match rate',
         icon: Layers,
         iconClass: 'bg-amber-100/20 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/10 dark:text-amber-300',
         chartColor: '#f59e0b',
-        chartData: [{ value: 95 }, { value: 96.5 }, { value: 97 }, { value: 98 }, { value: 98.5 }],
+        chartData: rulesAnalytics?.accuracy?.chart_data || [{ value: 0 }],
       },
     ]
   }, [stats, selectedRange, t, dateRanges])
 
-  // Mock data for new charts
-  const categoryData = [
-    { name: 'Diagnosis', value: 15, color: '#f43f5e' },
-    { name: 'Triage', value: 10, color: '#f59e0b' },
-    { name: 'Classification', value: 8, color: '#06b6d4' },
-    { name: 'Recommendation', value: 6, color: '#10b981' },
-  ]
+  const categoryData = useMemo(() => {
+    return stats?.rules_analytics?.rule_distribution || []
+  }, [stats])
 
-  const topRules = [
-    { id: 1, name: 'Classification: Age-Related Risk (≥45 Years)', category: 'classification', hits: 142 },
-    { id: 2, name: 'Classification: Obesity Class I (BMI 30–34.9)', category: 'classification', hits: 118 },
-    { id: 3, name: 'Diagnosis: Fasting Plasma Glucose ≥126 mg/dL', category: 'diagnosis', hits: 89 },
-    { id: 4, name: 'Recommendation: Comprehensive Diabetes Management', category: 'recommendation', hits: 85 },
-    { id: 5, name: 'Triage: Symptomatic Hypoglycemia (Shaking)', category: 'triage', hits: 41 },
-  ]
+  const topRules = useMemo(() => {
+    return stats?.rules_analytics?.top_triggered_rules || []
+  }, [stats])
 
   return (
     <div className="w-full space-y-6">
@@ -234,18 +228,26 @@ export function KnowledgeBaseDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-[#050816]">
-                      {topRules.map((rule, index) => (
-                        <tr key={rule.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-[#0c1024]">
-                           <td className="whitespace-nowrap px-6 py-4 font-bold text-slate-400">#{index + 1}</td>
-                           <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{tExact(rule.name)}</td>
-                           <td className="px-6 py-4">
-                             <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                               {rule.category}
-                             </span>
-                           </td>
-                           <td className="whitespace-nowrap px-6 py-4 text-right font-mono text-emerald-600">{rule.hits}</td>
+                      {topRules.length > 0 ? (
+                        topRules.map((rule, index) => (
+                          <tr key={rule.id || index} className="transition-colors hover:bg-slate-50 dark:hover:bg-[#0c1024]">
+                             <td className="whitespace-nowrap px-6 py-4 font-bold text-slate-400">#{index + 1}</td>
+                             <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{tExact(rule.name)}</td>
+                             <td className="px-6 py-4">
+                               <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                 {rule.category}
+                               </span>
+                             </td>
+                             <td className="whitespace-nowrap px-6 py-4 text-right font-mono text-emerald-600">{rule.hits}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
+                            {t('kbDashboard.noTriggeredRules', 'No rules triggered yet in this timeframe.')}
+                          </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>

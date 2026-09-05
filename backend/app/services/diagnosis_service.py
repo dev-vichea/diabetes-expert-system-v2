@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import json
+from typing import Any
 
 from flask import current_app
 
@@ -16,7 +19,7 @@ from app.expert_system.patient_messaging import (
     rewrite_recommendation_bilingual,
 )
 from app.models.entities import utc_now
-from app.services.diagnosis_report_service import render_diagnosis_report_pdf
+from app.services.diagnosis_report_service import render_diagnosis_report_pdf, render_khmer_report_weasyprint
 from app.utils.i18n import SUPPORTED_LANGUAGES, bilingual, join_bilingual, pick, text
 
 # Bilingual generated-text catalogs ({en, km} entries under app/locales/).
@@ -45,14 +48,22 @@ class DiagnosisService:
         patient_id = self._resolve_patient_id(payload=payload, current_user=current_user, user_roles=user_roles)
         mode = self._resolve_assessment_mode(payload.get("mode"), normalized_payload)
 
-        session = self.assessment_repository.create_session(
-            patient_id=patient_id,
-            submitted_by_user_id=user_id,
-            mode=mode,
-            status="submitted",
-        )
-        answer_records = self._build_assessment_answer_records(payload)
-        self.assessment_repository.save_answers(session, answer_records)
+        save_to_db = bool(payload.get("save", True)) and not bool(payload.get("preview", False))
+        patient_note = str(payload.get("patient_note") or "").strip()
+        submitted_to_care_team = bool(payload.get("submitted_to_care_team", False)) or save_to_db
+
+        session = None
+        diagnosis_record = None
+
+        if save_to_db:
+            session = self.assessment_repository.create_session(
+                patient_id=patient_id,
+                submitted_by_user_id=user_id,
+                mode=mode,
+                status="submitted_to_care_team" if submitted_to_care_team else "submitted",
+            )
+            answer_records = self._build_assessment_answer_records(payload)
+            self.assessment_repository.save_answers(session, answer_records)
 
         # Doctor-managed fact knowledge (weights / type indications / flags)
         # participates in the reasoning from this run onward.
@@ -63,45 +74,49 @@ class DiagnosisService:
             result = self._enrich_inference_result(result, normalized_payload)
             # Persist the type pattern inside the explanation trace so saved
             # results keep it (the DB has no dedicated suspected_type column).
+            trace = dict(result.get("explanation_trace") or {})
             if result.get("suspected_type") is not None:
-                result["explanation_trace"] = {
-                    **(result.get("explanation_trace") or {}),
-                    "suspected_type": result.get("suspected_type"),
-                }
+                trace["suspected_type"] = result.get("suspected_type")
             # Adaptive final assessment (patterns / evidence / uncertainty /
             # next step) rides along in the response AND the persisted
             # explanation trace so saved results keep it.
             adaptive = generate_final_assessment(normalized_payload)
             result["adaptive_assessment"] = adaptive
-            result["explanation_trace"] = {
-                **(result.get("explanation_trace") or {}),
-                "adaptive_assessment": adaptive,
-            }
+            trace["adaptive_assessment"] = adaptive
+            if patient_note:
+                trace["patient_note"] = patient_note
+            if submitted_to_care_team and save_to_db:
+                trace["submitted_to_care_team"] = True
+                trace["submitted_to_care_team_at"] = utc_now().isoformat()
+            result["explanation_trace"] = trace
+
             is_urgent, urgent_reasons = self._derive_urgency(normalized_payload, result)
             urgent_reason_en = pick(urgent_reasons, lang="en") if urgent_reasons else None
 
-            diagnosis_record = self.diagnosis_repository.create_result(
-                assessment_session_id=session.id,
-                patient_id=patient_id,
-                diagnosed_by_user_id=user_id,
-                diagnosis=result["diagnosis"],
-                certainty=result["certainty"],
-                recommendation=result["recommendation"],
-                facts=result["facts"],
-                questionnaire_answers=questionnaire_answers,
-                triggered_rules=result["triggered_rules"],
-                explanation_trace=result.get("explanation_trace"),
-                is_urgent=is_urgent,
-                urgent_reason=urgent_reason_en,
-            )
-            self.assessment_repository.mark_completed(session)
+            if save_to_db and session:
+                diagnosis_record = self.diagnosis_repository.create_result(
+                    assessment_session_id=session.id,
+                    patient_id=patient_id,
+                    diagnosed_by_user_id=user_id,
+                    diagnosis=result["diagnosis"],
+                    certainty=result["certainty"],
+                    recommendation=result["recommendation"],
+                    facts=result["facts"],
+                    questionnaire_answers=questionnaire_answers,
+                    triggered_rules=result["triggered_rules"],
+                    explanation_trace=trace,
+                    is_urgent=is_urgent,
+                    urgent_reason=urgent_reason_en,
+                )
+                self.assessment_repository.mark_completed(session)
         except Exception:
-            self.assessment_repository.mark_failed(session)
+            if save_to_db and session:
+                self.assessment_repository.mark_failed(session)
             raise
 
-        if self.audit_log_repository:
+        if save_to_db and diagnosis_record and self.audit_log_repository:
             self.audit_log_repository.create(
-                action="diagnosis.create",
+                action="diagnosis.submit_to_care_team" if submitted_to_care_team else "diagnosis.create",
                 entity_type="diagnosis_result",
                 entity_id=str(diagnosis_record.id),
                 actor_user_id=user_id,
@@ -109,15 +124,54 @@ class DiagnosisService:
                     "diagnosis": result["diagnosis"],
                     "certainty": result["certainty"],
                     "patient_id": patient_id,
-                    "assessment_session_id": session.id,
+                    "assessment_session_id": session.id if session else None,
                     "assessment_mode": mode,
                     "is_urgent": is_urgent,
+                    "patient_note": patient_note or None,
                 },
             )
 
+        if save_to_db and diagnosis_record:
+            try:
+                from app.dependencies import get_notification_repository
+                from app.models import Role
+                notif_repo = get_notification_repository()
+                patient_name = diagnosis_record.patient.full_name if diagnosis_record.patient else f"Patient #{patient_id}"
+
+                if is_urgent:
+                    doctor_role = Role.query.filter_by(name="doctor").first()
+                    nurse_role = Role.query.filter_by(name="nurse").first()
+                    clinician_users = set((doctor_role.users if doctor_role else []) + (nurse_role.users if nurse_role else []))
+                    for cl_user in clinician_users:
+                        notif_repo.create(
+                            user_id=cl_user.id,
+                            title=f"Urgent Triage Alert: {patient_name}",
+                            message=f"{patient_name} assessed with acute condition: {result['diagnosis']} ({round(result['certainty'] * 100)}% certainty).",
+                            type="urgent",
+                            link="/review",
+                            metadata={"diagnosis_id": diagnosis_record.id, "patient_id": patient_id},
+                        )
+                elif submitted_to_care_team:
+                    doctor_role = Role.query.filter_by(name="doctor").first()
+                    for doc in (doctor_role.users if doctor_role else []):
+                        notif_repo.create(
+                            user_id=doc.id,
+                            title=f"Review Requested: {patient_name}",
+                            message=f"{patient_name} submitted an assessment for doctor review ({result['diagnosis']}).",
+                            type="diagnosis",
+                            link="/review",
+                            metadata={"diagnosis_id": diagnosis_record.id, "patient_id": patient_id},
+                        )
+            except Exception:
+                pass
+
         response = dict(result)
-        response["diagnosis_result_id"] = diagnosis_record.id
-        response["assessment_session_id"] = session.id
+        response["diagnosis_result_id"] = diagnosis_record.id if diagnosis_record else None
+        response["assessment_session_id"] = session.id if session else None
+        response["is_draft"] = not save_to_db
+        response["is_submitted_to_care_team"] = bool(submitted_to_care_team) if save_to_db else False
+        response["patient_note"] = patient_note
+        response["provided_payload"] = payload
         response["assessment_mode"] = mode
         response["patient_id"] = patient_id
         response["is_urgent"] = is_urgent
@@ -125,6 +179,59 @@ class DiagnosisService:
         response["urgent_reason_km"] = pick(urgent_reasons, lang="km") if urgent_reasons else None
         response["questionnaire_answers"] = questionnaire_answers
         return response
+
+    def submit_to_care_team(self, payload: dict, current_user: dict) -> dict:
+        """Submit assessment to the care team, saving it to patient history, attaching
+        patient note, and alerting clinical staff."""
+        if not isinstance(payload, dict):
+            raise ValidationError("A JSON object is required.")
+
+        user_id = int(current_user.get("sub")) if current_user and current_user.get("sub") else None
+        patient_note = str(payload.get("patient_note") or "").strip()
+        diagnosis_result_id = payload.get("diagnosis_result_id")
+
+        if diagnosis_result_id:
+            result = self.diagnosis_repository.get_result(int(diagnosis_result_id))
+            if not result:
+                raise NotFoundError("Diagnosis result not found.")
+
+            trace = dict(result.explanation_trace_json or {})
+            trace["submitted_to_care_team"] = True
+            trace["submitted_to_care_team_at"] = utc_now().isoformat()
+            if patient_note:
+                trace["patient_note"] = patient_note
+            result.explanation_trace_json = trace
+
+            if result.assessment_session:
+                result.assessment_session.status = "submitted_to_care_team"
+                result.assessment_session.submitted_at = utc_now()
+
+            db.session.commit()
+
+            if self.audit_log_repository:
+                self.audit_log_repository.create(
+                    action="diagnosis.submit_to_care_team",
+                    entity_type="diagnosis_result",
+                    entity_id=str(result.id),
+                    actor_user_id=user_id,
+                    metadata={
+                        "patient_note": patient_note or None,
+                        "is_urgent": result.is_urgent,
+                        "diagnosis": result.diagnosis,
+                    },
+                )
+
+            serialized = self.diagnosis_repository.serialize_result(result)
+            return self._rebuild_persisted_response(serialized)
+
+        # Fresh evaluation submitted to care team
+        raw_payload = payload.get("payload") if isinstance(payload.get("payload"), dict) else payload
+        eval_payload = dict(raw_payload)
+        eval_payload["save"] = True
+        eval_payload["preview"] = False
+        eval_payload["patient_note"] = patient_note
+        eval_payload["submitted_to_care_team"] = True
+        return self.evaluate(eval_payload, current_user=current_user)
 
     def list_my_results(self, current_user: dict) -> list[dict]:
         patient_id = self._resolve_patient_id(payload={}, current_user=current_user, user_roles={"patient"})
@@ -308,19 +415,30 @@ class DiagnosisService:
                 out.append(item)
         return out
 
-    def generate_report_pdf(self, diagnosis_result_id: int) -> tuple[bytes, str]:
+    def generate_report_pdf(self, diagnosis_result_id: int, lang: str = "en") -> tuple[bytes, str]:
         result = self.diagnosis_repository.get_result(diagnosis_result_id)
         if not result:
             raise NotFoundError("Diagnosis result not found.")
 
+        report_config = {
+            "REPORT_CLINIC_NAME": current_app.config.get("REPORT_CLINIC_NAME"),
+            "REPORT_CLINIC_ADDRESS": current_app.config.get("REPORT_CLINIC_ADDRESS"),
+            "REPORT_CLINIC_PHONE": current_app.config.get("REPORT_CLINIC_PHONE"),
+            "REPORT_CLINIC_EMAIL": current_app.config.get("REPORT_CLINIC_EMAIL"),
+        }
+
+        # Use WeasyPrint for Khmer — Pango/HarfBuzz handles complex text shaping
+        if str(lang).lower().strip() == "km":
+            try:
+                return render_khmer_report_weasyprint(result, config=report_config)
+            except Exception:
+                # Fallback to ReportLab if WeasyPrint fails
+                pass
+
         return render_diagnosis_report_pdf(
             result,
-            config={
-                "REPORT_CLINIC_NAME": current_app.config.get("REPORT_CLINIC_NAME"),
-                "REPORT_CLINIC_ADDRESS": current_app.config.get("REPORT_CLINIC_ADDRESS"),
-                "REPORT_CLINIC_PHONE": current_app.config.get("REPORT_CLINIC_PHONE"),
-                "REPORT_CLINIC_EMAIL": current_app.config.get("REPORT_CLINIC_EMAIL"),
-            },
+            lang=lang,
+            config=report_config,
         )
 
     def review_result(self, diagnosis_result_id: int, payload: dict, current_user: dict) -> dict:
@@ -373,6 +491,20 @@ class DiagnosisService:
                     "review_note": bool(updated.review_note),
                 },
             )
+
+        if updated.patient and updated.patient.user_id:
+            try:
+                from app.dependencies import get_notification_repository
+                get_notification_repository().create(
+                    user_id=updated.patient.user_id,
+                    title="Doctor Completed Assessment Review",
+                    message=f"Dr. Lina reviewed your recent health summary ({updated.diagnosis}) and updated your care recommendations.",
+                    type="review",
+                    link="/my-results",
+                    metadata={"diagnosis_id": updated.id, "diagnosis": updated.diagnosis},
+                )
+            except Exception:
+                pass
 
         return self.diagnosis_repository.serialize_result(updated)
 
@@ -1048,6 +1180,7 @@ class DiagnosisService:
         enriched["headline_explanation_km"] = headline_bi["km"]
         enriched["evidence_completeness"] = completeness
         enriched["recommendations"] = recommendation_items
+        enriched["triggered_rules"] = self._enrich_triggered_rules_with_db(enriched.get("triggered_rules") or [])
         enriched["explanation"] = self._build_explanation_payload(enriched, normalized_payload)
 
         return enriched
@@ -1108,6 +1241,97 @@ class DiagnosisService:
                 "evidence_completeness": result.get("evidence_completeness"),
             },
             "recommendations": recommendations,
+        }
+
+    def _enrich_triggered_rules_with_db(self, triggered_rules: list) -> list:
+        """Enrich triggered rules with doctor guidance/explanation from the database Rule model."""
+        if not triggered_rules:
+            return []
+        try:
+            from app.models import Rule
+            from sqlalchemy import func
+
+            rule_codes = {str(r.get("code")).strip().lower() for r in triggered_rules if r.get("code")}
+            rule_ids = {r.get("id") for r in triggered_rules if r.get("id") and isinstance(r.get("id"), int) and r.get("id") > 0}
+            rule_names = {str(r.get("name")).strip().lower() for r in triggered_rules if r.get("name")}
+
+            query = Rule.query
+            filters = []
+            if rule_ids:
+                filters.append(Rule.id.in_(rule_ids))
+            if rule_codes:
+                filters.append(func.lower(Rule.code).in_(rule_codes))
+            if rule_names:
+                filters.append(func.lower(Rule.name).in_(rule_names))
+
+            db_rules = query.filter(db.or_(*filters)).all() if filters else []
+            by_id = {r.id: r for r in db_rules}
+            by_code = {str(r.code).strip().lower(): r for r in db_rules}
+            by_name = {str(r.name).strip().lower(): r for r in db_rules}
+
+            enriched = []
+            for r in triggered_rules:
+                item = dict(r)
+                db_rule = (
+                    by_id.get(item.get("id"))
+                    or by_code.get(str(item.get("code") or "").strip().lower())
+                    or by_name.get(str(item.get("name") or "").strip().lower())
+                )
+                if db_rule:
+                    item["id"] = db_rule.id
+                    item["code"] = db_rule.code
+                    item["name"] = db_rule.name
+                    item["description"] = db_rule.description or item.get("description") or ""
+                    explanation = str(db_rule.explanation_text or db_rule.explanation or "").strip()
+                    if explanation:
+                        item["explanation"] = explanation
+                enriched.append(item)
+            return enriched
+        except Exception:
+            return triggered_rules
+
+    def get_rule_explanation(self, rule_identifier: str) -> dict:
+        """Retrieve explanation/doctor guidance for a rule by ID, code, or name."""
+        from app.models import Rule
+        from sqlalchemy import func
+
+        raw = str(rule_identifier or "").strip()
+        rule = None
+        if raw.isdigit():
+            rule = Rule.query.filter_by(id=int(raw)).first()
+        if not rule:
+            rule = Rule.query.filter(func.lower(Rule.code) == raw.lower()).first()
+        if not rule:
+            rule = Rule.query.filter(func.lower(Rule.name) == raw.lower()).first()
+        if not rule:
+            cleaned = (
+                raw.lower()
+                .replace("v2 diagnosis:", "")
+                .replace("v2 recommendation:", "")
+                .replace("v2 pattern:", "")
+                .replace("v2 type 2 pattern:", "")
+                .replace("classification:", "")
+                .replace("v2:", "")
+                .strip()
+            )
+            rule = Rule.query.filter(func.lower(Rule.name).contains(cleaned)).first()
+
+        if not rule:
+            return {
+                "found": False,
+                "name": raw,
+                "description": "",
+                "explanation": "",
+            }
+
+        explanation = str(rule.explanation_text or rule.explanation or "").strip()
+        return {
+            "found": True,
+            "id": rule.id,
+            "code": rule.code,
+            "name": rule.name,
+            "description": rule.description or "",
+            "explanation": explanation,
         }
 
     def _calculate_evidence_completeness(self, *, normalized_payload: dict, matched_symptoms: list[str], matched_risk_factors: list[str]) -> dict:

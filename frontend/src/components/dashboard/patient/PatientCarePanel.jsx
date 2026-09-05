@@ -165,7 +165,7 @@ export function PatientCarePanel({ latestResult }) {
 
           <div className="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800/80">
             <Link
-              to={`/my-results/${latestResult.id}`}
+              to={latestResult?.id ? `/diagnosis/result?diagnosis_result_id=${latestResult.id}` : '/my-results'}
               className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400"
             >
               <span>{t('patientDashboard.carePlan.heroViewReport', 'View full report')}</span>

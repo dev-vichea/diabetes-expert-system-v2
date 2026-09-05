@@ -130,6 +130,10 @@ class UserRepository:
         db.session.commit()
         return role
 
+    def delete_role(self, role: Role) -> None:
+        db.session.delete(role)
+        db.session.commit()
+
     def count_users(self) -> int:
         return User.query.count()
 
@@ -167,6 +171,15 @@ class UserRepository:
             "description": role.description,
             "permissions": sorted(permission.code for permission in role.permissions),
             "user_count": len(role.users),
+            "users": [
+                {
+                    "id": user.id,
+                    "name": user.name,
+                    "email": user.email,
+                    "avatar_url": getattr(user, "avatar_url", None),
+                }
+                for user in role.users
+            ],
             "created_at": serialize_datetime(role.created_at),
         }
 

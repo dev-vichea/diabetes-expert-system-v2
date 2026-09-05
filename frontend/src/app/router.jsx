@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { ProtectedRoute } from '../components/guards/ProtectedRoute'
 import { RoleGuard } from '../components/guards/RoleGuard'
@@ -32,6 +32,11 @@ const ProfilePage = lazy(() => import('../pages/ProfilePage').then((m) => ({ def
 const AdminPage = lazy(() => import('../pages/AdminPage').then((m) => ({ default: m.AdminPage })))
 const AdminUserEditPage = lazy(() => import('../pages/AdminUserEditPage').then((m) => ({ default: m.AdminUserEditPage })))
 const RolePermissionsPage = lazy(() => import('../pages/RolePermissionsPage').then((m) => ({ default: m.RolePermissionsPage })))
+
+function MyResultRedirect() {
+  const { id } = useParams()
+  return <Navigate to={`/diagnosis/result?diagnosis_result_id=${id}`} replace />
+}
 
 function AuthenticatedRoutes() {
   const { user, logout } = useAuth()
@@ -71,8 +76,16 @@ function AuthenticatedRoutes() {
         <Route
           path="/diagnosis/result"
           element={(
-            <RoleGuard user={user} permissions={['diagnosis.run']}>
+            <RoleGuard user={user} permissions={['diagnosis.run', 'diagnosis.view_own']} permissionMode="any">
               <DiagnosisResultPage />
+            </RoleGuard>
+          )}
+        />
+        <Route
+          path="/my-results/:id"
+          element={(
+            <RoleGuard user={user} permissions={['diagnosis.run', 'diagnosis.view_own']} permissionMode="any">
+              <MyResultRedirect />
             </RoleGuard>
           )}
         />

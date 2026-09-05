@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Check, Clock, Moon, Sun, Sunrise, Sunset } from 'lucide-react'
 import { SectionCard } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { getCarePlanConditionKey, getConditionRoutineAction } from './patient-dashboard-utils'
 
 const ROUTINE_STORAGE_PREFIX = 'des-care-routine'
 
@@ -20,7 +21,8 @@ function readRoutineDone(dateKey) {
   }
 }
 
-export function CarePlanRoutine({ t }) {
+export function CarePlanRoutine({ latestResult, t }) {
+  const conditionKey = getCarePlanConditionKey(latestResult)
   const todayKey = getTodayKey()
   const [donePhases, setDonePhases] = useState(() => new Set(readRoutineDone(todayKey)))
 
@@ -53,7 +55,7 @@ export function CarePlanRoutine({ t }) {
       id: 'morning',
       icon: Sunrise,
       title: t('patientDashboard.carePlanPage.routine.morningTitle', 'Morning (6:00 – 9:00 AM)'),
-      action: t('patientDashboard.carePlanPage.routine.morningAction', 'Fasting glucose check, fiber & protein breakfast, morning medication/insulin if prescribed.'),
+      action: getConditionRoutineAction(conditionKey, 'morning', t),
       tone: 'from-amber-500/20 to-orange-500/10 text-amber-600 dark:text-amber-400',
       badgeBg: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300',
     },
@@ -61,7 +63,7 @@ export function CarePlanRoutine({ t }) {
       id: 'afternoon',
       icon: Sun,
       title: t('patientDashboard.carePlanPage.routine.afternoonTitle', 'Midday (12:00 – 2:00 PM)'),
-      action: t('patientDashboard.carePlanPage.routine.afternoonAction', 'Balanced lunch, 15–20 minute gentle walk to reduce post-meal spikes, hydrate with water.'),
+      action: getConditionRoutineAction(conditionKey, 'afternoon', t),
       tone: 'from-sky-500/20 to-blue-500/10 text-sky-600 dark:text-sky-400',
       badgeBg: 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300',
     },
@@ -69,7 +71,7 @@ export function CarePlanRoutine({ t }) {
       id: 'evening',
       icon: Sunset,
       title: t('patientDashboard.carePlanPage.routine.eveningTitle', 'Evening (6:00 – 8:00 PM)'),
-      action: t('patientDashboard.carePlanPage.routine.eveningAction', 'Nutrient-dense dinner with complex carbohydrates, light relaxation, post-dinner glucose check if advised.'),
+      action: getConditionRoutineAction(conditionKey, 'evening', t),
       tone: 'from-indigo-500/20 to-purple-500/10 text-indigo-600 dark:text-indigo-400',
       badgeBg: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300',
     },
@@ -77,7 +79,7 @@ export function CarePlanRoutine({ t }) {
       id: 'bedtime',
       icon: Moon,
       title: t('patientDashboard.carePlanPage.routine.bedtimeTitle', 'Bedtime (9:30 – 10:30 PM)'),
-      action: t('patientDashboard.carePlanPage.routine.bedtimeAction', 'Daily foot inspection (look for sores or blisters), prepare morning supplies, aim for 7–8 hours sleep.'),
+      action: getConditionRoutineAction(conditionKey, 'bedtime', t),
       tone: 'from-purple-500/20 to-slate-500/10 text-purple-600 dark:text-purple-400',
       badgeBg: 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300',
     },

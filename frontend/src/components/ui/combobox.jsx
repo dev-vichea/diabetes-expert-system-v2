@@ -162,6 +162,77 @@ function useComboboxAnchor() {
   return React.useRef(null)
 }
 
+function AppCombobox({
+  value,
+  onValueChange,
+  options = [],
+  placeholder = 'Select option...',
+  emptyText = 'No options found.',
+  className,
+  inputClassName,
+  disabled = false,
+  includeEmpty = false,
+  emptyLabel = 'All',
+  showClear = false,
+}) {
+  const allOptions = React.useMemo(() => {
+    const normalized = options.map((opt) =>
+      typeof opt === 'string' ? { value: opt, label: opt } : opt
+    )
+    if (includeEmpty) {
+      return [{ value: '', label: emptyLabel }, ...normalized]
+    }
+    return normalized
+  }, [options, includeEmpty, emptyLabel])
+
+  const selectedItem = React.useMemo(() => {
+    if (value === '' || value === null || value === undefined) {
+      return includeEmpty ? { value: '', label: emptyLabel } : null
+    }
+    return allOptions.find((opt) => String(opt.value) === String(value)) || null
+  }, [allOptions, value, includeEmpty, emptyLabel])
+
+  return (
+    <Combobox
+      items={allOptions}
+      value={selectedItem}
+      openOnInputClick
+      itemToStringLabel={(item) => item?.label || ''}
+      itemToStringValue={(item) => (item ? String(item.value) : '')}
+      isItemEqualToValue={(item, selected) => String(item?.value) === String(selected?.value)}
+      onValueChange={(item) => {
+        if (!onValueChange) return
+        onValueChange(item ? String(item.value) : '')
+      }}
+      disabled={disabled}
+    >
+      <ComboboxInput
+        placeholder={placeholder}
+        autoComplete="off"
+        className={inputClassName}
+        containerClassName={className}
+        disabled={disabled}
+        showClear={showClear}
+      />
+      <ComboboxContent>
+        <ComboboxEmpty>{emptyText}</ComboboxEmpty>
+        <ComboboxList>
+          {(item) => (
+            <ComboboxItem key={`${item.value}-${item.label}`} value={item}>
+              <div className="flex flex-col">
+                <span className="font-medium text-slate-800 dark:text-slate-100">{item.label}</span>
+                {item.description ? (
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{item.description}</span>
+                ) : null}
+              </div>
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  )
+}
+
 export {
   Combobox,
   ComboboxInput,
@@ -177,4 +248,5 @@ export {
   ComboboxClear,
   ComboboxValue,
   useComboboxAnchor,
+  AppCombobox,
 }

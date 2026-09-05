@@ -1,8 +1,17 @@
-import { useEffect, useState } from 'react'
-import { CheckCircle2, LogOut, ShieldCheck, Stethoscope, User } from 'lucide-react'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { CheckCircle2, LogOut, MoreHorizontal, ShieldCheck, Stethoscope, User } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { ConfirmDialog, UserAvatar } from '@/components/ui'
+import {
+  ConfirmDialog,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  UserAvatar,
+} from '@/components/ui'
 import { cn } from '@/lib/utils'
 
 function getRoleMeta(role, t) {
@@ -39,50 +48,106 @@ function getRoleMeta(role, t) {
   }
 }
 
+function UserDropdownContent({ user, roleMeta, onNavigateProfile, onTriggerLogout, t }) {
+  const RoleIcon = roleMeta.icon
+
+  return (
+    <>
+      <div className="flex items-center gap-2.5 px-2.5 py-2">
+        <UserAvatar
+          name={user?.name}
+          src={user?.avatar_url}
+          size="sm"
+          className="h-8 w-8 shrink-0 shadow-sm"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-semibold text-slate-900 dark:text-slate-100">
+            {user?.name || t('common.unknownUser')}
+          </p>
+          <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+            {user?.email || t('common.noEmail')}
+          </p>
+          <div className="mt-1">
+            <span className={cn('inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider', roleMeta.badgeClass)}>
+              <RoleIcon className="h-2.5 w-2.5" />
+              <span>{roleMeta.label}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <DropdownMenuSeparator />
+
+      <DropdownMenuItem
+        onClick={onNavigateProfile}
+        className="flex cursor-pointer items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100"
+      >
+        <User className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+        <span>{t('topbar.profile', 'Profile')}</span>
+      </DropdownMenuItem>
+
+      <DropdownMenuSeparator />
+
+      <DropdownMenuItem
+        onClick={onTriggerLogout}
+        className="flex cursor-pointer items-center gap-2.5 px-2.5 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-950/40 dark:hover:text-rose-300"
+      >
+        <LogOut className="h-4 w-4 text-rose-500 dark:text-rose-400" />
+        <span>{t('topbar.logOut', 'Log out')}</span>
+      </DropdownMenuItem>
+    </>
+  )
+}
+
 export function NavUser({ user: propUser, collapsed = false, onLogout }) {
   const { user: authUser } = useAuth()
   const user = { ...authUser, ...propUser }
   const { t } = useLanguage()
+  const navigate = useNavigate()
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-  const [imgError, setImgError] = useState(false)
-
-  useEffect(() => {
-    setImgError(false)
-  }, [user?.avatar_url])
-
-  const initials = (user?.name || 'U')
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
 
   const activeRole = user?.roles?.[0] || user?.role || 'user'
   const roleMeta = getRoleMeta(activeRole, t)
-  const RoleIcon = roleMeta.icon
+
+  const handleNavigateProfile = () => {
+    navigate('/profile')
+  }
+
+  const handleTriggerLogout = () => {
+    setShowLogoutConfirm(true)
+  }
 
   if (collapsed) {
     return (
       <>
-        <div className="flex flex-col items-center gap-2">
-          <UserAvatar
-            name={user?.name}
-            src={user?.avatar_url}
-            size="md"
-            status={true}
-            className="h-10 w-10 shadow-sm"
-            title={`${user?.name || t('common.user')} (${roleMeta.label})`}
-          />
-
-          <button
-            type="button"
-            aria-label={t('topbar.logOut', 'Log out')}
-            title={t('topbar.logOut', 'Log out')}
-            onClick={() => setShowLogoutConfirm(true)}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 dark:border-[#1e2234] dark:bg-[#101020] dark:text-slate-400 dark:hover:border-rose-900/50 dark:hover:bg-rose-950/30 dark:hover:text-rose-300"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+        <div className="flex flex-col items-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="group flex h-10 w-10 items-center justify-center rounded-xl transition-colors hover:bg-slate-100 dark:hover:bg-[#181830] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                aria-label={user?.name || t('common.user')}
+                title={`${user?.name || t('common.user')} (${roleMeta.label})`}
+              >
+                <UserAvatar
+                  name={user?.name}
+                  src={user?.avatar_url}
+                  size="md"
+                  status={true}
+                  className="h-9 w-9 shadow-sm"
+                />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="end" sideOffset={12} className="w-56 p-1.5 shadow-xl">
+              <UserDropdownContent
+                user={user}
+                roleMeta={roleMeta}
+                onNavigateProfile={handleNavigateProfile}
+                onTriggerLogout={handleTriggerLogout}
+                t={t}
+              />
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <ConfirmDialog
@@ -104,43 +169,47 @@ export function NavUser({ user: propUser, collapsed = false, onLogout }) {
 
   return (
     <>
-      <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-2.5 shadow-sm transition-all dark:border-[#1e2234] dark:bg-[#0c101c]">
-        {/* Profile Details */}
-        <div className="flex items-center gap-2.5">
-          <UserAvatar
-            name={user?.name}
-            src={user?.avatar_url}
-            size="md"
-            status={true}
-            className="h-10 w-10 shadow-sm"
-          />
+      <div className="flex items-center">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="group flex w-full min-w-0 items-center gap-2.5 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-slate-100 dark:hover:bg-[#121626] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+              aria-label={t('common.userMenu', 'User menu')}
+            >
+              <UserAvatar
+                name={user?.name}
+                src={user?.avatar_url}
+                size="md"
+                status={true}
+                className="h-9 w-9 shrink-0 shadow-sm"
+              />
 
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
-              {user?.name || t('common.unknownUser')}
-            </p>
-            <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-              {user?.email || t('common.noEmail')}
-            </p>
-          </div>
-        </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {user?.name || t('common.unknownUser')}
+                </p>
+                <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                  {user?.email || t('common.noEmail')}
+                </p>
+              </div>
 
-        {/* Action / Meta Footer Bar */}
-        <div className="mt-2.5 flex items-center justify-between border-t border-slate-200/60 pt-2 dark:border-[#1e2234]/60">
-          <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider', roleMeta.badgeClass)}>
-            <RoleIcon className="h-3 w-3" />
-            <span>{roleMeta.label}</span>
-          </span>
+              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors group-hover:bg-slate-200/60 group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:bg-[#1e2234] dark:group-hover:text-slate-100">
+                <MoreHorizontal className="h-4 w-4" />
+              </span>
+            </button>
+          </DropdownMenuTrigger>
 
-          <button
-            type="button"
-            onClick={() => setShowLogoutConfirm(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:text-slate-400 dark:hover:bg-rose-950/30 dark:hover:text-rose-300"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            <span>{t('topbar.logOut', 'Log out')}</span>
-          </button>
-        </div>
+          <DropdownMenuContent side="top" align="end" sideOffset={8} className="w-56 p-1.5 shadow-xl">
+            <UserDropdownContent
+              user={user}
+              roleMeta={roleMeta}
+              onNavigateProfile={handleNavigateProfile}
+              onTriggerLogout={handleTriggerLogout}
+              t={t}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <ConfirmDialog

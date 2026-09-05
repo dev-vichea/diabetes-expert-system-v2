@@ -345,3 +345,21 @@ class RevokedToken(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     expires_at = db.Column(db.DateTime, nullable=False, index=True)
     revoked_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+
+
+class Notification(db.Model):
+    __tablename__ = "notifications"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = db.Column(db.String(255), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    type = db.Column(db.String(50), nullable=False, default="info", index=True)
+    link = db.Column(db.String(255), nullable=True)
+    is_read = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    read_at = db.Column(db.DateTime, nullable=True)
+    metadata_json = db.Column(db.JSON, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now, index=True)
+
+    user = db.relationship("User", backref=db.backref("notifications", cascade="all, delete-orphan", lazy="dynamic"))
+

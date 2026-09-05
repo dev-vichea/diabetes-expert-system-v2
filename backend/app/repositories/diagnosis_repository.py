@@ -139,5 +139,8 @@ class DiagnosisRepository:
             "reviewed_at": serialize_datetime(row.reviewed_at),
             "is_urgent": bool(row.is_urgent),
             "urgent_reason": row.urgent_reason,
+            "patient_note": (row.explanation_trace_json or {}).get("patient_note") or "",
+            "is_submitted_to_care_team": bool((row.explanation_trace_json or {}).get("submitted_to_care_team", True)),
+            "submitted_to_care_team_at": (row.explanation_trace_json or {}).get("submitted_to_care_team_at") or serialize_datetime(row.created_at),
             "created_at": serialize_datetime(row.created_at),
         }

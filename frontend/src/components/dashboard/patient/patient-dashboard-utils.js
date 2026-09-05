@@ -20,6 +20,93 @@ export function getUrgencyLabel(result, t) {
   return result.is_urgent ? t('patientDashboard.status.needsAttention') : t('patientDashboard.status.stable')
 }
 
+export function getCarePlanConditionKey(result) {
+  if (!result) return 'no_strong_indication'
+
+  if (
+    result.condition_key &&
+    ['prediabetes', 'type2', 'type1', 'gestational', 'no_strong_indication', 'urgent'].includes(result.condition_key)
+  ) {
+    return result.condition_key
+  }
+
+  const rawSuspected = result?.suspected_type ?? result?.explanation_trace?.suspected_type
+  const suspectedType = typeof rawSuspected === 'string' ? rawSuspected : String(rawSuspected?.type || '')
+  const normalizedType = suspectedType.toLowerCase()
+  const diagnosis = String(result?.diagnosis || '').toLowerCase()
+  const topConclusion = String(result?.explanation_trace?.confidence_calculation?.top_conclusion || '').toLowerCase()
+  const fullText = `${diagnosis} ${topConclusion} ${normalizedType}`
+
+  // Normal / low risk / healthy
+  if (
+    fullText.includes('no strong') ||
+    fullText.includes('healthy') ||
+    fullText.includes('low risk') ||
+    fullText.includes('insufficient') ||
+    fullText.includes('normal') ||
+    fullText.includes('គ្មានការចង្អុលបង្ហាញ') ||
+    fullText.includes('ធម្មតា') ||
+    fullText.includes('ហានិភ័យទាប')
+  ) {
+    return 'no_strong_indication'
+  }
+
+  // Prediabetes
+  if (
+    fullText.includes('prediabetes') ||
+    fullText.includes('pre-diabetes') ||
+    fullText.includes('borderline') ||
+    fullText.includes('impaired glucose') ||
+    fullText.includes('មុនទឹកនោមផ្អែម')
+  ) {
+    return 'prediabetes'
+  }
+
+  // Gestational
+  if (
+    fullText.includes('gestational') ||
+    fullText.includes('pregnancy') ||
+    fullText.includes('ពេលមានផ្ទៃពោះ')
+  ) {
+    return 'gestational'
+  }
+
+  // Type 1
+  if (
+    fullText.includes('type 1') ||
+    fullText.includes('type1') ||
+    fullText.includes('type_1') ||
+    fullText.includes('t1d') ||
+    fullText.includes('lada') ||
+    fullText.includes('ប្រភេទ 1')
+  ) {
+    return 'type1'
+  }
+
+  // Type 2
+  if (
+    fullText.includes('type 2') ||
+    fullText.includes('type2') ||
+    fullText.includes('type_2') ||
+    fullText.includes('t2d') ||
+    fullText.includes('ប្រភេទ 2')
+  ) {
+    return 'type2'
+  }
+
+  // Urgent emergency crisis
+  if (result.is_urgent && (fullText.includes('crisis') || fullText.includes('emergency') || fullText.includes('urgent') || fullText.includes('បន្ទាន់'))) {
+    return 'urgent'
+  }
+
+  // Generic diabetes reference default to type 2
+  if (fullText.includes('diabetes') || fullText.includes('ទឹកនោមផ្អែម')) {
+    return 'type2'
+  }
+
+  return 'no_strong_indication'
+}
+
 export function buildCareChecklist(latestResult, t) {
   if (!latestResult) {
     return [
@@ -27,6 +114,13 @@ export function buildCareChecklist(latestResult, t) {
       t('patientDashboard.checklist.firstAssessment2'),
       t('patientDashboard.checklist.firstAssessment3'),
     ]
+  }
+
+  const conditionKey = getCarePlanConditionKey(latestResult)
+  const conditionChecklist = t(`patientDashboard.carePlanPage.conditions.${conditionKey}.checklist`)
+
+  if (Array.isArray(conditionChecklist) && conditionChecklist.length > 0) {
+    return conditionChecklist
   }
 
   const items = [
@@ -44,6 +138,14 @@ export function buildCareChecklist(latestResult, t) {
   }
 
   return items
+}
+
+export function getConditionRoutineAction(conditionKey, phaseId, t) {
+  const customAction = t(`patientDashboard.carePlanPage.conditions.${conditionKey}.routine.${phaseId}`)
+  if (typeof customAction === 'string' && !customAction.startsWith('patientDashboard.')) {
+    return customAction
+  }
+  return t(`patientDashboard.carePlanPage.routine.${phaseId}Action`)
 }
 
 export function toPercentValue(certainty) {
