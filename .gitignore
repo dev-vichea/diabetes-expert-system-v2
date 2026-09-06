@@ -20,6 +20,8 @@ backend/.venv/
 # Frontend
 frontend/node_modules/
 frontend/dist/
+node_modules/
+dist/
 
 # Editor/OS
 .DS_Store
