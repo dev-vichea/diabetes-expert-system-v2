@@ -18,5 +18,65 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from app import create_app
+from flask import jsonify
 
 app = create_app()
+
+
+@app.get("/api")
+@app.get("/api/")
+@app.get("/api/index")
+@app.get("/api/index.py")
+def api_root():
+    return jsonify({
+        "success": True,
+        "data": {
+            "name": "Diabetes Expert System API",
+            "version": "2.0",
+            "status": "online"
+        }
+    })
+
+
+@app.get("/api/health")
+def api_health():
+    return jsonify({
+        "success": True,
+        "data": {
+            "status": "ok"
+        }
+    })
+
+
+class VercelPathFixMiddleware:
+    """WSGI middleware ensuring Flask receives the intended route under Vercel rewrites.
+
+    When Vercel rewrites requests (e.g. /api/(.*) -> /api), Vercel passes the original
+    requested URI in HTTP_X_MATCHED_PATH or HTTP_X_FORWARDED_URI. This middleware
+    normalizes PATH_INFO so Flask blueprint routes (like /api/auth/login) match properly.
+    """
+
+    def __init__(self, wsgi_app):
+        self.wsgi_app = wsgi_app
+
+    def __call__(self, environ, start_response):
+        matched_path = (
+            environ.get("HTTP_X_MATCHED_PATH")
+            or environ.get("HTTP_X_FORWARDED_URI")
+            or environ.get("REQUEST_URI")
+        )
+        if matched_path:
+            clean_path = matched_path.split("?")[0]
+            if clean_path in ("/api/index.py", "/api/index", "/api/index.html", "/api/"):
+                environ["PATH_INFO"] = "/api"
+            else:
+                environ["PATH_INFO"] = clean_path
+        else:
+            path_info = environ.get("PATH_INFO", "")
+            if path_info in ("/api/index.py", "/api/index", "/api/"):
+                environ["PATH_INFO"] = "/api"
+
+        return self.wsgi_app(environ, start_response)
+
+
+app.wsgi_app = VercelPathFixMiddleware(app.wsgi_app)

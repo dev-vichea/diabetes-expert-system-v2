@@ -155,6 +155,7 @@ def create_app(config_object=Config):
         return render_template("start.html")
 
     @app.get("/health")
+    @app.get("/api/health")
     def health():
         return success_response(data={"status": "ok"})
 
