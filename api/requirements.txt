@@ -9,5 +9,4 @@ psycopg[binary]==3.2.3
 pyjwt==2.9.0
 python-dotenv==1.0.1
 reportlab==4.4.10
-weasyprint>=69.0
 werkzeug==3.1.3
