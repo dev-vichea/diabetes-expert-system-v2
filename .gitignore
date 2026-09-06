@@ -8,6 +8,7 @@ __pycache__/
 .env
 .env.*
 !.env.example
+!.env.vercel
 
 # Local databases
 *.db
@@ -24,3 +25,6 @@ frontend/dist/
 .DS_Store
 .vscode/
 .vercel
+.cursor/
+.agents/
+.mcp.json
