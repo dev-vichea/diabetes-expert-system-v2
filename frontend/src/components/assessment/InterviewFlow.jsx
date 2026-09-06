@@ -92,15 +92,39 @@ function MultiGrid({ node, form, ctx, t, factsMap, language, onToggle, onNone })
               onClick={() => onToggle(node, key, !active)}
               title={fact?.question || undefined}
               className={cn(
-                'toggle-pill assessment-card-enter text-left',
+                'toggle-pill assessment-card-enter text-left group',
                 active && 'active',
               )}
             >
-              <FIcon className={cn('h-4 w-4 shrink-0', active ? 'text-white' : 'text-slate-400 dark:text-slate-500')} strokeWidth={2} />
+              <FIcon
+                className={cn(
+                  'h-4 w-4 shrink-0 transition-colors',
+                  active
+                    ? 'text-primary-600 dark:text-sky-300'
+                    : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300',
+                )}
+                strokeWidth={2}
+              />
               <span className="flex-1 min-w-0">
-                <span className="block font-medium leading-tight">{label}</span>
+                <span
+                  className={cn(
+                    'block leading-tight transition-colors',
+                    active
+                      ? 'font-semibold text-primary-950 dark:text-slate-50'
+                      : 'font-medium text-slate-700 dark:text-slate-200',
+                  )}
+                >
+                  {label}
+                </span>
                 {fact?.medical_term && fact.medical_term.toLowerCase() !== label.toLowerCase() ? (
-                  <span className={cn('block text-[11px] font-normal leading-tight mt-0.5', active ? 'text-cyan-100 dark:text-cyan-200' : 'text-slate-400 dark:text-slate-500')}>
+                  <span
+                    className={cn(
+                      'block text-[11px] leading-tight mt-0.5 transition-colors',
+                      active
+                        ? 'font-medium text-primary-600 dark:text-sky-300'
+                        : 'font-normal text-slate-500 dark:text-slate-400',
+                    )}
+                  >
                     {fact.medical_term}
                   </span>
                 ) : null}
