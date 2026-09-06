@@ -257,23 +257,23 @@ function getPrimaryHeadline(result, percent, t, tExact) {
 
   const translateKey = (k, fb) => t ? t(`diagnosisResult.headlines.${k}`, fb) : fb
 
-  if (diagnosis.includes('emergency') || diagnosis.includes('urgent')) return translateKey('urgent', 'Urgent — Seek Care Now')
+  if (diagnosis.includes('emergency') || diagnosis.includes('urgent')) return translateKey('urgent', 'Urgent Diabetes Evaluation — Seek Care Now')
   if (diagnosis.includes('highly likely') || (diagnosis.includes('likely') && percent >= 80)) return translateKey('diabetesLikely', 'Diabetes Likely')
   if (diagnosis.includes('likely diabetes') || diagnosis.includes('likely')) return translateKey('diabetesLikely', 'Diabetes Likely')
   if (diagnosis.includes('suspected') && diagnosis.includes('classic')) return translateKey('classicSymptoms', 'Classic Diabetes Symptoms')
-  if (diagnosis.includes('prediabetes')) return translateKey('prediabetes', 'Prediabetes Pattern')
-  if (diagnosis.includes('possible early')) return translateKey('earlySigns', 'Possible Early Signs')
-  if (diagnosis.includes('elevated') && diagnosis.includes('risk')) return translateKey('elevatedRisk', 'Elevated Risk')
-  if (diagnosis.includes('no strong') || diagnosis.includes('insufficient')) return translateKey('noStrongIndication', 'No Strong Indication')
+  if (diagnosis.includes('prediabetes')) return translateKey('prediabetes', 'Prediabetes Risk Pattern')
+  if (diagnosis.includes('possible early')) return translateKey('earlySigns', 'Possible Early Signs of Diabetes')
+  if (diagnosis.includes('elevated') && diagnosis.includes('risk')) return translateKey('elevatedRisk', 'Elevated Diabetes Risk')
+  if (diagnosis.includes('no strong') || diagnosis.includes('insufficient')) return translateKey('noStrongIndication', 'No Strong Diabetes Indication')
 
-  if (typeLabel === 'Type 1') return translateKey('type1Detected', 'Type 1 Pattern Detected')
-  if (typeLabel === 'Gestational') return translateKey('gestational', 'Gestational Screening')
+  if (typeLabel === 'Type 1') return translateKey('type1Detected', 'Type 1 Diabetes Pattern Detected')
+  if (typeLabel === 'Gestational') return translateKey('gestational', 'Gestational Diabetes Screening')
 
   if (percent >= 70) return translateKey('highSignal', 'High Diabetes Signal')
-  if (percent >= 45) return translateKey('moderateSignal', 'Moderate Signal Detected')
-  if (percent <= 20) return translateKey('lowRisk', 'Low Risk Indicated')
+  if (percent >= 45) return translateKey('moderateSignal', 'Moderate Diabetes Signal Detected')
+  if (percent <= 20) return translateKey('lowRisk', 'Low Diabetes Risk Indicated')
 
-  return result?.diagnosis ? (tExact ? tExact(result.diagnosis) : result.diagnosis) : translateKey('complete', 'Assessment Complete')
+  return result?.diagnosis ? (tExact ? tExact(result.diagnosis) : result.diagnosis) : translateKey('complete', 'Diabetes Assessment Complete')
 }
 
 function getScalePercent(labKey, rawValue) {

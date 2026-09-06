@@ -1722,19 +1722,19 @@
     "restart": "Restart",
     "cancel": "Cancel",
     "headlines": {
-      "urgent": "Urgent — Seek Care Now",
+      "urgent": "Urgent Diabetes Evaluation — Seek Care Now",
       "diabetesLikely": "Diabetes Likely",
       "classicSymptoms": "Classic Diabetes Symptoms",
-      "prediabetes": "Prediabetes Pattern",
-      "earlySigns": "Possible Early Signs",
-      "elevatedRisk": "Elevated Risk",
-      "noStrongIndication": "No Strong Indication",
-      "type1Detected": "Type 1 Pattern Detected",
-      "gestational": "Gestational Screening",
+      "prediabetes": "Prediabetes Risk Pattern",
+      "earlySigns": "Possible Early Signs of Diabetes",
+      "elevatedRisk": "Elevated Diabetes Risk",
+      "noStrongIndication": "No Strong Diabetes Indication",
+      "type1Detected": "Type 1 Diabetes Pattern Detected",
+      "gestational": "Gestational Diabetes Screening",
       "highSignal": "High Diabetes Signal",
-      "moderateSignal": "Moderate Signal Detected",
-      "lowRisk": "Low Risk Indicated",
-      "complete": "Assessment Complete"
+      "moderateSignal": "Moderate Diabetes Signal Detected",
+      "lowRisk": "Low Diabetes Risk Indicated",
+      "complete": "Diabetes Assessment Complete"
     },
     "confidenceMeta": {
       "veryHigh": {

@@ -5,7 +5,7 @@ import { getLatestFacts, getRelativeCheckAge, getUrgencyLabel, toNumberOrNull } 
 import { useLanguage } from '@/contexts/LanguageContext'
 
 export function PatientSituationPanel({ patientResults, latestResult, urgentCount }) {
-  const { t, isKhmer } = useLanguage()
+  const { t, tExact, isKhmer } = useLanguage()
   const isUrgent = Boolean(latestResult?.is_urgent)
   const age = toNumberOrNull(getLatestFacts(patientResults).age)
   const chip = 'inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium'
@@ -31,7 +31,7 @@ export function PatientSituationPanel({ patientResults, latestResult, urgentCoun
       </div>
 
       <h2 className="relative mt-4 text-2xl font-bold leading-tight tracking-tight sm:text-[1.7rem]">
-        {latestResult?.diagnosis || t('patientDashboard.hero.noDiagnosisYet', 'No diagnosis result yet')}
+        {latestResult?.diagnosis ? (tExact ? tExact(latestResult.diagnosis) : latestResult.diagnosis) : t('patientDashboard.hero.noDiagnosisYet', 'No diagnosis result yet')}
       </h2>
 
       <p className="relative mt-2 max-w-xl text-sm leading-6 text-white/85">
