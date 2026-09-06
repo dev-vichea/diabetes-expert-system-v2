@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -213,7 +214,8 @@ def _resolve_startup_database(app: Flask):
 def _check_database_connection(database_uri: str):
     connect_args = {}
     if str(database_uri).startswith("postgresql"):
-        connect_args["connect_timeout"] = 2
+        timeout = int(os.getenv("DB_CONNECT_TIMEOUT", "10"))
+        connect_args["connect_timeout"] = timeout
 
     engine = create_engine(database_uri, connect_args=connect_args)
     try:
