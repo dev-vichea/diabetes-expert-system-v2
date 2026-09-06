@@ -8,6 +8,14 @@ import { NotificationProvider } from '@/contexts/NotificationContext'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import './styles/app.css'
 
+// Automatically reload the page when a dynamic chunk fails to load due to a new build / deployment
+if (typeof window !== 'undefined') {
+  window.addEventListener('vite:preloadError', (event) => {
+    console.warn('[Vite] Preload error detected, reloading page with latest build...', event)
+    window.location.reload()
+  })
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>

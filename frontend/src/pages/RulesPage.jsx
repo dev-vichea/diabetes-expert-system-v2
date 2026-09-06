@@ -1,7 +1,8 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { ArrowUpDown, Download, Pencil, Plus, Search, Settings2, Trash2, BookOpen } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
+import { lazyWithRetry } from '@/lib/lazyWithRetry'
 import { RuleSimulator } from '@/components/knowledge-base/RuleSimulator'
 import { KnowledgeBaseDashboard } from '@/components/knowledge-base/KnowledgeBaseDashboard'
 import { FactCatalog } from '@/components/knowledge-base/FactCatalog'
@@ -31,7 +32,7 @@ import {
 
 // The @xyflow graph editor is heavy (~127 kB min / 41 kB gzipped with deps) —
 // fetch it only when the user opens the "Visual Graph" tab.
-const VisualLogicMap = lazy(() => import('@/components/knowledge-base/VisualLogicMap').then((m) => ({ default: m.VisualLogicMap })))
+const VisualLogicMap = lazyWithRetry(() => import('@/components/knowledge-base/VisualLogicMap').then((m) => ({ default: m.VisualLogicMap })))
 
 const DEFAULT_FACT_KEYS = [
   'age',

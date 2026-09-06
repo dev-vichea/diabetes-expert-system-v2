@@ -1,6 +1,7 @@
 import { Component } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { LANGUAGE_STORAGE_KEY, normalizeLanguage, translate } from '@/lib/i18n'
+import { isChunkLoadError } from '@/lib/lazyWithRetry'
 
 // Class components cannot consume LanguageContext (they sit above the
 // provider), so strings are resolved through the i18n engine using the
@@ -32,6 +33,11 @@ export class ErrorBoundary extends Component {
   }
 
   handleReset = () => {
+    // If error is caused by stale chunk hashes / deployment updates, hard reload to fetch fresh assets
+    if (isChunkLoadError(this.state.error)) {
+      window.location.reload()
+      return
+    }
     this.setState({ hasError: false, error: null })
   }
 

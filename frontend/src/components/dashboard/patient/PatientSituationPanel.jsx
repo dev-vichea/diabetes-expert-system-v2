@@ -57,7 +57,7 @@ export function PatientSituationPanel({ patientResults, latestResult, urgentCoun
           {t('patientDashboard.situation.newAssessment', 'New assessment')}
         </Link>
         <Link
-          to="/my-results"
+          to={latestResult?.id ? `/diagnosis/result?diagnosis_result_id=${latestResult.id}` : '/my-results'}
           className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
         >
           {t('patientDashboard.situation.viewResults', 'View my results')}
@@ -67,10 +67,10 @@ export function PatientSituationPanel({ patientResults, latestResult, urgentCoun
 
       {latestResult ? (
         <div className="relative mt-6 flex flex-wrap items-center gap-2 border-t border-white/15 pt-4">
-          <span className={chip}>
+          <Link to="/my-results" className={cn(chip, 'transition hover:bg-white/25 cursor-pointer')}>
             <ClipboardList className="h-3.5 w-3.5" />
             {patientResults.length} {t('patientDashboard.hero.assessments', 'Assessments')}
-          </span>
+          </Link>
           <span className={chip}>
             <CalendarClock className="h-3.5 w-3.5" />
             {t('patientDashboard.hero.lastCheck', 'Last check')}: {getRelativeCheckAge(latestResult.created_at, t) ?? '—'}

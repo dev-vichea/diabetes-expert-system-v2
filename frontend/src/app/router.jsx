@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { ProtectedRoute } from '../components/guards/ProtectedRoute'
@@ -8,30 +8,32 @@ import { AppLayout } from '../components/layout/AppLayout'
 import { RouteLoading } from '../components/RouteLoading'
 import { UnauthorizedPage } from '../pages/public/UnauthorizedPage'
 import { NotFoundPage } from '../pages/public/NotFoundPage'
+import { lazyWithRetry } from '@/lib/lazyWithRetry'
 
 /*
  * Route-level code splitting: each page ships as its own chunk and is fetched
  * on first navigation, keeping the initial bundle small (the landing/login
  * screens no longer download admin, chart, or rule-editor code). Tiny shared
  * pages (404 / unauthorized) stay eagerly imported to avoid extra chunks.
+ * Uses lazyWithRetry to automatically recover from stale chunk hashes on deployments.
  */
-const LandingPage = lazy(() => import('../pages/LandingPage').then((m) => ({ default: m.LandingPage })))
-const LoginPage = lazy(() => import('../pages/LoginPage').then((m) => ({ default: m.LoginPage })))
-const SignUpPage = lazy(() => import('../pages/SignUpPage').then((m) => ({ default: m.SignUpPage })))
-const DashboardPage = lazy(() => import('../pages/DashboardPage').then((m) => ({ default: m.DashboardPage })))
-const DiagnosisPage = lazy(() => import('../pages/DiagnosisPage').then((m) => ({ default: m.DiagnosisPage })))
-const DiagnosisResultPage = lazy(() => import('../pages/DiagnosisResultPage').then((m) => ({ default: m.DiagnosisResultPage })))
-const PatientsPage = lazy(() => import('../pages/PatientsPage').then((m) => ({ default: m.PatientsPage })))
-const PatientHistoryPage = lazy(() => import('../pages/PatientHistoryPage').then((m) => ({ default: m.PatientHistoryPage })))
-const RulesPage = lazy(() => import('../pages/RulesPage').then((m) => ({ default: m.RulesPage })))
-const ReviewPage = lazy(() => import('../pages/ReviewPage').then((m) => ({ default: m.ReviewPage })))
-const DiagnosisHistoryPage = lazy(() => import('../pages/DiagnosisHistoryPage').then((m) => ({ default: m.DiagnosisHistoryPage })))
-const CarePlanPage = lazy(() => import('../pages/CarePlanPage').then((m) => ({ default: m.CarePlanPage })))
-const ProfileSetupPage = lazy(() => import('../pages/ProfileSetupPage').then((m) => ({ default: m.ProfileSetupPage })))
-const ProfilePage = lazy(() => import('../pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
-const AdminPage = lazy(() => import('../pages/AdminPage').then((m) => ({ default: m.AdminPage })))
-const AdminUserEditPage = lazy(() => import('../pages/AdminUserEditPage').then((m) => ({ default: m.AdminUserEditPage })))
-const RolePermissionsPage = lazy(() => import('../pages/RolePermissionsPage').then((m) => ({ default: m.RolePermissionsPage })))
+const LandingPage = lazyWithRetry(() => import('../pages/LandingPage').then((m) => ({ default: m.LandingPage })))
+const LoginPage = lazyWithRetry(() => import('../pages/LoginPage').then((m) => ({ default: m.LoginPage })))
+const SignUpPage = lazyWithRetry(() => import('../pages/SignUpPage').then((m) => ({ default: m.SignUpPage })))
+const DashboardPage = lazyWithRetry(() => import('../pages/DashboardPage').then((m) => ({ default: m.DashboardPage })))
+const DiagnosisPage = lazyWithRetry(() => import('../pages/DiagnosisPage').then((m) => ({ default: m.DiagnosisPage })))
+const DiagnosisResultPage = lazyWithRetry(() => import('../pages/DiagnosisResultPage').then((m) => ({ default: m.DiagnosisResultPage })))
+const PatientsPage = lazyWithRetry(() => import('../pages/PatientsPage').then((m) => ({ default: m.PatientsPage })))
+const PatientHistoryPage = lazyWithRetry(() => import('../pages/PatientHistoryPage').then((m) => ({ default: m.PatientHistoryPage })))
+const RulesPage = lazyWithRetry(() => import('../pages/RulesPage').then((m) => ({ default: m.RulesPage })))
+const ReviewPage = lazyWithRetry(() => import('../pages/ReviewPage').then((m) => ({ default: m.ReviewPage })))
+const DiagnosisHistoryPage = lazyWithRetry(() => import('../pages/DiagnosisHistoryPage').then((m) => ({ default: m.DiagnosisHistoryPage })))
+const CarePlanPage = lazyWithRetry(() => import('../pages/CarePlanPage').then((m) => ({ default: m.CarePlanPage })))
+const ProfileSetupPage = lazyWithRetry(() => import('../pages/ProfileSetupPage').then((m) => ({ default: m.ProfileSetupPage })))
+const ProfilePage = lazyWithRetry(() => import('../pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
+const AdminPage = lazyWithRetry(() => import('../pages/AdminPage').then((m) => ({ default: m.AdminPage })))
+const AdminUserEditPage = lazyWithRetry(() => import('../pages/AdminUserEditPage').then((m) => ({ default: m.AdminUserEditPage })))
+const RolePermissionsPage = lazyWithRetry(() => import('../pages/RolePermissionsPage').then((m) => ({ default: m.RolePermissionsPage })))
 
 function MyResultRedirect() {
   const { id } = useParams()
