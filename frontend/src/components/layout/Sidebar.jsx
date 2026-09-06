@@ -20,7 +20,7 @@ function splitNavGroups(navItems) {
   const documents = []
 
   for (const item of navItems) {
-    if (item.to === '/rules' || item.to === '/review' || item.to === '/my-results') {
+    if (item.section === 'documents' || item.to === '/rules' || item.to === '/review' || item.to === '/my-results' || item.to === '/guide') {
       documents.push(item)
       continue
     }

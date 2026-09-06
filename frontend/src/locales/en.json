@@ -109,9 +109,14 @@
     "system": "System",
     "documents": "Documents",
     "tools": "Tools",
-    "patientResults": "Patient Results"
+    "patientResults": "Patient Results",
+    "diabetesGuide": "Diabetes Guide"
   },
   "page": {
+    "diabetesGuide": {
+      "title": "Diabetes & Symptoms Guide",
+      "subtitle": "Clinical classifications, symptom physiology, and evidence-based self-care"
+    },
     "unauthorized": {
       "title": "Unauthorized",
       "subtitle": "You do not have access to this resource"
@@ -2874,6 +2879,40 @@
     "footerVersion": "v1.0",
     "footerUniversity": "Norton University",
     "footerCity": "Phnom Penh"
+  },
+  "diabetesGuide": {
+    "badge": "Clinical Knowledge Hub",
+    "title": "Diabetes & Symptoms Guide",
+    "subtitle": "Learn how diabetes types differ, explore how symptoms arise in the body, and know when to seek clinical care.",
+    "searchPlaceholder": "Search symptoms, medical terms (e.g. Polydipsia), or keywords...",
+    "tabs": {
+      "types": "Types of Diabetes",
+      "symptoms": "Symptoms Directory"
+    },
+    "typesIntro": "The primary clinical classifications recognized by international guidelines (ADA, WHO).",
+    "symptomsIntro": "Explore common and critical signs of hyperglycemia and metabolic distress.",
+    "symptomCount": "{{count}} symptoms cataloged",
+    "typeCount": "{{count}} clinical classifications",
+    "card": {
+      "biomarkers": "Diagnostic Biomarkers",
+      "riskFactors": "Primary Risk Factors",
+      "management": "Clinical Management",
+      "associatedSymptoms": "Associated Symptoms",
+      "onset": "Onset Pattern",
+      "reversibility": "Clinical Outcome",
+      "clickDetails": "View full details",
+      "checkSymptom": "Check in Assessment"
+    },
+    "modal": {
+      "whyItHappens": "Why It Happens (Biological Mechanism)",
+      "associatedTypes": "Associated Diabetes Types",
+      "careTips": "Self-Care & Prevention Advice",
+      "redFlags": "When to Seek Immediate Care",
+      "takeAssessment": "Check Your Symptoms in Assessment",
+      "close": "Close"
+    },
+    "emptySearch": "No symptoms matched your search.",
+    "clearSearch": "Clear search"
   },
   "errors": {
     "boundary": {

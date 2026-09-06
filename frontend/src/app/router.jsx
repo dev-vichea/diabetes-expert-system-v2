@@ -34,6 +34,7 @@ const ProfilePage = lazyWithRetry(() => import('../pages/ProfilePage').then((m) 
 const AdminPage = lazyWithRetry(() => import('../pages/AdminPage').then((m) => ({ default: m.AdminPage })))
 const AdminUserEditPage = lazyWithRetry(() => import('../pages/AdminUserEditPage').then((m) => ({ default: m.AdminUserEditPage })))
 const RolePermissionsPage = lazyWithRetry(() => import('../pages/RolePermissionsPage').then((m) => ({ default: m.RolePermissionsPage })))
+const DiabetesGuidePage = lazyWithRetry(() => import('../pages/DiabetesGuidePage').then((m) => ({ default: m.DiabetesGuidePage })))
 
 function MyResultRedirect() {
   const { id } = useParams()
@@ -66,6 +67,7 @@ function AuthenticatedRoutes() {
         <Route element={<AppLayout />}>
         {/* Dashboard is no longer at root, but at /dashboard */}
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/guide" element={<DiabetesGuidePage />} />
         
         {/* If user tries to access / direct to dashboard (managed by AppRouter mostly) */}
         {/* But we'll keep this as a fallback redirect */}
