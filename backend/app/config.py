@@ -17,17 +17,19 @@ def _as_list(value: str, default: List[str]) -> List[str]:
 
 
 def _default_fallback_sqlite_url() -> str:
+    if os.getenv("VERCEL"):
+        return "sqlite:////tmp/dev_fallback.db"
     backend_dir = Path(__file__).resolve().parents[1]
     fallback_db_path = backend_dir / "instance" / "dev_fallback.db"
     return f"sqlite:///{fallback_db_path}"
 
 
 def _resolve_secret_key() -> str:
-    """Resolve SECRET_KEY: require it in production, auto-generate for dev."""
+    """Resolve SECRET_KEY: require it in production, auto-generate for dev/serverless."""
     key = os.getenv("SECRET_KEY")
     if key:
         return key
-    if _as_bool(os.getenv("FLASK_DEBUG"), default=False):
+    if _as_bool(os.getenv("FLASK_DEBUG"), default=False) or os.getenv("VERCEL"):
         return f"dev-auto-{secrets.token_hex(16)}"
     raise RuntimeError(
         "SECRET_KEY environment variable is required in production. "
@@ -48,11 +50,11 @@ def _normalize_database_url(url: str) -> str:
 
 
 def _resolve_database_url() -> str:
-    """Resolve DATABASE_URL: require it or fallback in debug mode."""
+    """Resolve DATABASE_URL: require it or fallback in debug/serverless mode."""
     url = os.getenv("DATABASE_URL")
     if url:
         return _normalize_database_url(url)
-    if _as_bool(os.getenv("FLASK_DEBUG"), default=False):
+    if _as_bool(os.getenv("FLASK_DEBUG"), default=False) or os.getenv("VERCEL"):
         return _default_fallback_sqlite_url()
     raise RuntimeError(
         "DATABASE_URL environment variable is required in production. "
