@@ -1600,17 +1600,26 @@
   "publicPages": {
     "notFound": {
       "eyebrow": "Navigation",
+      "badge": "Error 404",
       "title": "Page Not Found",
-      "description": "The page you are looking for does not exist or has moved.",
+      "description": "The page you are looking for does not exist, has been removed, or is temporarily unavailable.",
       "backDashboard": "Back to Dashboard",
-      "goLogin": "Go to Login"
+      "goBack": "Previous Page",
+      "home": "Landing Page",
+      "goLogin": "Go to Login",
+      "helpNotice": "Please double-check the URL or return to your clinical dashboard."
     },
     "unauthorized": {
       "eyebrow": "Access Control",
-      "title": "Unauthorized",
-      "description": "You do not have permission to access this page.",
+      "badge": "Error 403",
+      "title": "Access Restricted",
+      "description": "You do not have the required role or permissions to access this page.",
       "backDashboard": "Back to Dashboard",
-      "goLogin": "Go to Login"
+      "goBack": "Previous Page",
+      "home": "Landing Page",
+      "goLogin": "Go to Login",
+      "signInDifferent": "Switch Account",
+      "helpNotice": "If you believe this is an error, please contact your system administrator to update your role permissions."
     }
   },
   "adminStats": {

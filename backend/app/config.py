@@ -35,11 +35,23 @@ def _resolve_secret_key() -> str:
     )
 
 
+def _normalize_database_url(url: str) -> str:
+    """Normalize PostgreSQL URL schemes to ensure compatibility with psycopg v3."""
+    if not url:
+        return url
+    trimmed = url.strip()
+    if trimmed.startswith("postgres://"):
+        return f"postgresql+psycopg://{trimmed[len('postgres://'):]}"
+    if trimmed.startswith("postgresql://") and not trimmed.startswith("postgresql+"):
+        return f"postgresql+psycopg://{trimmed[len('postgresql://'):]}"
+    return trimmed
+
+
 def _resolve_database_url() -> str:
     """Resolve DATABASE_URL: require it or fallback in debug mode."""
     url = os.getenv("DATABASE_URL")
     if url:
-        return url
+        return _normalize_database_url(url)
     if _as_bool(os.getenv("FLASK_DEBUG"), default=False):
         return _default_fallback_sqlite_url()
     raise RuntimeError(

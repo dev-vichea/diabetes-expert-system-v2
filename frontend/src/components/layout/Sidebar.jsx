@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { X } from 'lucide-react'
 import { NavDocuments } from './NavDocuments'
 import { NavMain } from './NavMain'
@@ -42,7 +43,7 @@ export function Sidebar({ navItems, user, userName, userEmail, activeRole, onLog
   return (
     <SidebarRoot className="h-full min-h-0 overflow-hidden border-r border-slate-200 bg-white dark:border-[#1e2234] dark:bg-[#070712]">
       <SidebarHeader className="relative p-4 pb-2">
-        <div className={`flex items-center gap-3 py-1 ${collapsed ? 'justify-center' : 'px-1'}`}>
+        <Link to="/dashboard" className={`flex items-center gap-3 py-1 transition-opacity hover:opacity-90 ${collapsed ? 'justify-center' : 'px-1'}`}>
           {logoVisible ? (
             <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden">
               <img
@@ -63,7 +64,7 @@ export function Sidebar({ navItems, user, userName, userEmail, activeRole, onLog
               <span className="truncate text-xs text-slate-500 dark:text-slate-400">Expert System</span>
             </span>
           ) : null}
-        </div>
+        </Link>
 
         {onClose ? (
           <button

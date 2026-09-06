@@ -536,26 +536,26 @@ class DiagnosisService:
         blood_glucose = payload.get("blood_glucose")
 
         labs = payload.get("labs") if payload.get("labs") is not None else payload.get("lab_results")
-        if fasting_glucose in (None, ""):
+        if fasting_glucose in (None, "") or isinstance(fasting_glucose, bool):
             fasting_glucose = self._extract_numeric_from_labs(labs, keys={"fasting_glucose", "fpg", "fasting_blood_glucose", "glucose_fasting"})
-        if fasting_plasma_glucose in (None, ""):
+        if fasting_plasma_glucose in (None, "") or isinstance(fasting_plasma_glucose, bool):
             fasting_plasma_glucose = self._extract_numeric_from_labs(
                 labs,
                 keys={"fasting_plasma_glucose", "fasting_glucose", "fpg", "fasting_blood_glucose", "glucose_fasting"},
             )
-        if hba1c in (None, ""):
+        if hba1c in (None, "") or isinstance(hba1c, bool):
             hba1c = self._extract_numeric_from_labs(labs, keys={"hba1c", "a1c", "hba1c_percent"})
-        if two_hour_ogtt in (None, ""):
+        if two_hour_ogtt in (None, "") or isinstance(two_hour_ogtt, bool):
             two_hour_ogtt = self._extract_numeric_from_labs(
                 labs,
                 keys={"2h_ogtt_75g", "two_hour_ogtt_75g", "ogtt_2h_75g"},
             )
-        if random_plasma_glucose in (None, ""):
+        if random_plasma_glucose in (None, "") or isinstance(random_plasma_glucose, bool):
             random_plasma_glucose = self._extract_numeric_from_labs(
                 labs,
                 keys={"random_plasma_glucose", "random_glucose"},
             )
-        if blood_glucose in (None, ""):
+        if blood_glucose in (None, "") or isinstance(blood_glucose, bool):
             blood_glucose = self._extract_numeric_from_labs(labs, keys={"blood_glucose", "glucose"})
 
         normalized = {}
@@ -1875,7 +1875,7 @@ class DiagnosisService:
 
     @staticmethod
     def _as_required_float(value, *, field_name: str, min_value: float | None = None, max_value: float | None = None) -> float:
-        if value in (None, ""):
+        if value in (None, "") or isinstance(value, bool):
             raise ValidationError(f"{field_name} is required.")
         try:
             numeric = float(value)
@@ -1891,7 +1891,7 @@ class DiagnosisService:
 
     @staticmethod
     def _as_optional_float(value, *, field_name: str, min_value: float | None = None, max_value: float | None = None) -> float | None:
-        if value in (None, ""):
+        if value in (None, "") or isinstance(value, bool):
             return None
         try:
             numeric = float(value)
@@ -1915,7 +1915,7 @@ class DiagnosisService:
 
     @staticmethod
     def _as_optional_int(value, field_name: str) -> int | None:
-        if value in (None, ""):
+        if value in (None, "") or isinstance(value, bool):
             return None
         try:
             return int(value)

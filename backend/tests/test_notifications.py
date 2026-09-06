@@ -75,3 +75,14 @@ def test_notification_ownership_isolation(client, doctor_auth, patient_auth):
     # Patient tries to delete doctor's notification -> 404
     res = client.delete(f"/api/notifications/{doc_notif_id}", headers=pat_headers)
     assert res.status_code == 404
+
+
+def test_patient_can_fetch_facts(client, patient_auth):
+    pat_headers = {"Authorization": f"Bearer {patient_auth['access_token']}"}
+    res = client.get("/api/facts/?status=active", headers=pat_headers)
+    assert res.status_code == 200
+    facts = res.get_json()["data"]
+    assert isinstance(facts, list)
+    assert len(facts) > 0
+    assert any(f["key"] == "frequent_urination" for f in facts)
+

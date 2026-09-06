@@ -6,7 +6,7 @@ from app.dependencies import get_auth_service
 from app.errors import ForbiddenError, UnauthorizedError
 
 
-def require_auth(roles=None, permissions=None):
+def require_auth(roles=None, permissions=None, permission_mode="all"):
     roles = roles or []
     permissions = permissions or []
 
@@ -28,11 +28,14 @@ def require_auth(roles=None, permissions=None):
             if roles and token_roles.isdisjoint(set(roles)):
                 raise ForbiddenError("You do not have the required role.")
 
-            missing_permissions = [permission for permission in permissions if permission not in token_permissions]
-            if missing_permissions:
-                raise ForbiddenError(
-                    "You do not have the required permission(s).",
-                )
+            if permissions:
+                if permission_mode == "any":
+                    if not any(permission in token_permissions for permission in permissions):
+                        raise ForbiddenError("You do not have the required permission(s).")
+                else:
+                    missing_permissions = [permission for permission in permissions if permission not in token_permissions]
+                    if missing_permissions:
+                        raise ForbiddenError("You do not have the required permission(s).")
 
             g.current_user = user
             return fn(*args, **kwargs)

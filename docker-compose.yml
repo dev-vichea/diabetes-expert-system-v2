@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: diabetes_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-diabetes_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-diabetes_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      target: development
+    container_name: diabetes_backend_dev
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./backend:/app
+    environment:
+      FLASK_DEBUG: 1
+      SECRET_KEY: ${SECRET_KEY:-dev-insecure-secret-key-for-local-docker}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-diabetes_db}
+      DB_AUTO_CREATE: "true"
+      SEED_DEMO_DATA: "true"
+      RULES_SEED_VERSION: "v2"
+      CORS_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173,http://localhost"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    container_name: diabetes_frontend_dev
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      VITE_API_BASE_URL: "http://localhost:5001/api"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_dev_data:

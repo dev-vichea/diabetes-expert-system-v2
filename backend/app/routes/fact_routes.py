@@ -7,8 +7,9 @@ from app.utils.auth import require_auth
 fact_bp = Blueprint("facts", __name__)
 
 
-@fact_bp.get("/")
-@require_auth(permissions=["rule.view"])
+@fact_bp.route("", methods=["GET"], strict_slashes=False)
+@fact_bp.route("/", methods=["GET"], strict_slashes=False)
+@require_auth(permissions=["rule.view", "diagnosis.run"], permission_mode="any")
 def list_facts():
     facts = get_fact_service().list_facts(
         category=request.args.get("category", default="", type=str).strip() or None,
@@ -18,7 +19,8 @@ def list_facts():
     return success_response(data=facts)
 
 
-@fact_bp.post("/")
+@fact_bp.route("", methods=["POST"], strict_slashes=False)
+@fact_bp.route("/", methods=["POST"], strict_slashes=False)
 @require_auth(permissions=["rule.manage"])
 def create_fact():
     payload = request.get_json(silent=True) or {}
@@ -28,7 +30,7 @@ def create_fact():
 
 
 @fact_bp.get("/<int:fact_id>")
-@require_auth(permissions=["rule.view"])
+@require_auth(permissions=["rule.view", "diagnosis.run"], permission_mode="any")
 def get_fact(fact_id: int):
     return success_response(data=get_fact_service().get_fact(fact_id))
 

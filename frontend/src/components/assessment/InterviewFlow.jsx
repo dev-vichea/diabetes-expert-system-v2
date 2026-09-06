@@ -8,7 +8,7 @@ import {
 import { AppSelect, LoadingState } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { FIELD_FALLBACKS, camelField, fieldLabelKey, nodeFields } from './interview-flow'
+import { FIELD_FALLBACKS, camelField, fieldLabelKey, getFactLabel, nodeFields } from './interview-flow'
 
 const NODE_ICONS = {
   Building2, UserRound, Baby, CalendarHeart, Droplets, Stethoscope, AlertTriangle,
@@ -28,17 +28,17 @@ const FIELD_ICONS = {
 function QuestionCard({ node, title, helper, children }) {
   const Icon = NODE_ICONS[node.icon] || ClipboardList
   return (
-    <div className="assessment-card-enter surface min-w-0 p-5 sm:p-7">
-      <div className="flex items-start gap-3.5">
-        <span className="mt-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400">
-          <Icon className="h-5.5 w-5.5" strokeWidth={2} />
+    <div className="assessment-card-enter surface min-w-0 p-6 sm:p-8 md:p-9 shadow-sm">
+      <div className="flex items-start gap-4">
+        <span className="mt-0.5 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400">
+          <Icon className="h-6 w-6" strokeWidth={2} />
         </span>
         <div className="min-w-0">
-          <h3 className="text-lg font-bold leading-snug text-slate-900 dark:text-slate-50 sm:text-xl">{title}</h3>
-          {helper ? <p className="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">{helper}</p> : null}
+          <h3 className="text-xl font-bold leading-snug text-slate-900 dark:text-slate-50 sm:text-2xl">{title}</h3>
+          {helper ? <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-slate-400">{helper}</p> : null}
         </div>
       </div>
-      <div className="mt-5">{children}</div>
+      <div className="mt-6">{children}</div>
     </div>
   )
 }
@@ -49,20 +49,20 @@ function YesNoButtons({ value, onPick, noLabel, yesLabel, t }) {
     { v: true, label: yesLabel },
   ]
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-4">
       {options.map((opt) => (
         <button
           key={String(opt.v)}
           type="button"
           onClick={() => onPick(opt.v)}
           className={cn(
-            'flex items-center justify-center gap-2 rounded-xl border-2 px-4 py-3.5 text-sm font-semibold transition-all',
+            'flex items-center justify-center gap-2.5 rounded-xl border-2 px-5 py-4 text-base font-semibold transition-all',
             value === opt.v
               ? 'border-cyan-500 bg-cyan-500 text-white shadow-sm'
               : 'border-slate-200 bg-white text-slate-700 hover:border-cyan-300 hover:bg-cyan-50/50 dark:border-slate-700 dark:bg-[#0b0b16] dark:text-slate-200 dark:hover:border-cyan-700 dark:hover:bg-cyan-900/20',
           )}
         >
-          {value === opt.v ? <Check className="h-4.5 w-4.5" strokeWidth={2.5} /> : null}
+          {value === opt.v ? <Check className="h-5 w-5" strokeWidth={2.5} /> : null}
           {opt.label}
         </button>
       ))}
@@ -70,29 +70,39 @@ function YesNoButtons({ value, onPick, noLabel, yesLabel, t }) {
   )
 }
 
-function MultiGrid({ node, form, ctx, t, onToggle, onNone }) {
+function MultiGrid({ node, form, ctx, t, factsMap, language, onToggle, onNone }) {
   /* ctx carries the settled probe ids so the shrink filter can't mistake a
      just-tapped choice for "already asked" — choices must stay visible. */
   const fields = nodeFields(node, ctx || { form })
   const selectedCount = fields.filter((f) => form[f]).length
   return (
     <div>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {fields.map((key) => {
           const FIcon = FIELD_ICONS[key] || Activity
           const active = Boolean(form[key])
+          const fact = factsMap?.get(key)
+          const label = getFactLabel(key, factsMap, language, t)
           return (
             <button
               key={key}
               type="button"
               onClick={() => onToggle(node, key, !active)}
+              title={fact?.question || undefined}
               className={cn(
-                'toggle-pill assessment-card-enter',
+                'toggle-pill assessment-card-enter text-left',
                 active && 'active',
               )}
             >
               <FIcon className={cn('h-4 w-4 shrink-0', active ? 'text-white' : 'text-slate-400 dark:text-slate-500')} strokeWidth={2} />
-              <span className="flex-1 text-left">{t(fieldLabelKey(key), FIELD_FALLBACKS[key])}</span>
+              <span className="flex-1 min-w-0">
+                <span className="block font-medium leading-tight">{label}</span>
+                {fact?.medical_term && fact.medical_term.toLowerCase() !== label.toLowerCase() ? (
+                  <span className={cn('block text-[11px] font-normal leading-tight mt-0.5', active ? 'text-cyan-100 dark:text-cyan-200' : 'text-slate-400 dark:text-slate-500')}>
+                    {fact.medical_term}
+                  </span>
+                ) : null}
+              </span>
               <span className="pill-check">{active ? <Check className="h-3 w-3" /> : null}</span>
             </button>
           )
@@ -138,8 +148,10 @@ export function InterviewFlow(props) {
     onYesNo, onChoice, onToggleMulti, onMultiNone,
     onContinue, onSkip, onBack, canBack = false, analyzing, editing,
     doneIds = [], skippedIds = [],
+    factsMap = null, fieldGroups = null,
   } = props
 
+  const { language } = useLanguage()
   const inputRef = useRef(null)
   useEffect(() => { if (node?.kind === 'number' && inputRef.current) inputRef.current.focus() }, [node?.id])
 
@@ -259,7 +271,18 @@ export function InterviewFlow(props) {
       />
     )
   } else if (node.kind === 'multi') {
-    body = <MultiGrid node={node} form={form} ctx={{ form, doneIds, skippedIds }} t={t} onToggle={onToggleMulti} onNone={onMultiNone} />
+    body = (
+      <MultiGrid
+        node={node}
+        form={form}
+        ctx={{ form, doneIds, skippedIds, fieldGroups }}
+        t={t}
+        factsMap={factsMap}
+        language={language}
+        onToggle={onToggleMulti}
+        onNone={onMultiNone}
+      />
+    )
   } else if (node.kind === 'text') {
     body = (
       <textarea
@@ -305,7 +328,7 @@ export function InterviewFlow(props) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
+    <div className="mx-auto w-full max-w-4xl">
       <QuestionCard node={node} title={title} helper={helper}>
         {node.kind === 'labs' ? null : body}
       </QuestionCard>

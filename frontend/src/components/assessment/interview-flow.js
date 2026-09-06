@@ -84,7 +84,10 @@ export const INSIGHT_BANNERS = [
   {
     id: 't2-slow',
     tone: 'info',
-    when: (f) => f.rapid_onset === false && SYMPTOM_CORE_FIELDS.some((key) => Boolean(f[key])),
+    when: (f, ctx) => {
+      const core = ctx?.fieldGroups?.symptoms_core || SYMPTOM_CORE_FIELDS
+      return f.rapid_onset === false && core.some((key) => Boolean(f[key]))
+    },
     titleKey: 'assessment.interview.insightT2Title',
     titleFallback: 'Slow build-up — type 2 pattern',
     textKey: 'assessment.interview.insightT2Text',
@@ -303,7 +306,7 @@ export const INTERVIEW_NODES = [
   {
     id: 'symptoms_core',
     kind: 'multi',
-    fields: SYMPTOM_CORE_FIELDS,
+    fields: (ctx) => ctx?.fieldGroups?.symptoms_core || SYMPTOM_CORE_FIELDS,
     icon: 'Droplets',
     priority: () => 10,
     titleKey: 'assessment.interview.coreSymptomsTitle',
@@ -321,9 +324,12 @@ export const INTERVIEW_NODES = [
     titleFallback: 'Did these symptoms come on suddenly?',
     helperKey: 'assessment.interview.onsetHelper',
     helperFallback: 'Sudden onset (days to weeks) points to type 1 diabetes; a slow build-up over months or years points to type 2.',
-    applies: ({ form }) =>
-      SYMPTOM_CORE_FIELDS.some((key) => form[key] === true) ||
-      SYMPTOM_OTHER_FIELDS.some((key) => form[key] === true),
+    applies: (ctx) => {
+      const form = ctx?.form || {}
+      const core = ctx?.fieldGroups?.symptoms_core || SYMPTOM_CORE_FIELDS
+      const other = ctx?.fieldGroups?.symptoms_other || SYMPTOM_OTHER_FIELDS
+      return core.some((key) => form[key] === true) || other.some((key) => form[key] === true)
+    },
   },
   {
     /* Type 1 in children: the single strongest signal — asked the moment the
@@ -337,9 +343,11 @@ export const INTERVIEW_NODES = [
     titleFallback: 'Any new bed-wetting at night?',
     helperKey: 'assessment.interview.childProbeHelper',
     helperFallback: 'In children, new bed-wetting with extra thirst or urination is the strongest type 1 signal.',
-    applies: ({ form }) => {
+    applies: (ctx) => {
+      const form = ctx?.form || {}
       const age = Number(form.age)
-      return age > 0 && age < 18 && SYMPTOM_CORE_FIELDS.some((key) => Boolean(form[key]))
+      const core = ctx?.fieldGroups?.symptoms_core || SYMPTOM_CORE_FIELDS
+      return age > 0 && age < 18 && core.some((key) => Boolean(form[key]))
     },
   },
   {
@@ -354,7 +362,11 @@ export const INTERVIEW_NODES = [
     titleFallback: 'Any of these insulin-resistance signs?',
     helperKey: 'assessment.interview.t2ProbeHelper',
     helperFallback: 'With a slow build-up, these signs strongly point to the type 2 pattern.',
-    applies: ({ form }) => form.rapid_onset === false && SYMPTOM_CORE_FIELDS.some((key) => Boolean(form[key])),
+    applies: (ctx) => {
+      const form = ctx?.form || {}
+      const core = ctx?.fieldGroups?.symptoms_core || SYMPTOM_CORE_FIELDS
+      return form.rapid_onset === false && core.some((key) => Boolean(form[key]))
+    },
   },
   {
     id: 'symptoms_other',
@@ -364,11 +376,13 @@ export const INTERVIEW_NODES = [
        a value-based check made every tapped choice vanish mid-question. */
     fields: (ctx) => {
       const claimed = claimedProbeFields(ctx)
-      return SYMPTOM_OTHER_FIELDS.filter((key) => !claimed.includes(key))
+      const list = ctx?.fieldGroups?.symptoms_other || SYMPTOM_OTHER_FIELDS
+      return list.filter((key) => !claimed.includes(key))
     },
     applies: (ctx) => {
       const claimed = claimedProbeFields(ctx)
-      return SYMPTOM_OTHER_FIELDS.some((key) => !claimed.includes(key))
+      const list = ctx?.fieldGroups?.symptoms_other || SYMPTOM_OTHER_FIELDS
+      return list.some((key) => !claimed.includes(key))
     },
     icon: 'Stethoscope',
     priority: () => 17,
@@ -380,7 +394,7 @@ export const INTERVIEW_NODES = [
   {
     id: 'warning_signs',
     kind: 'multi',
-    fields: SAFETY_FIELDS,
+    fields: (ctx) => ctx?.fieldGroups?.warning_signs || SAFETY_FIELDS,
     icon: 'AlertTriangle',
     /* Safety check always comes right after the symptom probes — before
        risk factors and labs — because sudden-onset + ketone signs change
@@ -394,7 +408,7 @@ export const INTERVIEW_NODES = [
   {
     id: 'risk_factors',
     kind: 'multi',
-    fields: RISK_FIELDS,
+    fields: (ctx) => ctx?.fieldGroups?.risk_factors || RISK_FIELDS,
     icon: 'ClipboardList',
     priority: () => 20,
     titleKey: 'assessment.interview.riskTitle',
@@ -510,5 +524,78 @@ export function buildFactsFromAnswers(answers) {
     facts[key] = value;
   }
   return facts;
+}
+
+/**
+ * Dynamically categorize database facts into interview field groups:
+ * - cardinal / is_cardinal: true -> symptoms_core
+ * - emergency / safety / is_emergency: true -> warning_signs
+ * - risk_factor / risk -> risk_factors
+ * - all other symptom categories (metabolic, vision, skin, nerve, etc.) -> symptoms_other
+ *
+ * Preserves built-in static defaults as offline/instant fallback and appends
+ * any new active facts from the database catalog.
+ */
+export function buildFieldGroupsFromFacts(facts = []) {
+  const core = [...SYMPTOM_CORE_FIELDS]
+  const warning = [...SAFETY_FIELDS]
+  const risk = [...RISK_FIELDS]
+  const other = [...SYMPTOM_OTHER_FIELDS]
+
+  if (!Array.isArray(facts) || facts.length === 0) {
+    return {
+      symptoms_core: core,
+      warning_signs: warning,
+      risk_factors: risk,
+      symptoms_other: other,
+    }
+  }
+
+  for (const fact of facts) {
+    if (!fact || !fact.key || fact.is_active === false) continue
+    const key = fact.key
+    const cat = String(fact.category || '').toLowerCase()
+
+    // Profile and lab facts are handled by dedicated question cards (age, sex, body, labs)
+    if (cat === 'profile' || cat === 'lab') continue
+
+    if (fact.is_cardinal || cat === 'cardinal') {
+      if (!core.includes(key)) core.push(key)
+    } else if (fact.is_emergency || cat === 'emergency' || cat === 'safety') {
+      if (!warning.includes(key)) warning.push(key)
+    } else if (cat === 'risk_factor' || cat === 'risk') {
+      if (!risk.includes(key)) risk.push(key)
+    } else {
+      // General symptoms & doctor custom facts
+      if (!other.includes(key) && !core.includes(key) && !warning.includes(key) && !risk.includes(key)) {
+        other.push(key)
+      }
+    }
+  }
+
+  return {
+    symptoms_core: core,
+    warning_signs: warning,
+    risk_factors: risk,
+    symptoms_other: other,
+  }
+}
+
+/**
+ * Resolves the display label for a fact key, honoring database edits and UI language:
+ * - If in DB and KM active: fact.label_km (or i18n / fact.label)
+ * - If in DB and EN active: fact.label (or i18n)
+ * - Fallback: i18n key or static fallback or humanized key
+ */
+export function getFactLabel(key, factsMap, language, t) {
+  if (factsMap && typeof factsMap.get === 'function') {
+    const fact = factsMap.get(key)
+    if (fact) {
+      const dbLabel = language === 'km' ? (fact.label_km || fact.label) : (fact.label || fact.label_km)
+      if (dbLabel && dbLabel.trim()) return dbLabel.trim()
+    }
+  }
+  const fallback = FIELD_FALLBACKS[key] || key.replace(/_/g, ' ')
+  return t ? t(fieldLabelKey(key), fallback) : fallback
 }
 

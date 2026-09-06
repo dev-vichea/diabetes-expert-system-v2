@@ -200,7 +200,7 @@ class UnifiedAssessmentService:
         validated = {}
         
         # Demographics
-        if "age" in payload and payload["age"] is not None:
+        if "age" in payload and payload["age"] not in (None, "") and not isinstance(payload["age"], bool):
             validated["age"] = self._validate_number(
                 payload["age"], "age", min_val=0, max_val=120
             )
@@ -210,7 +210,7 @@ class UnifiedAssessmentService:
             if sex in ("male", "female", "other"):
                 validated["sex"] = sex
         
-        if "bmi" in payload and payload["bmi"] is not None:
+        if "bmi" in payload and payload["bmi"] not in (None, "") and not isinstance(payload["bmi"], bool):
             validated["bmi"] = self._validate_number(
                 payload["bmi"], "bmi", min_val=10, max_val=80
             )
@@ -226,7 +226,7 @@ class UnifiedAssessmentService:
             "ogtt_2h": (30, 1000),
         }
         for field, (min_val, max_val) in lab_fields.items():
-            if field in payload and payload[field] is not None:
+            if field in payload and payload[field] not in (None, "") and not isinstance(payload[field], bool):
                 validated[field] = self._validate_number(
                     payload[field], field, min_val, max_val
                 )
@@ -346,6 +346,8 @@ class UnifiedAssessmentService:
         max_val: float
     ) -> float:
         """Validate a numeric field."""
+        if value in (None, "") or isinstance(value, bool):
+            raise ValidationError(f"{field_name} must be a valid number")
         try:
             num = float(value)
             if not (min_val <= num <= max_val):

@@ -315,12 +315,21 @@ def _seed_notifications() -> None:
 
 
 def _seed_fact_catalog() -> None:
-    """Insert fact-catalog rows that do not exist yet. Doctor edits are never
-    overwritten — the database is the source of truth once a row exists."""
+    """Insert fact-catalog rows that do not exist yet, and backfill any missing
+    bilingual fields on existing rows while preserving doctor edits."""
     for entry in FACT_CATALOG_SEED:
         key = str(entry.get("key") or "").strip().lower()
-        if not key or Fact.query.filter_by(key=key).first():
+        if not key:
             continue
+        existing = Fact.query.filter_by(key=key).first()
+        if existing:
+            # Backfill only missing/empty fields so doctor edits are never overwritten
+            for field in ("label_km", "medical_term", "question", "meaning", "meaning_km", "prevention", "prevention_km"):
+                val = entry.get(field)
+                if val is not None and not getattr(existing, field):
+                    setattr(existing, field, val)
+            continue
+
         db.session.add(Fact(
             key=key,
             label=str(entry.get("label") or key),

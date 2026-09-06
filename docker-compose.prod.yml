@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: diabetes_postgres_prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in production}
+      POSTGRES_DB: ${POSTGRES_DB:-diabetes_db}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-diabetes_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      target: production
+    container_name: diabetes_backend_prod
+    restart: always
+    environment:
+      FLASK_DEBUG: 0
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required in production}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-diabetes_db}
+      DB_AUTO_CREATE: ${DB_AUTO_CREATE:-true}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+      RULES_SEED_VERSION: ${RULES_SEED_VERSION:-v2}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:80}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      target: production
+      args:
+        VITE_API_BASE_URL: /api
+    container_name: diabetes_frontend_prod
+    restart: always
+    ports:
+      - "${PORT:-80}:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_prod_data:

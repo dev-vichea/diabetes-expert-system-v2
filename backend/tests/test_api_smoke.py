@@ -114,6 +114,33 @@ def test_diagnosis_flow_for_doctor(client, doctor_auth):
     assert stage_names[:4] == ["triage", "diagnosis", "classification", "recommendation"]
 
 
+def test_diagnosis_screening_without_labs_succeeds_even_with_boolean_falses(client, doctor_auth):
+    patient_id = doctor_auth["user"]["patient_id"]
+    if not patient_id:
+        patient_id = _get_demo_patient_id(client)
+
+    response = client.post(
+        "/api/diagnosis/",
+        headers=_auth_header(doctor_auth["access_token"]),
+        json={
+            "patient_id": patient_id,
+            "mode": "screening",
+            "no_labs_available": True,
+            "fasting_glucose": False,
+            "hba1c": False,
+            "frequent_urination": True,
+            "excessive_thirst": True,
+            "age": 26,
+            "bmi": 24.5,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["success"] is True
+    assert body["data"]["patient_id"] == patient_id
+
+
 def test_diagnosis_report_pdf_download(client, doctor_auth):
     patient_id = doctor_auth["user"]["patient_id"]
     if not patient_id:

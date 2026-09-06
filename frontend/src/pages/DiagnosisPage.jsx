@@ -40,9 +40,9 @@ import { InterviewFlow } from '@/components/assessment/InterviewFlow'
 import {
   INTERVIEW_NODES, INSIGHT_BANNERS,
   SYMPTOM_ALL_FIELDS, SAFETY_FIELDS, RISK_FIELDS,
-  FIELD_FALLBACKS, fieldLabelKey, nodeFields,
+  FIELD_FALLBACKS, fieldLabelKey, getFactLabel, nodeFields,
   firstOpenNode, interviewProgress, interviewPosition, applicableNodes,
-  buildFactsFromAnswers,
+  buildFactsFromAnswers, buildFieldGroupsFromFacts,
 } from '@/components/assessment/interview-flow'
 
 /* ── Constants ────────────────────────── */
@@ -72,6 +72,12 @@ const DEFAULT_FORM = {
   extra_lab_name: '', extra_lab_value: '',
   show_bmi_calculator: false, weight_kg: '', height_cm: '',
 }
+
+const NON_BOOLEAN_FACT_KEYS = new Set([
+  'fasting_glucose', 'fasting_plasma_glucose', 'hba1c', 'random_plasma_glucose',
+  'ogtt_2h', '2h_ogtt_75g', 'blood_glucose', 'age', 'bmi', 'waist_circumference',
+  'weight_kg', 'height_cm', 'sex', 'pregnancy_stage', 'extra_symptoms', 'extra_lab_name', 'extra_lab_value',
+])
 
 const DEFAULT_QCM = { age_group: '', bmi_group: '', fasting_group: '', hba1c_group: '', ogtt_group: '' }
 
@@ -202,7 +208,7 @@ function StepDot({ item, status, onClick, locked }) {
    ================================================================ */
 export function DiagnosisPage() {
   const { user } = useAuth()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -246,9 +252,77 @@ export function DiagnosisPage() {
     { id: 'diabetes', label: t('assessment.options.ogtt.diabetes', 'Diabetes'), sub: '≥ 200', value: 220 },
   ]
 
-  const SYMPTOM_PILLS = SYMPTOM_ALL_FIELDS.map(key => ({ key, label: t(fieldLabelKey(key), FIELD_FALLBACKS[key]) }))
-  const SAFETY_PILLS = SAFETY_FIELDS.map(key => ({ key, label: t(fieldLabelKey(key), FIELD_FALLBACKS[key]) }))
-  const RISK_PILLS = RISK_FIELDS.map(key => ({ key, label: t(fieldLabelKey(key), FIELD_FALLBACKS[key]) }))
+  const [dbFacts, setDbFacts] = useState([])
+  const [loadingFacts, setLoadingFacts] = useState(false)
+
+  // Fetch active fact catalog from the database (Knowledge Base -> Facts)
+  useEffect(() => {
+    let cancelled = false
+    async function loadFacts() {
+      setLoadingFacts(true)
+      try {
+        const res = await api.get('/facts/', { params: { status: 'active' } })
+        const data = getApiData(res)
+        if (!cancelled && Array.isArray(data)) {
+          setDbFacts(data)
+          // Pre-initialize dynamic fact booleans in form state to avoid uncontrolled warnings
+          setForm(prev => {
+            const next = { ...prev }
+            let changed = false
+            for (const f of data) {
+              if (
+                f.key &&
+                next[f.key] === undefined &&
+                f.category !== 'lab' &&
+                f.category !== 'profile' &&
+                !NON_BOOLEAN_FACT_KEYS.has(f.key)
+              ) {
+                next[f.key] = false
+                changed = true
+              }
+            }
+            return changed ? next : prev
+          })
+        }
+      } catch (err) {
+        console.warn('Unable to load facts from server, using built-in defaults', err)
+      } finally {
+        if (!cancelled) setLoadingFacts(false)
+      }
+    }
+    loadFacts()
+    window.addEventListener('focus', loadFacts)
+    return () => {
+      cancelled = true
+      window.removeEventListener('focus', loadFacts)
+    }
+  }, [location.key])
+
+  const fieldGroups = useMemo(() => buildFieldGroupsFromFacts(dbFacts), [dbFacts])
+  const factsMap = useMemo(() => new Map(dbFacts.map(f => [f.key, f])), [dbFacts])
+
+  const SYMPTOM_PILLS = useMemo(() => {
+    const all = [...fieldGroups.symptoms_core, ...fieldGroups.symptoms_other]
+    const unique = Array.from(new Set(all))
+    return unique.map(key => ({
+      key,
+      label: getFactLabel(key, factsMap, language, t),
+    }))
+  }, [fieldGroups, factsMap, language, t])
+
+  const SAFETY_PILLS = useMemo(() => {
+    return fieldGroups.warning_signs.map(key => ({
+      key,
+      label: getFactLabel(key, factsMap, language, t),
+    }))
+  }, [fieldGroups, factsMap, language, t])
+
+  const RISK_PILLS = useMemo(() => {
+    return fieldGroups.risk_factors.map(key => ({
+      key,
+      label: getFactLabel(key, factsMap, language, t),
+    }))
+  }, [fieldGroups, factsMap, language, t])
 
   const TOTAL_STEPS = 3
   const storageKey = useMemo(() => getDraftKey(user), [user?.id, user?.sub, user?.email])
@@ -304,8 +378,8 @@ export function DiagnosisPage() {
   /* Settled node ids ride along so grids can shrink by "already asked by a
      probe" (node id) instead of by form values. */
   const interviewCtx = useMemo(
-    () => ({ form, needsPatient, subject: subjectMode, doneIds: interviewDone, skippedIds: interviewSkipped }),
-    [form, needsPatient, subjectMode, interviewDone, interviewSkipped],
+    () => ({ form, needsPatient, subject: subjectMode, doneIds: interviewDone, skippedIds: interviewSkipped, fieldGroups }),
+    [form, needsPatient, subjectMode, interviewDone, interviewSkipped, fieldGroups],
   )
   const autoCursor = useMemo(
     () => firstOpenNode(INTERVIEW_NODES, interviewCtx, interviewDone, interviewSkipped),
@@ -329,21 +403,22 @@ export function DiagnosisPage() {
     () => INTERVIEW_NODES.find((n) => n.id === currentNodeId) || null,
     [currentNodeId],
   )
-  const activeBanners = useMemo(() => INSIGHT_BANNERS.filter((b) => b.when(form)), [form])
+  const activeBanners = useMemo(() => INSIGHT_BANNERS.filter((b) => b.when(form, interviewCtx)), [form, interviewCtx])
 
   const isDraftPristine = useMemo(() => {
     const hasFormChanges = Object.keys(DEFAULT_FORM).some(k => k !== 'patient_id' && form[k] !== DEFAULT_FORM[k])
+    const hasDynamicChanges = dbFacts.some(f => Boolean(form[f.key]))
     const hasQcmChanges = Object.values(qcm).some(Boolean)
-    return !result && step === 1 && maxReached === 1 && extraLabs.length === 0 && !hasFormChanges && !hasQcmChanges && interviewDone.length === 0 && interviewSkipped.length === 0
-  }, [extraLabs.length, form, maxReached, qcm, result, step, interviewDone.length, interviewSkipped.length])
+    return !result && step === 1 && maxReached === 1 && extraLabs.length === 0 && !hasFormChanges && !hasDynamicChanges && !hasQcmChanges && interviewDone.length === 0 && interviewSkipped.length === 0
+  }, [extraLabs.length, form, maxReached, qcm, result, step, interviewDone.length, interviewSkipped.length, dbFacts])
 
   const selectedSymptoms = useMemo(
     () => SYMPTOM_PILLS.filter(i => form[i.key]).map(i => i.label),
-    [form],
+    [form, SYMPTOM_PILLS],
   )
   const selectedRisks = useMemo(
     () => RISK_PILLS.filter(i => form[i.key]).map(i => i.label),
-    [form],
+    [form, RISK_PILLS],
   )
   const customSymptoms = useMemo(
     () => form.extra_symptoms.split(/[,;\n]/).map(s => s.trim()).filter(Boolean),
@@ -601,7 +676,19 @@ export function DiagnosisPage() {
        different person. Explicit preservePatient is for special flows only. */
     const pid = opts.preservePatient ? form.patient_id : ''
     window.localStorage.removeItem(storageKey)
-    setForm({ ...DEFAULT_FORM, patient_id: pid }); setQcm(DEFAULT_QCM)
+    const resetForm = { ...DEFAULT_FORM, patient_id: pid }
+    for (const f of dbFacts) {
+      if (
+        f.key &&
+        f.category !== 'lab' &&
+        f.category !== 'profile' &&
+        !NON_BOOLEAN_FACT_KEYS.has(f.key) &&
+        !Object.prototype.hasOwnProperty.call(DEFAULT_FORM, f.key)
+      ) {
+        resetForm[f.key] = false
+      }
+    }
+    setForm(resetForm); setQcm(DEFAULT_QCM)
     setExtraLabs([]); setResult(null); setError(''); setStep(1); setMaxReached(1)
     setInterviewDone([]); setInterviewSkipped([]); setCursorOverride(null); setInterviewTrail([])
     setSubjectMode(null)
@@ -791,13 +878,13 @@ export function DiagnosisPage() {
     if (errs.length) { setError(errs[0]); return }
     setSubmitting(true); setError('')
     try {
-      const symptoms = {
-        fatigue: form.fatigue, blurred_vision: form.blurred_vision, weight_loss: form.weight_loss,
-        slow_healing: form.slow_healing, sweating: form.sweating, shaking: form.shaking,
-        dizziness: form.dizziness, vomiting: form.vomiting, abdominal_pain: form.abdominal_pain,
-        nausea: form.nausea, tingling_hands_feet: form.tingling_hands_feet,
-        frequent_infections: form.frequent_infections, acanthosis_nigricans: form.acanthosis_nigricans,
-      }
+      const symptoms = {}
+      for (const item of SYMPTOM_PILLS) symptoms[item.key] = Boolean(form[item.key])
+      for (const item of SAFETY_PILLS) symptoms[item.key] = Boolean(form[item.key])
+
+      const riskFactorsPayload = {}
+      for (const item of RISK_PILLS) riskFactorsPayload[item.key] = Boolean(form[item.key])
+
       const customList = customSymptoms.map(s => ({ symptom_code: s.toLowerCase().replace(/\s+/g, '_'), symptom_name: s, present: true }))
       const qAnswers = {
         qcm, yes_no: {
@@ -812,8 +899,23 @@ export function DiagnosisPage() {
         },
         free_text: { extra_symptoms: customSymptoms },
       }
+
+      const dynamicBooleans = {}
+      for (const f of dbFacts) {
+        if (
+          f.key &&
+          f.category !== 'lab' &&
+          f.category !== 'profile' &&
+          !NON_BOOLEAN_FACT_KEYS.has(f.key) &&
+          typeof form[f.key] === 'boolean'
+        ) {
+          dynamicBooleans[f.key] = form[f.key]
+        }
+      }
+
       const payload = {
-        mode: assessmentMode, no_labs_available: form.no_labs_available,
+        mode: assessmentMode,
+        no_labs_available: Boolean(form.no_labs_available || !hasAnyLab),
         frequent_urination: form.frequent_urination, excessive_thirst: form.excessive_thirst,
         sweating: form.sweating, shaking: form.shaking, dizziness: form.dizziness,
         vomiting: form.vomiting, abdominal_pain: form.abdominal_pain, nausea: form.nausea, crisis: form.crisis,
@@ -826,21 +928,22 @@ export function DiagnosisPage() {
         sedentary_lifestyle: form.sedentary_lifestyle, gestational_history: form.gestational_history,
         smoking: form.smoking, high_cholesterol: form.high_cholesterol,
         pcos_history: form.pcos_history, ethnicity_high_risk: form.ethnicity_high_risk,
+        ...dynamicBooleans,
         symptoms: customList.length
-          ? [...customList, ...Object.keys(symptoms).map(k => ({ symptom_code: k, symptom_name: k.replace('_', ' '), present: symptoms[k] }))]
+          ? [...customList, ...Object.keys(symptoms).map(k => ({ symptom_code: k, symptom_name: k.replace(/_/g, ' '), present: symptoms[k] }))]
           : symptoms,
-        risk_factors: {
-          family_history: form.family_history, obesity: form.obesity, hypertension: form.hypertension,
-          sedentary_lifestyle: form.sedentary_lifestyle, gestational_history: form.gestational_history, smoking: form.smoking,
-          high_cholesterol: form.high_cholesterol, pcos_history: form.pcos_history, ethnicity_high_risk: form.ethnicity_high_risk,
-        },
+        risk_factors: riskFactorsPayload,
         ...buildFactsFromAnswers(qAnswers),
         questionnaire_version: 'qcm_yesno_v1', questionnaire_answers: qAnswers,
       }
       if (String(form.fasting_glucose || '').trim()) payload.fasting_glucose = Number(form.fasting_glucose)
+      else delete payload.fasting_glucose
       if (String(form.hba1c || '').trim()) payload.hba1c = Number(form.hba1c)
+      else delete payload.hba1c
       if (String(form.random_plasma_glucose || '').trim()) payload.random_plasma_glucose = Number(form.random_plasma_glucose)
+      else delete payload.random_plasma_glucose
       if (String(form.ogtt_2h || '').trim()) payload['2h_ogtt_75g'] = Number(form.ogtt_2h)
+      else delete payload['2h_ogtt_75g']
       if (form.sex === 'female') payload.currently_pregnant = Boolean(form.currently_pregnant)
       if (form.rapid_onset === true || form.rapid_onset === false) payload.rapid_onset = form.rapid_onset
       if (form.age) payload.age = Number(form.age)
@@ -886,9 +989,9 @@ export function DiagnosisPage() {
   const inset = 50 / TOTAL_STEPS
 
   return (
-    <div className="space-y-5">
-      <section className="surface min-w-0 border-0 p-4 sm:p-6">
-        <div className="mx-auto w-full max-w-5xl">
+    <div className="w-full min-h-full flex-1 flex flex-col bg-white dark:bg-[#0c1024]">
+      <section className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8 flex flex-col justify-between">
+        <div className="mx-auto w-full max-w-5xl flex-1 flex flex-col justify-between">
 
           {/* ── Step Progress Bar ─────────────────────────── */}
           <div className="mb-6 px-1">
@@ -1022,6 +1125,8 @@ export function DiagnosisPage() {
                       editing={Boolean(cursorOverride)}
                       doneIds={interviewDone}
                       skippedIds={interviewSkipped}
+                      factsMap={factsMap}
+                      fieldGroups={fieldGroups}
                     />
                   ) : (
                     <div className="surface mx-auto w-full max-w-2xl p-8 text-center">

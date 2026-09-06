@@ -56,6 +56,10 @@ function AuthenticatedRoutes() {
         {/* First-login health profile wizard — standalone page, no app chrome */}
         <Route path="/profile-setup" element={<ProfileSetupPage />} />
 
+        {/* Full-screen status & error pages — standalone, no app chrome */}
+        <Route path="/unauthorized" element={<UnauthorizedPage isAuthenticated />} />
+        <Route path="/not-found" element={<NotFoundPage isAuthenticated />} />
+
         {/* App shell (sidebar + topbar) around every other authenticated page */}
         <Route element={<AppLayout />}>
         {/* Dashboard is no longer at root, but at /dashboard */}
@@ -177,8 +181,6 @@ function AuthenticatedRoutes() {
           )}
         />
 
-          <Route path="/unauthorized" element={<UnauthorizedPage isAuthenticated />} />
-          <Route path="/not-found" element={<NotFoundPage isAuthenticated />} />
           <Route path="*" element={<Navigate to="/not-found" replace />} />
         </Route>
       </Route>
@@ -196,7 +198,7 @@ function PublicRoutes() {
         <Route path="/auth/sign-up" element={<Navigate to="/sign-up" replace />} />
         <Route path="/unauthorized" element={<UnauthorizedPage isAuthenticated={false} />} />
         <Route path="/not-found" element={<NotFoundPage isAuthenticated={false} />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Suspense>
   )

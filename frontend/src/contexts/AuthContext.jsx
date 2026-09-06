@@ -46,6 +46,7 @@ export function AuthProvider({ children }) {
     } finally {
       clearAuthStorage()
       setUser(null)
+      window.location.assign('/login')
     }
   }
 

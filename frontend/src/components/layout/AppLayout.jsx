@@ -43,6 +43,8 @@ export function AppLayout() {
   const activeRole = user?.roles?.[0] || user?.role || 'user'
   const sidebarWidth = desktopSidebarCollapsed ? 'lg:grid-cols-[5rem_1fr]' : 'lg:grid-cols-[15rem_1fr]'
 
+  const isDiagnosis = location.pathname.replace(/\/$/, '') === '/diagnosis'
+
   return (
     <div className={`app-layout-root h-[100dvh] min-w-0 overflow-hidden bg-[#f5f8fc] dark:bg-[#030309] lg:grid ${sidebarWidth}`}>
       <aside className="hidden h-[100dvh] min-h-0 overflow-hidden border-r border-slate-200 bg-white dark:border-[#161b31] dark:bg-[#030309] lg:static lg:block lg:w-auto">
@@ -78,8 +80,15 @@ export function AppLayout() {
           onOpenMobileNav={() => setMobileNavOpen(true)}
         />
 
-        <main key={location.pathname} className="custom-scrollbar page-open-motion min-w-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6">
-          <div className="mx-auto w-full max-w-[100rem]">
+        <main
+          key={location.pathname}
+          className={`custom-scrollbar page-open-motion min-w-0 flex-1 overflow-y-auto flex flex-col ${
+            isDiagnosis
+              ? 'p-0 bg-white dark:bg-[#0c1024]'
+              : 'px-3 py-4 sm:px-6 sm:py-6'
+          }`}
+        >
+          <div className={`w-full flex-1 flex flex-col ${isDiagnosis ? 'min-h-full' : 'mx-auto max-w-[100rem]'}`}>
             {/* Suspense here keeps the sidebar/topbar shell mounted while a lazy page chunk loads */}
             <Suspense fallback={<RouteLoading />}>
               <Outlet />
