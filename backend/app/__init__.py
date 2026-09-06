@@ -123,7 +123,16 @@ def create_app(config_object=Config):
 
     # Core setup
     _configure_logging(app)
-    CORS(app, resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}})
+    cors_origins = list(app.config.get("CORS_ORIGINS", []))
+    default_cors_patterns = [
+        r"https://.*\.vercel\.app",
+        r"http://localhost(:\d+)?",
+        r"http://127\.0\.0\.1(:\d+)?",
+    ]
+    for pattern in default_cors_patterns:
+        if pattern not in cors_origins:
+            cors_origins.append(pattern)
+    CORS(app, resources={r"/api/*": {"origins": cors_origins}})
     _add_security_headers(app)
 
     db.init_app(app)
