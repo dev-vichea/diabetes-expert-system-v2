@@ -989,9 +989,9 @@ export function DiagnosisPage() {
   const inset = 50 / TOTAL_STEPS
 
   return (
-    <div className="w-full min-h-full flex-1 flex flex-col bg-white dark:bg-[#0c1024]">
-      <section className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8 flex flex-col justify-between">
-        <div className="mx-auto w-full max-w-5xl flex-1 flex flex-col justify-between">
+    <div className="flex-1 flex flex-col min-h-0">
+      <section className="surface min-w-0 flex-1 flex flex-col rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 md:p-10 shadow-soft dark:border-[#1a2142] dark:bg-[#0c1129] min-h-[calc(100dvh-7.5rem)]">
+        <div className="mx-auto w-full max-w-4xl flex flex-col">
 
           {/* ── Step Progress Bar ─────────────────────────── */}
           <div className="mb-6 px-1">

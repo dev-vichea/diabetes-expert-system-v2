@@ -28,17 +28,17 @@ const FIELD_ICONS = {
 function QuestionCard({ node, title, helper, children }) {
   const Icon = NODE_ICONS[node.icon] || ClipboardList
   return (
-    <div className="assessment-card-enter surface min-w-0 p-6 sm:p-8 md:p-9 shadow-sm">
-      <div className="flex items-start gap-4">
-        <span className="mt-0.5 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400">
-          <Icon className="h-6 w-6" strokeWidth={2} />
+    <div className="assessment-card-enter min-w-0 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-6 sm:p-8 dark:border-slate-700/60 dark:bg-[#0f1533]/50">
+      <div className="flex items-start gap-3.5 sm:gap-4">
+        <span className="mt-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-100/70 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-400">
+          <Icon className="h-5.5 w-5.5" strokeWidth={2} />
         </span>
         <div className="min-w-0">
-          <h3 className="text-xl font-bold leading-snug text-slate-900 dark:text-slate-50 sm:text-2xl">{title}</h3>
-          {helper ? <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-slate-400">{helper}</p> : null}
+          <h3 className="text-lg font-bold leading-snug text-slate-900 dark:text-slate-50 sm:text-xl">{title}</h3>
+          {helper ? <p className="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">{helper}</p> : null}
         </div>
       </div>
-      <div className="mt-6">{children}</div>
+      <div className="mt-5">{children}</div>
     </div>
   )
 }
@@ -328,7 +328,7 @@ export function InterviewFlow(props) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl">
+    <div className="w-full">
       <QuestionCard node={node} title={title} helper={helper}>
         {node.kind === 'labs' ? null : body}
       </QuestionCard>
