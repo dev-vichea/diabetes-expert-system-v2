@@ -50,7 +50,14 @@ class DiagnosisService:
 
         save_to_db = bool(payload.get("save", True)) and not bool(payload.get("preview", False))
         patient_note = str(payload.get("patient_note") or "").strip()
-        submitted_to_care_team = bool(payload.get("submitted_to_care_team", False)) or save_to_db
+        is_clinician = any(r in user_roles for r in ["doctor", "nurse", "admin", "superadmin", "super_admin"])
+        
+        # Clinician assessments are inherently recorded/submitted by the care team.
+        # Patient assessments auto-save to their chart, but submitted_to_care_team is False until explicitly sent to doctor.
+        if is_clinician:
+            submitted_to_care_team = True
+        else:
+            submitted_to_care_team = bool(payload.get("submitted_to_care_team", False))
 
         session = None
         diagnosis_record = None
@@ -138,6 +145,22 @@ class DiagnosisService:
                 notif_repo = get_notification_repository()
                 patient_name = diagnosis_record.patient.full_name if diagnosis_record.patient else f"Patient #{patient_id}"
 
+                # 1. If Clinician performed this assessment, automatically alert the patient
+                if is_clinician and diagnosis_record.patient and diagnosis_record.patient.user_id:
+                    patient_user_id = diagnosis_record.patient.user_id
+                    if patient_user_id != user_id:
+                        doc_user = diagnosis_record.diagnosed_by_user
+                        doctor_name = doc_user.name if doc_user else (current_user.get("name") or "Your clinician")
+                        notif_repo.create(
+                            user_id=patient_user_id,
+                            title=f"New Assessment by Dr. {doctor_name}",
+                            message=f"Dr. {doctor_name} has completed a clinical assessment for you ({result['diagnosis']}).",
+                            type="diagnosis",
+                            link=f"/diagnosis/result?diagnosis_result_id={diagnosis_record.id}",
+                            metadata={"diagnosis_id": diagnosis_record.id, "patient_id": patient_id},
+                        )
+
+                # 2. Urgent triage alerts to doctors/nurses
                 if is_urgent:
                     doctor_role = Role.query.filter_by(name="doctor").first()
                     nurse_role = Role.query.filter_by(name="nurse").first()
@@ -151,11 +174,14 @@ class DiagnosisService:
                             link="/review",
                             metadata={"diagnosis_id": diagnosis_record.id, "patient_id": patient_id},
                         )
-                elif submitted_to_care_team:
+                # 3. Patient explicitly submitted assessment to doctors
+                elif not is_clinician and submitted_to_care_team:
                     doctor_role = Role.query.filter_by(name="doctor").first()
-                    for doc in (doctor_role.users if doctor_role else []):
+                    nurse_role = Role.query.filter_by(name="nurse").first()
+                    clinician_users = set((doctor_role.users if doctor_role else []) + (nurse_role.users if nurse_role else []))
+                    for cl_user in clinician_users:
                         notif_repo.create(
-                            user_id=doc.id,
+                            user_id=cl_user.id,
                             title=f"Review Requested: {patient_name}",
                             message=f"{patient_name} submitted an assessment for doctor review ({result['diagnosis']}).",
                             type="diagnosis",
@@ -170,6 +196,7 @@ class DiagnosisService:
         response["assessment_session_id"] = session.id if session else None
         response["is_draft"] = not save_to_db
         response["is_submitted_to_care_team"] = bool(submitted_to_care_team) if save_to_db else False
+        response["is_clinician_assessment"] = is_clinician
         response["patient_note"] = patient_note
         response["provided_payload"] = payload
         response["assessment_mode"] = mode
@@ -220,6 +247,28 @@ class DiagnosisService:
                         "diagnosis": result.diagnosis,
                     },
                 )
+
+            # Alert doctors about the submitted assessment
+            try:
+                from app.dependencies import get_notification_repository
+                from app.models import Role
+                notif_repo = get_notification_repository()
+                patient_name = result.patient.full_name if result.patient else f"Patient #{result.patient_id}"
+
+                doctor_role = Role.query.filter_by(name="doctor").first()
+                nurse_role = Role.query.filter_by(name="nurse").first()
+                clinician_users = set((doctor_role.users if doctor_role else []) + (nurse_role.users if nurse_role else []))
+                for cl_user in clinician_users:
+                    notif_repo.create(
+                        user_id=cl_user.id,
+                        title=f"Review Requested: {patient_name}",
+                        message=f"{patient_name} submitted an assessment for doctor review ({result.diagnosis}).",
+                        type="diagnosis",
+                        link="/review",
+                        metadata={"diagnosis_id": result.id, "patient_id": result.patient_id},
+                    )
+            except Exception:
+                pass
 
             serialized = self.diagnosis_repository.serialize_result(result)
             return self._rebuild_persisted_response(serialized)
@@ -305,6 +354,7 @@ class DiagnosisService:
             enriched["all_conclusions"] = confidence_trace["conclusion_scores"]
 
         # Row metadata (ids, names, review state, session, timestamps…).
+        enriched["diagnosis_result_id"] = data.get("id")
         for key in (
             "assessment_session_id",
             "assessment_session",
@@ -318,6 +368,10 @@ class DiagnosisService:
             "reviewed_at",
             "created_at",
             "questionnaire_answers",
+            "is_clinician_assessment",
+            "is_submitted_to_care_team",
+            "patient_note",
+            "submitted_to_care_team_at",
         ):
             if key in data:
                 enriched[key] = data[key]

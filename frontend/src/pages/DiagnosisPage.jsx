@@ -952,8 +952,8 @@ export function DiagnosisPage() {
       if (!form.no_labs_available && extraLabs.length) payload.labs = extraLabs
       if (needsPatient) payload.patient_id = Number(form.patient_id)
 
-      // Run assessment in preview/evaluation mode to avoid spamming duplicate reports in database
-      payload.save = false
+      // Auto-save assessment to medical chart
+      payload.save = true
       const res = await api.post('/diagnosis/', payload)
       const data = getApiData(res)
       setResult(data); setStep(REVIEW_STEP); setMaxReached(REVIEW_STEP)
@@ -962,7 +962,7 @@ export function DiagnosisPage() {
       const resultPath = data?.diagnosis_result_id
         ? `/diagnosis/result?diagnosis_result_id=${data.diagnosis_result_id}`
         : '/diagnosis/result'
-      navigate(resultPath, { state: { result: data, payload, context: buildContext(), isDraft: true, savedAt: new Date().toISOString() } })
+      navigate(resultPath, { state: { result: data, payload, context: buildContext(), isDraft: false, savedAt: new Date().toISOString() } })
     } catch (err) { setError(getApiErrorMessage(err, 'Assessment failed. Please try again.')) }
     finally { setSubmitting(false) }
   }

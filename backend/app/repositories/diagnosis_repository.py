@@ -109,6 +109,16 @@ class DiagnosisRepository:
         diagnosed_by_name = row.diagnosed_by_user.name if row.diagnosed_by_user else None
         reviewed_by_name = row.reviewed_by_user.name if row.reviewed_by_user else None
         session = row.assessment_session
+        is_clinician = bool(
+            row.diagnosed_by_user and any(
+                r.name in ["doctor", "nurse", "admin", "superadmin", "super_admin"]
+                for r in (row.diagnosed_by_user.roles or [])
+            )
+        )
+        is_submitted = (
+            is_clinician or
+            bool((row.explanation_trace_json or {}).get("submitted_to_care_team", False))
+        )
         return {
             "id": row.id,
             "assessment_session_id": row.assessment_session_id,
@@ -139,8 +149,9 @@ class DiagnosisRepository:
             "reviewed_at": serialize_datetime(row.reviewed_at),
             "is_urgent": bool(row.is_urgent),
             "urgent_reason": row.urgent_reason,
+            "is_clinician_assessment": is_clinician,
             "patient_note": (row.explanation_trace_json or {}).get("patient_note") or "",
-            "is_submitted_to_care_team": bool((row.explanation_trace_json or {}).get("submitted_to_care_team", True)),
+            "is_submitted_to_care_team": is_submitted,
             "submitted_to_care_team_at": (row.explanation_trace_json or {}).get("submitted_to_care_team_at") or serialize_datetime(row.created_at),
             "created_at": serialize_datetime(row.created_at),
         }

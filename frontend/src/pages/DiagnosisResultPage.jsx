@@ -52,6 +52,7 @@ import { readDiagnosisResultSnapshot, saveDiagnosisResultSnapshot } from '@/lib/
 import { notify } from '@/lib/toast'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { userHasStaffRole } from '@/lib/nav-config'
 
 function toCertaintyPercent(certainty) {
   const numeric = Number(certainty)
@@ -587,12 +588,19 @@ export function DiagnosisResultPage() {
     }
   }, [activeResult?.patient_note])
 
-  const isDraft = Boolean(
-    location.state?.isDraft ||
-    activeResult?.is_draft ||
-    (activeResult && activeResult.is_submitted_to_care_team === false)
+  const isStaff = userHasStaffRole(user)
+  const isClinicianAssessment = Boolean(
+    activeResult?.is_clinician_assessment ||
+    (isStaff && !activeResult?.is_submitted_to_care_team && activeResult?.diagnosed_by_user_id === user?.id) ||
+    (activeResult?.diagnosed_by_user_id && activeResult?.patient_user_id && activeResult.diagnosed_by_user_id !== activeResult.patient_user_id)
   )
-  const isSubmittedToCareTeam = !isDraft || Boolean(submittedCareTeamResult)
+
+  const isSubmittedToCareTeam = Boolean(
+    isClinicianAssessment ||
+    activeResult?.is_submitted_to_care_team ||
+    submittedCareTeamResult ||
+    activeResult?.explanation_trace?.submitted_to_care_team
+  )
   const submittedAt = activeResult?.submitted_to_care_team_at || submittedCareTeamResult?.submitted_to_care_team_at || (isSubmittedToCareTeam ? activeResult?.created_at : null)
   const patientNoteSaved = activeResult?.patient_note || submittedCareTeamResult?.patient_note || (isSubmittedToCareTeam ? patientNote.trim() : '')
 
@@ -1462,8 +1470,48 @@ export function DiagnosisResultPage() {
         ) : null}
       </TechnicalDetailsSection>
 
-      {/* ── Submit to Care Team Card (Draft or Submitted State) ── */}
-      {!isSubmittedToCareTeam ? (
+      {/* ── Status Banner / Submit to Doctor Card ── */}
+      {isStaff || isClinicianAssessment ? (
+        <section className="relative overflow-hidden rounded-3xl border border-primary-200/80 bg-gradient-to-br from-primary-50/60 via-white to-sky-50/40 p-5 shadow-sm dark:border-primary-900/50 dark:from-primary-950/30 dark:via-[#070b15] dark:to-slate-900">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-md shadow-primary-500/20 dark:bg-primary-500">
+                <Stethoscope className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    {t('diagnosisResult.clinicalAssessmentRecorded', 'Clinical Assessment Recorded')}
+                  </h3>
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 ring-1 ring-emerald-200 dark:ring-emerald-800/60 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    {t('diagnosisResult.savedToPatientChart', 'Saved to Patient Chart · Patient Alerted')}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 sm:text-sm">
+                  {t(
+                    'diagnosisResult.clinicalRecordedDesc',
+                    "This clinical assessment was completed by medical staff and saved directly to the patient's record. The patient has been automatically notified."
+                  )}
+                  {reportTime ? ` · ${formatDateTime(reportTime)}` : ''}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {patientNoteSaved ? (
+            <div className="mt-3.5 rounded-2xl border border-slate-200/80 bg-white/80 p-3.5 dark:border-slate-800 dark:bg-slate-950/60 shadow-xs">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-300">
+                <MessageSquare className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
+                <span>{t('diagnosisResult.patientNoteLabel', 'Notes')}:</span>
+              </p>
+              <p className="mt-1 text-sm text-slate-700 dark:text-slate-300 italic">
+                "{patientNoteSaved}"
+              </p>
+            </div>
+          ) : null}
+        </section>
+      ) : !isSubmittedToCareTeam ? (
         <section className="relative overflow-hidden rounded-3xl border-2 border-primary-200 bg-gradient-to-br from-primary-50/70 via-white to-sky-50/50 p-6 shadow-sm dark:border-primary-900/60 dark:from-primary-950/40 dark:via-[#070b15] dark:to-slate-900">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="flex items-start gap-3.5">
@@ -1473,16 +1521,17 @@ export function DiagnosisResultPage() {
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-base font-bold text-slate-900 dark:text-white sm:text-lg">
-                    {t('diagnosisResult.submitToCareTeamTitle', 'Submit to Care Team')}
+                    {t('diagnosisResult.submitToDoctorTitle', 'Submit to Doctor')}
                   </h3>
-                  <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-800/60">
-                    {t('diagnosisResult.draftStatusBadge', 'Unsaved Draft · Not yet sent')}
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 ring-1 ring-emerald-200 dark:ring-emerald-800/60 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    {t('diagnosisResult.savedInChartBadge', 'Saved in Your Chart · Ready to Send to Doctor')}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 sm:text-sm max-w-2xl leading-relaxed">
                   {t(
-                    'diagnosisResult.submitToCareTeamDesc',
-                    'Save this assessment report to your medical chart and alert your care team for clinical review.'
+                    'diagnosisResult.submitToDoctorDesc',
+                    'This assessment report is saved in your medical chart. You can submit it to your doctor along with any notes or questions for clinical review.'
                   )}
                 </p>
               </div>
@@ -1493,7 +1542,7 @@ export function DiagnosisResultPage() {
             <div>
               <label htmlFor="patient-note-input" className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
                 <MessageSquare className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
-                <span>{t('diagnosisResult.patientNoteLabel', 'Notes or Questions for Care Team (Optional)')}</span>
+                <span>{t('diagnosisResult.patientNoteLabel', 'Notes or Questions for Doctor (Optional)')}</span>
               </label>
               <textarea
                 id="patient-note-input"
@@ -1511,7 +1560,7 @@ export function DiagnosisResultPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-1">
               <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                 <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>{t('diagnosisResult.submitToCareTeamHint', 'Submitting saves this report to your permanent history and alerts clinical staff to review your case.')}</span>
+                <span>{t('diagnosisResult.submitToDoctorHint', 'Submitting alerts clinical staff to review your assessment.')}</span>
               </p>
 
               <button
@@ -1528,7 +1577,7 @@ export function DiagnosisResultPage() {
                 ) : (
                   <>
                     <Send className="h-4 w-4" />
-                    <span>{t('diagnosisResult.submitToCareTeamBtn', 'Submit to Care Team')}</span>
+                    <span>{t('diagnosisResult.submitToDoctorBtn', 'Submit to Doctor')}</span>
                   </>
                 )}
               </button>
@@ -1545,7 +1594,7 @@ export function DiagnosisResultPage() {
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    {t('diagnosisResult.submittedStatusBadge', 'Submitted to Care Team')}
+                    {t('diagnosisResult.submittedToDoctorBadge', 'Submitted to Doctor')}
                   </h3>
                   <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 ring-1 ring-emerald-200 dark:ring-emerald-800/60 flex items-center gap-1">
                     <Clock className="h-3 w-3" />
@@ -1554,8 +1603,8 @@ export function DiagnosisResultPage() {
                 </div>
                 <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 sm:text-sm">
                   {t(
-                    'diagnosisResult.submittedSuccessToast',
-                    'Assessment submitted to care team! Your clinical staff has been alerted.'
+                    'diagnosisResult.submittedToDoctorToast',
+                    'Assessment submitted to your doctor! Your care team has been alerted.'
                   )}
                   {submittedAt ? ` · ${formatDateTime(submittedAt)}` : ''}
                 </p>
