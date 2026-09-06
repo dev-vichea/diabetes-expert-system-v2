@@ -11,9 +11,31 @@
  */
 
 /* ── Field groups (single source of truth, also used by the payload/summary) ── */
-export const SYMPTOM_CORE_FIELDS = ['frequent_urination', 'excessive_thirst', 'excessive_hunger', 'weight_loss']
-export const SYMPTOM_OTHER_FIELDS = ['fatigue', 'blurred_vision', 'slow_healing', 'nausea', 'tingling_hands_feet', 'frequent_infections', 'acanthosis_nigricans', 'irritability', 'recurrent_uti_yeast', 'bed_wetting']
-export const SYMPTOM_ALL_FIELDS = [...SYMPTOM_CORE_FIELDS, ...SYMPTOM_OTHER_FIELDS]
+// 8 CDC Common Symptoms (Primary Questionnaire Card)
+export const SYMPTOM_CORE_FIELDS = [
+  'frequent_urination',
+  'excessive_thirst',
+  'excessive_hunger',
+  'fatigue',
+  'blurred_vision',
+  'tingling_hands_feet',
+  'slow_healing',
+  'weight_loss',
+]
+
+// Secondary / Adaptive Probe Symptoms (Triggered conditionally when a related symptom is chosen)
+export const SYMPTOM_PROBE_FIELDS = [
+  'burning_sensation',
+  'numbness',
+  'recurrent_uti_yeast',
+  'frequent_infections',
+  'itchy_skin',
+  'acanthosis_nigricans',
+  'bed_wetting',
+]
+
+export const SYMPTOM_OTHER_FIELDS = SYMPTOM_PROBE_FIELDS
+export const SYMPTOM_ALL_FIELDS = [...SYMPTOM_CORE_FIELDS, ...SYMPTOM_PROBE_FIELDS]
 export const SAFETY_FIELDS = ['sweating', 'shaking', 'dizziness', 'vomiting', 'abdominal_pain', 'fruity_breath', 'deep_rapid_breathing']
 export const RISK_FIELDS = ['family_history', 'obesity', 'hypertension', 'sedentary_lifestyle', 'gestational_history', 'smoking', 'high_cholesterol', 'pcos_history', 'ethnicity_high_risk']
 
@@ -23,6 +45,7 @@ export const FIELD_GROUPS = {
   fatigue: 'symptoms', blurred_vision: 'symptoms', slow_healing: 'symptoms', nausea: 'symptoms',
   tingling_hands_feet: 'symptoms', frequent_infections: 'symptoms', acanthosis_nigricans: 'symptoms',
   excessive_hunger: 'symptoms', irritability: 'symptoms', recurrent_uti_yeast: 'symptoms', bed_wetting: 'symptoms',
+  burning_sensation: 'symptoms', numbness: 'symptoms', itchy_skin: 'symptoms',
   sweating: 'safetySymptoms', shaking: 'safetySymptoms', dizziness: 'safetySymptoms',
   vomiting: 'safetySymptoms', abdominal_pain: 'safetySymptoms',
   fruity_breath: 'safetySymptoms', deep_rapid_breathing: 'safetySymptoms',
@@ -35,10 +58,12 @@ export const FIELD_GROUPS = {
 export const FIELD_FALLBACKS = {
   frequent_urination: 'Frequent urination', excessive_thirst: 'Excessive thirst', weight_loss: 'Unexplained weight loss',
   fatigue: 'Constant tiredness', blurred_vision: 'Blurred vision', slow_healing: 'Slow wound healing',
-  nausea: 'Nausea', tingling_hands_feet: 'Tingling hands / feet', frequent_infections: 'Frequent infections',
+  nausea: 'Nausea', tingling_hands_feet: 'Tingling / numbness in hands or feet', frequent_infections: 'Frequent infections',
   acanthosis_nigricans: 'Dark skin patches',
   excessive_hunger: 'Feeling very hungry', irritability: 'Irritability / mood changes',
   recurrent_uti_yeast: 'Recurring UTIs / yeast infections', bed_wetting: 'New bed-wetting (children)',
+  burning_sensation: 'Burning sensation in feet or legs', numbness: 'Numbness or loss of feeling',
+  itchy_skin: 'Persistent dry or itchy skin',
   sweating: 'Sweating episodes', shaking: 'Shaking / tremor', dizziness: 'Dizziness',
   vomiting: 'Vomiting', abdominal_pain: 'Stomach pain',
   fruity_breath: 'Fruity / acetone breath', deep_rapid_breathing: 'Deep, rapid breathing',
@@ -183,7 +208,9 @@ export function hasEmergencySigns(form) {
    choice deleted itself mid-question. */
 export const PROBE_CLAIMED_FIELDS = {
   child_probe: ['bed_wetting'],
-  t2_probe: ['acanthosis_nigricans', 'slow_healing', 'tingling_hands_feet', 'frequent_infections'],
+  t2_probe: ['acanthosis_nigricans'],
+  nerve_probe: ['burning_sensation', 'numbness'],
+  skin_probe: ['recurrent_uti_yeast', 'frequent_infections', 'itchy_skin'],
 }
 
 /* ctx = { form, doneIds, skippedIds } — doneIds/skippedIds are the settled node ids */
@@ -332,8 +359,7 @@ export const INTERVIEW_NODES = [
     },
   },
   {
-    /* Type 1 in children: the single strongest signal — asked the moment the
-       patient is young with classic symptoms. */
+    /* Type 1 in children: Asked if patient is pediatric (<18) and reported symptoms */
     id: 'child_probe',
     kind: 'yesno',
     field: 'bed_wetting',
@@ -351,45 +377,46 @@ export const INTERVIEW_NODES = [
     },
   },
   {
-    /* Slow build-up → the insulin-resistance (type 2) probe is the most
-       discriminating next question. */
+    /* Nerve follow-up: Asked only when patient noted tingling / numbness in hands or feet */
+    id: 'nerve_probe',
+    kind: 'multi',
+    fields: ['burning_sensation', 'numbness'],
+    icon: 'Activity',
+    priority: () => 14,
+    titleKey: 'assessment.interview.nerveProbeTitle',
+    titleFallback: 'Follow-up: Nerve sensations',
+    helperKey: 'assessment.interview.nerveProbeHelper',
+    helperFallback: 'Because you noted numbness or tingling in your hands or feet, do you also experience either of these?',
+    applies: (ctx) => Boolean(ctx?.form?.tingling_hands_feet),
+  },
+  {
+    /* Skin & infection follow-up: Asked only when patient noted slow-healing sores */
+    id: 'skin_probe',
+    kind: 'multi',
+    fields: ['recurrent_uti_yeast', 'frequent_infections', 'itchy_skin'],
+    icon: 'ShieldAlert',
+    priority: () => 14,
+    titleKey: 'assessment.interview.skinProbeTitle',
+    titleFallback: 'Follow-up: Infections & skin changes',
+    helperKey: 'assessment.interview.skinProbeHelper',
+    helperFallback: 'High blood sugar slows healing and weakens defense against infections. Have you experienced any of these?',
+    applies: (ctx) => Boolean(ctx?.form?.slow_healing),
+  },
+  {
+    /* Insulin resistance probe: Asked when slow build-up or overweight/obesity */
     id: 't2_probe',
     kind: 'multi',
-    fields: ['acanthosis_nigricans', 'slow_healing', 'tingling_hands_feet', 'frequent_infections'],
+    fields: ['acanthosis_nigricans'],
     icon: 'Contrast',
     priority: () => 14,
     titleKey: 'assessment.interview.t2ProbeTitle',
-    titleFallback: 'Any of these insulin-resistance signs?',
+    titleFallback: 'Any dark skin patches?',
     helperKey: 'assessment.interview.t2ProbeHelper',
-    helperFallback: 'With a slow build-up, these signs strongly point to the type 2 pattern.',
+    helperFallback: 'Dark, velvety patches of skin (e.g. around neck folds or armpits) strongly suggest insulin resistance.',
     applies: (ctx) => {
       const form = ctx?.form || {}
-      const core = ctx?.fieldGroups?.symptoms_core || SYMPTOM_CORE_FIELDS
-      return form.rapid_onset === false && core.some((key) => Boolean(form[key]))
+      return form.rapid_onset === false || Number(form.bmi) >= 25 || Boolean(form.obesity)
     },
-  },
-  {
-    id: 'symptoms_other',
-    kind: 'multi',
-    /* Shrink: fields already settled by a probe (answered or skipped) are
-       hidden so nothing is asked twice. MUST NOT depend on form values —
-       a value-based check made every tapped choice vanish mid-question. */
-    fields: (ctx) => {
-      const claimed = claimedProbeFields(ctx)
-      const list = ctx?.fieldGroups?.symptoms_other || SYMPTOM_OTHER_FIELDS
-      return list.filter((key) => !claimed.includes(key))
-    },
-    applies: (ctx) => {
-      const claimed = claimedProbeFields(ctx)
-      const list = ctx?.fieldGroups?.symptoms_other || SYMPTOM_OTHER_FIELDS
-      return list.some((key) => !claimed.includes(key))
-    },
-    icon: 'Stethoscope',
-    priority: () => 17,
-    titleKey: 'assessment.interview.otherSymptomsTitle',
-    titleFallback: 'Any of these as well?',
-    helperKey: 'assessment.interview.otherSymptomsHelper',
-    helperFallback: 'Select all that apply — or tap "None of these".',
   },
   {
     id: 'warning_signs',
@@ -536,24 +563,40 @@ export function buildFactsFromAnswers(answers) {
  * Preserves built-in static defaults as offline/instant fallback and appends
  * any new active facts from the database catalog.
  */
+const EXCLUDED_FACT_KEYS = new Set([
+  'crisis',
+  'rapid_breathing',
+  'polyuria',
+  'polydipsia',
+  'polyphagia',
+  'unexplained_weight_loss',
+  'extreme_fatigue',
+  'slow_healing_wounds',
+  'difficulty_seeing',
+  'confusion',
+  'unable_to_keep_fluids',
+])
+
 export function buildFieldGroupsFromFacts(facts = []) {
   const core = [...SYMPTOM_CORE_FIELDS]
   const warning = [...SAFETY_FIELDS]
   const risk = [...RISK_FIELDS]
-  const other = [...SYMPTOM_OTHER_FIELDS]
+  const probes = [...SYMPTOM_PROBE_FIELDS]
 
   if (!Array.isArray(facts) || facts.length === 0) {
     return {
       symptoms_core: core,
       warning_signs: warning,
       risk_factors: risk,
-      symptoms_other: other,
+      symptoms_probes: probes,
+      symptoms_other: probes,
     }
   }
 
   for (const fact of facts) {
     if (!fact || !fact.key || fact.is_active === false) continue
     const key = fact.key
+    if (EXCLUDED_FACT_KEYS.has(key)) continue
     const cat = String(fact.category || '').toLowerCase()
 
     // Profile and lab facts are handled by dedicated question cards (age, sex, body, labs)
@@ -567,8 +610,8 @@ export function buildFieldGroupsFromFacts(facts = []) {
       if (!risk.includes(key)) risk.push(key)
     } else {
       // General symptoms & doctor custom facts
-      if (!other.includes(key) && !core.includes(key) && !warning.includes(key) && !risk.includes(key)) {
-        other.push(key)
+      if (!core.includes(key) && !warning.includes(key) && !risk.includes(key) && !probes.includes(key)) {
+        probes.push(key)
       }
     }
   }
@@ -577,7 +620,8 @@ export function buildFieldGroupsFromFacts(facts = []) {
     symptoms_core: core,
     warning_signs: warning,
     risk_factors: risk,
-    symptoms_other: other,
+    symptoms_probes: probes,
+    symptoms_other: probes,
   }
 }
 

@@ -83,6 +83,13 @@ BOOLEAN_FACT_KEYS = {
     "type1_pattern_evidence",
     "type2_pattern_evidence",
     "mixed_type_features",
+    "burning_sensation",
+    "numbness",
+    "itchy_skin",
+    "weakness",
+    "difficulty_seeing",
+    "difficulty_concentrating",
+    "yeast_infections",
 }
 
 LAB_FACT_ALIASES = {

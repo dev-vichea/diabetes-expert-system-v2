@@ -35,9 +35,40 @@ def calculate_symptom_confidence(symptoms: dict, age: int = None, risk_factors: 
         except (ValueError, TypeError):
             age = None
     
-    # Base confidence from symptoms
-    symptom_score = calculate_symptom_score(present_symptoms)
-    
+    # Distinct diabetes symptoms
+    DIABETES_SPECIFIC_SYMPTOMS = {
+        "frequent_urination", "polyuria",
+        "excessive_thirst", "polydipsia",
+        "excessive_hunger", "polyphagia", "increased_appetite",
+        "weight_loss", "unexplained_weight_loss",
+        "fatigue", "extreme_fatigue", "weakness",
+        "blurred_vision", "difficulty_seeing",
+        "tingling_hands_feet", "burning_sensation", "numbness",
+        "slow_healing", "slow_healing_wounds",
+        "acanthosis_nigricans", "frequent_infections", "recurrent_uti_yeast", "itchy_skin",
+        "bed_wetting"
+    }
+
+    distinct_diabetes_syms = set()
+    for s in present_symptoms:
+        if s in DIABETES_SPECIFIC_SYMPTOMS:
+            canonical = s
+            if s == "polyuria": canonical = "frequent_urination"
+            elif s == "polydipsia": canonical = "excessive_thirst"
+            elif s in ("polyphagia", "increased_appetite"): canonical = "excessive_hunger"
+            elif s == "unexplained_weight_loss": canonical = "weight_loss"
+            elif s == "extreme_fatigue": canonical = "fatigue"
+            elif s == "slow_healing_wounds": canonical = "slow_healing"
+            distinct_diabetes_syms.add(canonical)
+
+    d_count = len(distinct_diabetes_syms)
+
+    categories = set()
+    for s in present_symptoms:
+        info = get_symptom_info(s)
+        if info and info.get("category"):
+            categories.add(info["category"])
+
     # Cardinal symptoms boost (3 Ps)
     cardinal_sets = [
         {"frequent_urination", "polyuria"},
@@ -45,43 +76,61 @@ def calculate_symptom_confidence(symptoms: dict, age: int = None, risk_factors: 
         {"excessive_hunger", "polyphagia", "increased_appetite"},
     ]
     cardinal_count = sum(1 for cset in cardinal_sets if any(s in present_symptoms for s in cset))
-    cardinal_boost = cardinal_count * 0.15  # 15% per cardinal symptom
-    
-    # Emergency symptoms boost
-    emergency_set = set(get_emergency_symptoms()) | {"fruity_breath", "rapid_breathing", "deep_rapid_breathing"}
-    emergency_count = sum(1 for s in present_symptoms if s in emergency_set)
-    emergency_boost = min(emergency_count * 0.10, 0.30)  # Cap at 30%
-    
-    # Risk factors boost (up to 20%)
-    risk_boost = min(len(present_risks) * 0.05, 0.20)
-    
-    # Age factor (higher age = higher T2D risk)
+
+    # Base confidence and cluster calibration
+    if d_count == 0:
+        base_confidence = 0.15 if present_symptoms else 0.05
+        cardinal_boost = 0.0
+        category_diversity = 0.0
+    elif d_count == 1:
+        # A single symptom alone is a screening signal, not a definitive cluster
+        base_confidence = 0.28 if cardinal_count >= 1 else 0.22
+        cardinal_boost = 0.0
+        category_diversity = 0.0
+    elif d_count == 2:
+        # 2 symptoms: e.g. frequent urination + excessive thirst
+        base_confidence = 0.45
+        cardinal_boost = 0.12 if cardinal_count >= 2 else (0.05 if cardinal_count == 1 else 0.0)
+        category_diversity = 0.0
+    elif d_count == 3:
+        # 3 symptoms: classic triad or multiple hallmarks
+        base_confidence = 0.62
+        cardinal_boost = 0.15 if cardinal_count >= 2 else 0.08
+        category_diversity = 0.04
+    else:
+        # 4+ symptoms: strong multi-symptom alignment allows high scores (85% - 94%)
+        base_confidence = 0.72 + min((d_count - 4) * 0.04, 0.12)
+        cardinal_boost = 0.18 if cardinal_count >= 2 else 0.10
+        category_diversity = 0.06
+
+    # Risk factors boost
+    risk_boost = min(len(present_risks) * 0.03, 0.08)
+
+    # Age factor
     age_boost = 0.0
     if age:
         if age >= 60:
-            age_boost = 0.10
-        elif age >= 45:
-            age_boost = 0.08
-        elif age >= 40:
             age_boost = 0.05
-        elif age < 18:  # Children with symptoms = higher concern
-            age_boost = 0.10
-    
-    # Multiple symptom categories boost
-    categories = set()
-    for s in present_symptoms:
-        info = get_symptom_info(s)
-        if info:
-            categories.add(info["category"])
-    category_diversity = min(len(categories) * 0.05, 0.15)
-    
+        elif age >= 45:
+            age_boost = 0.03
+        elif age < 18 and cardinal_count >= 1:
+            age_boost = 0.05
+
+    # Acute emergency symptoms (ketosis/DKA)
+    emergency_set = {"fruity_breath", "deep_rapid_breathing", "vomiting", "abdominal_pain"}
+    emergency_count = sum(1 for s in present_symptoms if s in emergency_set)
+    emergency_boost = min(emergency_count * 0.04, 0.08) if d_count >= 1 else 0.0
+
     # Calculate total confidence
-    base_confidence = symptom_score
-    total_confidence = min(
-        base_confidence + cardinal_boost + emergency_boost + 
-        risk_boost + age_boost + category_diversity,
-        0.95  # Cap at 95% for symptom-only
+    total_confidence = (
+        base_confidence + cardinal_boost + category_diversity +
+        risk_boost + age_boost + emergency_boost
     )
+    if d_count <= 1:
+        total_confidence = min(total_confidence, 0.38)
+    else:
+        total_confidence = min(total_confidence, 0.95)
+    total_confidence = round(total_confidence, 2)
     
     # Determine confidence level
     if total_confidence >= 0.75:

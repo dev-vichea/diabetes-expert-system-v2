@@ -665,8 +665,8 @@ export function DiagnosisPage() {
     setForm(f); setQcm(q); setExtraLabs([]); setStep(1); setMaxReached(1); setResult(null)
     if (!needsPatient) setSubjectMode('self')
     setInterviewDone(!needsPatient
-      ? ['subject', 'age', 'sex', 'symptoms_core', 'symptoms_other', 'warning_signs', 'risk_factors', 'body', 'has_labs', 'labs']
-      : ['patient', 'age', 'sex', 'symptoms_core', 'symptoms_other', 'warning_signs', 'risk_factors', 'body', 'has_labs', 'labs'])
+      ? ['subject', 'age', 'sex', 'symptoms_core', 'warning_signs', 'risk_factors', 'body', 'has_labs', 'labs']
+      : ['patient', 'age', 'sex', 'symptoms_core', 'warning_signs', 'risk_factors', 'body', 'has_labs', 'labs'])
     setInterviewSkipped([]); setCursorOverride(null); setInterviewTrail([])
   }
 

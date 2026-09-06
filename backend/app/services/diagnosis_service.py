@@ -230,7 +230,7 @@ class DiagnosisService:
             result.explanation_trace_json = trace
 
             if result.assessment_session:
-                result.assessment_session.status = "submitted_to_care_team"
+                result.assessment_session.status = "submitted"
                 result.assessment_session.submitted_at = utc_now()
 
             db.session.commit()
@@ -1067,7 +1067,8 @@ class DiagnosisService:
                 "unexplained_weight_loss", "fatigue", "blurred_vision", "slow_healing", "nausea",
                 "vomiting", "abdominal_pain", "sweating", "shaking", "dizziness",
                 "tingling_hands_feet", "frequent_infections", "acanthosis_nigricans", "irritability",
-                "recurrent_uti_yeast", "bed_wetting", "fruity_breath", "deep_rapid_breathing"
+                "recurrent_uti_yeast", "bed_wetting", "fruity_breath", "deep_rapid_breathing",
+                "burning_sensation", "numbness", "itchy_skin", "weakness", "difficulty_seeing"
             ] if normalized_payload.get(key) is True
         }
         risk_dict = {
@@ -1092,12 +1093,14 @@ class DiagnosisService:
             current_certainty = symptom_score
             enriched["certainty"] = round(current_certainty, 2)
             if enriched.get("diagnosis") in (None, "", "No strong diabetes indication", "Insufficient evidence for diabetes indication"):
-                if current_certainty >= 0.60:
+                if current_certainty >= 0.70:
                     enriched["diagnosis"] = "Suspected Diabetes (Classic Symptoms)"
-                elif current_certainty >= 0.40:
+                elif current_certainty >= 0.45:
                     enriched["diagnosis"] = "Possible Early Signs of Diabetes"
                 elif current_certainty >= 0.25:
                     enriched["diagnosis"] = "Elevated Diabetes Risk — Screening Recommended"
+                else:
+                    enriched["diagnosis"] = "Routine Diabetes Screening Recommended"
 
         return self._apply_presentation_fields(enriched, normalized_payload)
 
@@ -1747,10 +1750,21 @@ class DiagnosisService:
             seen.add(key)
             labels.append(text)
 
-        if normalized_payload.get("frequent_urination"):
-            add_label("frequent_urination")
-        if normalized_payload.get("excessive_thirst"):
-            add_label("excessive_thirst")
+        for sym_key in (
+            "frequent_urination", "polyuria",
+            "excessive_thirst", "polydipsia",
+            "excessive_hunger", "polyphagia", "increased_appetite",
+            "weight_loss", "unexplained_weight_loss",
+            "fatigue", "extreme_fatigue", "weakness",
+            "blurred_vision", "difficulty_seeing",
+            "tingling_hands_feet", "burning_sensation", "numbness",
+            "slow_healing", "slow_healing_wounds",
+            "acanthosis_nigricans",
+            "frequent_infections", "recurrent_uti_yeast",
+            "itchy_skin", "bed_wetting"
+        ):
+            if normalized_payload.get(sym_key):
+                add_label(sym_key)
 
         symptoms = normalized_payload.get("symptoms")
         if isinstance(symptoms, dict):

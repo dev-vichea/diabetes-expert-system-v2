@@ -12,13 +12,15 @@ import { FIELD_FALLBACKS, camelField, fieldLabelKey, getFactLabel, nodeFields } 
 
 const NODE_ICONS = {
   Building2, UserRound, Baby, CalendarHeart, Droplets, Stethoscope, AlertTriangle,
-  ClipboardList, Scale, TestTube2, FlaskConical, PenTool, Timer, Users,
+  ClipboardList, Scale, TestTube2, FlaskConical, PenTool, Timer, Users, Activity, Contrast,
 }
 
 const FIELD_ICONS = {
   frequent_urination: Droplets, excessive_thirst: GlassWater, weight_loss: TrendingDown,
   fatigue: BatteryLow, blurred_vision: Eye, slow_healing: Bandage, nausea: Waves,
-  tingling_hands_feet: Hand, frequent_infections: Bug, acanthosis_nigricans: Contrast,
+  tingling_hands_feet: Hand, burning_sensation: Activity, numbness: Hand,
+  frequent_infections: Bug, recurrent_uti_yeast: Bug, itchy_skin: Bandage,
+  acanthosis_nigricans: Contrast, bed_wetting: Baby,
   sweating: Droplet, shaking: Vibrate, dizziness: RefreshCw, vomiting: Soup, abdominal_pain: HeartCrack,
   family_history: Users, obesity: Weight, hypertension: HeartPulse, sedentary_lifestyle: Armchair,
   gestational_history: Baby, smoking: Cigarette, high_cholesterol: Egg, pcos_history: Flower2,

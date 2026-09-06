@@ -1331,6 +1331,10 @@
       "insightHypoText": "Shakiness, sweating or dizziness can mean low blood sugar. If you have a glucose meter, a reading taken now would be valuable evidence.",
       "childProbeTitle": "Any new bed-wetting at night?",
       "childProbeHelper": "In children, new bed-wetting with extra thirst or urination is the strongest type 1 signal.",
+      "nerveProbeTitle": "Follow-up: Nerve sensations",
+      "nerveProbeHelper": "Because you noted numbness or tingling, do you experience any of these in your hands, feet, or legs?",
+      "skinProbeTitle": "Follow-up: Infections & skin changes",
+      "skinProbeHelper": "High blood sugar weakens infection resistance and delays wound repair. Have you noticed any of these?",
       "t2ProbeTitle": "Any of these insulin-resistance signs?",
       "t2ProbeHelper": "With a slow build-up, these signs strongly point to the type 2 pattern.",
       "insightShortcutTitle": "Skipping the lab questions — here is why",
@@ -1384,7 +1388,10 @@
         "excessiveHunger": "Feeling very hungry",
         "irritability": "Irritability / mood changes",
         "recurrentUtiYeast": "Recurring UTIs / yeast infections",
-        "bedWetting": "New bed-wetting (children)"
+        "bedWetting": "New bed-wetting (children)",
+        "burningSensation": "Burning sensation in feet or legs",
+        "numbness": "Numbness or loss of feeling",
+        "itchySkin": "Persistent dry or itchy skin"
       },
       "safetySymptoms": {
         "sweating": "Sweating episodes",
