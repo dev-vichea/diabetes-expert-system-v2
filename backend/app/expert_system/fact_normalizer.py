@@ -22,6 +22,16 @@ NUMERIC_FACT_KEYS = {
     "height",
     "height_cm",
     "height_m",
+    "ada_risk_score",
+    "nocturia_count",
+    "water_intake_liters",
+    "fatigue_severity_scale",
+    "unexplained_weight_loss_kg",
+    "systolic_bp",
+    "diastolic_bp",
+    "physical_activity_minutes_week",
+    "sleep_hours_night",
+    "alcohol_drinks_week",
 }
 
 BOOLEAN_FACT_KEYS = {
@@ -90,6 +100,25 @@ BOOLEAN_FACT_KEYS = {
     "difficulty_seeing",
     "difficulty_concentrating",
     "yeast_infections",
+    # ── New clinical dimensions ──
+    "nocturia",
+    "unquenchable_thirst",
+    "severe_fatigue",
+    "dyslipidemia_low_hdl",
+    "dyslipidemia_high_tg",
+    "cardiovascular_disease",
+    "macrosomia_history",
+    "physical_inactivity",
+    "sugary_diet",
+    "sleep_deprivation_apnea",
+    "sleep_apnea_history",
+    "alcohol_frequent",
+    "urine_ketones",
+    "high_ada_risk",
+    "metabolic_syndrome",
+    "asian_bmi_threshold_met",
+    "central_obesity",
+    "is_overweight",
 }
 
 LAB_FACT_ALIASES = {
@@ -160,6 +189,11 @@ def normalize_input_facts(payload: dict, set_fact: SetFactCallback) -> None:
             value = coerce_optional_bool(raw_value)
             if value is not None:
                 _set_with_aliases(key, value, f"payload.{key}", set_fact)
+        elif key in {"ethnicity", "sex", "sugary_diet_frequency", "pregnancy_stage"}:
+            if raw_value is not None:
+                text_val = str(raw_value).strip().lower()
+                if text_val:
+                    _set_with_aliases(key, text_val, f"payload.{key}", set_fact)
 
     _load_symptom_facts(payload.get("symptoms"), set_fact)
     _load_lab_facts(payload.get("labs") or payload.get("lab_results"), set_fact)
@@ -169,11 +203,17 @@ def normalize_input_facts(payload: dict, set_fact: SetFactCallback) -> None:
 def derive_facts(facts: dict, set_fact: SetFactCallback) -> None:
     _derive_unified_glucose(facts, set_fact)
     _derive_bmi_and_obesity(facts, set_fact)
+    _derive_ethnicity_and_central_obesity(facts, set_fact)
     _derive_obesity_from_risk_factor(facts, set_fact)
+    _derive_cardiovascular_and_blood_pressure(facts, set_fact)
+    _derive_quantified_symptoms(facts, set_fact)
     _derive_classic_hyperglycemia_symptoms(facts, set_fact)
     _derive_hyperglycemia_presence(facts, set_fact)
     _derive_hypoglycemia_presence(facts, set_fact)
+    _derive_lifestyle_drivers(facts, set_fact)
     _derive_type2_risk_pattern(facts, set_fact)
+    _derive_ada_risk_score(facts, set_fact)
+    _derive_metabolic_syndrome(facts, set_fact)
     _derive_lab_availability(facts, set_fact)
     _derive_neuropathy_cluster(facts, set_fact)
     _derive_compound_risk_patterns(facts, set_fact)
@@ -523,6 +563,165 @@ def _derive_type_discrimination_patterns(facts: dict, set_fact: SetFactCallback)
         or _first_true(facts, "hyperglycemia_present", "unequivocal_hyperglycemia_or_crisis")
     ):
         set_fact("diabetes_evidence_base", True, "derived.diabetes_evidence_base")
+
+
+def _derive_ethnicity_and_central_obesity(facts: dict, set_fact: SetFactCallback) -> None:
+    ethnicity = str(facts.get("ethnicity") or "").strip().lower()
+    if ethnicity in {"asian", "south_asian", "east_asian", "southeast_asian", "black", "african_american", "hispanic", "latino", "indigenous", "pacific_islander"}:
+        set_fact("ethnicity_high_risk", True, "derived.ethnicity_high_risk")
+
+    bmi = _first_float(facts, "bmi")
+    is_asian = ethnicity in {"asian", "south_asian", "east_asian", "southeast_asian"} or ("asian" in ethnicity and "caucasian" not in ethnicity)
+    if is_asian and bmi is not None:
+        if bmi >= 23.0:
+            set_fact("asian_bmi_threshold_met", True, "derived.asian_bmi_threshold_met")
+            set_fact("is_overweight", True, "derived.asian_is_overweight")
+            set_fact("overweight", True, "derived.asian_overweight")
+        if bmi >= 27.5:
+            set_fact("is_obese", True, "derived.asian_is_obese")
+            set_fact("obesity", True, "derived.asian_obesity")
+
+    waist = _first_float(facts, "waist_circumference")
+    if waist is not None:
+        sex = str(facts.get("sex") or "").strip().lower()
+        if sex == "male":
+            cutoff = 90.0 if is_asian else 102.0
+        else:
+            cutoff = 80.0 if is_asian else 88.0
+        if waist >= cutoff:
+            set_fact("central_obesity", True, "derived.central_obesity")
+            set_fact("obesity", True, "derived.central_obesity_flag")
+
+
+def _derive_cardiovascular_and_blood_pressure(facts: dict, set_fact: SetFactCallback) -> None:
+    systolic = _first_float(facts, "systolic_bp")
+    diastolic = _first_float(facts, "diastolic_bp")
+    if (systolic is not None and systolic >= 130) or (diastolic is not None and diastolic >= 80):
+        set_fact("hypertension", True, "derived.hypertension_from_bp")
+
+    if _first_true(facts, "cardiovascular_disease", "heart_attack", "stroke"):
+        set_fact("cardiovascular_disease", True, "derived.cardiovascular_disease")
+
+
+def _derive_quantified_symptoms(facts: dict, set_fact: SetFactCallback) -> None:
+    nocturia_count = _first_float(facts, "nocturia_count")
+    if nocturia_count is not None and nocturia_count >= 2:
+        set_fact("nocturia", True, "derived.nocturia_count")
+        set_fact("frequent_urination", True, "derived.frequent_urination_from_nocturia")
+        set_fact("polyuria", True, "derived.polyuria_from_nocturia")
+
+    water_liters = _first_float(facts, "water_intake_liters")
+    if water_liters is not None and water_liters >= 3.0:
+        set_fact("unquenchable_thirst", True, "derived.water_intake_liters")
+        set_fact("excessive_thirst", True, "derived.excessive_thirst_from_liters")
+        set_fact("polydipsia", True, "derived.polydipsia_from_liters")
+
+    fatigue_scale = _first_float(facts, "fatigue_severity_scale")
+    if fatigue_scale is not None and fatigue_scale >= 7.0:
+        set_fact("severe_fatigue", True, "derived.fatigue_severity_scale")
+        set_fact("fatigue", True, "derived.fatigue_from_scale")
+
+    loss_kg = _first_float(facts, "unexplained_weight_loss_kg")
+    if loss_kg is not None and loss_kg >= 3.0:
+        set_fact("unexplained_weight_loss", True, "derived.unexplained_weight_loss_kg")
+        set_fact("weight_loss", True, "derived.weight_loss_from_kg")
+
+
+def _derive_lifestyle_drivers(facts: dict, set_fact: SetFactCallback) -> None:
+    activity_mins = _first_float(facts, "physical_activity_minutes_week")
+    if activity_mins is not None and activity_mins < 150:
+        set_fact("physical_inactivity", True, "derived.physical_activity_minutes_week")
+        set_fact("sedentary_lifestyle", True, "derived.sedentary_from_minutes")
+        set_fact("physical_activity_low", True, "derived.low_activity_from_minutes")
+
+    sleep_hours = _first_float(facts, "sleep_hours_night")
+    has_apnea = _as_bool(facts.get("sleep_apnea_history"))
+    if (sleep_hours is not None and sleep_hours < 6.0) or has_apnea:
+        set_fact("sleep_deprivation_apnea", True, "derived.sleep_deprivation_apnea")
+
+    sugary_freq = str(facts.get("sugary_diet_frequency") or "").strip().lower()
+    if sugary_freq in {"daily", "frequently", "often", "3_5_times"} or _as_bool(facts.get("sugary_diet")):
+        set_fact("sugary_diet", True, "derived.sugary_diet")
+
+    alcohol_drinks = _first_float(facts, "alcohol_drinks_week")
+    if alcohol_drinks is not None:
+        sex = str(facts.get("sex") or "").strip().lower()
+        threshold = 14.0 if sex == "male" else 7.0
+        if alcohol_drinks > threshold:
+            set_fact("alcohol_frequent", True, "derived.alcohol_drinks_week")
+
+
+def _derive_metabolic_syndrome(facts: dict, set_fact: SetFactCallback) -> None:
+    crit_count = 0
+    if _first_true(facts, "central_obesity", "obesity", "is_obese"):
+        crit_count += 1
+    if _first_true(facts, "hypertension"):
+        crit_count += 1
+    if _first_true(facts, "dyslipidemia_high_tg"):
+        crit_count += 1
+    if _first_true(facts, "dyslipidemia_low_hdl"):
+        crit_count += 1
+    fasting = _first_float(facts, "fasting_glucose", "fasting_plasma_glucose")
+    if (fasting is not None and fasting >= 100) or _first_true(facts, "hyperglycemia_present"):
+        crit_count += 1
+
+    if crit_count >= 3:
+        set_fact("metabolic_syndrome", True, "derived.metabolic_syndrome")
+        set_fact("type2_risk_increased", True, "derived.type2_risk_from_metabolic_syndrome")
+
+
+def _derive_ada_risk_score(facts: dict, set_fact: SetFactCallback) -> None:
+    score = 0
+    age = _first_float(facts, "age")
+    if age is not None:
+        if age >= 60:
+            score += 3
+        elif age >= 50:
+            score += 2
+        elif age >= 40:
+            score += 1
+
+    sex = str(facts.get("sex") or "").strip().lower()
+    if sex == "male":
+        score += 1
+
+    if sex == "female" and _first_true(facts, "gestational_history", "macrosomia_history"):
+        score += 1
+
+    if _first_true(facts, "family_history", "family_history_diabetes", "risk_family_history_diabetes"):
+        score += 1
+
+    if _first_true(facts, "hypertension"):
+        score += 1
+
+    if _first_true(facts, "physical_inactivity", "sedentary_lifestyle", "physical_activity_low"):
+        score += 1
+
+    bmi = _first_float(facts, "bmi")
+    ethnicity = str(facts.get("ethnicity") or "").strip().lower()
+    is_asian = ethnicity in {"asian", "south_asian", "east_asian", "southeast_asian"} or ("asian" in ethnicity and "caucasian" not in ethnicity)
+    if bmi is not None:
+        if is_asian:
+            if bmi >= 32.5:
+                score += 3
+            elif bmi >= 27.5:
+                score += 2
+            elif bmi >= 23.0:
+                score += 1
+        else:
+            if bmi >= 40.0:
+                score += 3
+            elif bmi >= 30.0:
+                score += 2
+            elif bmi >= 25.0:
+                score += 1
+    elif _first_true(facts, "obesity", "is_obese", "central_obesity"):
+        score += 2
+
+    set_fact("ada_risk_score", float(score), "derived.ada_risk_score")
+    if score >= 5:
+        set_fact("high_ada_risk", True, "derived.high_ada_risk")
+        set_fact("type2_risk_increased", True, "derived.type2_risk_from_ada_score")
 
 
 def _set_with_aliases(name: str, value: Any, source: str, set_fact: SetFactCallback) -> None:

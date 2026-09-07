@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   Clock,
   MessageSquare,
+  HelpCircle,
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
@@ -271,7 +272,7 @@ function getPrimaryHeadline(result, percent, t, tExact) {
 
   if (percent >= 70) return translateKey('highSignal', 'High Diabetes Signal')
   if (percent >= 45) return translateKey('moderateSignal', 'Moderate Diabetes Signal Detected')
-  if (percent <= 20) return translateKey('lowRisk', 'Low Diabetes Risk Indicated')
+  if (percent <= 20) return translateKey('lowRisk', 'Low Risk of Diabetes')
 
   return result?.diagnosis ? (tExact ? tExact(result.diagnosis) : result.diagnosis) : translateKey('complete', 'Diabetes Assessment Complete')
 }
@@ -643,6 +644,7 @@ export function DiagnosisResultPage() {
 
   const matchedSymptoms = Array.isArray(result?.matched_symptoms) ? result.matched_symptoms : []
   const matchedRiskFactors = Array.isArray(result?.matched_risk_factors) ? result.matched_risk_factors : []
+  const differentialItems = Array.isArray(result?.differential_diagnoses) ? result.differential_diagnoses : []
   const resolveGuide = (label, localeGuide) => {
     const dbGuide = factEducationByLabel[String(label || '').trim().toLowerCase()]
     if (!dbGuide) {
@@ -1325,6 +1327,72 @@ export function DiagnosisResultPage() {
             )}
           </SurfaceSection>
         </article>
+
+        {/* ── Differential Considerations: Non-diabetic alternative causes ── */}
+        {(differentialItems.length > 0 || (matchedSymptoms.length > 0 && certaintyPercent < 60)) && (
+          <article>
+            <SurfaceSection
+              title={t('diagnosisResult.differentials.title', 'Alternative Explanations to Consider')}
+              icon={HelpCircle}
+            >
+              <div className="space-y-4">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                  {t(
+                    'diagnosisResult.differentials.subtitle',
+                    'Your reported symptoms can also be caused by non-diabetic conditions. If blood glucose is normal, consider discussing these possibilities with a doctor:'
+                  )}
+                </p>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {(differentialItems.length > 0
+                    ? differentialItems
+                    : [
+                        {
+                          key: 'uti_hydration',
+                          title: t('diagnosisResult.differentials.utiTitle', 'Urinary Tract Infection (UTI) or High Fluid Intake'),
+                          title_km: 'ការរលាកផ្លូវបង្ហូរនោម (UTI) ឬការញ៉ាំទឹកច្រើន',
+                          description: t('diagnosisResult.differentials.utiDesc', 'Frequent urination without high blood glucose is commonly caused by drinking high amounts of fluids/caffeine, mild urinary infections, or benign prostate changes.'),
+                          description_km: 'ការនោមញឹកញាប់ដោយគ្មានជាតិស្ករឡើងខ្ពស់ ច្រើនតែកើតពីការផឹកទឹក/កាហ្វេច្រើន ការរលាកផ្លូវទឹកនោមស្រាល ឬការប្រែប្រួលក្រពេញប្រូស្តាត។',
+                        },
+                        {
+                          key: 'anemia_sleep',
+                          title: t('diagnosisResult.differentials.anemiaTitle', 'Sleep Deprivation, Anemia, or Stress'),
+                          title_km: 'ការគេងមិនគ្រប់គ្រាន់ ខ្វះគ្រាប់ឈាម ឬសម្ពាធអារម្មណ៍',
+                          description: t('diagnosisResult.differentials.anemiaDesc', 'Fatigue is one of the most common non-specific symptoms. Poor sleep quality, stress, low iron levels, or thyroid imbalances are frequent causes.'),
+                          description_km: 'ភាពអស់កម្លាំងជារោគសញ្ញាទូទៅបំផុត។ ការគេងមិនបានស្កប់ស្កល់ ភាពតានតឹង កង្វះជាតិដែក ឬអ័រម៉ូនទីរ៉ូអ៊ីត គឺជាមូលហេតុញឹកញាប់។',
+                        },
+                      ]
+                  ).map((diff) => (
+                    <div
+                      key={diff.key || diff.title}
+                      className="rounded-2xl border border-amber-200/60 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                          {isKhmer ? (diff.title_km || diff.title) : diff.title}
+                        </h4>
+                      </div>
+                      <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                        {isKhmer ? (diff.description_km || diff.description) : diff.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-xl bg-slate-100 p-3 text-xs text-slate-600 dark:bg-slate-900/60 dark:text-slate-400 flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-primary-500 shrink-0" />
+                  <span>
+                    {t(
+                      'diagnosisResult.differentials.doctorAdvice',
+                      'A standard fasting blood glucose test (FPG) or HbA1c easily confirms or rules out diabetes.'
+                    )}
+                  </span>
+                </div>
+              </div>
+            </SurfaceSection>
+          </article>
+        )}
 
         <article>
           <SurfaceSection title={t('diagnosisResult.riskFactors', 'Risk Factors')} icon={Zap}>

@@ -54,29 +54,40 @@ const REVIEW_STEP = 2
 
 const DEFAULT_FORM = {
   patient_id: '',
-  age: '', bmi: '', waist_circumference: '',
+  age: '', bmi: '', waist_circumference: '', ethnicity: '',
   fasting_glucose: '', hba1c: '', random_plasma_glucose: '', ogtt_2h: '',
   no_labs_available: false,
-  frequent_urination: false, excessive_thirst: false, fatigue: false,
+  frequent_urination: false, excessive_thirst: false, excessive_hunger: false, fatigue: false,
   blurred_vision: false, weight_loss: false, slow_healing: false,
   sweating: false, shaking: false, dizziness: false,
   vomiting: false, abdominal_pain: false, nausea: false,
   rapid_breathing: false, unable_to_keep_fluids: false, crisis: false,
   hypo_confusion: false, hypo_palpitations: false, hypo_improves_with_sugar: false,
+  hypo_gate: null, emergency_gate: null,
+  nocturia_count: null, water_intake_liters: null, fatigue_severity_scale: null, unexplained_weight_loss_kg: null,
   tingling_hands_feet: false, frequent_infections: false, acanthosis_nigricans: false,
+  burning_sensation: false, numbness: false, recurrent_uti_yeast: false, itchy_skin: false, bed_wetting: false,
   extra_symptoms: '',
   sex: '', currently_pregnant: false, pregnancy_stage: '', has_labs: '',
   family_history: false, obesity: false, hypertension: false,
   sedentary_lifestyle: false, gestational_history: false, smoking: false,
   high_cholesterol: false, pcos_history: false, ethnicity_high_risk: false,
+  systolic_bp: '', diastolic_bp: '',
+  dyslipidemia_low_hdl: false, dyslipidemia_high_tg: false,
+  cardiovascular_disease: false, macrosomia_history: false,
+  physical_activity_minutes_week: null, sugary_diet_frequency: '',
+  sleep_hours_night: null, sleep_apnea_history: false, alcohol_drinks_week: null, alcohol_frequent: false,
   extra_lab_name: '', extra_lab_value: '',
   show_bmi_calculator: false, weight_kg: '', height_cm: '',
 }
 
 const NON_BOOLEAN_FACT_KEYS = new Set([
   'fasting_glucose', 'fasting_plasma_glucose', 'hba1c', 'random_plasma_glucose',
-  'ogtt_2h', '2h_ogtt_75g', 'blood_glucose', 'age', 'bmi', 'waist_circumference',
+  'ogtt_2h', '2h_ogtt_75g', 'blood_glucose', 'age', 'bmi', 'waist_circumference', 'ethnicity',
   'weight_kg', 'height_cm', 'sex', 'pregnancy_stage', 'extra_symptoms', 'extra_lab_name', 'extra_lab_value',
+  'nocturia_count', 'water_intake_liters', 'fatigue_severity_scale', 'unexplained_weight_loss_kg',
+  'systolic_bp', 'diastolic_bp', 'physical_activity_minutes_week', 'sugary_diet_frequency',
+  'sleep_hours_night', 'alcohol_drinks_week',
 ])
 
 const DEFAULT_QCM = { age_group: '', bmi_group: '', fasting_group: '', hba1c_group: '', ogtt_group: '' }
@@ -226,10 +237,10 @@ export function DiagnosisPage() {
   ]
 
   const BMI_OPTIONS = [
-    { id: 'underweight', label: t('assessment.options.bmi.underweight', 'Under'), sub: '< 18.5', value: 18.0 },
-    { id: 'normal', label: t('assessment.options.bmi.normal', 'Normal'), sub: '18.5 – 24.9', value: 23.0 },
-    { id: 'Overweight', label: t('assessment.options.bmi.overweight', 'Over'), sub: '25 – 29.9', value: 28.0 },
-    { id: 'obese', label: t('assessment.options.bmi.obese', 'Obese'), sub: '≥ 30', value: 33.0 },
+    { id: 'underweight', label: t('assessment.options.bmi.underweight', 'Underweight'), sub: '< 18.5', value: 18.0 },
+    { id: 'normal', label: t('assessment.options.bmi.normal', 'Normal'), sub: '18.5 – 22.9', value: 21.5 },
+    { id: 'Overweight', label: t('assessment.options.bmi.overweight', 'Overweight'), sub: '23.0 – 27.4', value: 25.0 },
+    { id: 'obese', label: t('assessment.options.bmi.obese', 'Obese'), sub: '≥ 27.5', value: 29.0 },
   ]
 
   const FASTING_OPTIONS = [
@@ -627,8 +638,8 @@ export function DiagnosisPage() {
       let group = 'custom'
       const bmiNum = Number(calculatedBmi)
       if (bmiNum < 18.5) group = 'underweight'
-      else if (bmiNum < 25) group = 'normal'
-      else if (bmiNum < 30) group = 'Overweight'
+      else if (bmiNum < 23) group = 'normal'
+      else if (bmiNum < 27.5) group = 'Overweight'
       else group = 'obese'
 
       setQcm(p => ({ ...p, bmi_group: group }))
@@ -664,9 +675,18 @@ export function DiagnosisPage() {
     f.sex = 'male'; f.has_labs = 'yes'; f.no_labs_available = false
     setForm(f); setQcm(q); setExtraLabs([]); setStep(1); setMaxReached(1); setResult(null)
     if (!needsPatient) setSubjectMode('self')
+    const demoDoneNodes = [
+      'age', 'sex', 'ethnicity', 'body',
+      'symptom_thirst', 'thirst_probe', 'symptom_urination', 'nocturia_probe',
+      'symptom_hunger', 'symptom_weight_loss', 'symptom_fatigue', 'fatigue_probe',
+      'symptoms_secondary', 'symptom_onset', 'hypo_gate', 'emergency_gate',
+      'family_history', 'blood_pressure', 'lipid_profile',
+      'lifestyle_activity', 'lifestyle_diet', 'lifestyle_sleep', 'lifestyle_habits',
+      'has_labs', 'labs',
+    ]
     setInterviewDone(!needsPatient
-      ? ['subject', 'age', 'sex', 'symptoms_core', 'warning_signs', 'risk_factors', 'body', 'has_labs', 'labs']
-      : ['patient', 'age', 'sex', 'symptoms_core', 'warning_signs', 'risk_factors', 'body', 'has_labs', 'labs'])
+      ? ['subject', ...demoDoneNodes]
+      : ['patient', ...demoDoneNodes])
     setInterviewSkipped([]); setCursorOverride(null); setInterviewTrail([])
   }
 
@@ -761,6 +781,47 @@ export function DiagnosisPage() {
       }
     } else if (node.id === 'currently_pregnant') {
       setForm(p => ({ ...p, currently_pregnant: value, pregnancy_stage: value ? p.pregnancy_stage : '', gestational_history: value ? p.gestational_history : false }))
+      if (!value) {
+        setInterviewDone(prev => prev.filter(id => id !== 'pregnancy_stage' && id !== 'gdm_previous'))
+      }
+    } else if (node.id === 'symptom_thirst') {
+      setForm(p => ({ ...p, excessive_thirst: value, water_intake_liters: value ? p.water_intake_liters : null }))
+      if (!value) {
+        setInterviewDone(prev => prev.filter(id => id !== 'thirst_probe'))
+      }
+    } else if (node.id === 'symptom_urination') {
+      setForm(p => ({ ...p, frequent_urination: value, nocturia_count: value ? p.nocturia_count : null }))
+      if (!value) {
+        setInterviewDone(prev => prev.filter(id => id !== 'nocturia_probe'))
+      }
+    } else if (node.id === 'symptom_fatigue') {
+      setForm(p => ({ ...p, fatigue: value, fatigue_severity_scale: value ? p.fatigue_severity_scale : null }))
+      if (!value) {
+        setInterviewDone(prev => prev.filter(id => id !== 'fatigue_probe'))
+      }
+    } else if (node.id === 'hypo_gate') {
+      setForm(p => ({
+        ...p,
+        hypo_gate: value,
+        shaking: value ? p.shaking : false,
+        sweating: value ? p.sweating : false,
+        dizziness: value ? p.dizziness : false,
+      }))
+      if (!value) {
+        setInterviewDone(prev => prev.filter(id => id !== 'hypo_probe'))
+      }
+    } else if (node.id === 'emergency_gate') {
+      setForm(p => ({
+        ...p,
+        emergency_gate: value,
+        vomiting: value ? p.vomiting : false,
+        abdominal_pain: value ? p.abdominal_pain : false,
+        fruity_breath: value ? p.fruity_breath : false,
+        deep_rapid_breathing: value ? p.deep_rapid_breathing : false,
+      }))
+      if (!value) {
+        setInterviewDone(prev => prev.filter(id => id !== 'emergency_probe'))
+      }
     } else {
       up(node.field, value)
     }
@@ -818,30 +879,38 @@ export function DiagnosisPage() {
     setCursorOverride(null)
   }
   const canInterviewBack = useMemo(() => {
-    if (!currentNodeId) return false
+    if (!currentNodeId) {
+      return interviewTrail.length > 0 || interviewDone.length > 0 || applicableOrder.length > 0
+    }
     if (interviewTrail.lastIndexOf(currentNodeId) > 0) return true
     return applicableOrder.findIndex((n) => n.id === currentNodeId) > 0
-  }, [currentNodeId, interviewTrail, applicableOrder])
+  }, [currentNodeId, interviewTrail, applicableOrder, interviewDone])
 
   function interviewBack() {
-    if (!currentNodeId) return
     /* Retrace the user's actual visit path ONE step at a time (… → 3 → 2 → 1).
        Fall back to the natural question order when no trail exists yet (e.g. a
        restored draft), stepping over nodes that stopped applying because of
        answers changed in the meantime. */
     const applicableIds = new Set(applicableOrder.map((n) => n.id))
     const candidates = []
-    const trailPos = interviewTrail.lastIndexOf(currentNodeId)
-    if (trailPos > 0) candidates.push(...interviewTrail.slice(0, trailPos).reverse())
-    const orderPos = applicableOrder.findIndex((n) => n.id === currentNodeId)
-    if (orderPos > 0) candidates.push(...applicableOrder.slice(0, orderPos).map((n) => n.id).reverse())
+    if (currentNodeId) {
+      const trailPos = interviewTrail.lastIndexOf(currentNodeId)
+      if (trailPos > 0) candidates.push(...interviewTrail.slice(0, trailPos).reverse())
+      const orderPos = applicableOrder.findIndex((n) => n.id === currentNodeId)
+      if (orderPos > 0) candidates.push(...applicableOrder.slice(0, orderPos).map((n) => n.id).reverse())
+    } else {
+      // Stepping back from the "All questions answered" completion card
+      if (interviewTrail.length > 0) candidates.push(...[...interviewTrail].reverse())
+      if (interviewDone.length > 0) candidates.push(...[...interviewDone].reverse())
+      candidates.push(...[...applicableOrder].map((n) => n.id).reverse())
+    }
     const previousNode = candidates.find((id) => applicableIds.has(id))
     if (!previousNode) return
     /* Trim the trail to end at the node we are moving to, so pressing Back
        again keeps walking backwards instead of bouncing between two cards. */
     setInterviewTrail((trail) => {
       const pos = trail.lastIndexOf(previousNode)
-      return pos === -1 ? trail : trail.slice(0, pos + 1)
+      return pos === -1 ? [previousNode] : trail.slice(0, pos + 1)
     })
     setCursorOverride(previousNode)
     setError('')
@@ -916,7 +985,11 @@ export function DiagnosisPage() {
       const payload = {
         mode: assessmentMode,
         no_labs_available: Boolean(form.no_labs_available || !hasAnyLab),
-        frequent_urination: form.frequent_urination, excessive_thirst: form.excessive_thirst,
+        frequent_urination: form.frequent_urination,
+        excessive_thirst: form.excessive_thirst,
+        excessive_hunger: form.excessive_hunger,
+        weight_loss: form.weight_loss,
+        fatigue: form.fatigue,
         sweating: form.sweating, shaking: form.shaking, dizziness: form.dizziness,
         vomiting: form.vomiting, abdominal_pain: form.abdominal_pain, nausea: form.nausea, crisis: form.crisis,
         // Send symptom booleans as top-level keys for direct fact normalization
@@ -1074,17 +1147,6 @@ export function DiagnosisPage() {
                     </div>
                   ))}
 
-                  {interviewDone.length ? (
-                    <div className="mb-3 flex flex-wrap items-center gap-1.5">
-                      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{t('assessment.interview.answeredLabel', 'Answered')}:</span>
-                      {applicableNodes(INTERVIEW_NODES, interviewCtx).filter((n) => interviewDone.includes(n.id)).map((n) => (
-                        <button key={n.id} type="button" onClick={() => editInterviewNode(n.id)} className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300 dark:hover:bg-emerald-900/50">
-                          <Check className="h-3 w-3" /> {t(n.titleKey, n.titleFallback)}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-
                   {currentNode ? (
                     <InterviewFlow
                       node={currentNode}
@@ -1099,6 +1161,10 @@ export function DiagnosisPage() {
                       ageOptions={AGE_OPTIONS.map(o => {
                         const keyMap = { under_18: 'under18', '18_30': 'age18to30', '31_45': 'age31to45', '46_60': 'age46to60', over_60: 'over60' };
                         return { ...o, label: t(`assessment.options.age.${keyMap[o.id] || o.id}`, o.label) };
+                      })}
+                      bmiOptions={BMI_OPTIONS.map(o => {
+                        const keyMap = { underweight: 'underweight', normal: 'normal', Overweight: 'overweight', obese: 'obese' };
+                        return { ...o, label: t(`assessment.options.bmi.${keyMap[o.id] || o.id}`, o.label) };
                       })}
                       labOptions={{
                         fasting: FASTING_OPTIONS.map(o => ({ ...o, label: t(`assessment.fields.labs.fasting.${o.id}`, o.label) })),
@@ -1135,9 +1201,15 @@ export function DiagnosisPage() {
                       </span>
                       <h3 className="mt-4 text-lg font-bold text-slate-900 dark:text-slate-50">{t('assessment.interview.allAnsweredTitle', 'All questions answered')}</h3>
                       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t('assessment.interview.allAnsweredText', 'Review your evidence, then run the assessment.')}</p>
-                      <button type="button" className="btn-primary mx-auto mt-5 gap-1.5" onClick={() => { setStep(REVIEW_STEP); setMaxReached(p => Math.max(p, REVIEW_STEP)) }}>
-                        {t('assessment.interview.goReview', 'Review & Run')} <ArrowRight className="h-4 w-4" />
-                      </button>
+                      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                        <button type="button" className="btn-secondary gap-1.5" onClick={interviewBack}>
+                          <ArrowLeft className="h-4 w-4" />
+                          {t('common.back', 'Back')}
+                        </button>
+                        <button type="button" className="btn-primary gap-1.5" onClick={() => { setStep(REVIEW_STEP); setMaxReached(p => Math.max(p, REVIEW_STEP)) }}>
+                          {t('assessment.interview.goReview', 'Review & Run')} <ArrowRight className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

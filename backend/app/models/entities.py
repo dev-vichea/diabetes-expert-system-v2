@@ -281,6 +281,7 @@ class Fact(db.Model):
     medical_term = db.Column(db.String(120), nullable=True)
     category = db.Column(db.String(40), nullable=False, default="other", index=True)
     question = db.Column(db.Text, nullable=True)
+    question_km = db.Column(db.Text, nullable=True)
     meaning = db.Column(db.Text, nullable=True)
     meaning_km = db.Column(db.Text, nullable=True)
     prevention = db.Column(db.Text, nullable=True)

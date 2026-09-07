@@ -324,7 +324,7 @@ def _seed_fact_catalog() -> None:
         existing = Fact.query.filter_by(key=key).first()
         if existing:
             # Backfill only missing/empty fields so doctor edits are never overwritten
-            for field in ("label_km", "medical_term", "question", "meaning", "meaning_km", "prevention", "prevention_km"):
+            for field in ("label_km", "medical_term", "question", "question_km", "meaning", "meaning_km", "prevention", "prevention_km"):
                 val = entry.get(field)
                 if val is not None and not getattr(existing, field):
                     setattr(existing, field, val)
@@ -337,6 +337,7 @@ def _seed_fact_catalog() -> None:
             medical_term=entry.get("medical_term"),
             category=str(entry.get("category") or "other"),
             question=entry.get("question"),
+            question_km=entry.get("question_km"),
             meaning=entry.get("meaning"),
             meaning_km=entry.get("meaning_km"),
             prevention=entry.get("prevention"),

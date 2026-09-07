@@ -79,6 +79,7 @@ class FactService:
             "medical_term": self._optional_text(data.get("medical_term"), 120),
             "category": category,
             "question": self._optional_text(data.get("question")),
+            "question_km": self._optional_text(data.get("question_km")),
             "meaning": self._optional_text(data.get("meaning")),
             "meaning_km": self._optional_text(data.get("meaning_km")),
             "prevention": self._optional_text(data.get("prevention")),

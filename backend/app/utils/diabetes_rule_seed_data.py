@@ -1759,5 +1759,210 @@ DIABETES_RULE_SEED = [
             },
         ],
     },
+
+    # ================================================================== #
+    #  ADA RISK SCORE & ETHNICITY RULES                                  #
+    # ================================================================== #
+    {
+        "code": "risk-ada-score-high",
+        "name": "High ADA Diabetes Risk Score (≥5)",
+        "description": "Flags individuals with an ADA risk score ≥5 points indicating high pre-test probability of prediabetes or diabetes.",
+        "category": "classification",
+        "priority": "medium",
+        "certainty_factor": 0.85,
+        "status": "active",
+        "explanation_text": "An ADA Risk Score of 5 or higher indicates significant background risk based on demographic and lifestyle factors, recommending diagnostic blood testing.",
+        "conditions": [
+            {"fact_key": "high_ada_risk", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "elevated_diabetes_risk=true"},
+            {"action_type": "assert_fact", "action_value": "screening_recommended=true"},
+            {
+                "action_type": "recommendation",
+                "action_value": "High ADA Risk Score (≥5/10). Even in the absence of obvious symptoms, laboratory screening with Fasting Plasma Glucose or HbA1c is strongly recommended.",
+            },
+        ],
+    },
+    {
+        "code": "risk-asian-bmi-threshold",
+        "name": "Asian Ethnicity BMI Threshold (≥23 kg/m²)",
+        "description": "Applies the WHO/ADA Asian-specific BMI threshold where overweight and metabolic risk begin at 23 kg/m².",
+        "category": "classification",
+        "priority": "medium",
+        "certainty_factor": 0.80,
+        "status": "active",
+        "explanation_text": "Asian populations accumulate visceral adiposity and insulin resistance at lower BMI levels (overweight ≥23 kg/m², obesity ≥27.5 kg/m²).",
+        "conditions": [
+            {"fact_key": "asian_bmi_threshold_met", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "increased_cardiometabolic_risk=true"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Per ADA/WHO Asian clinical guidelines, a BMI ≥23 kg/m² confers elevated visceral adiposity and insulin resistance risk. Earlier screening and weight management are recommended.",
+            },
+        ],
+    },
+    {
+        "code": "metabolic-syndrome-cluster",
+        "name": "Metabolic Syndrome Cluster",
+        "description": "Flags clustering of central adiposity, elevated blood pressure, dyslipidemia, or impaired glucose regulation.",
+        "category": "classification",
+        "priority": "high",
+        "certainty_factor": 0.88,
+        "status": "active",
+        "explanation_text": "Metabolic syndrome combines multiple interconnected cardiometabolic risk factors that multiply the risk of developing Type 2 diabetes by 5-fold and cardiovascular disease by 2-fold.",
+        "conditions": [
+            {"fact_key": "metabolic_syndrome", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "metabolic_syndrome_present=true"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Metabolic Syndrome pattern detected (central abdominal adiposity, elevated blood pressure, and/or dyslipidemia). Comprehensive cardiometabolic workup and lifestyle counseling are indicated.",
+            },
+        ],
+    },
+
+    # ================================================================== #
+    #  LIFESTYLE & MODIFIABLE DRIVER RECOMMENDATIONS                     #
+    # ================================================================== #
+    {
+        "code": "lifestyle-physical-inactivity",
+        "name": "Lifestyle: Physical Inactivity (<150 min/week)",
+        "description": "Provides actionable aerobic and resistance training targets when weekly activity is below ADA guidelines.",
+        "category": "recommendation",
+        "priority": "low",
+        "certainty_factor": 0.90,
+        "status": "active",
+        "explanation_text": "Regular physical activity stimulates non-insulin-dependent glucose uptake in skeletal muscle via GLUT4 translocation.",
+        "conditions": [
+            {"fact_key": "physical_inactivity", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {
+                "action_type": "recommendation",
+                "action_value": "Physical Activity Goal: Work toward at least 150 minutes of moderate-to-vigorous aerobic exercise weekly (e.g. brisk walking 30 min/day, 5 days/week), plus 2–3 resistance training sessions.",
+            },
+        ],
+    },
+    {
+        "code": "lifestyle-sugary-diet",
+        "name": "Lifestyle: Sugary & Ultra-Processed Diet",
+        "description": "Prescribes glycemic stabilization guidance for frequent intake of sugar-sweetened beverages or refined carbs.",
+        "category": "recommendation",
+        "priority": "low",
+        "certainty_factor": 0.90,
+        "status": "active",
+        "explanation_text": "Liquid sugars and ultra-processed carbohydrates cause rapid blood sugar surges and beta-cell overstimulation.",
+        "conditions": [
+            {"fact_key": "sugary_diet", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {
+                "action_type": "recommendation",
+                "action_value": "Dietary Pattern: Replace sugar-sweetened beverages with water or unsweetened tea. Emphasize low-glycemic foods rich in soluble fiber (legumes, oats, non-starchy vegetables) to stabilize glucose spikes.",
+            },
+        ],
+    },
+    {
+        "code": "lifestyle-sleep-deprivation-apnea",
+        "name": "Lifestyle: Sleep Deprivation or Apnea",
+        "description": "Addresses short sleep (<6 hrs) or sleep apnea symptoms worsening morning cortisol and insulin resistance.",
+        "category": "recommendation",
+        "priority": "low",
+        "certainty_factor": 0.85,
+        "status": "active",
+        "explanation_text": "Poor sleep architecture activates nocturnal sympathetic tone and cortisol, elevating morning fasting glucose.",
+        "conditions": [
+            {"fact_key": "sleep_deprivation_apnea", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {
+                "action_type": "recommendation",
+                "action_value": "Sleep & Circadian Rhythm: Target 7–8 hours of uninterrupted sleep per night. If you experience loud snoring or waking gasps, ask a doctor about screening for Obstructive Sleep Apnea (OSA).",
+            },
+        ],
+    },
+    {
+        "code": "lifestyle-smoking-cessation",
+        "name": "Lifestyle: Tobacco Smoking Cessation",
+        "description": "Emphasizes the compounded vascular and neuropathic risk of smoking in individuals at risk for diabetes.",
+        "category": "recommendation",
+        "priority": "medium",
+        "certainty_factor": 0.95,
+        "status": "active",
+        "explanation_text": "Nicotine directly impairs insulin sensitivity and synergistically damages small microvessels, doubling neuropathy and retinopathy progression.",
+        "conditions": [
+            {"fact_key": "smoking", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {
+                "action_type": "recommendation",
+                "action_value": "Smoking Cessation: Tobacco smoking accelerates vascular injury and raises diabetes complications by 30–40%. Speak with your healthcare provider about evidence-based cessation aids.",
+            },
+        ],
+    },
+    {
+        "code": "lifestyle-alcohol-moderation",
+        "name": "Lifestyle: Alcohol Moderation",
+        "description": "Provides guidelines on alcohol intake limits to avoid glycemic instability and liver steatosis.",
+        "category": "recommendation",
+        "priority": "low",
+        "certainty_factor": 0.85,
+        "status": "active",
+        "explanation_text": "Heavy alcohol intake impairs hepatic gluconeogenesis regulation, increases triglycerides, and may provoke delayed hypoglycemia.",
+        "conditions": [
+            {"fact_key": "alcohol_frequent", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {
+                "action_type": "recommendation",
+                "action_value": "Alcohol Moderation: Limit alcohol to no more than 1 drink per day for women and 2 drinks per day for men. Never consume alcohol on an empty stomach.",
+            },
+        ],
+    },
+    {
+        "code": "risk-obstetric-macrosomia",
+        "name": "Obstetric Risk: Fetal Macrosomia (>4.1 kg)",
+        "description": "Identifies prior delivery of a baby >4.1 kg as an indicator of gestational insulin resistance and long-term diabetes risk.",
+        "category": "classification",
+        "priority": "medium",
+        "certainty_factor": 0.80,
+        "status": "active",
+        "explanation_text": "Delivering a baby weighing >4.1 kg (9 lbs) is a clinical marker of maternal gestational hyperglycemia, predisposing to subsequent Type 2 diabetes.",
+        "conditions": [
+            {"fact_key": "macrosomia_history", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "obstetric_diabetes_risk=true"},
+            {
+                "action_type": "recommendation",
+                "action_value": "History of delivering a baby over 9 lbs (4.1 kg) increases lifetime Type 2 diabetes risk. Periodic screening (FPG or HbA1c) every 1–3 years is recommended.",
+            },
+        ],
+    },
+    {
+        "code": "triage-urine-ketones-present",
+        "name": "Triage: Urine Ketones (DKA Warning)",
+        "description": "Detects presence of ketones in urine, requiring immediate emergency clinical triage to evaluate for Diabetic Ketoacidosis.",
+        "category": "triage",
+        "priority": "high",
+        "certainty_factor": 0.98,
+        "status": "active",
+        "explanation_text": "Ketonuria signals acute systemic insulin deficiency and lipolysis. In symptomatic or hyperglycemic patients, this is an emergency.",
+        "conditions": [
+            {"fact_key": "urine_ketones", "operator": "==", "expected_value": True},
+        ],
+        "actions": [
+            {"action_type": "assert_fact", "action_value": "ketosis_signs_present=true"},
+            {"action_type": "urgent_flag", "action_value": "true"},
+            {
+                "action_type": "recommendation",
+                "action_value": "Positive urine ketones detected. In combination with symptoms or high blood glucose, this requires same-day emergency evaluation to rule out Diabetic Ketoacidosis (DKA).",
+            },
+        ],
+    },
 ]
 

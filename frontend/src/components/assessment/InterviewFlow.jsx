@@ -1,33 +1,41 @@
 import { useEffect, useRef } from 'react'
 import {
   Activity, AlertTriangle, ArrowLeft, Armchair, Baby, Bandage, BatteryLow, Bug, Building2, CalendarHeart,
-  Check, Cigarette, ClipboardList, Contrast, Droplet, Droplets, Egg, Eye, FlaskConical, Flower2,
-  GlassWater, Globe, Hand, HeartCrack, HeartPulse, PenTool, Plus, RefreshCw, Scale, Soup,
-  Stethoscope, TestTube2, Timer, TrendingDown, Trash2, UserRound, Users, Vibrate, Waves, Weight, X,
+  Calculator, Check, Cigarette, ClipboardList, Contrast, Droplet, Droplets, Egg, Eye, Flame, FlaskConical, Flower2,
+  GlassWater, Globe, Hand, HeartCrack, HeartPulse, Info, PenTool, Plus, RefreshCw, Scale, ShieldAlert, Soup,
+  Sparkles, Stethoscope, TestTube2, Timer, TrendingDown, Trash2, UserRound, Users, Vibrate, Waves, Weight, X,
 } from 'lucide-react'
 import { AppSelect, LoadingState } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { FIELD_FALLBACKS, camelField, fieldLabelKey, getFactLabel, nodeFields } from './interview-flow'
+import {
+  FIELD_FALLBACKS, camelField, fieldLabelKey, getFactLabel, nodeFields,
+  getNodeQuestion, getNodeHelper, getNodeMedicalTerm,
+} from './interview-flow'
 
 const NODE_ICONS = {
   Building2, UserRound, Baby, CalendarHeart, Droplets, Stethoscope, AlertTriangle,
   ClipboardList, Scale, TestTube2, FlaskConical, PenTool, Timer, Users, Activity, Contrast,
+  Globe, ShieldAlert, GlassWater, BatteryLow, HeartPulse, Armchair, Soup, Cigarette,
 }
 
 const FIELD_ICONS = {
   frequent_urination: Droplets, excessive_thirst: GlassWater, weight_loss: TrendingDown,
   fatigue: BatteryLow, blurred_vision: Eye, slow_healing: Bandage, nausea: Waves,
-  tingling_hands_feet: Hand, burning_sensation: Activity, numbness: Hand,
+  tingling_hands_feet: Hand, burning_sensation: Flame, numbness: Hand,
   frequent_infections: Bug, recurrent_uti_yeast: Bug, itchy_skin: Bandage,
   acanthosis_nigricans: Contrast, bed_wetting: Baby,
   sweating: Droplet, shaking: Vibrate, dizziness: RefreshCw, vomiting: Soup, abdominal_pain: HeartCrack,
   family_history: Users, obesity: Weight, hypertension: HeartPulse, sedentary_lifestyle: Armchair,
   gestational_history: Baby, smoking: Cigarette, high_cholesterol: Egg, pcos_history: Flower2,
   ethnicity_high_risk: Globe,
+  dyslipidemia_low_hdl: Egg, dyslipidemia_high_tg: Egg, cardiovascular_disease: HeartPulse,
+  macrosomia_history: Baby, sleep_apnea_history: Activity, alcohol_frequent: GlassWater,
+  urine_ketones: TestTube2, unquenchable_thirst: GlassWater, severe_fatigue: BatteryLow,
+  nocturia: Droplets, physical_inactivity: Armchair, sugary_diet: Soup,
 }
 
-function QuestionCard({ node, title, helper, children }) {
+function QuestionCard({ node, title, helper, medicalTerm, children }) {
   const Icon = NODE_ICONS[node.icon] || ClipboardList
   return (
     <div className="assessment-card-enter min-w-0 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-6 sm:p-8 dark:border-slate-700/60 dark:bg-[#0f1533]/50">
@@ -35,8 +43,15 @@ function QuestionCard({ node, title, helper, children }) {
         <span className="mt-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-100/70 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-400">
           <Icon className="h-5.5 w-5.5" strokeWidth={2} />
         </span>
-        <div className="min-w-0">
-          <h3 className="text-lg font-bold leading-snug text-slate-900 dark:text-slate-50 sm:text-xl">{title}</h3>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-lg font-bold leading-snug text-slate-900 dark:text-slate-50 sm:text-xl">{title}</h3>
+            {medicalTerm ? (
+              <span className="inline-flex items-center rounded-md bg-cyan-50 px-2 py-0.5 text-xs font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-600/20 dark:bg-cyan-950/60 dark:text-cyan-300 dark:ring-cyan-500/30">
+                {medicalTerm}
+              </span>
+            ) : null}
+          </div>
           {helper ? <p className="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">{helper}</p> : null}
         </div>
       </div>
@@ -108,7 +123,7 @@ function MultiGrid({ node, form, ctx, t, factsMap, language, onToggle, onNone })
               <span className="flex-1 min-w-0">
                 <span
                   className={cn(
-                    'block leading-tight transition-colors',
+                    'block leading-snug transition-colors text-[0.95rem]',
                     active
                       ? 'font-semibold text-primary-950 dark:text-slate-50'
                       : 'font-medium text-slate-700 dark:text-slate-200',
@@ -116,18 +131,6 @@ function MultiGrid({ node, form, ctx, t, factsMap, language, onToggle, onNone })
                 >
                   {label}
                 </span>
-                {fact?.medical_term && fact.medical_term.toLowerCase() !== label.toLowerCase() ? (
-                  <span
-                    className={cn(
-                      'block text-[11px] leading-tight mt-0.5 transition-colors',
-                      active
-                        ? 'font-medium text-primary-600 dark:text-sky-300'
-                        : 'font-normal text-slate-500 dark:text-slate-400',
-                    )}
-                  >
-                    {fact.medical_term}
-                  </span>
-                ) : null}
               </span>
               <span className="pill-check">{active ? <Check className="h-3 w-3" /> : null}</span>
             </button>
@@ -163,12 +166,59 @@ function SegmentButtons({ options, value, onChange }) {
   )
 }
 
+function getBmiStatus(bmi) {
+  const num = Number(bmi)
+  if (!num || num < 10 || num > 80) return null
+  if (num < 18.5) {
+    return {
+      id: 'underweight',
+      labelKey: 'assessment.options.bmi.underweight',
+      defaultLabel: 'Underweight',
+      range: '< 18.5',
+      badgeClass: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800',
+      activeRing: 'ring-sky-500 border-sky-500 bg-sky-50/80 dark:bg-sky-950/40',
+      dotClass: 'bg-sky-500',
+    }
+  }
+  if (num < 23.0) {
+    return {
+      id: 'normal',
+      labelKey: 'assessment.options.bmi.normal',
+      defaultLabel: 'Normal weight',
+      range: '18.5 – 22.9',
+      badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
+      activeRing: 'ring-emerald-500 border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40',
+      dotClass: 'bg-emerald-500',
+    }
+  }
+  if (num < 27.5) {
+    return {
+      id: 'Overweight',
+      labelKey: 'assessment.options.bmi.overweight',
+      defaultLabel: 'Overweight',
+      range: '23.0 – 27.4',
+      badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
+      activeRing: 'ring-amber-500 border-amber-500 bg-amber-50/80 dark:bg-amber-950/40',
+      dotClass: 'bg-amber-500',
+    }
+  }
+  return {
+    id: 'obese',
+    labelKey: 'assessment.options.bmi.obese',
+    defaultLabel: 'Obese',
+    range: '≥ 27.5',
+    badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800',
+    activeRing: 'ring-rose-500 border-rose-500 bg-rose-50/80 dark:bg-rose-950/40',
+    dotClass: 'bg-rose-500',
+  }
+}
+
 export function InterviewFlow(props) {
   const {
     node, form, qcm, t,
     patients, loadingPatients,
     subjectOptions = [], subjectValue = null, onSelectSubject,
-    ageOptions, labOptions, renderBadge,
+    ageOptions, bmiOptions = [], labOptions, renderBadge,
     extraLabs, onAddExtraLab, onRemoveExtraLab,
     onField, onPickSegment, onSetCustom, onCalculateBmi,
     onYesNo, onChoice, onToggleMulti, onMultiNone,
@@ -183,8 +233,9 @@ export function InterviewFlow(props) {
 
   if (!node) return null
 
-  const title = t(node.titleKey, node.titleFallback)
-  const helper = node.helperKey ? t(node.helperKey, node.helperFallback) : ''
+  const title = getNodeQuestion(node, factsMap, language, t)
+  const helper = getNodeHelper(node, factsMap, language, t)
+  const medicalTerm = getNodeMedicalTerm(node, factsMap)
   const continueLabel = editing ? t('assessment.interview.doneEditing', 'Done') : t('common.continue', 'Continue')
 
   let body = null
@@ -261,9 +312,10 @@ export function InterviewFlow(props) {
     )
   } else if (node.kind === 'choice') {
     body = (
-      <div className={cn('grid gap-2', node.options.length > 3 ? 'sm:grid-cols-2' : 'grid-cols-2')}>
+      <div className={cn('grid gap-2.5', node.options.length === 2 ? 'grid-cols-2' : node.options.length === 3 ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2')}>
         {node.options.map((opt) => {
-          const active = form[node.field] === opt.value
+          const isDone = doneIds.includes(node.id)
+          const active = (isDone || (form[node.field] !== null && form[node.field] !== undefined && form[node.field] !== '')) && form[node.field] === opt.value
           return (
             <button
               key={opt.value}
@@ -284,9 +336,10 @@ export function InterviewFlow(props) {
       </div>
     )
   } else if (node.kind === 'yesno') {
+    const isDone = doneIds.includes(node.id)
     const value = node.field === 'has_labs'
       ? (form.has_labs === 'yes' ? true : form.has_labs === 'no' ? false : null)
-      : Boolean(form[node.field])
+      : (isDone ? Boolean(form[node.field]) : null)
     body = (
       <YesNoButtons
         value={value}
@@ -322,32 +375,231 @@ export function InterviewFlow(props) {
     // Align with validation (BMI must be 10–80) so half-typed direct entries
     // can't be submitted — and a live-calculated BMI only unlocks once plausible.
     continueEnabled = Number(form.bmi) >= 10
+    const currentBmiStatus = getBmiStatus(form.bmi)
+    const bmiTiers = [
+      { id: 'underweight', labelKey: 'assessment.interview.bmiScaleUnderweight', fallback: 'Underweight (< 18.5)', match: (v) => v < 18.5 },
+      { id: 'normal', labelKey: 'assessment.interview.bmiScaleNormal', fallback: 'Normal weight (18.5 – 22.9)', match: (v) => v >= 18.5 && v < 23.0 },
+      { id: 'overweight', labelKey: 'assessment.interview.bmiScaleOverweight', fallback: 'Overweight (23.0 – 27.4)', match: (v) => v >= 23.0 && v < 27.5 },
+      { id: 'obese', labelKey: 'assessment.interview.bmiScaleObese', fallback: 'Obesity (≥ 27.5)', match: (v) => v >= 27.5 },
+    ]
+    const numericBmi = Number(form.bmi)
+
     body = (
-      <div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block">
-            <span className="label-text">{t('assessment.weightKg', 'Weight (kg)')}</span>
-            <input className="input-base" type="number" min={2} max={400} step="0.1" placeholder="e.g. 65" value={form.weight_kg} onChange={(e) => { onField('weight_kg', e.target.value); onCalculateBmi(e.target.value, form.height_cm) }} />
-          </label>
-          <label className="block">
-            <span className="label-text">{t('assessment.heightCm', 'Height (cm)')}</span>
-            <input className="input-base" type="number" min={40} max={260} step="0.1" placeholder="e.g. 170" value={form.height_cm} onChange={(e) => { onField('height_cm', e.target.value); onCalculateBmi(form.weight_kg, e.target.value) }} />
-          </label>
+      <div className="space-y-6">
+        {/* Top Split: Educational Callout (Left) + Interactive BMI Calculator Widget (Right) */}
+        <div className="grid gap-5 lg:grid-cols-12">
+          {/* Left Column: What is BMI? Clinical & IDF Educational Guidance */}
+          <div className="lg:col-span-7 flex flex-col justify-between rounded-2xl border border-cyan-100 bg-gradient-to-br from-cyan-50/70 via-white to-sky-50/40 p-5 shadow-xs dark:border-cyan-900/40 dark:from-cyan-950/20 dark:via-[#0f1533] dark:to-sky-950/20">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-600 text-white shadow-xs dark:bg-cyan-500">
+                  <Info className="h-4.5 w-4.5" />
+                </span>
+                <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  {t('assessment.interview.whatIsBmiTitle', 'What is Body Mass Index (BMI)?')}
+                </h4>
+              </div>
+
+              <p className="mt-3 text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                {t('assessment.interview.whatIsBmiDesc', 'The body-mass index is used to assess whether a person is a healthy weight for their height. It is calculated by dividing body weight (kg) by the square of body height (m). For example, if your height is 165 cm and your weight is 70 kg, your body-mass index will be 25.7.')}
+              </p>
+
+              {/* Diabetes Clinical Connection Callout */}
+              <div className="mt-3.5 rounded-xl border border-amber-200/80 bg-amber-50/70 p-3 text-xs leading-relaxed text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                <div className="flex items-start gap-2">
+                  <HeartPulse className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span>{t('assessment.interview.bmiDiabetesRisk', 'Higher body fat — especially visceral fat around the abdomen — increases insulin resistance, making it harder for the body to regulate blood sugar.')}</span>
+                </div>
+              </div>
+
+              {/* Asian Population Threshold Notice */}
+              <div className="mt-2.5 rounded-xl border border-sky-200/80 bg-sky-50/70 p-3 text-xs leading-relaxed text-sky-900 dark:border-sky-900/40 dark:bg-sky-950/30 dark:text-sky-200">
+                <div className="flex items-start gap-2">
+                  <Globe className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
+                  <span>{t('assessment.interview.bmiAsianNotice', 'For Asian populations, diabetes risk increases at lower thresholds: BMI ≥ 23 indicates overweight, and BMI ≥ 27.5 indicates obesity.')}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 4-Tier Scale Badges */}
+            <div className="mt-4 pt-3 border-t border-slate-200/70 dark:border-slate-800">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {bmiTiers.map((tier) => {
+                  const isActive = numericBmi >= 10 && tier.match(numericBmi)
+                  return (
+                    <div
+                      key={tier.id}
+                      className={cn(
+                        'flex flex-col items-center justify-center rounded-xl border p-2 text-center transition-all',
+                        isActive
+                          ? 'border-cyan-500 bg-white shadow-md ring-2 ring-cyan-400 dark:border-cyan-400 dark:bg-slate-900'
+                          : 'border-slate-200/80 bg-white/70 opacity-80 dark:border-slate-800 dark:bg-slate-900/60'
+                      )}
+                    >
+                      <span className={cn('text-[11px] font-semibold', isActive ? 'text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-400')}>
+                        {t(tier.labelKey, tier.fallback)}
+                      </span>
+                      {isActive ? (
+                        <span className="mt-0.5 inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                          <Check className="h-3 w-3" strokeWidth={3} /> Current
+                        </span>
+                      ) : null}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Interactive BMI Calculator Widget */}
+          <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-[#0b0b16]">
+            <div>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-950/50 dark:text-primary-400">
+                    <Calculator className="h-4 w-4" />
+                  </span>
+                  <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                    {t('assessment.interview.bmiCalculatorTitle', 'BMI Calculator')}
+                  </span>
+                </div>
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                  Metric (kg / cm)
+                </span>
+              </div>
+
+              {/* Inputs */}
+              <div className="mt-4 space-y-3.5">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    {t('assessment.weightKg', 'Weight (kg)')}
+                  </label>
+                  <div className="relative">
+                    <input
+                      className="input-base pr-12 text-base font-semibold"
+                      type="number"
+                      min={2}
+                      max={400}
+                      step="0.1"
+                      placeholder="e.g. 65"
+                      value={form.weight_kg || ''}
+                      onChange={(e) => {
+                        onField('weight_kg', e.target.value)
+                        onCalculateBmi(e.target.value, form.height_cm)
+                      }}
+                    />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                      kg
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    {t('assessment.heightCm', 'Height (cm)')}
+                  </label>
+                  <div className="relative">
+                    <input
+                      className="input-base pr-12 text-base font-semibold"
+                      type="number"
+                      min={40}
+                      max={260}
+                      step="0.1"
+                      placeholder="e.g. 170"
+                      value={form.height_cm || ''}
+                      onChange={(e) => {
+                        onField('height_cm', e.target.value)
+                        onCalculateBmi(form.weight_kg, e.target.value)
+                      }}
+                    />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                      cm
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Result Display */}
+            <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/80 p-3.5 dark:border-slate-800 dark:bg-slate-900/50">
+              {currentBmiStatus ? (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                      {t('assessment.interview.bmiIs', 'Your BMI:')}
+                    </span>
+                    <div className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-50">
+                      {form.bmi} <span className="text-xs font-normal text-slate-400">kg/m²</span>
+                    </div>
+                  </div>
+                  <div className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold shadow-xs', currentBmiStatus.badgeClass)}>
+                    <span className={cn('h-2 w-2 rounded-full', currentBmiStatus.dotClass)} />
+                    {t(currentBmiStatus.labelKey, currentBmiStatus.defaultLabel)}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-center text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                  {t('assessment.interview.enterHeightWeightPrompt', 'Enter your height and weight to calculate your BMI, or select your category below.')}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
-        {form.bmi ? (
-          <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3.5 py-1.5 text-sm font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-            {t('assessment.interview.bmiIs', 'Your BMI:')} {form.bmi}
-          </p>
-        ) : null}
-        <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 dark:border-slate-800 sm:grid-cols-2">
-          <label className="block">
-            <span className="label-text">{t('assessment.interview.orExactBmi', 'Or enter BMI directly')}</span>
-            <input className="input-base" type="number" min={10} max={80} step="0.1" placeholder="e.g. 26.5" value={form.bmi} onChange={(e) => onSetCustom('bmi_group', 'bmi', e.target.value)} />
-          </label>
-          <label className="block">
-            <span className="label-text">{t('assessment.profile.exactWaist', 'Waist in cm (optional)')}</span>
-            <input className="input-base" type="number" min={30} max={250} step="0.1" placeholder="e.g. 95" value={form.waist_circumference} onChange={(e) => onField('waist_circumference', e.target.value)} />
-          </label>
+
+        {/* Bottom Section: Quick Category Selection + Waist Circumference */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white/60 p-5 dark:border-slate-800 dark:bg-[#0b0b16]/60 space-y-4">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="label-text font-bold text-slate-800 dark:text-slate-200">
+                {t('assessment.interview.orExactBmi', 'Or select BMI category directly')}
+              </span>
+              {form.bmi ? (
+                <span className="text-xs font-semibold text-cyan-600 dark:text-cyan-400">
+                  BMI: {form.bmi}
+                </span>
+              ) : null}
+            </div>
+            {bmiOptions && bmiOptions.length > 0 ? (
+              <SegmentButtons
+                options={bmiOptions}
+                value={qcm?.bmi_group}
+                onChange={(opt) => onPickSegment('bmi_group', opt, 'bmi')}
+              />
+            ) : null}
+          </div>
+
+          <div className="grid gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 sm:grid-cols-2">
+            <label className="block">
+              <span className="label-text">{t('assessment.interview.orExactBmi', 'Or enter BMI directly')}</span>
+              <input
+                className="input-base"
+                type="number"
+                min={10}
+                max={80}
+                step="0.1"
+                placeholder="e.g. 26.5"
+                value={form.bmi || ''}
+                onChange={(e) => onSetCustom('bmi_group', 'bmi', e.target.value)}
+              />
+            </label>
+
+            <label className="block">
+              <span className="label-text">{t('assessment.interview.waistOptional', 'Waist in cm (optional)')}</span>
+              <input
+                className="input-base"
+                type="number"
+                min={30}
+                max={250}
+                step="0.1"
+                placeholder="e.g. 95"
+                value={form.waist_circumference || ''}
+                onChange={(e) => onField('waist_circumference', e.target.value)}
+              />
+              <span className="mt-1 block text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                {t('assessment.interview.waistHelperText', 'Waist circumference measures central/abdominal fat — a strong independent risk factor for diabetes.')}
+              </span>
+            </label>
+          </div>
         </div>
       </div>
     )
@@ -355,7 +607,7 @@ export function InterviewFlow(props) {
 
   return (
     <div className="w-full">
-      <QuestionCard node={node} title={title} helper={helper}>
+      <QuestionCard node={node} title={title} helper={helper} medicalTerm={medicalTerm}>
         {node.kind === 'labs' ? null : body}
       </QuestionCard>
 

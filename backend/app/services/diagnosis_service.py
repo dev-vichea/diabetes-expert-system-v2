@@ -1098,9 +1098,15 @@ class DiagnosisService:
                 elif current_certainty >= 0.45:
                     enriched["diagnosis"] = "Possible Early Signs of Diabetes"
                 elif current_certainty >= 0.25:
-                    enriched["diagnosis"] = "Elevated Diabetes Risk — Screening Recommended"
+                    if len(symptoms_dict) == 1 and not risk_dict:
+                        enriched["diagnosis"] = "Isolated Symptom — Non-Specific (Consider Other Causes)"
+                    else:
+                        enriched["diagnosis"] = "Elevated Diabetes Risk — Screening Recommended"
                 else:
                     enriched["diagnosis"] = "Routine Diabetes Screening Recommended"
+
+        if symptom_conf.get("differential_diagnoses"):
+            enriched["differential_diagnoses"] = symptom_conf["differential_diagnoses"]
 
         return self._apply_presentation_fields(enriched, normalized_payload)
 
@@ -1237,6 +1243,7 @@ class DiagnosisService:
         enriched["headline_explanation_km"] = headline_bi["km"]
         enriched["evidence_completeness"] = completeness
         enriched["recommendations"] = recommendation_items
+        enriched["differential_diagnoses"] = enriched.get("differential_diagnoses") or []
         enriched["triggered_rules"] = self._enrich_triggered_rules_with_db(enriched.get("triggered_rules") or [])
         enriched["explanation"] = self._build_explanation_payload(enriched, normalized_payload)
 

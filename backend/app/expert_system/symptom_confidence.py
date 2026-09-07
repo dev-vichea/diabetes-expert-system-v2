@@ -239,7 +239,42 @@ def calculate_symptom_confidence(symptoms: dict, age: int = None, risk_factors: 
         emergency_count,
         len(present_symptoms)
     )
-    
+
+    # Generate differential diagnoses for non-diabetic causes
+    differential_diagnoses = []
+    if "frequent_urination" in distinct_diabetes_syms:
+        differential_diagnoses.append({
+            "key": "uti_hydration",
+            "title": "Urinary Tract Infection (UTI) or High Fluid Intake",
+            "title_km": "ការរលាកផ្លូវបង្ហូរនោម (UTI) ឬការញ៉ាំទឹកច្រើន",
+            "description": "Frequent urination without high blood sugar is commonly caused by drinking high amounts of fluids/caffeine, mild urinary infections, or benign prostate changes.",
+            "description_km": "ការនោមញឹកញាប់ដោយគ្មានជាតិស្ករឡើងខ្ពស់ ច្រើនតែកើតពីការផឹកទឹក/កាហ្វេច្រើន ការរលាកផ្លូវទឹកនោមស្រាល ឬការប្រែប្រួលក្រពេញប្រូស្តាត។",
+        })
+    if "fatigue" in distinct_diabetes_syms:
+        differential_diagnoses.append({
+            "key": "anemia_sleep",
+            "title": "Sleep Deprivation, Anemia, or Stress",
+            "title_km": "ការគេងមិនគ្រប់គ្រាន់ ខ្វះគ្រាប់ឈាម ឬសម្ពាធអារម្មណ៍",
+            "description": "Fatigue is one of the most common non-specific symptoms. Poor sleep quality, stress, low iron levels, or thyroid imbalances are frequent causes.",
+            "description_km": "ភាពអស់កម្លាំងជារោគសញ្ញាទូទៅបំផុត។ ការគេងមិនបានស្កប់ស្កល់ ភាពតានតឹង កង្វះជាតិដែក ឬអ័រម៉ូនទីរ៉ូអ៊ីត គឺជាមូលហេតុញឹកញាប់។",
+        })
+    if "excessive_thirst" in distinct_diabetes_syms:
+        differential_diagnoses.append({
+            "key": "dehydration",
+            "title": "Environmental Dehydration",
+            "title_km": "ការខ្វះជាតិទឹកពីធម្មជាតិ",
+            "description": "Intense thirst can occur from warm climates, salty meals, strenuous physical activity, or mouth-breathing during sleep.",
+            "description_km": "ការស្រេកទឹកខ្លាំងអាចកើតឡើងពីអាកាសធាតុក្តៅ អាហារប្រៃ ការបញ្ចេញកម្លាំង ឬការដកដង្ហើមតាមមាត់ពេលគេង។",
+        })
+    if "tingling_hands_feet" in distinct_diabetes_syms or "numbness" in distinct_diabetes_syms:
+        differential_diagnoses.append({
+            "key": "neuropathy_other",
+            "title": "Nerve Compression (Carpal Tunnel) or B12 Deficiency",
+            "title_km": "ការសង្កត់សរសៃប្រសាទ ឬកង្វះវីតាមីន B12",
+            "description": "Tingling or numbness often originates from repetitive motion, pinched spinal nerves, or nutritional vitamin B12 deficiency.",
+            "description_km": "ការស្រពន់ ឬស្ពឹក ជារឿយៗបណ្តាលមកពីចលនាកដៃដដែលៗ ការសង្កត់សរសៃឆ្អឹងខ្នង ឬកង្វះអាហារូបត្ថម្ភវីតាមីន B12។",
+        })
+
     return {
         "confidence_score": round(total_confidence, 3),
         "confidence_level": level,
@@ -248,6 +283,7 @@ def calculate_symptom_confidence(symptoms: dict, age: int = None, risk_factors: 
         "assessment_quality": assessment_quality,
         "quality_note": quality_note,
         "contributing_factors": factors,
+        "differential_diagnoses": differential_diagnoses,
         "breakdown": {
             "base_symptom_score": round(base_confidence, 3),
             "cardinal_boost": round(cardinal_boost, 3),

@@ -116,6 +116,21 @@ def _ensure_user_profile_columns():
         logging.getLogger(__name__).warning("Could not auto-add user columns: %s", e)
 
 
+def _ensure_fact_columns():
+    """Ensure newly added columns to facts table exist in existing database schemas."""
+    try:
+        inspector = inspect(db.engine)
+        if "facts" not in inspector.get_table_names():
+            return
+        existing_cols = {col["name"] for col in inspector.get_columns("facts")}
+        if "question_km" not in existing_cols:
+            with db.engine.connect() as conn:
+                conn.execute(text("ALTER TABLE facts ADD COLUMN question_km TEXT"))
+                conn.commit()
+    except Exception as e:
+        logging.getLogger(__name__).warning("Could not auto-add fact columns: %s", e)
+
+
 def create_app(config_object=Config):
     app = Flask(__name__)
     app.config.from_object(config_object)
@@ -147,6 +162,7 @@ def create_app(config_object=Config):
             db.create_all()
 
         _ensure_user_profile_columns()
+        _ensure_fact_columns()
 
         if app.config.get("SEED_DEMO_DATA", True):
             table_names = set(inspect(db.engine).get_table_names())

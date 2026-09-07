@@ -131,9 +131,20 @@ export function DiabetesGuidePage() {
   return (
     <div className="space-y-8 pb-16">
       {/* ── Top Hero Banner ── */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-primary-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl">
-        <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-primary-500/15 blur-3xl" />
-        <div className="absolute -bottom-20 -left-16 h-64 w-64 rounded-full bg-sky-500/15 blur-3xl" />
+      <section className="relative overflow-hidden rounded-3xl bg-slate-950 p-6 sm:p-10 text-white shadow-xl border border-slate-800/80">
+        {/* Background 3D Clinical Graphic & Gradient Overlays */}
+        <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
+          <img
+            src="/images/guide-hero-bg.jpg"
+            alt=""
+            aria-hidden="true"
+            className="h-full w-full object-cover object-right opacity-70 dark:opacity-80 transition-opacity"
+          />
+          {/* Horizontal fade: solid dark on the left for maximum text readability, revealing glowing DNA/molecules on right */}
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/75 via-50% to-transparent" />
+          {/* Vertical subtle vignette */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/20" />
+        </div>
 
         <div className="relative z-10 max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-xs font-semibold backdrop-blur-md">

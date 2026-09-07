@@ -63,6 +63,7 @@ class FactRepository:
             medical_term=data.get("medical_term"),
             category=data.get("category", "other"),
             question=data.get("question"),
+            question_km=data.get("question_km"),
             meaning=data.get("meaning"),
             meaning_km=data.get("meaning_km"),
             prevention=data.get("prevention"),
@@ -82,7 +83,7 @@ class FactRepository:
 
     def update(self, row: Fact, data: dict) -> dict:
         fields = (
-            "label", "label_km", "medical_term", "category", "question",
+            "label", "label_km", "medical_term", "category", "question", "question_km",
             "meaning", "meaning_km", "prevention", "prevention_km",
         )
         for field in fields:
@@ -116,6 +117,7 @@ class FactRepository:
             "medical_term": row.medical_term,
             "category": row.category,
             "question": row.question,
+            "question_km": row.question_km,
             "meaning": row.meaning,
             "meaning_km": row.meaning_km,
             "prevention": row.prevention,
