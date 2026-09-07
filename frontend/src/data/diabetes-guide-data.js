@@ -669,4 +669,8 @@ export const SYMPTOMS_DIRECTORY = [
     redFlags: 'Immediate life-threatening medical emergency. Seek ER care right now.',
     redFlagsKm: 'ស្ថានភាពគ្រោះថ្នាក់ដល់អាយុជីវិតបន្ទាន់។ ត្រូវទៅមន្ទីរពេទ្យឥឡូវនេះ។',
   },
-]
+].map((item) => ({
+  ...item,
+  image: item.image || `/images/symptoms/${item.key}.jpg`,
+}))
+

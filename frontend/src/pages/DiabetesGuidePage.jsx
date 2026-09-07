@@ -67,6 +67,8 @@ export function DiabetesGuidePage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [activeSymptom, setActiveSymptom] = useState(null)
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const [imageError, setImageError] = useState(false)
 
   // Filter symptoms by category and search text
   const filteredSymptoms = useMemo(() => {
@@ -112,6 +114,12 @@ export function DiabetesGuidePage() {
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [activeSymptom])
+
+  // Reset image loading and error states when inspecting a different symptom
+  useEffect(() => {
+    setImageLoaded(false)
+    setImageError(false)
+  }, [activeSymptom?.key])
 
   const openSymptomByKey = (key) => {
     const found = SYMPTOMS_DIRECTORY.find((s) => s.key === key)
@@ -485,15 +493,27 @@ export function DiabetesGuidePage() {
               onClick={(e) => e.stopPropagation()}
               className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-950 animate-in zoom-in-95 duration-150"
             >
-              {/* Optional Top Hero Image Banner */}
-              {activeSymptom.image && (
-                <div className="relative h-48 sm:h-56 w-full overflow-hidden bg-slate-100 dark:bg-slate-900">
+              {/* Optional Top Hero Image Banner (Optimized: On-demand, Lazy, Shimmer Skeleton) */}
+              {activeSymptom.image && !imageError && (
+                <div className="relative h-48 sm:h-56 w-full overflow-hidden bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+                  {/* Shimmer skeleton placeholder */}
+                  {!imageLoaded && (
+                    <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800" />
+                  )}
+
                   <img
                     src={activeSymptom.image}
                     alt={isKhmer ? activeSymptom.nameKm : activeSymptom.name}
-                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                    onLoad={() => setImageLoaded(true)}
+                    onError={() => setImageError(true)}
+                    className={cn(
+                      'h-full w-full object-cover transition-opacity duration-300',
+                      imageLoaded ? 'opacity-100' : 'opacity-0'
+                    )}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
                 </div>
               )}
 
