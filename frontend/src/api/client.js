@@ -2,7 +2,7 @@ import axios from 'axios'
 
 export const ACCESS_TOKEN_KEY = 'access_token'
 export const REFRESH_TOKEN_KEY = 'refresh_token'
-const DEFAULT_API_TIMEOUT_MS = 20000
+const DEFAULT_API_TIMEOUT_MS = 30000
 
 function resolveApiTimeout() {
   const configuredTimeout = Number(import.meta.env.VITE_API_TIMEOUT_MS)

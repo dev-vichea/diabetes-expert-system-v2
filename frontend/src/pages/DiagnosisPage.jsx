@@ -214,6 +214,14 @@ function StepDot({ item, status, onClick, locked }) {
   )
 }
 
+/* ── Module-level facts cache ─────────────────────────
+   Facts rarely change — cache them in memory so navigating
+   away and back never re-fetches (eliminates the slowest API
+   call on page load). The cache lives as long as the JS bundle
+   is loaded (i.e. until the user hard-refreshes).              */
+let _factsCache = null
+let _factsCacheTs = 0
+
 /* ================================================================
    MAIN PAGE
    ================================================================ */
@@ -263,11 +271,18 @@ export function DiagnosisPage() {
     { id: 'diabetes', label: t('assessment.options.ogtt.diabetes', 'Diabetes'), sub: '≥ 200', value: 220 },
   ]
 
-  const [dbFacts, setDbFacts] = useState([])
-  const [loadingFacts, setLoadingFacts] = useState(false)
+  const [dbFacts, setDbFacts] = useState(_factsCache ?? [])
+  const [loadingFacts, setLoadingFacts] = useState(!_factsCache)
 
   // Fetch active fact catalog from the database (Knowledge Base -> Facts)
+  // Uses a module-level cache so we only hit the server once per session.
   useEffect(() => {
+    if (_factsCache) {
+      // Already cached from a previous mount — skip the network call.
+      if (!dbFacts.length) setDbFacts(_factsCache)
+      setLoadingFacts(false)
+      return
+    }
     let cancelled = false
     async function loadFacts() {
       setLoadingFacts(true)
@@ -275,6 +290,8 @@ export function DiagnosisPage() {
         const res = await api.get('/facts/', { params: { status: 'active' } })
         const data = getApiData(res)
         if (!cancelled && Array.isArray(data)) {
+          _factsCache = data          // cache for future mounts
+          _factsCacheTs = Date.now()
           setDbFacts(data)
           // Pre-initialize dynamic fact booleans in form state to avoid uncontrolled warnings
           setForm(prev => {
@@ -302,11 +319,7 @@ export function DiagnosisPage() {
       }
     }
     loadFacts()
-    window.addEventListener('focus', loadFacts)
-    return () => {
-      cancelled = true
-      window.removeEventListener('focus', loadFacts)
-    }
+    return () => { cancelled = true }
   }, [location.key])
 
   const fieldGroups = useMemo(() => buildFieldGroupsFromFacts(dbFacts), [dbFacts])
@@ -587,7 +600,17 @@ export function DiagnosisPage() {
     navigate({ pathname: '/diagnosis' }, { replace: true, state: null })
   }, [draftReady, forceRestart, isDraftPristine, location.search, navigate, restartRequestId, restartRequested])
 
-  useEffect(() => { if (needsPatient) loadPatients() }, [needsPatient])
+  /* Lazy-load patients: only fetch when the interview reaches the patient
+     selector node, instead of eagerly on mount (avoids a heavy API call
+     racing with the facts fetch and potentially timing out). */
+  const patientsLoadedRef = useRef(false)
+  useEffect(() => {
+    if (!needsPatient || patientsLoadedRef.current) return
+    if (currentNodeId === 'patient' || form.patient_id) {
+      patientsLoadedRef.current = true
+      loadPatients()
+    }
+  }, [needsPatient, currentNodeId, form.patient_id])
   useEffect(() => {
     if (!needsPatient) return
     const pid = new URLSearchParams(location.search).get('patient_id')
