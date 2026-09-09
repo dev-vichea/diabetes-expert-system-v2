@@ -6,6 +6,7 @@ from typing import Any
 from flask import current_app
 
 from app.errors import NotFoundError, ValidationError
+from app.extensions import db
 from app.expert_system.final_assessment import generate_final_assessment
 from app.expert_system.inference_engine import run_inference
 from app.expert_system.symptom_confidence import calculate_symptom_confidence
