@@ -277,12 +277,10 @@ def _type_priors(facts: dict) -> tuple[float, float]:
 
 
 def _resolve_suspected_type(ranked_conclusions: list[dict], facts: dict) -> dict | None:
-    """Resolve which diabetes TYPE the evidence pattern fits — always decisive.
+    """Resolve a type only when a type-pattern rule supplies evidence.
 
-    The engine never answers "Undetermined" for type 1 vs type 2: rule votes
-    are combined with clinical priors and the leader is committed to with a
-    displayed certainty. "Mixed features" is kept only for genuine, near-tied
-    overlap, and a gestational pattern wins outright during pregnancy.
+    Demographic priors can refine a supported pattern, but age or BMI alone
+    must not assign Type 1 or Type 2 from an elevated glucose result.
     """
     by_conclusion = {
         str(item.get("conclusion") or ""): float(item.get("certainty") or 0)
@@ -320,6 +318,9 @@ def _resolve_suspected_type(ranked_conclusions: list[dict], facts: dict) -> dict
             "matches": [{"type": "Gestational", "certainty": round(gdm, 4)}],
             "candidates": [{"type": "Gestational", "certainty": round(min(max(gdm, presence * 0.85), 0.95), 4)}],
         }
+
+    if max(t1_raw, t2_raw) < MIN_TYPE_CERTAINTY:
+        return None
 
     # Genuine overlap: both patterns strongly supported and nearly tied
     if t1_raw >= MIN_TYPE_CERTAINTY and t2_raw >= MIN_TYPE_CERTAINTY and abs(t1_raw - t2_raw) < 0.08:

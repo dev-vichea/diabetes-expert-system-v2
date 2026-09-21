@@ -106,7 +106,8 @@ A professional, full-stack web application designed to leverage an expert system
 
 ## 🔑 Demo Accounts (If Seeded)
 
-The default knowledge base is the existing **v3** set (40 rules). Set
+The default knowledge base is the expanded **v3** set (49 rules and 94 catalog
+facts). Set
 `RULES_SEED_VERSION=v3` in `backend/.env`. For an already initialized database,
 synchronize the rule set and fact catalog from the backend directory:
 
