@@ -32,6 +32,12 @@ class NotFoundError(ApiError):
         super().__init__(status_code=404, code="not_found", message=message)
 
 
+class GoogleAuthNotConfiguredError(ApiError):
+    def __init__(self, message: str = "Google login is not configured on the server."):
+        super().__init__(status_code=400, code="GOOGLE_LOGIN_NOT_CONFIGURED", message=message)
+
+
+
 def _error_payload(code: str, message: str, details: dict | None = None):
     payload = {
         "success": False,

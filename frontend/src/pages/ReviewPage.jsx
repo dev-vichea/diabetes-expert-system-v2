@@ -923,7 +923,7 @@ export function ReviewPage() {
                         {selectedResult.triggered_rules.map((rule) => (
                           <li key={rule.id} className="flex items-start gap-2">
                             <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-500" />
-                            <span dangerouslySetInnerHTML={{ __html: tExact(rule.name) }} />
+                            <span>{tExact(rule.name)}</span>
                           </li>
                         ))}
                       </ul>

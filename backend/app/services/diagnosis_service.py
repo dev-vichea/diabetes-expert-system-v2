@@ -6,7 +6,7 @@ from typing import Any
 
 from flask import current_app
 
-from app.errors import NotFoundError, ValidationError
+from app.errors import ForbiddenError, NotFoundError, ValidationError
 from app.extensions import db
 from app.expert_system.final_assessment import generate_final_assessment
 from app.expert_system.inference_engine import run_inference
@@ -220,9 +220,7 @@ class DiagnosisService:
         diagnosis_result_id = payload.get("diagnosis_result_id")
 
         if diagnosis_result_id:
-            result = self.diagnosis_repository.get_result(int(diagnosis_result_id))
-            if not result:
-                raise NotFoundError("Diagnosis result not found.")
+            result = self._get_accessible_result(int(diagnosis_result_id), current_user)
 
             trace = dict(result.explanation_trace_json or {})
             trace["submitted_to_care_team"] = True
@@ -298,10 +296,19 @@ class DiagnosisService:
             for row in self.diagnosis_repository.list_recent(limit=safe_limit)
         ]
 
-    def get_result(self, diagnosis_result_id: int) -> dict:
+    def _get_accessible_result(self, diagnosis_result_id: int, current_user: dict):
         result = self.diagnosis_repository.get_result(diagnosis_result_id)
         if not result:
             raise NotFoundError("Diagnosis result not found.")
+        permissions = set(current_user.get("permissions") or [])
+        if not permissions.intersection({"diagnosis.review_any", "patient.view"}):
+            patient = self.patient_repository.get_patient_by_user_id(int(current_user["sub"]))
+            if not patient or result.patient_id != patient.id:
+                raise ForbiddenError("You cannot access another patient's assessment.")
+        return result
+
+    def get_result(self, diagnosis_result_id: int, current_user: dict) -> dict:
+        result = self._get_accessible_result(diagnosis_result_id, current_user)
         serialized = self.diagnosis_repository.serialize_result(result)
         return self._rebuild_persisted_response(serialized)
 
@@ -471,10 +478,8 @@ class DiagnosisService:
                 out.append(item)
         return out
 
-    def generate_report_pdf(self, diagnosis_result_id: int, lang: str = "en") -> tuple[bytes, str]:
-        result = self.diagnosis_repository.get_result(diagnosis_result_id)
-        if not result:
-            raise NotFoundError("Diagnosis result not found.")
+    def generate_report_pdf(self, diagnosis_result_id: int, current_user: dict, lang: str = "en") -> tuple[bytes, str]:
+        result = self._get_accessible_result(diagnosis_result_id, current_user)
 
         report_config = {
             "REPORT_CLINIC_NAME": current_app.config.get("REPORT_CLINIC_NAME"),

@@ -8,7 +8,7 @@ dashboard_bp = Blueprint('dashboard', __name__)
 
 
 @dashboard_bp.get('/clinical')
-@require_auth()
+@require_auth(permissions=["analytics.view", "patient.view"], permission_mode="any")
 def get_clinical_dashboard():
     """Return clinical dashboard stats, optionally filtered by date range.
 

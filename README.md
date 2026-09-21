@@ -46,10 +46,47 @@ A professional, full-stack web application designed to leverage an expert system
 
 ### Prerequisites
 - Node.js (v18+)
-- Python (3.10+)
+- Python (3.11+)
 - A [Supabase](https://supabase.com) account & PostgreSQL instance (or local PostgreSQL)
 
-### 1. Backend Setup
+### Windows local quick start (SQLite)
+
+Run these commands from the project directory in PowerShell. Python 3.11 or
+newer is required (`datetime.UTC` is used by the backend).
+
+```powershell
+cd backend
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Copy-Item .env.example .env
+```
+
+In `backend/.env`, set `DATABASE_URL=sqlite:///dev_local.db`,
+`DB_AUTO_CREATE=true`, and `DB_FALLBACK_ENABLED=false`. Keep
+`FLASK_DEBUG=1` and `SEED_DEMO_DATA=1` for the local demo, and replace
+`SECRET_KEY` with a randomly generated value. Then start the API:
+
+```powershell
+.\.venv\Scripts\python.exe run.py
+```
+
+In a second PowerShell terminal, from the project directory:
+
+```powershell
+cd frontend
+npm.cmd install
+Copy-Item .env.example .env
+npm.cmd run dev
+```
+
+Open http://localhost:5173. The API health endpoint is
+http://127.0.0.1:5001/api/health. The local database is stored in
+`backend/instance/dev_local.db`. Do not overwrite an existing `.env` when
+restarting; environment setup and installation are only needed initially.
+`backend/run.py` reads `backend/.env`; the root `.env` is used by `main.py`
+and Docker Compose.
+
+### 1. Backend Setup (PostgreSQL)
 
 1. **Navigate to the backend directory and install dependencies:**
    ```bash
@@ -94,7 +131,7 @@ A professional, full-stack web application designed to leverage an expert system
    ```bash
    cp .env.example .env
    ```
-   Ensure `VITE_API_URL` points to your running backend (e.g., `http://127.0.0.1:5001/api`).
+   Ensure `VITE_API_BASE_URL` points to your running backend (e.g., `http://127.0.0.1:5001/api`).
 
 3. **Run the Development Server:**
    ```bash

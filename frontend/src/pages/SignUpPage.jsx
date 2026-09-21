@@ -5,6 +5,9 @@ import api, { getApiData, getApiErrorMessage, setAuthTokens } from '../api/clien
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { LanguageSwitcher } from '@/components/auth/LanguageSwitcher'
+import { GoogleLogin } from '@react-oauth/google'
+
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
 // ── Medical White Tokens (healthcare blue family — legacy key names kept) ──
 const C = {
@@ -17,8 +20,8 @@ const C = {
 }
 
 export function SignUpPage() {
-  const { setUser } = useAuth()
-  const { t } = useLanguage()
+  const { setUser, loginWithGoogle } = useAuth()
+  const { language, t } = useLanguage()
   const location = useLocation()
   const navigate = useNavigate()
   const canvasRef = useRef(null)
@@ -118,6 +121,28 @@ export function SignUpPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function handleGoogleSuccess(credentialResponse) {
+    if (!credentialResponse?.credential) return
+    setLoading(true)
+    setError('')
+    try {
+      const user = await loginWithGoogle(credentialResponse.credential)
+      if (user?.role === 'patient' && !user?.profile_completed) {
+        navigate('/profile-setup')
+      } else {
+        navigate('/dashboard')
+      }
+    } catch (err) {
+      setError(getApiErrorMessage(err, t('auth.errorGoogleLoginFailed', 'Google sign-in failed. Please try again.')))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function handleGoogleError() {
+    setError(t('auth.errorGoogleLoginFailed', 'Google sign-in failed. Please try again.'))
   }
 
   return (
@@ -249,6 +274,32 @@ export function SignUpPage() {
               <button type="submit" className="auth-submit-button" disabled={loading || !isValid}>
                 {loading ? t('auth.creatingAccount', 'Creating account...') : t('auth.createAccount', 'Create Account')}
               </button>
+
+              {googleClientId ? (
+                <>
+                  <div className="relative my-4 flex items-center justify-center">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-slate-200" />
+                    </div>
+                    <div className="relative bg-white px-3 text-xs uppercase tracking-wider text-slate-400">
+                      {t('auth.orDivider', 'OR')}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center w-full">
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                      locale={language || 'km'}
+                      theme="outline"
+                      size="large"
+                      width="100%"
+                      text="signup_with"
+                      shape="rectangular"
+                    />
+                  </div>
+                </>
+              ) : null}
 
               {error ? <p className="error-box">{error}</p> : null}
 

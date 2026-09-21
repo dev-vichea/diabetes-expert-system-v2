@@ -54,6 +54,7 @@ def init_dependencies(app):
             refresh_token_expires_seconds=app.config["JWT_REFRESH_EXPIRES_SECONDS"],
             audit_log_repository=audit_log_repository,
             patient_repository=patient_repository,
+            google_client_id=app.config.get("GOOGLE_CLIENT_ID"),
         ),
         SERVICE_KEYS["unified_assessment"]: UnifiedAssessmentService(
             rule_repository=rule_repository,

@@ -62,7 +62,7 @@ def get_recent_assessments():
 @require_auth(permissions=["diagnosis.run"])
 def get_assessment_result(diagnosis_result_id: int):
     """Retrieve a saved assessment result by ID."""
-    result = get_diagnosis_service().get_result(diagnosis_result_id)
+    result = get_diagnosis_service().get_result(diagnosis_result_id, current_user=g.current_user)
     return success_response(data=result)
 
 
@@ -71,7 +71,9 @@ def get_assessment_result(diagnosis_result_id: int):
 def download_assessment_report(diagnosis_result_id: int):
     """Generate and download PDF assessment report."""
     lang = request.args.get("lang", "en").lower().strip()
-    pdf_bytes, file_name = get_diagnosis_service().generate_report_pdf(diagnosis_result_id, lang=lang)
+    pdf_bytes, file_name = get_diagnosis_service().generate_report_pdf(
+        diagnosis_result_id, current_user=g.current_user, lang=lang
+    )
     return send_file(
         BytesIO(pdf_bytes),
         mimetype="application/pdf",

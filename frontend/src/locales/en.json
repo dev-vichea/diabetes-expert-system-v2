@@ -85,7 +85,11 @@
     "errorLoginFailed": "Login failed",
     "errorAgreeTerms": "Please agree to the terms and conditions.",
     "errorPasswordMismatch": "Password and confirm password must match.",
-    "errorRegistrationFailed": "Registration failed"
+    "errorRegistrationFailed": "Registration failed",
+    "orDivider": "OR",
+    "signInWithGoogle": "Sign in with Google",
+    "signUpWithGoogle": "Sign up with Google",
+    "errorGoogleLoginFailed": "Google sign-in failed. Please try again."
   },
   "roles": {
     "user": "User",

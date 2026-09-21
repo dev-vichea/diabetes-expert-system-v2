@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import api, { clearAuthStorage, getAccessToken, getApiData, getRefreshToken } from '../api/client'
+import api, { clearAuthStorage, getAccessToken, getApiData, getRefreshToken, setAuthTokens } from '../api/client'
 
 const AuthContext = createContext(null)
 
@@ -38,6 +38,14 @@ export function AuthProvider({ children }) {
     return () => { cancelled = true }
   }, [])
 
+  const loginWithGoogle = async (credential) => {
+    const response = await api.post('/auth/google', { credential })
+    const data = getApiData(response)
+    setAuthTokens(data.access_token || data.token, data.refresh_token)
+    setUser(data.user)
+    return data.user
+  }
+
   const logout = async () => {
     try {
       await api.post('/auth/logout', { refresh_token: getRefreshToken() })
@@ -72,6 +80,7 @@ export function AuthProvider({ children }) {
     updateUser,
     logout,
     refreshUser,
+    loginWithGoogle,
   }), [user])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
