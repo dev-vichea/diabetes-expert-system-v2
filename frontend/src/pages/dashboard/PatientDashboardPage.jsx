@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import api, { getApiData, getApiErrorMessage } from '@/api/client'
 import { ErrorAlert } from '@/components/ui'
-import { PatientDashboardHero } from '@/components/dashboard/patient/PatientDashboardHero'
 import { PatientGlucoseTrend } from '@/components/dashboard/patient/PatientGlucoseTrend'
 import { PatientHealthSnapshot } from '@/components/dashboard/patient/PatientHealthSnapshot'
-import { PatientSituationPanel } from '@/components/dashboard/patient/PatientSituationPanel'
 import { PatientTodayCarePlan } from '@/components/dashboard/patient/PatientTodayCarePlan'
+import { PatientUnifiedHeroBar } from '@/components/dashboard/patient/PatientUnifiedHeroBar'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -47,34 +46,20 @@ export function PatientDashboardPage() {
   const latestResult = patientResults[0]
 
   return (
-    <div className="space-y-6">
-      {/* 1. Greeting & Hero Header */}
-      <PatientDashboardHero user={user} />
+    <div className="space-y-6 pb-8">
+      {/* SECTION 1: Unified Hero Status Bar (Full Width) */}
+      <PatientUnifiedHeroBar user={user} latestResult={latestResult} />
 
       <ErrorAlert message={error} />
 
-      {/* 2. Top Row: Status Alert Card (Left) + Health Vitals Snapshot (Right) */}
-      <div className="grid min-w-0 gap-6 xl:grid-cols-12">
-        <div className="min-w-0 xl:col-span-5">
-          <PatientSituationPanel
-            latestResult={latestResult}
-            patientResults={patientResults}
-          />
-        </div>
-        <div className="min-w-0 xl:col-span-7">
-          <PatientHealthSnapshot results={patientResults} />
-        </div>
-      </div>
+      {/* SECTION 2: Key Vitals Snapshot (Full-Width 3-Column Grid) */}
+      <PatientHealthSnapshot results={patientResults} />
 
-      {/* 3. Lower Row (2-Column Layout): Today's Care Plan (Left) + 7-Day Glucose Trend (Right) */}
-      <div className="grid min-w-0 gap-6 xl:grid-cols-12">
-        <div className="min-w-0 xl:col-span-5">
-          <PatientTodayCarePlan latestResult={latestResult} />
-        </div>
-        <div className="min-w-0 xl:col-span-7">
-          <PatientGlucoseTrend results={patientResults} />
-        </div>
-      </div>
+      {/* SECTION 3: 7-Day Glucose Trend Visualization (Full Width) */}
+      <PatientGlucoseTrend results={patientResults} />
+
+      {/* SECTION 4: Today's Habits & Care Plan Checklist (Full Width) */}
+      <PatientTodayCarePlan latestResult={latestResult} />
     </div>
   )
 }
