@@ -106,8 +106,10 @@ A professional, full-stack web application designed to leverage an expert system
 
 ## 🔑 Demo Accounts (If Seeded)
 
-The default knowledge base is the expanded **v3** set (49 rules and 94 catalog
-facts). Set
+The default knowledge base is the expanded **v3** set (59 rules and 99 catalog
+facts). It includes two-test confirmation, random glucose with classic
+symptoms, pregnancy-specific fasting/1-hour/2-hour 75-g OGTT criteria,
+discordant-result review, and near-threshold repeat-testing guidance. Set
 `RULES_SEED_VERSION=v3` in `backend/.env`. For an already initialized database,
 synchronize the rule set and fact catalog from the backend directory:
 

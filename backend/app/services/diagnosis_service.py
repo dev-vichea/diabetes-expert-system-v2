@@ -350,6 +350,7 @@ class DiagnosisService:
         enriched["suspected_type"] = trace.get("suspected_type")
         enriched["adaptive_assessment"] = trace.get("adaptive_assessment")
         confidence_trace = trace.get("confidence_calculation") if isinstance(trace.get("confidence_calculation"), dict) else {}
+        enriched["confidence_calibration"] = confidence_trace.get("calibration")
         if confidence_trace.get("context_note"):
             enriched["context_note"] = confidence_trace["context_note"]
         if confidence_trace.get("conclusion_scores"):
@@ -395,6 +396,7 @@ class DiagnosisService:
             "fasting_plasma_glucose": "fasting_glucose",
             "a1c": "hba1c",
             "two_hour_ogtt_75g": "2h_ogtt_75g",
+            "fact_1h_ogtt_75g": "one_hour_ogtt_75g",
             "polyuria": "frequent_urination",
             "polydipsia": "excessive_thirst",
             "no_lab_values_available": "no_labs_available",
@@ -587,6 +589,7 @@ class DiagnosisService:
         fasting_glucose = payload.get("fasting_glucose")
         fasting_plasma_glucose = payload.get("fasting_plasma_glucose")
         hba1c = payload.get("hba1c")
+        one_hour_ogtt = payload.get("one_hour_ogtt_75g", payload.get("1h_ogtt_75g", payload.get("ogtt_1h_75g")))
         two_hour_ogtt = payload.get("2h_ogtt_75g", payload.get("two_hour_ogtt_75g", payload.get("ogtt_2h_75g")))
         random_plasma_glucose = payload.get("random_plasma_glucose", payload.get("random_glucose"))
         blood_glucose = payload.get("blood_glucose")
@@ -601,6 +604,11 @@ class DiagnosisService:
             )
         if hba1c in (None, "") or isinstance(hba1c, bool):
             hba1c = self._extract_numeric_from_labs(labs, keys={"hba1c", "a1c", "hba1c_percent"})
+        if one_hour_ogtt in (None, "") or isinstance(one_hour_ogtt, bool):
+            one_hour_ogtt = self._extract_numeric_from_labs(
+                labs,
+                keys={"one_hour_ogtt_75g", "1h_ogtt_75g", "ogtt_1h_75g", "one_hour_ogtt"},
+            )
         if two_hour_ogtt in (None, "") or isinstance(two_hour_ogtt, bool):
             two_hour_ogtt = self._extract_numeric_from_labs(
                 labs,
@@ -695,6 +703,15 @@ class DiagnosisService:
         if hba1c_numeric is not None:
             normalized["hba1c"] = hba1c_numeric
 
+        one_hour_ogtt_numeric = self._as_optional_float(
+            one_hour_ogtt,
+            field_name="one_hour_ogtt_75g",
+            min_value=30,
+            max_value=1000,
+        )
+        if one_hour_ogtt_numeric is not None:
+            normalized["one_hour_ogtt_75g"] = one_hour_ogtt_numeric
+
         two_hour_ogtt_numeric = self._as_optional_float(
             two_hour_ogtt,
             field_name="2h_ogtt_75g",
@@ -782,7 +799,7 @@ class DiagnosisService:
 
         no_labs_explicit = normalized.get("no_labs_available") is True or normalized.get("no_lab_values_available") is True
         has_core_labs = any(
-            key in normalized for key in {"fasting_glucose", "fasting_plasma_glucose", "hba1c", "2h_ogtt_75g", "random_plasma_glucose", "blood_glucose"}
+            key in normalized for key in {"fasting_glucose", "fasting_plasma_glucose", "hba1c", "one_hour_ogtt_75g", "2h_ogtt_75g", "random_plasma_glucose", "blood_glucose"}
         )
         has_extra_labs = bool(labs_normalized)
         no_labs_available = bool(no_labs_explicit or not (has_core_labs or has_extra_labs))
@@ -1088,12 +1105,37 @@ class DiagnosisService:
             risk_factors=risk_dict,
         )
         symptom_score = float(symptom_conf.get("confidence_score", 0) or 0)
+        confidence_trace = (enriched.get("explanation_trace") or {}).get("confidence_calculation") or {}
+        top_conclusion = str(confidence_trace.get("top_conclusion") or "")
+        has_lab_evidence = any(
+            key in normalized_payload
+            for key in ("fasting_glucose", "fasting_plasma_glucose", "hba1c", "one_hour_ogtt_75g", "2h_ogtt_75g", "random_plasma_glucose")
+        )
+        allow_symptom_fallback = (
+            not has_lab_evidence
+            and top_conclusion in {"", "classic_symptoms", "symptom_only_screening"}
+        )
+        symptom_score = min(symptom_score, 0.72)
 
-        # If symptom-based score is higher than rule engine output (e.g. no rule fired for symptoms alone),
-        # upgrade certainty & diagnosis
-        if (symptoms_dict or risk_dict) and symptom_score > current_certainty:
+        # Symptoms can strengthen a symptom-only screen, but never override a
+        # lab-calibrated score. The cap preserves its screening-only meaning.
+        if allow_symptom_fallback and (symptoms_dict or risk_dict) and symptom_score > current_certainty:
             current_certainty = symptom_score
             enriched["certainty"] = round(current_certainty, 2)
+            calibration = dict(enriched.get("confidence_calibration") or confidence_trace.get("calibration") or {})
+            calibration.update({
+                "method": "evidence_agreement_v1",
+                "calibrated_score": round(current_certainty, 4),
+                "status": "screening_only",
+                "independent_evidence_count": len(symptoms_dict),
+                "evidence": sorted(symptoms_dict),
+                "limiting_factors": ["no_laboratory_confirmation"],
+                "requires_confirmation": True,
+                "meaning": "Evidence agreement score; not measured clinical accuracy or disease probability.",
+            })
+            enriched["confidence_calibration"] = calibration
+            confidence_trace["calibration"] = calibration
+            confidence_trace["certainty"] = round(current_certainty, 4)
             if enriched.get("diagnosis") in (None, "", "No strong diabetes indication", "Insufficient evidence for diabetes indication"):
                 if current_certainty >= 0.70:
                     enriched["diagnosis"] = "Suspected Diabetes (Classic Symptoms)"
@@ -1185,6 +1227,7 @@ class DiagnosisService:
         provided_inputs = {
             "fasting_glucose": "fasting_glucose" in normalized_payload,
             "hba1c": "hba1c" in normalized_payload,
+            "one_hour_ogtt_75g": "one_hour_ogtt_75g" in normalized_payload,
             "2h_ogtt_75g": "2h_ogtt_75g" in normalized_payload,
             "random_plasma_glucose": "random_plasma_glucose" in normalized_payload,
             "symptoms": bool(matched_symptoms),
@@ -1237,6 +1280,8 @@ class DiagnosisService:
         enriched["missing_inputs"] = missing_inputs
         enriched["provided_inputs"] = provided_inputs
         enriched["confidence_status"] = confidence_status
+        confidence_trace = (enriched.get("explanation_trace") or {}).get("confidence_calculation") or {}
+        enriched["confidence_calibration"] = enriched.get("confidence_calibration") or confidence_trace.get("calibration")
         enriched["confidence_reason"] = confidence_reason_bi["en"]
         enriched["confidence_reason_km"] = confidence_reason_bi["km"]
         enriched["result_summary"] = summary_bi["en"]
@@ -1254,7 +1299,7 @@ class DiagnosisService:
     def _build_explanation_payload(self, result: dict, normalized_payload: dict) -> dict:
         triggered_rules = list(result.get("triggered_rules") or [])
         key_labs = {}
-        for lab_key in {"fasting_glucose", "fasting_plasma_glucose", "hba1c", "2h_ogtt_75g", "random_plasma_glucose", "blood_glucose"}:
+        for lab_key in {"fasting_glucose", "fasting_plasma_glucose", "hba1c", "one_hour_ogtt_75g", "2h_ogtt_75g", "random_plasma_glucose", "blood_glucose"}:
             if lab_key in normalized_payload:
                 key_labs[lab_key] = normalized_payload[lab_key]
 
@@ -1401,7 +1446,7 @@ class DiagnosisService:
         }
 
     def _calculate_evidence_completeness(self, *, normalized_payload: dict, matched_symptoms: list[str], matched_risk_factors: list[str]) -> dict:
-        lab_keys = ("fasting_glucose", "fasting_plasma_glucose", "hba1c", "2h_ogtt_75g", "random_plasma_glucose")
+        lab_keys = ("fasting_glucose", "fasting_plasma_glucose", "hba1c", "one_hour_ogtt_75g", "2h_ogtt_75g", "random_plasma_glucose")
         available_labs = [key for key in lab_keys if key in normalized_payload]
         unique_available_labs = sorted(set(available_labs))
 
@@ -1443,9 +1488,18 @@ class DiagnosisService:
         trace = (result.get("explanation_trace") or {}).get("confidence_calculation") or {}
         conclusion_scores = trace.get("conclusion_scores") or []
         top_conclusion = str(trace.get("top_conclusion") or "").strip()
+        calibration = result.get("confidence_calibration") or trace.get("calibration") or {}
 
         if (conclusion_scores or matched_symptoms or matched_risk_factors) and certainty_percent > 0:
-            if conclusion_scores:
+            calibration_status = str(calibration.get("status") or "")
+            evidence_count = int(calibration.get("independent_evidence_count") or 0)
+            if calibration_status:
+                reason = bilingual(
+                    DT,
+                    f"conf.calibration.{calibration_status}",
+                    evidence_count=evidence_count,
+                )
+            elif conclusion_scores:
                 top_supporting_rules = conclusion_scores[0].get("supporting_rules") or []
                 support_count = len(top_supporting_rules)
                 reason = {
@@ -1733,7 +1787,7 @@ class DiagnosisService:
         if urgency := ("urgent" if urgent_priority else None):
             add(None, urgency, "safety", bilingual_text=note_bilingual(NOTE_URGENT_SAFETY_KEY))
 
-        lab_keys = ("fasting_glucose", "fasting_plasma_glucose", "hba1c", "2h_ogtt_75g", "random_plasma_glucose")
+        lab_keys = ("fasting_glucose", "fasting_plasma_glucose", "hba1c", "one_hour_ogtt_75g", "2h_ogtt_75g", "random_plasma_glucose")
         has_any_lab = any(key in normalized_payload for key in lab_keys)
         if not has_any_lab:
             # Gentle, non-alarming nudge — symptoms alone already give a signal.
@@ -1845,7 +1899,7 @@ class DiagnosisService:
             return normalized
 
         payload = normalized_payload or {}
-        has_labs = any(key in payload for key in ("fasting_glucose", "fasting_plasma_glucose", "hba1c", "2h_ogtt_75g", "random_plasma_glucose", "blood_glucose"))
+        has_labs = any(key in payload for key in ("fasting_glucose", "fasting_plasma_glucose", "hba1c", "one_hour_ogtt_75g", "2h_ogtt_75g", "random_plasma_glucose", "blood_glucose"))
         return "diagnostic" if has_labs else "screening"
 
     def _build_assessment_answer_records(self, payload: dict) -> list[dict]:

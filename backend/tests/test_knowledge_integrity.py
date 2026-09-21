@@ -26,6 +26,10 @@ def test_seed_integrity_and_producer_consumer_links():
     links = {row["key"]: row for row in report["fact_links"]}
     assert links["fasting_glucose"]["data_type"] == "number"
     assert links["fasting_glucose"]["unit"] == "mg/dL"
+    assert links["one_hour_ogtt_75g"]["data_type"] == "number"
+    assert links["one_hour_ogtt_75g"]["unit"] == "mg/dL"
+    assert "v3-gdm-one-hour-ogtt-high" in links["one_hour_ogtt_75g"]["used_by"]
+    assert "v3-conclude-two-test-confirmation" in links["diabetes_confirmed_by_two_tests"]["used_by"]
     assert "v3-discordant-fpg-high" in links["discordant_glycemic_tests"]["produced_by"]
     assert "v3-review-discordant-tests" in links["discordant_glycemic_tests"]["used_by"]
 
@@ -142,11 +146,16 @@ def test_upgrades_preserve_edits_and_record_previous_version(app):
         app.config["RULES_SEED_VERSION"] = "v3"
         sync_knowledge_base()
         normal = Rule.query.filter_by(code="v3-normal-glucose").one()
+        pregnancy = Rule.query.filter_by(code="v3-gestational-pattern").one()
         assert any(c.operator == ">=" and c.expected_value == "70" for c in normal.conditions)
+        assert any(a.action_type == "assert_fact" and a.action_value == "pregnancy_glucose_review_needed=true" for a in pregnancy.actions)
+        assert all(a.action_value != "gestational_diabetes_likely" for a in pregnancy.actions)
         assert RuleVersion.query.filter_by(rule_id=normal.id, change_type="before_seed_upgrade").count() == 1
+        assert RuleVersion.query.filter_by(rule_id=pregnancy.id, change_type="before_seed_upgrade").count() == 1
         assert edited.explanation_text == "Clinician edit"
         sync_knowledge_base()
         assert RuleVersion.query.filter_by(rule_id=normal.id).count() == 1
+        assert RuleVersion.query.filter_by(rule_id=pregnancy.id).count() == 1
 
 
 def test_integrity_api(app, client, doctor_auth):

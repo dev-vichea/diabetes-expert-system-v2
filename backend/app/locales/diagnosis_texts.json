@@ -147,6 +147,42 @@
     "en": "Confidence score is calculated from {s_count} reported symptom(s) and {r_count} risk factor(s).",
     "km": "ពិន្ទុទំនុកចិត្តគណនាពីអាការៈដែលបានរាយការណ៍ {s_count} និងកត្តាប្រឈម {r_count}។"
   },
+  "conf.calibration.corroborated": {
+    "en": "High evidence confidence: {evidence_count} independent diagnostic indicator(s) agree.",
+    "km": "ទំនុកចិត្តលើភស្តុតាងខ្ពស់៖ សូចនាករវិនិច្ឆ័យឯករាជ្យ {evidence_count} ស្របគ្នា។"
+  },
+  "conf.calibration.confirmation_needed": {
+    "en": "One diagnostic-range measure supports this result; repeat or independent testing is still needed for confirmation.",
+    "km": "លទ្ធផលតេស្តមួយស្ថិតក្នុងកម្រិតវិនិច្ឆ័យគាំទ្រលទ្ធផលនេះ ប៉ុន្តែនៅតែត្រូវធ្វើតេស្តឡើងវិញ ឬតេស្តឯករាជ្យដើម្បីបញ្ជាក់។"
+  },
+  "conf.calibration.pregnancy_criterion_met": {
+    "en": "A pregnancy-specific glucose result meets the ADA one-step gestational diabetes criterion; prompt obstetric review is recommended.",
+    "km": "លទ្ធផលជាតិស្ករជាក់លាក់សម្រាប់ការមានផ្ទៃពោះដល់កម្រិតវិនិច្ឆ័យទឹកនោមផ្អែមពេលមានផ្ទៃពោះតាមវិធីមួយជំហានរបស់ ADA ហើយគួរពិនិត្យជាមួយគ្រូពេទ្យសម្ភពឱ្យបានឆាប់។"
+  },
+  "conf.calibration.discordant": {
+    "en": "The available tests disagree across a diagnostic threshold, so confidence is limited until the higher result is repeated.",
+    "km": "លទ្ធផលតេស្តដែលមានមិនស្របគ្នានៅកម្រិតវិនិច្ឆ័យ ដូច្នេះទំនុកចិត្តមានកម្រិតរហូតដល់បានធ្វើតេស្តលទ្ធផលខ្ពស់ឡើងវិញ។"
+  },
+  "conf.calibration.screening_only": {
+    "en": "This is screening confidence from symptoms; laboratory confirmation is still needed.",
+    "km": "នេះជាទំនុកចិត្តសម្រាប់ការពិនិត្យបឋមពីរោគសញ្ញា ហើយនៅតែត្រូវការតេស្តមន្ទីរពិសោធន៍ដើម្បីបញ្ជាក់។"
+  },
+  "conf.calibration.risk_screening": {
+    "en": "This score reflects risk-factor alignment, which supports screening but cannot diagnose diabetes.",
+    "km": "ពិន្ទុនេះបង្ហាញពីភាពស្របគ្នានៃកត្តាហានិភ័យ ដែលគាំទ្រការពិនិត្យបឋម ប៉ុន្តែមិនអាចវិនិច្ឆ័យទឹកនោមផ្អែមបានទេ។"
+  },
+  "conf.calibration.rule_supported": {
+    "en": "The score reflects the active rule evidence available for this conclusion.",
+    "km": "ពិន្ទុនេះបង្ហាញពីភស្តុតាងនៃវិធានសកម្មដែលមានសម្រាប់សេចក្តីសន្និដ្ឋាននេះ។"
+  },
+  "conf.calibration.limited": {
+    "en": "The available evidence is limited; additional information can make this result clearer.",
+    "km": "ភស្តុតាងដែលមាននៅមានកម្រិត ហើយព័ត៌មានបន្ថែមអាចធ្វើឱ្យលទ្ធផលនេះកាន់តែច្បាស់។"
+  },
+  "conf.calibration.insufficient": {
+    "en": "There is not enough evidence to calculate a reliable result confidence.",
+    "km": "មិនមានភស្តុតាងគ្រប់គ្រាន់ដើម្បីគណនាទំនុកចិត្តលទ្ធផលដែលអាចជឿទុកចិត្តបាន។"
+  },
   "conf.reason.missing_labs": {
     "en": " Core lab inputs still missing: {missing_inputs}.",
     "km": " ទិន្នន័យពិសោធន៍សំខាន់ៗនៅខ្វះ៖ {missing_inputs}។"
@@ -180,8 +216,8 @@
     "km": "ទំនុកចិត្តខ្ពស់ណាស់"
   },
   "conf_level.very_high.description": {
-    "en": "Multiple strong indicators align — lab values and symptoms both point toward diabetes.",
-    "km": "សញ្ញាខ្លាំងជាច្រើនត្រូវគ្នា — ទាំងលទ្ធផលពិសោធន៍ និងអាការៈចង្អុលទៅជំងឺទឹកនោមផ្អែម។"
+    "en": "Multiple independent indicators agree strongly with this result.",
+    "km": "សូចនាករឯករាជ្យជាច្រើនស្របគ្នាខ្លាំងជាមួយលទ្ធផលនេះ។"
   },
   "conf_level.high.title": {
     "en": "High confidence",
@@ -260,5 +296,3 @@
     "km": "ភាពបន្ទាន់កំណត់ដោយសកម្មភាពច្បាប់"
   }
 }
-
-

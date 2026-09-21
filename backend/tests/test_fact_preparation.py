@@ -43,3 +43,8 @@ def test_prepare_facts_treats_empty_values_as_unknown():
     assert "hba1c" not in facts
     assert "family_history_diabetes" not in facts
     assert "random_plasma_glucose" not in facts
+
+
+def test_prepare_facts_normalizes_one_hour_ogtt_alias():
+    prepared = prepare_facts({"labs": {"1h_ogtt_75g": "180"}})
+    assert prepared.facts["one_hour_ogtt_75g"] == 180.0

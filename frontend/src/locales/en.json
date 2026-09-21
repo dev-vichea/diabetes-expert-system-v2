@@ -1851,7 +1851,7 @@
         "description": "Limited evidence available — the data does not strongly point toward diabetes at this time."
       }
     },
-    "overallScore": "Screening Confidence",
+    "overallScore": "Evidence Confidence",
     "clinicalEvidence": "The evidence behind this result",
     "keyDiagnosticIndicators": "Your lab results",
     "hba1cIndicator": "HbA1c — 3-month average",
@@ -1976,7 +1976,18 @@
     "urgentNoticeTitle": "Urgent symptoms need prompt care",
     "urgentNoticeText": "Please contact a healthcare professional promptly. If symptoms are severe or worsening, seek emergency care.",
     "viewNextSteps": "View my next steps",
-    "confidenceHelp": "How much supporting information was available",
+    "confidenceHelp": "Agreement and strength of the available evidence — not diagnostic accuracy",
+    "confidenceStatus": {
+      "corroborated": "Independent evidence agrees",
+      "confirmation_needed": "Confirmation still needed",
+      "pregnancy_criterion_met": "Pregnancy glucose criterion met",
+      "discordant": "Tests need reconciliation",
+      "screening_only": "Screening evidence only",
+      "risk_screening": "Risk estimate only",
+      "rule_supported": "Supported by active rules",
+      "limited": "Limited evidence",
+      "insufficient": "Insufficient evidence"
+    },
     "confidenceMissingLabs": "More information or recommended blood tests can make this result clearer.",
     "confidenceGeneral": "A healthcare professional can review this result and confirm what it means for you.",
     "plainSummary": {
@@ -2766,6 +2777,7 @@
       "fastingGlucose": "Fasting Glucose",
       "fastingPlasmaGlucose": "Fasting Plasma Glucose",
       "hba1c": "HbA1c",
+      "oneHourOgtt": "1-hour 75-g OGTT",
       "ogtt": "2h OGTT",
       "randomPlasmaGlucose": "Random Plasma Glucose",
       "bloodGlucose": "Blood Glucose",

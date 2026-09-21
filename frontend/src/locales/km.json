@@ -1834,7 +1834,7 @@
       "moderate": "ប្រូបាប៊ីលីតេមធ្យម (moderate probability)",
       "low": "ប្រូបាប៊ីលីតេទាប (low probability)"
     },
-    "overallScore": "ទំនុកចិត្តនៃការស្កេន",
+    "overallScore": "ទំនុកចិត្តលើភស្តុតាង",
     "clinicalEvidence": "ភស្តុតាងនៅខាងក្រោមលទ្ធផលនេះ",
     "keyDiagnosticIndicators": "លទ្ធផលពិសោធន៍របស់អ្នក",
     "hba1cIndicator": "HbA1c — មធ្យមភាគជាតិស្ករ 3 ខែ",
@@ -1959,7 +1959,18 @@
     "urgentNoticeTitle": "រោគសញ្ញាបន្ទាន់ត្រូវការការថែទាំឆាប់រហ័ស",
     "urgentNoticeText": "សូមទាក់ទងអ្នកជំនាញសុខភាពឱ្យបានឆាប់។ ប្រសិនបើរោគសញ្ញាធ្ងន់ធ្ងរ ឬកាន់តែអាក្រក់ សូមទៅសង្គ្រោះបន្ទាន់។",
     "viewNextSteps": "មើលជំហានបន្ទាប់របស់ខ្ញុំ",
-    "confidenceHelp": "បរិមាណព័ត៌មានគាំទ្រដែលមានសម្រាប់ការវាយតម្លៃ",
+    "confidenceHelp": "ភាពស្របគ្នា និងភាពខ្លាំងនៃភស្តុតាងដែលមាន មិនមែនភាពត្រឹមត្រូវនៃរោគវិនិច្ឆ័យទេ",
+    "confidenceStatus": {
+      "corroborated": "ភស្តុតាងឯករាជ្យស្របគ្នា",
+      "confirmation_needed": "នៅតែត្រូវការការបញ្ជាក់",
+      "pregnancy_criterion_met": "ដល់កម្រិតជាតិស្ករសម្រាប់ការមានផ្ទៃពោះ",
+      "discordant": "តេស្តត្រូវការផ្ទៀងផ្ទាត់",
+      "screening_only": "ភស្តុតាងសម្រាប់ការពិនិត្យបឋមតែប៉ុណ្ណោះ",
+      "risk_screening": "ការប៉ាន់ប្រមាណហានិភ័យតែប៉ុណ្ណោះ",
+      "rule_supported": "គាំទ្រដោយវិធានសកម្ម",
+      "limited": "ភស្តុតាងមានកម្រិត",
+      "insufficient": "ភស្តុតាងមិនគ្រប់គ្រាន់"
+    },
     "confidenceMissingLabs": "ព័ត៌មានបន្ថែម ឬការពិនិត្យឈាមដែលបានណែនាំ អាចធ្វើឱ្យលទ្ធផលនេះកាន់តែច្បាស់។",
     "confidenceGeneral": "អ្នកជំនាញសុខភាពអាចពិនិត្យលទ្ធផលនេះ និងបញ្ជាក់អត្ថន័យសម្រាប់អ្នក។",
     "plainSummary": {
@@ -2687,6 +2698,7 @@
       "fastingGlucose": "ជាតិស្ករពេលតមអាហារ (Fasting Glucose)",
       "fastingPlasmaGlucose": "Fasting Plasma Glucose",
       "hba1c": "HbA1c",
+      "oneHourOgtt": "តេស្ត OGTT 75 ក្រាម រយៈពេល ១ ម៉ោង",
       "ogtt": "2h OGTT",
       "randomPlasmaGlucose": "Random Plasma Glucose",
       "bloodGlucose": "ជាតិស្ករក្នុងឈាម (Blood Glucose)",

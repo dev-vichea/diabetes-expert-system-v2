@@ -784,7 +784,7 @@ DIABETES_RULE_SEED_V3 = [{'code': 'v3-triage-hypoglycemia',
 # seed rows while preserving clinician edits and retaining version history.
 V3_PREVIOUS_DEFINITIONS = {
     rule["code"]: deepcopy(rule) for rule in DIABETES_RULE_SEED_V3
-    if rule["code"] in {"v3-normal-glucose", "v3-healthy-normal-labs"}
+    if rule["code"] in {"v3-normal-glucose", "v3-healthy-normal-labs", "v3-gestational-pattern"}
 }
 for rule in DIABETES_RULE_SEED_V3:
     if rule["code"] == "v3-normal-glucose":
@@ -794,6 +794,32 @@ for rule in DIABETES_RULE_SEED_V3:
             {"fact_key": key, "operator": "!=", "expected_value": True, "logical_operator": "and"}
             for key in ("hypoglycemia", "urgent_flag")
         ])
+    elif rule["code"] == "v3-gestational-pattern":
+        # Symptoms or a general diabetes threshold during pregnancy require
+        # obstetric review, but they do not by themselves identify GDM. The
+        # pregnancy-specific fasting/1-hour/2-hour rules below own that label.
+        rule.update(
+            name="V3 Pregnancy Review: Classic hyperglycemia symptoms",
+            description=(
+                "Classic hyperglycemia symptoms during pregnancy require prompt obstetric review "
+                "and pregnancy-appropriate glucose testing; symptoms alone do not diagnose GDM."
+            ),
+            explanation_text=(
+                "Pregnancy changes the diagnostic pathway. Reported symptoms warrant prompt review, "
+                "while gestational diabetes classification requires pregnancy-specific glucose testing."
+            ),
+            conditions=[
+                {"fact_key": "currently_pregnant", "operator": "==", "expected_value": True},
+                {"fact_key": "classic_hyperglycemia_symptoms", "operator": "==", "expected_value": True,
+                 "logical_operator": "and"},
+            ],
+            actions=[
+                {"action_type": "assert_fact", "action_value": "pregnancy_glucose_review_needed=true"},
+                {"action_type": "assert_fact", "action_value": "clinical_review_recommended=true"},
+                {"action_type": "recommendation",
+                 "action_value": "Symptoms during pregnancy need prompt obstetric review and pregnancy-appropriate glucose testing. Symptoms or HbA1c alone must not be used by this assessment to label gestational diabetes."},
+            ],
+        )
 
 # Fasting and random glucose retain distinct diagnostic meanings. Low
 # fasting readings nevertheless need the same hypoglycemia triage.

@@ -19,7 +19,7 @@ PREPARED_DERIVED_FACTS = {
 }
 TEXT_FACTS = {"sex", "ethnicity", "pregnancy_stage", "sugary_diet_frequency"}
 FACT_UNITS = {
-    **{key: "mg/dL" for key in ("fasting_glucose", "fasting_plasma_glucose", "blood_glucose", "random_plasma_glucose", "2h_ogtt_75g")},
+    **{key: "mg/dL" for key in ("fasting_glucose", "fasting_plasma_glucose", "blood_glucose", "random_plasma_glucose", "one_hour_ogtt_75g", "2h_ogtt_75g")},
     "hba1c": "%", "age": "years", "bmi": "kg/m²", "waist_circumference": "cm",
 }
 

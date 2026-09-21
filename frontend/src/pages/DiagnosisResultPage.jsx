@@ -594,6 +594,29 @@ export function DiagnosisResultPage() {
     ? Math.max(0, Math.min(100, Number(result.certainty_percent) || 0))
     : toCertaintyPercent(result?.certainty)
   const confidenceMeta = getConfidenceMeta(result, certaintyPercent, t, tExact)
+  const confidenceCalibration = result?.confidence_calibration
+    || result?.explanation_trace?.confidence_calculation?.calibration
+    || {}
+  const confidenceReason = (isKhmer ? result?.confidence_reason_km : result?.confidence_reason)
+    || result?.confidence_reason
+    || ''
+  const confidenceStatusFallbacks = {
+    corroborated: 'Independent evidence agrees',
+    confirmation_needed: 'Confirmation still needed',
+    pregnancy_criterion_met: 'Pregnancy glucose criterion met',
+    discordant: 'Tests need reconciliation',
+    screening_only: 'Screening evidence only',
+    risk_screening: 'Risk estimate only',
+    rule_supported: 'Supported by active rules',
+    limited: 'Limited evidence',
+    insufficient: 'Insufficient evidence',
+  }
+  const confidenceStatus = confidenceCalibration?.status
+    ? t(
+        `diagnosisResult.confidenceStatus.${confidenceCalibration.status}`,
+        confidenceStatusFallbacks[confidenceCalibration.status] || confidenceCalibration.status,
+      )
+    : ''
 
   const matchedSymptoms = Array.isArray(result?.matched_symptoms) ? result.matched_symptoms : []
   const matchedRiskFactors = Array.isArray(result?.matched_risk_factors) ? result.matched_risk_factors : []
@@ -1093,6 +1116,11 @@ export function DiagnosisResultPage() {
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   {t('diagnosisResult.confidenceHelp', 'How much supporting information was available')}
                 </p>
+                {confidenceStatus ? (
+                  <p className="mt-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                    {confidenceStatus}
+                  </p>
+                ) : null}
               </div>
               <span className={`shrink-0 rounded-full px-3 py-1 text-sm font-extrabold ${resultTone.badge}`}>{certaintyPercent}%</span>
             </div>
@@ -1100,9 +1128,9 @@ export function DiagnosisResultPage() {
               <div className="h-full rounded-full bg-primary-500 transition-[width] duration-700" style={{ width: `${certaintyPercent}%` }} />
             </div>
             <p className="mt-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300 sm:text-sm">
-              {(evidenceCompleteness?.missing_recommended_labs || missingLabs).length
+              {confidenceReason || ((evidenceCompleteness?.missing_recommended_labs || missingLabs).length
                 ? t('diagnosisResult.confidenceMissingLabs', 'More information or recommended blood tests can make this result clearer.')
-                : t('diagnosisResult.confidenceGeneral', 'A healthcare professional can review this result and confirm what it means for you.')}
+                : t('diagnosisResult.confidenceGeneral', 'A healthcare professional can review this result and confirm what it means for you.'))}
             </p>
           </aside>
         </div>

@@ -100,6 +100,7 @@ const INPUT_GROUP_KEYS = [
       { key: 'fasting_glucose', labelKey: 'sandbox.fields.fastingGlucose', fallback: 'Fasting Glucose', type: 'number', placeholder: 'mg/dL' },
       { key: 'fasting_plasma_glucose', labelKey: 'sandbox.fields.fastingPlasmaGlucose', fallback: 'Fasting Plasma Glucose', type: 'number', placeholder: 'mg/dL' },
       { key: 'hba1c', labelKey: 'sandbox.fields.hba1c', fallback: 'HbA1c', type: 'number', placeholder: '%' },
+      { key: 'one_hour_ogtt_75g', labelKey: 'sandbox.fields.oneHourOgtt', fallback: '1h 75-g OGTT', type: 'number', placeholder: 'mg/dL' },
       { key: '2h_ogtt_75g', labelKey: 'sandbox.fields.ogtt', fallback: '2h OGTT', type: 'number', placeholder: 'mg/dL' },
       { key: 'random_plasma_glucose', labelKey: 'sandbox.fields.randomPlasmaGlucose', fallback: 'Random Plasma Glucose', type: 'number', placeholder: 'mg/dL' },
       { key: 'blood_glucose', labelKey: 'sandbox.fields.bloodGlucose', fallback: 'Blood Glucose', type: 'number', placeholder: 'mg/dL' },

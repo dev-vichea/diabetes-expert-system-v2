@@ -42,6 +42,7 @@ def _assert_full_report_shape(data):
     assert isinstance(data.get("matched_risk_factors"), list), "matched_risk_factors missing"
     assert isinstance(data.get("certainty_percent"), int) and data["certainty_percent"] > 0
     assert isinstance(data.get("confidence_level"), dict) and data["confidence_level"].get("label")
+    assert isinstance(data.get("confidence_calibration"), dict) and data["confidence_calibration"].get("method") == "evidence_agreement_v1"
     assert isinstance(data.get("evidence_completeness"), dict) and data["evidence_completeness"].get("score", 0) > 0
     assert isinstance(data.get("recommendations"), list) and data["recommendations"], "recommendations missing/empty"
     assert data.get("result_summary")
@@ -79,6 +80,7 @@ def test_fetched_result_matches_fresh_evaluate_response(client):
     assert fetched["confidence_level"]["label"] == fresh["confidence_level"]["label"]
     assert fetched["confidence_reason"] == fresh["confidence_reason"]
     assert fetched["confidence_status"] == fresh["confidence_status"]
+    assert fetched["confidence_calibration"] == fresh["confidence_calibration"]
     assert fetched["missing_inputs"] == fresh["missing_inputs"]
     assert [item["text"] for item in fetched["recommendations"]] == [item["text"] for item in fresh["recommendations"]]
     assert fetched["explanation"]["key_findings"]["key_labs"] == fresh["explanation"]["key_findings"]["key_labs"]

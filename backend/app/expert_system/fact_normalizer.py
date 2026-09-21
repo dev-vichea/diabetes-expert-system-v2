@@ -13,6 +13,8 @@ NUMERIC_FACT_KEYS = {
     "2h_ogtt_75g",
     "fact_2h_ogtt_75g",
     "two_hour_ogtt_75g",
+    "one_hour_ogtt_75g",
+    "fact_1h_ogtt_75g",
     "random_plasma_glucose",
     "blood_glucose",
     "bmi",
@@ -132,6 +134,10 @@ LAB_FACT_ALIASES = {
     "two_hour_ogtt_75g": "2h_ogtt_75g",
     "ogtt_2h_75g": "2h_ogtt_75g",
     "fact_2h_ogtt_75g": "2h_ogtt_75g",
+    "fact_1h_ogtt_75g": "one_hour_ogtt_75g",
+    "1h_ogtt_75g": "one_hour_ogtt_75g",
+    "ogtt_1h_75g": "one_hour_ogtt_75g",
+    "one_hour_ogtt": "one_hour_ogtt_75g",
     "random_glucose": "random_plasma_glucose",
 }
 
@@ -148,6 +154,7 @@ MIRRORED_FACTS = {
     "a1c": ("hba1c",),
     "2h_ogtt_75g": ("two_hour_ogtt_75g",),
     "two_hour_ogtt_75g": ("2h_ogtt_75g",),
+    "one_hour_ogtt_75g": ("fact_1h_ogtt_75g",),
     "frequent_urination": ("polyuria",),
     "polyuria": ("frequent_urination",),
     "excessive_thirst": ("polydipsia",),
@@ -470,7 +477,7 @@ def _derive_unified_glucose(facts: dict, set_fact: SetFactCallback) -> None:
 
 def _derive_lab_availability(facts: dict, set_fact: SetFactCallback) -> None:
     has_labs = False
-    for k in ["fasting_glucose", "fasting_plasma_glucose", "hba1c", "a1c", "2h_ogtt_75g", "random_plasma_glucose", "blood_glucose"]:
+    for k in ["fasting_glucose", "fasting_plasma_glucose", "hba1c", "a1c", "one_hour_ogtt_75g", "2h_ogtt_75g", "random_plasma_glucose", "blood_glucose"]:
         if _as_float(facts.get(k)) is not None:
             has_labs = True
             break

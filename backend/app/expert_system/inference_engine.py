@@ -1,4 +1,4 @@
-from app.expert_system.confidence import rank_conclusions
+from app.expert_system.confidence import calibrate_conclusion_certainty, rank_conclusions
 from app.expert_system.fact_preparation import prepare_facts
 from app.expert_system.grouped_forward_chaining import GroupedForwardChainer
 from app.expert_system.patient_messaging import LAB_NORMAL_BUT_SYMPTOMS_NOTE
@@ -91,7 +91,11 @@ def run_inference(payload, rules):
     inference_result = grouped_chainer.run(prepared_facts.facts, load_result.rules)
 
     ranked_conclusions = rank_conclusions(inference_result.conclusion_evidence)
-    top_conclusion, certainty, context_note = _resolve_headline(ranked_conclusions)
+    top_conclusion, raw_certainty, context_note = _resolve_headline(ranked_conclusions)
+    confidence_calibration = calibrate_conclusion_certainty(
+        top_conclusion, raw_certainty, inference_result.final_facts
+    )
+    certainty = confidence_calibration["calibrated_score"]
 
     diagnosis = _resolve_diagnosis(top_conclusion, certainty)
     suspected_type = _resolve_suspected_type(ranked_conclusions, inference_result.final_facts)
@@ -114,6 +118,7 @@ def run_inference(payload, rules):
         "facts": inference_result.final_facts,
         "diagnosis": diagnosis,
         "certainty": round(certainty, 2),
+        "confidence_calibration": confidence_calibration,
         "urgency": urgency,
         "suspected_type": suspected_type,
         "context_note": context_note,
@@ -140,6 +145,8 @@ def run_inference(payload, rules):
                 "conclusion_scores": ranked_conclusions,
                 "top_conclusion": top_conclusion,
                 "certainty": round(certainty, 4),
+                "raw_rule_certainty": round(raw_certainty, 4),
+                "calibration": confidence_calibration,
                 "context_note": context_note,
             },
             "recommendations": {
@@ -188,6 +195,14 @@ def _resolve_headline(ranked_conclusions: list[dict]) -> tuple[str, float, str |
         str(item.get("conclusion") or ""): float(item.get("certainty") or 0)
         for item in ranked_conclusions
     }
+
+    # A confirmation conclusion is semantically stronger than the individual
+    # threshold rules that also fire for the same tests. Prefer it even when
+    # certainty combination makes the repeated "likely" score numerically
+    # larger.
+    confirmed_certainty = by_conclusion.get("diabetes_confirmed", 0.0)
+    if confirmed_certainty >= 0.3:
+        return "diabetes_confirmed", confirmed_certainty, None
 
     # A diabetes-range result takes precedence over a prediabetes/risk band
     # on another assay. Combining weaker rules must not reverse that finding.

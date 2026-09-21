@@ -43,6 +43,7 @@ def test_v3_codes_are_prefixed_and_unique():
 def test_v3_has_the_iadpsg_rules_v2_lacked():
     assert "v3-gdm-fasting-high" in V3_CODES
     assert "v3-gdm-ogtt-high" in V3_CODES
+    assert "v3-gdm-one-hour-ogtt-high" in V3_CODES
     assert "v3-gdm-screen-positive" in V3_CODES
     assert "v3-gdm-prior-early-test" in V3_CODES
     assert "v3-demographic-screening" in V3_CODES
@@ -65,7 +66,7 @@ def test_pregnant_with_iadpsg_fasting_is_gestational_not_normal():
     assert result["urgency"] != "emergency"
 
 
-def test_pregnant_with_symptoms_maps_to_gestational_pattern():
+def test_pregnant_with_symptoms_requests_review_without_claiming_gdm():
     payload = {
         "age": 28,
         "sex": "female",
@@ -74,13 +75,107 @@ def test_pregnant_with_symptoms_maps_to_gestational_pattern():
         "excessive_thirst": True,
     }
     result = run_inference(payload, DIABETES_RULE_SEED_V3)
-    assert "gestational_diabetes_likely" in _engine_conclusions(result)
-    assert result["suspected_type"]["type"] == "Gestational"
+    assert "gestational_diabetes_likely" not in _engine_conclusions(result)
+    assert result["facts"]["pregnancy_glucose_review_needed"] is True
+    assert result["facts"]["clinical_review_recommended"] is True
+    assert not result.get("suspected_type") or result["suspected_type"]["type"] != "Gestational"
 
 
 def test_pregnancy_alone_does_not_claim_gestational_diabetes():
     result = run_inference({"age": 28, "sex": "female", "currently_pregnant": True}, DIABETES_RULE_SEED_V3)
     assert "gestational_diabetes_likely" not in _engine_conclusions(result)
+
+
+@pytest.mark.parametrize("value", [180, 220])
+def test_pregnant_one_hour_75g_ogtt_at_threshold_is_gestational(value):
+    result = run_inference(
+        {"age": 30, "currently_pregnant": True, "one_hour_ogtt_75g": value},
+        DIABETES_RULE_SEED_V3,
+    )
+    assert "gestational_diabetes_likely" in _engine_conclusions(result)
+    assert result["facts"]["gestational_diabetes_suspected"] is True
+    assert result["suspected_type"]["type"] == "Gestational"
+    assert result["confidence_calibration"]["status"] == "pregnancy_criterion_met"
+
+
+def test_pregnant_one_hour_75g_ogtt_below_threshold_is_not_gestational():
+    result = run_inference(
+        {"age": 30, "currently_pregnant": True, "one_hour_ogtt_75g": 179},
+        DIABETES_RULE_SEED_V3,
+    )
+    assert "gestational_diabetes_likely" not in _engine_conclusions(result)
+
+
+def test_pregnant_hba1c_alone_does_not_get_mislabeled_as_gdm():
+    result = run_inference(
+        {"age": 30, "currently_pregnant": True, "hba1c": 7.0},
+        DIABETES_RULE_SEED_V3,
+    )
+    conclusions = _engine_conclusions(result)
+    assert "diabetes_likely" in conclusions
+    assert "gestational_diabetes_likely" not in conclusions
+    assert not result.get("suspected_type") or result["suspected_type"]["type"] != "Gestational"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"fasting_glucose": 126, "hba1c": 6.5},
+        {"fasting_glucose": 126, "2h_ogtt_75g": 200},
+        {"hba1c": 6.5, "2h_ogtt_75g": 200},
+    ],
+)
+def test_two_different_diabetes_range_tests_confirm_diabetes(payload):
+    result = run_inference(payload, DIABETES_RULE_SEED_V3)
+    assert result["diagnosis"] == "Diabetes Mellitus (Confirmed)"
+    assert result["facts"]["diabetes_confirmed_by_two_tests"] is True
+    assert result["confidence_calibration"]["status"] == "corroborated"
+    assert result["confidence_calibration"]["requires_confirmation"] is False
+
+
+def test_one_diabetes_range_test_stays_likely_and_needs_confirmation():
+    result = run_inference({"hba1c": 6.5}, DIABETES_RULE_SEED_V3)
+    assert result["diagnosis"] == "Likely Diabetes Mellitus"
+    assert result["facts"].get("diabetes_confirmed_by_two_tests") is not True
+    assert result["confidence_calibration"]["status"] == "confirmation_needed"
+
+
+def test_random_glucose_with_classic_symptoms_confirms_but_glucose_alone_does_not():
+    confirmed = run_inference(
+        {"random_plasma_glucose": 200, "frequent_urination": True, "excessive_thirst": True},
+        DIABETES_RULE_SEED_V3,
+    )
+    isolated = run_inference({"random_plasma_glucose": 200}, DIABETES_RULE_SEED_V3)
+    assert confirmed["diagnosis"] == "Diabetes Mellitus (Confirmed)"
+    assert confirmed["facts"]["unequivocal_hyperglycemia_or_crisis"] is True
+    assert isolated["diagnosis"] != "Diabetes Mellitus (Confirmed)"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"fasting_glucose": 120},
+        {"hba1c": 6.3},
+        {"2h_ogtt_75g": 190},
+    ],
+)
+def test_near_threshold_results_request_repeat_testing(payload):
+    result = run_inference(payload, DIABETES_RULE_SEED_V3)
+    assert result["facts"]["near_diabetes_threshold"] is True
+    assert result["facts"]["repeat_testing_recommended"] is True
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"fasting_glucose": 119},
+        {"hba1c": 6.2},
+        {"2h_ogtt_75g": 189},
+    ],
+)
+def test_values_below_operational_near_threshold_band_do_not_set_flag(payload):
+    result = run_inference(payload, DIABETES_RULE_SEED_V3)
+    assert result["facts"].get("near_diabetes_threshold") is not True
 
 
 # ── Emergency logic mirrors build_evidence (the path V1 missed) ──
