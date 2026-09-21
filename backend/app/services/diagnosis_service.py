@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 from typing import Any
 
 from flask import current_app
@@ -1958,6 +1959,8 @@ class DiagnosisService:
         except (TypeError, ValueError) as exc:
             raise ValidationError(f"{field_name} must be a valid number.") from exc
 
+        if not math.isfinite(numeric):
+            raise ValidationError(f"{field_name} must be a finite number.")
         if min_value is not None and numeric < min_value:
             raise ValidationError(f"{field_name} must be >= {min_value}.")
         if max_value is not None and numeric > max_value:
@@ -1974,6 +1977,8 @@ class DiagnosisService:
         except (TypeError, ValueError) as exc:
             raise ValidationError(f"{field_name} must be a valid number.") from exc
 
+        if not math.isfinite(numeric):
+            raise ValidationError(f"{field_name} must be a finite number.")
         if min_value is not None and numeric < min_value:
             raise ValidationError(f"{field_name} must be >= {min_value}.")
         if max_value is not None and numeric > max_value:

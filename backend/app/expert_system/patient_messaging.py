@@ -18,6 +18,7 @@ exactTextMap so older saved results keep translating.
 """
 
 from app.utils.i18n import SUPPORTED_LANGUAGES, load_catalog, pick
+from app.utils.diabetes_knowledge_extensions import KNOWLEDGE_MESSAGES
 
 CATALOG = "patient_messages"
 
@@ -45,6 +46,8 @@ def _lookup(text: str) -> dict | None:
     entry = _catalog().get(key)
     if entry is None:
         entry = _value_index().get(key)
+    if entry is None:
+        entry = next((item for item in KNOWLEDGE_MESSAGES.values() if item["en"] == key), None)
     return entry
 
 
@@ -79,4 +82,3 @@ def note_bilingual(key: str) -> dict:
 LAB_NORMAL_BUT_SYMPTOMS_NOTE = pick(_catalog()[NOTE_LAB_NORMAL_BUT_SYMPTOMS_KEY], lang="en")
 COMPLETENESS_NOTE = pick(_catalog()[NOTE_NO_LABS_COMPLETENESS_KEY], lang="en")
 URGENT_SAFETY_NOTE = pick(_catalog()[NOTE_URGENT_SAFETY_KEY], lang="en")
-

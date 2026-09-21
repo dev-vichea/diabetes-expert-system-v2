@@ -1,0 +1,352 @@
+.assistant-chat-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.assistant-chat-scroll:hover {
+  scrollbar-color: rgba(148, 163, 184, 0.55) transparent;
+}
+
+.assistant-chat-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.assistant-chat-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.assistant-chat-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: transparent;
+}
+
+.assistant-chat-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.55);
+}
+
+.assistant-mascot-button {
+  overflow: visible;
+  border-radius: 24px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.assistant-mascot {
+  position: relative;
+  display: block;
+  width: 70px;
+  height: 82px;
+  filter: drop-shadow(0 12px 12px rgba(31, 118, 232, 0.22));
+  transform-origin: bottom center;
+  animation: assistant-mascot-float 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.assistant-mascot::after {
+  position: absolute;
+  right: 12px;
+  bottom: -2px;
+  left: 12px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(30, 64, 175, 0.16);
+  filter: blur(4px);
+  content: '';
+  animation: assistant-mascot-shadow 3.2s ease-in-out infinite;
+}
+
+.assistant-mascot__antenna {
+  position: absolute;
+  z-index: 1;
+  top: 1px;
+  left: 33px;
+  width: 4px;
+  height: 12px;
+  border-radius: 999px;
+  background: #1f76e8;
+}
+
+.assistant-mascot__antenna-dot {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #22d3ee;
+  box-shadow: 0 2px 7px rgba(8, 145, 178, 0.35);
+  animation: assistant-mascot-signal 2.4s ease-in-out infinite;
+}
+
+.assistant-mascot__head {
+  position: absolute;
+  z-index: 3;
+  top: 10px;
+  left: 8px;
+  width: 54px;
+  height: 37px;
+  padding: 5px;
+  border: 3px solid rgba(255, 255, 255, 0.96);
+  border-radius: 17px;
+  background: linear-gradient(145deg, #2f8cff, #0891b2);
+  box-shadow: 0 7px 16px rgba(15, 91, 183, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.assistant-mascot__face {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #14407d, #0e2a52);
+  box-shadow: inset 0 2px 5px rgba(2, 6, 23, 0.35);
+}
+
+.assistant-mascot__face::after {
+  position: absolute;
+  top: -12px;
+  left: -5px;
+  width: 34px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.13);
+  content: '';
+  transform: rotate(-12deg);
+}
+
+.assistant-mascot__eye {
+  position: absolute;
+  z-index: 1;
+  top: 8px;
+  width: 6px;
+  height: 7px;
+  border-radius: 999px;
+  background: #a5f3fc;
+  box-shadow: 0 0 5px rgba(103, 232, 249, 0.8);
+  transform-origin: center;
+  animation: assistant-mascot-blink 5.2s infinite;
+}
+
+.assistant-mascot__eye--left { left: 10px; }
+.assistant-mascot__eye--right { right: 10px; }
+
+.assistant-mascot__mouth {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  width: 13px;
+  height: 6px;
+  border-bottom: 2px solid #e0f2fe;
+  border-radius: 0 0 10px 10px;
+  transform: translateX(-50%);
+}
+
+.assistant-mascot__body {
+  position: absolute;
+  z-index: 2;
+  top: 43px;
+  left: 17px;
+  display: flex;
+  width: 36px;
+  height: 29px;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgba(255, 255, 255, 0.96);
+  border-radius: 10px 10px 14px 14px;
+  background: linear-gradient(145deg, #2f8cff, #0891b2);
+  box-shadow: 0 7px 13px rgba(15, 91, 183, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+
+.assistant-mascot__heart {
+  width: 17px;
+  height: 17px;
+  color: #fff;
+  stroke-width: 2.2;
+  animation: assistant-mascot-heartbeat 2.5s ease-in-out infinite;
+}
+
+.assistant-mascot__arm {
+  position: absolute;
+  z-index: 1;
+  top: 47px;
+  width: 10px;
+  height: 25px;
+  border: 2px solid rgba(255, 255, 255, 0.96);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2f8cff, #0ea5b7);
+  box-shadow: 0 4px 8px rgba(15, 91, 183, 0.16);
+}
+
+.assistant-mascot__arm--left {
+  left: 8px;
+  transform: rotate(12deg);
+}
+
+.assistant-mascot__arm--right {
+  right: 8px;
+  transform: rotate(-22deg);
+  transform-origin: 50% 15%;
+  animation: assistant-mascot-wave 4.5s ease-in-out infinite;
+}
+
+.assistant-mascot__leg {
+  position: absolute;
+  z-index: 1;
+  top: 67px;
+  width: 12px;
+  height: 13px;
+  border: 2px solid rgba(255, 255, 255, 0.96);
+  border-radius: 0 0 8px 8px;
+  background: #1478d4;
+}
+
+.assistant-mascot__leg--left { left: 20px; }
+.assistant-mascot__leg--right { right: 20px; }
+
+.assistant-mascot__status {
+  position: absolute;
+  z-index: 5;
+  top: 8px;
+  right: 5px;
+  width: 13px;
+  height: 13px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.32);
+}
+
+.assistant-mascot-bubble {
+  position: absolute;
+  z-index: 10;
+  top: 8px;
+  width: max-content;
+  max-width: min(176px, calc(100vw - 120px));
+  padding: 9px 13px;
+  border: 1px solid #dbeafe;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.98);
+  color: #154d99;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+  text-align: left;
+  white-space: nowrap;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.13);
+  animation: assistant-mascot-bubble-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  pointer-events: none;
+}
+
+.assistant-mascot-bubble::after {
+  position: absolute;
+  top: 17px;
+  width: 9px;
+  height: 9px;
+  border-bottom: 1px solid #dbeafe;
+  border-left: 1px solid #dbeafe;
+  background: #fff;
+  content: '';
+}
+
+.assistant-mascot-bubble--left {
+  right: calc(100% + 9px);
+  transform-origin: right center;
+}
+
+.assistant-mascot-bubble--left::after {
+  right: -5px;
+  transform: rotate(225deg);
+}
+
+.assistant-mascot-bubble--right {
+  left: calc(100% + 9px);
+  transform-origin: left center;
+}
+
+.assistant-mascot-bubble--right::after {
+  left: -5px;
+  transform: rotate(45deg);
+}
+
+.assistant-mascot-button:hover .assistant-mascot {
+  filter: drop-shadow(0 15px 14px rgba(31, 118, 232, 0.3)) brightness(1.03);
+}
+
+.assistant-mascot-button--dragging .assistant-mascot {
+  animation: none;
+  filter: drop-shadow(0 16px 15px rgba(31, 118, 232, 0.32));
+  transform: scale(1.04);
+}
+
+.dark .assistant-mascot-bubble {
+  border-color: #334155;
+  background: rgba(15, 23, 42, 0.98);
+  color: #bfdbfe;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
+}
+
+.dark .assistant-mascot-bubble::after {
+  border-color: #334155;
+  background: #0f172a;
+}
+
+@keyframes assistant-mascot-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-5px) rotate(0.8deg); }
+}
+
+@keyframes assistant-mascot-shadow {
+  0%, 100% { opacity: 0.75; transform: scaleX(1); }
+  50% { opacity: 0.42; transform: scaleX(0.82); }
+}
+
+@keyframes assistant-mascot-signal {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.34); }
+  50% { box-shadow: 0 0 0 5px rgba(34, 211, 238, 0); }
+}
+
+@keyframes assistant-mascot-blink {
+  0%, 44%, 48%, 100% { transform: scaleY(1); }
+  46% { transform: scaleY(0.12); }
+}
+
+@keyframes assistant-mascot-wave {
+  0%, 68%, 100% { transform: rotate(-22deg); }
+  74% { transform: rotate(-54deg); }
+  80% { transform: rotate(-18deg); }
+  86% { transform: rotate(-50deg); }
+  92% { transform: rotate(-22deg); }
+}
+
+@keyframes assistant-mascot-heartbeat {
+  0%, 65%, 100% { transform: scale(1); }
+  72% { transform: scale(1.16); }
+  79% { transform: scale(1); }
+  86% { transform: scale(1.1); }
+}
+
+@keyframes assistant-mascot-bubble-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 767px) {
+  .assistant-mascot-bubble {
+    top: 10px;
+    max-width: calc(100vw - 118px);
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-mascot,
+  .assistant-mascot::after,
+  .assistant-mascot__antenna-dot,
+  .assistant-mascot__eye,
+  .assistant-mascot__heart,
+  .assistant-mascot__arm--right,
+  .assistant-mascot-bubble {
+    animation: none;
+  }
+}

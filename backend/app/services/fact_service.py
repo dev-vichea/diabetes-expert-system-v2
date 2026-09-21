@@ -3,10 +3,11 @@ from __future__ import annotations
 import re
 
 from app.errors import NotFoundError, ValidationError
+from app.expert_system.knowledge_integrity import audit_knowledge_base
 
 ALLOWED_CATEGORIES = {
     "cardinal", "metabolic", "vision", "skin", "nerve", "reproductive",
-    "mental", "emergency", "pediatric", "other", "risk_factor", "lab", "profile",
+    "mental", "emergency", "pediatric", "other", "risk_factor", "lab", "profile", "derived",
 }
 ALLOWED_TYPE_INDICATIONS = {"none", "both", "type1", "type2", "gestational"}
 _KEY_RE = re.compile(r"^[a-z][a-z0-9_]*$")
@@ -33,9 +34,10 @@ def _normalize_alias_list(value) -> list[str]:
 class FactService:
     """Doctor-facing CRUD for the fact/symptom knowledge catalog."""
 
-    def __init__(self, fact_repository, audit_log_repository=None):
+    def __init__(self, fact_repository, audit_log_repository=None, rule_repository=None):
         self.fact_repository = fact_repository
         self.audit_log_repository = audit_log_repository
+        self.rule_repository = rule_repository
 
     def list_facts(self, *, category=None, status=None, search=None) -> list[dict]:
         normalized_status = None
@@ -130,6 +132,17 @@ class FactService:
             data["weight"] = self._validated_weight(data.get("weight"))
         if "aliases" in data:
             data["aliases"] = _normalize_alias_list(data.get("aliases"))
+
+        if self.rule_repository and any(field in data for field in ("is_active", "category", "aliases")):
+            facts = self.fact_repository.list_facts()
+            candidate_facts = [{**fact, **data} if fact["id"] == fact_id else fact for fact in facts]
+            rules = self.rule_repository.list_rules(status="active")
+            before = audit_knowledge_base(rules, facts)
+            after = audit_knowledge_base(rules, candidate_facts)
+            known = {(i["rule_id"], i["code"], i["fact_key"]) for i in before["issues"]}
+            problems = [i for i in after["issues"] if (i["rule_id"], i["code"], i["fact_key"]) not in known]
+            if problems:
+                raise ValidationError("This change would break active rules: " + ", ".join(sorted({i["rule_code"] for i in problems})) + ". Update or deactivate those rules first.")
 
         updated = self.fact_repository.update(row, data)
         if self.audit_log_repository:

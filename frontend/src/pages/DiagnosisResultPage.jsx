@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Activity,
+  AlertTriangle,
   ArrowLeft,
+  ArrowRight,
   Beaker,
   ClipboardList,
   Dna,
@@ -43,7 +45,6 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui'
 import { ConditionEducationPanel } from '@/components/diagnosis/ConditionEducationPanel'
-import { PlainSummaryStrip } from '@/components/diagnosis/PlainSummaryStrip'
 import { getSymptomGuideKey } from '@/lib/symptom-guide'
 import { getRiskGuideKey } from '@/lib/risk-factor-guide'
 import { bilingualField } from '@/lib/i18n'
@@ -142,13 +143,6 @@ function getConfidenceMeta(result, percent, t, tExact) {
   }
 }
 
-function getUrgencyTone(urgency) {
-  const key = String(urgency || '').toLowerCase()
-  if (key === 'urgent') return 'danger'
-  if (key === 'high') return 'warning'
-  return 'info'
-}
-
 function getLabStatus(labKey, rawValue) {
   const numeric = Number(rawValue)
   if (Number.isNaN(numeric)) return { label: 'Unknown', tone: 'neutral' }
@@ -194,6 +188,9 @@ function getRiskCategory(diagnosis, percent) {
   if (d.includes('prediabetes') || d.includes('early')) {
     return 'prediabetes'
   }
+  if (d.includes('elevated') && d.includes('risk')) {
+    return 'prediabetes'
+  }
   if (d.includes('urgent') || d.includes('emergency')) {
     return 'urgent'
   }
@@ -204,20 +201,6 @@ function getRiskCategory(diagnosis, percent) {
   if (p >= 80) return 'urgent'
   if (p >= 50) return 'prediabetes'
   return 'normal'
-}
-
-function getRiskGradient(percent, diagnosis) {
-  const category = getRiskCategory(diagnosis, percent)
-  if (category === 'normal') {
-    return 'bg-gradient-to-br from-emerald-600 via-teal-700 to-emerald-800'
-  }
-  if (category === 'prediabetes') {
-    return 'bg-gradient-to-br from-amber-600 via-amber-700 to-orange-600'
-  }
-  if (category === 'urgent') {
-    return 'bg-gradient-to-br from-rose-700 via-red-700 to-red-800'
-  }
-  return 'bg-gradient-to-br from-rose-700 via-pink-800 to-red-700'
 }
 
 function getGaugeColor(score, diagnosis) {
@@ -320,36 +303,6 @@ function getScalePercent(labKey, rawValue) {
   const max = 220
   const zone = Math.max(0, Math.min(1, (value - min) / (max - min)))
   return 66.6666 + zone * 33.3334
-}
-
-function CertaintyRing({ percent, diagnosis, size = 140, stroke = 12 }) {
-  const safePercent = Math.max(0, Math.min(100, Number(percent) || 0))
-  const radius = (size - stroke * 2) / 2
-  const center = size / 2
-  const circumference = 2 * Math.PI * radius
-  const offset = circumference * (1 - safePercent / 100)
-
-  const category = getRiskCategory(diagnosis, safePercent)
-  let colorClass = 'text-emerald-500'
-  if (category === 'urgent') colorClass = 'text-red-500'
-  else if (category === 'diabetes') colorClass = 'text-rose-500'
-  else if (category === 'prediabetes') colorClass = 'text-amber-500'
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
-      <circle cx={center} cy={center} r={radius} strokeWidth={stroke} className="fill-none stroke-slate-200 dark:stroke-slate-800" />
-      <circle
-        cx={center}
-        cy={center}
-        r={radius}
-        strokeWidth={stroke}
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        strokeLinecap="round"
-        className={`fill-none stroke-current ${colorClass} transition-all duration-1000 ease-out`}
-      />
-    </svg>
-  )
 }
 
 function EvidenceRangeGauge({ score = 0, level = 'low' }) {
@@ -665,6 +618,12 @@ export function DiagnosisResultPage() {
     }
   }
   const recommendations = Array.isArray(result?.recommendations) ? result.recommendations : []
+  const hasUrgentWarning = recommendations.some((item) => ['urgent', 'emergency'].includes(String(item?.urgency || '').toLowerCase()))
+    || /urgent|emergency|immediate medical/i.test([
+      result?.diagnosis,
+      result?.headline_explanation,
+      result?.result_summary,
+    ].filter(Boolean).join(' '))
   const adaptiveAssessment = result?.adaptive_assessment && typeof result.adaptive_assessment === 'object' ? result.adaptive_assessment : null
   const adaptivePatterns = Array.isArray(adaptiveAssessment?.patterns) ? adaptiveAssessment.patterns : []
   const patternConfidence = Number.isFinite(Number(adaptiveAssessment?.screening_confidence)) ? Number(adaptiveAssessment?.screening_confidence) : null
@@ -795,7 +754,25 @@ export function DiagnosisResultPage() {
   const hba1cPointer = getScalePercent('hba1c', hba1cValue)
   const fastingPointer = getScalePercent('fasting', fastingValue)
 
-  const primaryHeadline = getPrimaryHeadline(result, certaintyPercent, t, tExact).toUpperCase()
+  const primaryHeadline = getPrimaryHeadline(result, certaintyPercent, t, tExact)
+  const riskCategory = getRiskCategory(result?.diagnosis, certaintyPercent)
+  const resultTone = riskCategory === 'urgent' || riskCategory === 'diabetes'
+    ? {
+        panel: 'border-rose-200 bg-gradient-to-br from-rose-50 via-white to-rose-50/50 dark:border-rose-900/60 dark:from-rose-950/35 dark:via-[#070b15] dark:to-rose-950/20',
+        icon: 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300',
+        badge: 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300',
+      }
+    : riskCategory === 'prediabetes'
+      ? {
+          panel: 'border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50/40 dark:border-amber-900/60 dark:from-amber-950/30 dark:via-[#070b15] dark:to-orange-950/20',
+          icon: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+          badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+        }
+      : {
+          panel: 'border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-teal-50/40 dark:border-emerald-900/60 dark:from-emerald-950/30 dark:via-[#070b15] dark:to-teal-950/20',
+          icon: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+          badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+        }
   const suspectedType = result?.suspected_type
     || result?.explanation_trace?.suspected_type
     || null
@@ -944,18 +921,7 @@ export function DiagnosisResultPage() {
             <span>{t('diagnosisResult.openCarePlan', 'Open Care Plan')}</span>
           </Link>
 
-          {/* Print Button */}
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="btn-secondary gap-2 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 shadow-sm border-slate-200 dark:border-slate-700 h-10 px-4 text-sm font-semibold transition-all text-slate-700 dark:text-slate-200"
-            title={t('diagnosisResult.printTooltip', 'Print or save as PDF with native browser font rendering (Recommended for Khmer)')}
-          >
-            <Printer className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-            <span>{isKhmer ? 'បោះពុម្ព' : t('diagnosisResult.print', 'Print')}</span>
-          </button>
-
-          {/* Generate PDF Dropdown */}
+          {/* Download and print options */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -1067,98 +1033,82 @@ export function DiagnosisResultPage() {
         onConfirm={handleRestartConfirm}
       />
 
-      <PlainSummaryStrip result={result} />
-
-      <section className="space-y-2.5">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-100/70 text-primary-700 ring-1 ring-primary-200/60 dark:bg-primary-900/40 dark:text-primary-300 dark:ring-primary-800/60">
-              <ShieldCheck className="h-4 w-4" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white sm:text-lg">
-                {t('diagnosisResult.diagnosticOutput', 'Diagnostic Output')}
-              </h3>
-            </div>
-          </div>
-          <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
-            Primary Screening
-          </span>
-        </div>
-
-        <div className="overflow-hidden rounded-3xl bg-white shadow-xs ring-1 ring-slate-100 dark:bg-[#070b15] dark:ring-slate-800/60">
-          <div className="grid lg:grid-cols-5">
-            <article className={`relative overflow-hidden px-6 py-8 text-white sm:px-9 md:py-12 lg:col-span-3 ${getRiskGradient(certaintyPercent, result?.diagnosis)}`}>
-              <div className="absolute inset-0 bg-gradient-to-tr from-black/15 via-transparent to-white/10 pointer-events-none" />
-              <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
-
-              <div className="relative z-10 flex h-full flex-col justify-center">
-                <h2 className="break-words text-2xl font-bold tracking-tight text-white drop-shadow-xs sm:text-3xl lg:text-4xl">{primaryHeadline}</h2>
-                {suspectedType?.type ? (
-                  <div className="mt-4 w-fit max-w-md rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-md">
-                    <p className="flex flex-wrap items-center gap-2 text-sm font-bold text-white">
-                      <Dna className="h-4 w-4 shrink-0" />
-                      <span className="tracking-wide">{t('diagnosisResult.suspectedType', 'Suspected type')}:</span>
-                      <span className="rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-bold">
-                        {tExact(t(`diagnosisResult.type.${getTypeLabelKey(suspectedType.type)}`, suspectedType.type))}
-                        {suspectedType.type !== 'Undetermined' && Number.isFinite(Number(suspectedType.certainty)) ? ` · ${Math.round(Number(suspectedType.certainty) * 100)}%` : ''}
-                      </span>
-                    </p>
-                    {suspectedType.note ? (
-                      <p className="mt-1.5 text-xs leading-relaxed text-white/85">{tExact(String(suspectedType.note))}</p>
-                    ) : null}
-                    {Array.isArray(suspectedType.candidates) && suspectedType.candidates.length ? (
-                      <p className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-white/90">
-                        {t('diagnosisResult.couldFit', 'Could fit:')}
-                        {suspectedType.candidates.slice(0, 3).map((candidate) => (
-                          <span key={candidate.type} className="rounded-full bg-white/20 px-2 py-0.5">
-                            {tExact(t(`diagnosisResult.type.${getTypeLabelKey(candidate.type)}`, candidate.type))} {Math.round(Number(candidate.certainty || 0) * 100)}%
-                          </span>
-                        ))}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-                <p className="mt-4 max-w-lg text-sm font-normal leading-relaxed text-white/95 sm:text-base">
-                  {result?.headline_explanation
-                    ? tExact(bilingualField(result.headline_explanation, result.headline_explanation_km))
-                    : result?.result_summary
-                      ? tExact(bilingualField(result.result_summary, result.result_summary_km))
-                      : (<>{t('diagnosisResult.probabilityBase', 'Screening confidence: ')}<strong className="font-bold text-white">{certaintyPercent}%</strong>{t('diagnosisResult.probabilityOf', ' — see the evidence breakdown below.')}</>)
-                  }
+      <section className={`overflow-hidden rounded-3xl border shadow-[0_14px_40px_-28px_rgba(15,23,42,0.35)] ${resultTone.panel}`}>
+        <div className="grid lg:grid-cols-[minmax(0,1.55fr)_minmax(260px,0.75fr)]">
+          <article className="px-5 py-6 sm:px-7 sm:py-8 lg:px-9">
+            <div className="flex items-center gap-3">
+              <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${resultTone.icon}`}>
+                <ShieldCheck className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                  {t('diagnosisResult.screeningResult', 'Your screening result')}
                 </p>
-                {result?.context_note ? (
-                  <p className="mt-3 flex max-w-lg items-start gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-medium leading-relaxed text-white/95 backdrop-blur-sm">
-                    <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>{tExact(String(result.context_note))}</span>
-                  </p>
-                ) : null}
+                <h2 className="mt-1 break-words text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
+                  {primaryHeadline}
+                </h2>
               </div>
-            </article>
+            </div>
 
-            <article className="relative flex flex-col items-center justify-center bg-slate-50/80 px-6 py-8 dark:bg-[#0a0f1c] sm:px-8 sm:py-10 lg:col-span-2">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-6 mt-1">{t('diagnosisResult.overallScore', 'Screening Confidence')}</p>
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-700 dark:text-slate-300 sm:text-base">
+              {t('diagnosisResult.simpleMeaning', 'Your answers match a pattern that may need medical follow-up. This screening does not confirm a diagnosis.')}
+            </p>
 
-              <div className="relative flex items-center justify-center">
-                <CertaintyRing percent={certaintyPercent} diagnosis={result?.diagnosis} size={170} stroke={13} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-none">{certaintyPercent}</span>
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase mt-1 tracking-wider">/ 100</span>
+            {suspectedType?.type && suspectedType.type !== 'Undetermined' ? (
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/75 px-3 py-1.5 text-xs font-bold text-slate-700 shadow-xs dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200">
+                <Dna className="h-3.5 w-3.5" />
+                <span>{t('diagnosisResult.suspectedType', 'Possible type')}:</span>
+                <span>{tExact(t(`diagnosisResult.type.${getTypeLabelKey(suspectedType.type)}`, suspectedType.type))}</span>
+              </div>
+            ) : null}
+
+            {hasUrgentWarning ? (
+              <div className="mt-5 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-900 dark:border-rose-900/60 dark:bg-rose-950/35 dark:text-rose-100">
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600 dark:text-rose-400" />
+                <div>
+                  <p className="text-sm font-extrabold">{t('diagnosisResult.urgentNoticeTitle', 'Urgent symptoms need prompt care')}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-rose-800 dark:text-rose-200 sm:text-sm">
+                    {t('diagnosisResult.urgentNoticeText', 'Please contact a healthcare professional promptly. If symptoms are severe or worsening, seek emergency care.')}
+                  </p>
                 </div>
               </div>
+            ) : null}
 
-              <div className="mt-6 text-center bg-white dark:bg-slate-900/60 rounded-2xl py-2.5 px-5 shadow-xs border border-slate-100 dark:border-slate-800 max-w-[240px]">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                  {tExact(confidenceMeta.title)}
+            <a
+              href="#next-steps"
+              className="mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
+            >
+              {t('diagnosisResult.viewNextSteps', 'View my next steps')}
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          </article>
+
+          <aside className="border-t border-slate-200/70 bg-white/65 px-5 py-6 dark:border-slate-800 dark:bg-slate-950/35 sm:px-7 sm:py-8 lg:border-l lg:border-t-0">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+              {t('diagnosisResult.overallScore', 'Result confidence')}
+            </p>
+            <div className="mt-3 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xl font-extrabold text-slate-950 dark:text-white">{tExact(confidenceMeta.title)}</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {t('diagnosisResult.confidenceHelp', 'How much supporting information was available')}
                 </p>
               </div>
-            </article>
-          </div>
+              <span className={`shrink-0 rounded-full px-3 py-1 text-sm font-extrabold ${resultTone.badge}`}>{certaintyPercent}%</span>
+            </div>
+            <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+              <div className="h-full rounded-full bg-primary-500 transition-[width] duration-700" style={{ width: `${certaintyPercent}%` }} />
+            </div>
+            <p className="mt-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300 sm:text-sm">
+              {(evidenceCompleteness?.missing_recommended_labs || missingLabs).length
+                ? t('diagnosisResult.confidenceMissingLabs', 'More information or recommended blood tests can make this result clearer.')
+                : t('diagnosisResult.confidenceGeneral', 'A healthcare professional can review this result and confirm what it means for you.')}
+            </p>
+          </aside>
         </div>
       </section>
 
-      <ConditionEducationPanel result={result} defaultOpen={true} />
-
+      <div id="next-steps" className="scroll-mt-24">
       <SurfaceSection title={t('diagnosisResult.actionableRecommendations', 'What you should do next')} icon={ClipboardList}>
         {recommendations.length ? (
           <ol className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -1192,39 +1142,31 @@ export function DiagnosisResultPage() {
             </p>
           </div>
         )}
-        {showPrevention && preventionContent ? (
-          <div className="mt-6 border-t border-slate-100 pt-5 dark:border-slate-800">
-            <h4 className="flex items-center gap-2 text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-              <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-              {preventionContent.title}
-            </h4>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-              {preventionContent.intro}
-            </p>
-            {preventionContent.listIntro ? (
-              <p className="mt-2.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                {preventionContent.listIntro}
-              </p>
-            ) : null}
-            <ul className="mt-2.5 space-y-2">
-              {preventionContent.items.map((item) => (
-                <li key={item.lead} className="flex items-start gap-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                  <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 dark:bg-emerald-400" />
-                  <span>
-                    <strong className="font-semibold text-slate-900 dark:text-white">{item.lead}</strong>{' '}
-                    {item.text}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {preventionContent.note ? (
-              <p className="mt-2.5 text-xs sm:text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                {preventionContent.note}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
       </SurfaceSection>
+      </div>
+
+      <div className="space-y-6">
+      {showPrevention && preventionContent ? (
+        <SurfaceSection title={preventionContent.title} icon={ShieldCheck}>
+          <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{preventionContent.intro}</p>
+          {preventionContent.listIntro ? (
+            <p className="mt-2.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{preventionContent.listIntro}</p>
+          ) : null}
+          <ul className="mt-3 space-y-2.5">
+            {preventionContent.items.map((item) => (
+              <li key={item.lead} className="flex items-start gap-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500 dark:bg-emerald-400" />
+                <span><strong className="font-semibold text-slate-900 dark:text-white">{item.lead}</strong> {item.text}</span>
+              </li>
+            ))}
+          </ul>
+          {preventionContent.note ? (
+            <p className="mt-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400 sm:text-sm">{preventionContent.note}</p>
+          ) : null}
+        </SurfaceSection>
+      ) : null}
+
+      <ConditionEducationPanel result={result} defaultOpen={false} />
 
       <div className="flex items-center gap-2.5 pt-4 px-1">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
@@ -1537,6 +1479,7 @@ export function DiagnosisResultPage() {
           </div>
         ) : null}
       </TechnicalDetailsSection>
+      </div>
 
       {/* ── Status Banner / Submit to Doctor Card ── */}
       {isStaff || isClinicianAssessment ? (

@@ -72,10 +72,12 @@ def init_dependencies(app):
         SERVICE_KEYS["rule"]: RuleService(
             rule_repository=rule_repository,
             audit_log_repository=audit_log_repository,
+            fact_repository=fact_repository,
         ),
         SERVICE_KEYS["fact"]: FactService(
             fact_repository=fact_repository,
             audit_log_repository=audit_log_repository,
+            rule_repository=rule_repository,
         ),
         SERVICE_KEYS["diagnosis"]: DiagnosisService(
             rule_repository=rule_repository,
@@ -147,4 +149,3 @@ def get_notification_repository() -> NotificationRepository:
         repos["notification"] = NotificationRepository()
         current_app.extensions["repositories"] = repos
     return repos["notification"]
-

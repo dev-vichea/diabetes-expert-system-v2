@@ -90,10 +90,10 @@ export function KnowledgeBaseDashboard() {
         chartData: rulesAnalytics?.active_rules?.chart_data || [{ value: 0 }],
       },
       {
-        title: t('kbDashboard.cards.accuracy.title', 'System Accuracy'),
-        description: t('kbDashboard.cards.accuracy.desc', 'Estimated match rate'),
+        title: t('kbDashboard.cards.accuracy.title', 'Mean Rule Certainty'),
+        description: t('kbDashboard.cards.accuracy.desc', 'Model score, not measured clinical accuracy'),
         value: rulesAnalytics?.accuracy?.value ?? '0%',
-        trend: rulesAnalytics?.accuracy?.trend ?? 'Estimated match rate',
+        trend: rulesAnalytics?.accuracy?.trend ?? t('kbDashboard.cards.accuracy.trend', 'No evaluations yet'),
         icon: Layers,
         iconClass: 'bg-amber-100/20 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/10 dark:text-amber-300',
         chartColor: '#f59e0b',

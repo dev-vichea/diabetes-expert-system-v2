@@ -6,6 +6,7 @@ import { lazyWithRetry } from '@/lib/lazyWithRetry'
 import { RuleSimulator } from '@/components/knowledge-base/RuleSimulator'
 import { KnowledgeBaseDashboard } from '@/components/knowledge-base/KnowledgeBaseDashboard'
 import { FactCatalog } from '@/components/knowledge-base/FactCatalog'
+import { KnowledgeIntegrityPanel } from '@/components/knowledge-base/KnowledgeIntegrityPanel'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { LoadingState } from '@/components/ui/LoadingState'
 import {
@@ -143,8 +144,8 @@ function parseExpectedValueInput(rawValue) {
   const text = String(rawValue ?? '').trim()
   if (!text) return null
   const lowered = text.toLowerCase()
-  if (['true', 'yes', 'on', 'y', '1'].includes(lowered)) return true
-  if (['false', 'no', 'off', 'n', '0'].includes(lowered)) return false
+  if (['true', 'yes', 'on', 'y'].includes(lowered)) return true
+  if (['false', 'no', 'off', 'n'].includes(lowered)) return false
   if (!Number.isNaN(Number(text))) return Number(text)
   if ((text.startsWith('[') && text.endsWith(']')) || (text.startsWith('{') && text.endsWith('}'))) {
     try {
@@ -230,6 +231,7 @@ export function RulesPage() {
   const { t, tExact } = useLanguage()
   const [rules, setRules] = useState([])
   const [ruleCategories, setRuleCategories] = useState([])
+  const [catalogFacts, setCatalogFacts] = useState([])
   const [filters, setFilters] = useState({ category: '', status: '', include_archived: true })
   const [form, setForm] = useState(DEFAULT_FORM)
   const [selectedRuleId, setSelectedRuleId] = useState(null)
@@ -260,13 +262,27 @@ export function RulesPage() {
   )
   const factKeyOptions = useMemo(() => {
     const discovered = new Set(DEFAULT_FACT_KEYS)
+    for (const fact of catalogFacts) discovered.add(fact.key)
     for (const rule of rules) {
       for (const condition of rule.conditions || []) {
         if (condition?.fact_key) discovered.add(String(condition.fact_key))
       }
     }
-    return Array.from(discovered).sort().map((value) => ({ value, label: value }))
-  }, [rules])
+    return Array.from(discovered).sort().map((value) => {
+      const fact = catalogFacts.find((row) => row.key === value || `fact_${row.key}` === value)
+      return { value, label: fact ? `${fact.label} — ${value} (${fact.data_type}${fact.unit ? `, ${fact.unit}` : ''})` : value }
+    })
+  }, [rules, catalogFacts])
+
+  useEffect(() => {
+    let cancelled = false
+    api.get('/facts/').then((response) => {
+      if (!cancelled) setCatalogFacts(getApiData(response) || [])
+    }).catch((err) => {
+      if (!cancelled) setError(getApiErrorMessage(err, 'Failed to load fact definitions'))
+    })
+    return () => { cancelled = true }
+  }, [editorOpen])
 
   const filteredRules = useMemo(() => {
     if (!ruleSearch.trim()) return rules
@@ -600,6 +616,7 @@ export function RulesPage() {
           <TabsTrigger value="visual">{t('rules.tabs.visual', 'Visual Graph')}</TabsTrigger>
           <TabsTrigger value="simulator">{t('rules.tabs.sandbox', 'Sandbox')}</TabsTrigger>
           <TabsTrigger value="facts">{t('rules.tabs.facts', 'Facts')}</TabsTrigger>
+          <TabsTrigger value="integrity">{t('knowledgeIntegrity.tab', 'Rule–Fact Links')}</TabsTrigger>
         </TabsList>
       </div>
 
@@ -1139,6 +1156,9 @@ export function RulesPage() {
         <RuleSimulator rules={rules} />
       </TabsContent>
 
+      <TabsContent value="integrity" className="mt-0">
+        <KnowledgeIntegrityPanel />
+      </TabsContent>
       <TabsContent value="facts" className="mt-0">
         <FactCatalog />
       </TabsContent>

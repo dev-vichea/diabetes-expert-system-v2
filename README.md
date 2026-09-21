@@ -106,6 +106,25 @@ A professional, full-stack web application designed to leverage an expert system
 
 ## 🔑 Demo Accounts (If Seeded)
 
+The default knowledge base is the expanded **v3** set (49 rules and 94 catalog
+facts). Set
+`RULES_SEED_VERSION=v3` in `backend/.env`. For an already initialized database,
+synchronize the rule set and fact catalog from the backend directory:
+
+```bash
+source .venv/bin/activate
+flask --app run.py sync-knowledge-base --version v3
+```
+
+This archives rules from other bundled versions, inserts missing v3 rules and
+fact definitions, and preserves custom rules, existing fact edits, users and
+patient records. Existing inactive v3 rules stay inactive; archived v3 rules
+are reactivated when switching back to v3. Derived facts appear in the catalog
+but do not contribute independent symptom weights. The command is safe to
+repeat. The `--version` option applies to that invocation; the environment
+setting selects the version for future seeding. Restart the backend after
+changing the environment setting.
+
 If you enabled `SEED_DEMO_DATA=true` in your backend environment, the following accounts will be pre-provisioned:
 
 | Role        | Email                  | Password     |

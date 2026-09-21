@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, CalendarClock, ClipboardList, Plus, ShieldAlert } from 'lucide-react'
+import { ArrowRight, CalendarClock, ClipboardList, ClipboardPlus, ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getLatestFacts, getRelativeCheckAge, getUrgencyLabel, toNumberOrNull } from './patient-dashboard-utils'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -51,10 +51,19 @@ export function PatientSituationPanel({ patientResults, latestResult, urgentCoun
       <div className="relative mt-auto flex flex-wrap items-center gap-2.5 pt-5">
         <Link
           to="/diagnosis"
-          className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary-800 shadow-sm transition hover:bg-white/90"
+          className="group inline-flex min-h-14 min-w-[15rem] items-center justify-between gap-4 rounded-xl bg-white px-3 py-2.5 text-sm font-bold text-primary-800 shadow-[0_10px_28px_rgba(15,23,42,0.28)] ring-2 ring-white/70 transition duration-200 hover:-translate-y-0.5 hover:bg-sky-50 hover:shadow-[0_14px_32px_rgba(15,23,42,0.32)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-200"
         >
-          <Plus className="h-4 w-4" />
-          {t('patientDashboard.situation.newAssessment', 'New assessment')}
+          <span className="inline-flex items-center gap-3">
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-700 transition-colors group-hover:bg-primary-200">
+              <ClipboardPlus className="h-5 w-5" />
+            </span>
+            <span>
+              {latestResult
+                ? t('patientDashboard.situation.newAssessment', 'New assessment')
+                : t('patientDashboard.report.emptyCta', 'Start my first assessment')}
+            </span>
+          </span>
+          <ArrowRight className="h-5 w-5 shrink-0 transition-transform group-hover:translate-x-1" />
         </Link>
         <Link
           to={latestResult?.id ? `/diagnosis/result?diagnosis_result_id=${latestResult.id}` : '/my-results'}

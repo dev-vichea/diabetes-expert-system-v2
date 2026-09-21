@@ -5,10 +5,10 @@ from flask import current_app
 from werkzeug.security import generate_password_hash
 
 from app.extensions import db
-from app.models import Fact, Notification, Permission, Patient, Role, Rule, RuleAction, RuleCategory, RuleCondition, User
+from app.models import Fact, Notification, Permission, Patient, Role, Rule, RuleAction, RuleCategory, RuleCondition, RuleVersion, User
 from app.utils.diabetes_rule_seed_data import DIABETES_RULE_SEED
 from app.utils.diabetes_rule_seed_data_v2 import DIABETES_RULE_SEED_V2
-from app.utils.diabetes_rule_seed_data_v3 import DIABETES_RULE_SEED_V3
+from app.utils.diabetes_rule_seed_data_v3 import DIABETES_RULE_SEED_V3, V3_PREVIOUS_DEFINITIONS
 from app.utils.diabetes_fact_seed_data import FACT_CATALOG_SEED
 
 # Structured seed versions. v1 = full historical rule set; v2 = minimal rule
@@ -16,7 +16,7 @@ from app.utils.diabetes_fact_seed_data import FACT_CATALOG_SEED
 # (see app.utils.diabetes_rule_seed_data_v2). v3 merges both: v2's
 # engine-mirroring architecture + the IADPSG pregnancy logic v2 was missing +
 # the strongest clinical knowledge from v1. Select via the RULES_SEED_VERSION
-# config value; v1 remains the default so existing deployments are unchanged.
+# config value; v3 is the default for new databases.
 STRUCTURED_RULE_SEEDS = {"v1": DIABETES_RULE_SEED, "v2": DIABETES_RULE_SEED_V2, "v3": DIABETES_RULE_SEED_V3}
 
 DEFAULT_PERMISSIONS = [
@@ -355,14 +355,37 @@ def _seed_fact_catalog() -> None:
 
 
 def _active_structured_seed() -> list:
-    """The structured rule seed selected by RULES_SEED_VERSION (default v1)."""
-    version = str(current_app.config.get("RULES_SEED_VERSION") or "v1").strip().lower() or "v1"
+    """The structured rule seed selected by RULES_SEED_VERSION (default v3)."""
+    version = str(current_app.config.get("RULES_SEED_VERSION") or "v3").strip().lower() or "v3"
     seed = STRUCTURED_RULE_SEEDS.get(version)
     if seed is None:
         raise ValueError(
             f"Unknown RULES_SEED_VERSION {version!r} (expected one of {sorted(STRUCTURED_RULE_SEEDS)})"
         )
     return seed
+
+
+def sync_knowledge_base() -> dict:
+    """Upgrade rules and facts without reseeding accounts or patient data.
+
+    Existing definitions and inactive rules are preserved. Archived rules in
+    the selected set are reactivated to support switching seed versions.
+    """
+    active_seed = _active_structured_seed()
+    try:
+        Fact.__table__.create(db.engine, checkfirst=True)
+        _seed_rule_categories()
+        _seed_fact_catalog()
+        _archive_legacy_seed_rules(active_codes={rule["code"] for rule in active_seed})
+        _seed_structured_rules(active_seed, preserve_existing=True)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+    return {
+        "rules": Rule.query.filter_by(status="active").count(),
+        "facts": Fact.query.count(),
+    }
 
 
 def _seed_rule_categories() -> None:
@@ -432,7 +455,7 @@ def _seed_patient_profile() -> None:
         )
 
 
-def _seed_structured_rules(active_seed=None) -> None:
+def _seed_structured_rules(active_seed=None, *, preserve_existing=False) -> None:
     if active_seed is None:
         active_seed = _active_structured_seed()
     categories = {row.code: row for row in RuleCategory.query.all()}
@@ -440,8 +463,23 @@ def _seed_structured_rules(active_seed=None) -> None:
     for rule_data in active_seed:
         code = str(rule_data["code"]).strip().lower()
         rule = Rule.query.filter_by(code=code).first()
-        if not rule:
+        if not rule and not preserve_existing:
             rule = Rule.query.filter_by(name=rule_data["name"]).first()
+
+        if rule and preserve_existing:
+            if rule.status == "archived":
+                rule.status = str(rule_data.get("status", "active"))
+            previous = V3_PREVIOUS_DEFINITIONS.get(code)
+            if not previous or not _matches_seed_definition(rule, previous):
+                continue
+            from app.repositories.rule_repository import RuleRepository
+            db.session.add(RuleVersion(
+                rule_id=rule.id, version_number=rule.version, change_type="before_seed_upgrade",
+                snapshot_json=RuleRepository._serialize_rule(rule),
+            ))
+            rule.version += 1
+
+        preserved_status = rule.status if rule and preserve_existing else None
 
         category_code = str(rule_data.get("category", "diagnosis")).strip().lower() or "diagnosis"
         category_ref = categories.get(category_code)
@@ -459,7 +497,7 @@ def _seed_structured_rules(active_seed=None) -> None:
         rule.explanation = rule.explanation_text
         rule.certainty_factor = float(rule_data.get("certainty_factor", 0.5))
         rule.priority = str(rule_data.get("priority", "medium")).strip().lower() or "medium"
-        rule.status = str(rule_data.get("status", "active")).strip().lower() or "active"
+        rule.status = preserved_status or str(rule_data.get("status", "active")).strip().lower() or "active"
 
         rule.conditions.clear()
         for index, condition_data in enumerate(rule_data.get("conditions") or [], start=1):
@@ -501,6 +539,24 @@ def _seed_structured_rules(active_seed=None) -> None:
             )
 
 
+def _matches_seed_definition(rule, previous) -> bool:
+    """Compare executable content and editable text, independent of DB IDs."""
+    from app.expert_system.rule_loading import RuleLoader
+    from app.repositories.rule_repository import RuleRepository
+
+    current = RuleRepository._serialize_rule(rule)
+    left = RuleLoader().load([{**current, "status": "active"}]).rules
+    right = RuleLoader().load([{**previous, "status": "active"}]).rules
+    if not left or not right:
+        return False
+    def signature(spec):
+        return (spec.name, spec.description, spec.explanation, spec.category, spec.priority,
+                spec.certainty_factor,
+                [(c["fact_key"], c["operator"], c["expected_value"], c["logical_operator"]) for c in spec.conditions],
+                [(a.action_type, a.action_value, a.recommendation) for a in spec.actions])
+    return signature(left[0]) == signature(right[0])
+
+
 def _archive_legacy_seed_rules(active_codes=None) -> None:
     for code in LEGACY_DEMO_RULE_CODES:
         row = Rule.query.filter_by(code=code).first()
@@ -510,13 +566,16 @@ def _archive_legacy_seed_rules(active_codes=None) -> None:
     if active_codes is None:
         return
 
-    # Version switch: archive rules seeded by the OTHER seed version so exactly
-    # one seed's rules run at a time. Only seeded prefixes are touched —
-    # clinician-authored rules keep whatever status they have.
-    seeded_prefixes = ("triage-", "diagnosis-", "classification-", "recommendation-", "v2-")
+    # Match exact seed codes, including v3, so custom rules with a similar
+    # prefix survive version switches in either direction.
+    seeded_codes = {
+        str(rule["code"]).strip().lower()
+        for seed in STRUCTURED_RULE_SEEDS.values()
+        for rule in seed
+    }
     for row in Rule.query.filter(Rule.status != "archived"):
         code = str(row.code or "").strip().lower()
-        if code.startswith(seeded_prefixes) and code not in active_codes:
+        if code in seeded_codes and code not in active_codes:
             row.status = "archived"
 
 

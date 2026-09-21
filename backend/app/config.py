@@ -107,9 +107,8 @@ class Config:
 
     DB_AUTO_CREATE = _as_bool(os.getenv("DB_AUTO_CREATE"), default=False)
     SEED_DEMO_DATA = _as_bool(os.getenv("SEED_DEMO_DATA"), default=True)
-    # Which structured rule seed to load: "v1" (full historical set, default)
-    # or "v2" (minimal set mirroring the adaptive assessment engine).
-    RULES_SEED_VERSION = (os.getenv("RULES_SEED_VERSION", "v1").strip().lower() or "v1")
+    # V3 is the merged rule set; v1 and v2 remain available for compatibility.
+    RULES_SEED_VERSION = (os.getenv("RULES_SEED_VERSION", "v3").strip().lower() or "v3")
 
     DB_FALLBACK_ENABLED = _as_bool(os.getenv("DB_FALLBACK_ENABLED"), default=False)
     DB_FALLBACK_URL = os.getenv("DB_FALLBACK_URL", _default_fallback_sqlite_url())

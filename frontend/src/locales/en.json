@@ -1971,8 +1971,22 @@
     "viewReport": "View Report →",
     "reviewBeforeSubmit": "Review your answers above, then click \"Run Assessment\" to get your results.",
     "couldFit": "Could fit:",
+    "screeningResult": "Your screening result",
+    "simpleMeaning": "Your answers match a pattern that may need medical follow-up. This screening does not confirm a diagnosis.",
+    "urgentNoticeTitle": "Urgent symptoms need prompt care",
+    "urgentNoticeText": "Please contact a healthcare professional promptly. If symptoms are severe or worsening, seek emergency care.",
+    "viewNextSteps": "View my next steps",
+    "confidenceHelp": "How much supporting information was available",
+    "confidenceMissingLabs": "More information or recommended blood tests can make this result clearer.",
+    "confidenceGeneral": "A healthcare professional can review this result and confirm what it means for you.",
     "plainSummary": {
       "title": "In short",
+      "glanceTitle": "Your result at a glance",
+      "meaningTitle": "What this means",
+      "meaningSimple": "This is a screening result, not a final diagnosis. A clinician and a blood test can confirm it.",
+      "whyTitle": "Why this result",
+      "nextStepTitle": "Next step",
+      "defaultNextStep": "Discuss this result with a healthcare professional.",
       "whatThisIs": "This report compares your answers with common patterns of diabetes. It is a screening — not a final diagnosis. A doctor and a simple test can confirm.",
       "matchedMany": "Your answers matched {{count}} common sign(s) associated with high blood sugar.",
       "matchedFew": "This run included little direct evidence — the result leans on general risk patterns.",
@@ -2486,7 +2500,8 @@
         "other": "Other",
         "risk_factor": "Risk factor",
         "lab": "Lab",
-        "profile": "Profile"
+        "profile": "Profile",
+        "derived": "Derived fact"
       },
       "errors": {
         "load": "Failed to load the fact catalog.",
@@ -2618,9 +2633,9 @@
         "trend": "+2 this month"
       },
       "accuracy": {
-        "title": "System Accuracy",
-        "desc": "Estimated match rate",
-        "trend": "+0.5% optimization"
+        "title": "Mean Rule Certainty",
+        "desc": "Model score, not measured clinical accuracy",
+        "trend": "No evaluations yet"
       }
     },
     "ruleDistribution": "Rule Distribution",
@@ -3025,6 +3040,37 @@
       "description": "An unexpected error occurred. Please try refreshing the page.",
       "tryAgain": "Try Again",
       "goHome": "Go Home"
+    }
+  },
+  "knowledgeIntegrity": {
+    "tab": "Rule–Fact Links",
+    "title": "Knowledge base integrity",
+    "description": "Check catalog links, value types, and rule execution order.",
+    "refresh": "Check again",
+    "loading": "Checking rules and facts…",
+    "loadError": "Could not check rule–fact links.",
+    "rules": "Active rules",
+    "facts": "Linked facts",
+    "errors": "Link errors",
+    "valid": "All active rules pass the structural checks.",
+    "invalid": "Resolve these links before relying on the affected rules.",
+    "search": "Search facts or rules",
+    "fact": "Fact",
+    "type": "Value type / unit",
+    "source": "Value source",
+    "producedBy": "Produced by rules",
+    "usedBy": "Used by rules",
+    "empty": "No matching links.",
+    "scope": "These checks validate rule structure. Clinical accuracy requires separate evaluation with verified patient outcomes.",
+    "types": {
+      "boolean": "Yes / no",
+      "number": "Number",
+      "text": "Text"
+    },
+    "sources": {
+      "input": "Assessment input",
+      "prepared": "Calculated before rules",
+      "rule": "Rule output"
     }
   }
 }

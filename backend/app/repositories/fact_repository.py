@@ -4,6 +4,7 @@ from sqlalchemy import func, or_
 
 from app.extensions import db
 from app.models import Fact
+from app.expert_system.knowledge_integrity import FactRegistry
 from app.utils.datetime import serialize_datetime
 
 # Fields exposed to the reasoning overlay (app.expert_system.symptom_database).
@@ -42,8 +43,10 @@ class FactRepository:
         return Fact.query.filter(Fact.key == str(key).strip().lower()).first()
 
     def get_active_fact_map(self) -> dict[str, dict]:
-        """Active facts keyed by fact key — the reasoning-overlay contract."""
-        rows = Fact.query.filter(Fact.is_active.is_(True)).all()
+        """Active inputs for the symptom overlay; derived facts are rule outputs."""
+        rows = Fact.query.filter(
+            Fact.is_active.is_(True), Fact.category != "derived"
+        ).all()
         return {
             row.key: {
                 "weight": row.weight,
@@ -132,4 +135,5 @@ class FactRepository:
             "source": row.source,
             "created_at": serialize_datetime(row.created_at),
             "updated_at": serialize_datetime(row.updated_at),
+            **FactRegistry.metadata({"key": row.key, "category": row.category}),
         }

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-# Diabetes Expert System v2 - Fast Full-Stack Startup Script
+# Diabetes Expert System v3 - Fast Full-Stack Startup Script
 # Concurrently launches Flask backend & Vite frontend with process management
 # ==============================================================================
 
@@ -39,7 +39,7 @@ FRONTEND_PORT=5173
 
 # Display help documentation
 show_help() {
-    echo -e "${BOLD}Diabetes Expert System v2 - Startup Utility${NC}"
+    echo -e "${BOLD}Diabetes Expert System v3 - Startup Utility${NC}"
     echo ""
     echo -e "${BOLD}USAGE:${NC}"
     echo "  ./run.sh [OPTIONS] [COMMAND]"
@@ -232,7 +232,7 @@ fi
 # Print Startup Banner
 echo ""
 echo -e "${BOLD}${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}${BLUE}║       🩺  DIABETES EXPERT SYSTEM v2 - DEV RUNNER           ║${NC}"
+echo -e "${BOLD}${BLUE}║       🩺  DIABETES EXPERT SYSTEM v3 - DEV RUNNER           ║${NC}"
 echo -e "${BOLD}${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 if [ "$MODE" = "all" ] || [ "$MODE" = "frontend" ]; then
     echo -e "  ${GREEN}➜  Frontend:${NC}  ${BOLD}http://localhost:${FRONTEND_PORT}${NC}"

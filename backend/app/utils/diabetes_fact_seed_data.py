@@ -8,9 +8,12 @@ Every entry is a fact key the inference engine and interview exchange
 - interview questions: question
 - reasoning inputs: weight, type_indication, is_cardinal, is_emergency, aliases, display_order
 
-All 51 facts have complete English and Khmer labels, clinical explanations (meaning),
-and actionable prevention and management guidance.
+Patient-facing entries include English and Khmer education. The catalog also
+documents v3 numeric inputs and derived facts without adding symptom weights.
 """
+
+from app.utils.diabetes_rule_fact_seed_data import RULE_FACT_CATALOG_SEED
+from app.utils.diabetes_knowledge_extensions import KNOWLEDGE_EXTENSION_FACTS
 
 FACT_CATALOG_SEED = [
     {
@@ -1212,3 +1215,6 @@ FACT_CATALOG_SEED = [
         'display_order': 650,
     },
 ]
+
+FACT_CATALOG_SEED.extend(RULE_FACT_CATALOG_SEED)
+FACT_CATALOG_SEED.extend(KNOWLEDGE_EXTENSION_FACTS)

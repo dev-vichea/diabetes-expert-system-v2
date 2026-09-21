@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import json
 
 from app.expert_system.confidence import get_priority_weight
 from app.expert_system.condition_evaluator import ConditionEvaluationError, evaluate_conditions
@@ -255,6 +256,10 @@ def _parse_fact_assignment(raw_value: str) -> tuple[str, object]:
 
 def _coerce_assignment_value(raw_value: str):
     normalized = str(raw_value).strip()
+    try:
+        return json.loads(normalized)
+    except (ValueError, TypeError):
+        pass
     lowered = normalized.lower()
 
     if lowered in {"true", "yes", "1", "on", "y"}:

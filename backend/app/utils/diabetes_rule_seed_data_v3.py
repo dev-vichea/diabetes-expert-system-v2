@@ -17,11 +17,15 @@ fixes V2 was missing:
   detail, comprehensive confirmed-diabetes care plan.
 
 Activate with RULES_SEED_VERSION=v3 (see app.utils.seed).
-V1 remains the default seed.
+V3 is the default seed; existing databases can use the sync-knowledge-base CLI.
 
 NOTE: This system is a *screening and decision-support* tool.
       It does NOT replace clinical diagnosis by a qualified doctor.
 """
+
+from copy import deepcopy
+
+from app.utils.diabetes_knowledge_extensions import DIABETES_KNOWLEDGE_EXTENSION_RULES
 
 DIABETES_RULE_SEED_V3 = [{'code': 'v3-triage-hypoglycemia',
   'name': 'V3 Triage: Hypoglycemia (<70 mg/dL)',
@@ -775,3 +779,32 @@ DIABETES_RULE_SEED_V3 = [{'code': 'v3-triage-hypoglycemia',
      'priority': 'high',
      'status': 'active'}
 ]
+
+# Keep the exact former definitions so synchronization can upgrade untouched
+# seed rows while preserving clinician edits and retaining version history.
+V3_PREVIOUS_DEFINITIONS = {
+    rule["code"]: deepcopy(rule) for rule in DIABETES_RULE_SEED_V3
+    if rule["code"] in {"v3-normal-glucose", "v3-healthy-normal-labs"}
+}
+for rule in DIABETES_RULE_SEED_V3:
+    if rule["code"] == "v3-normal-glucose":
+        rule["conditions"].append({"fact_key": "fasting_glucose", "operator": ">=", "expected_value": 70, "logical_operator": "and"})
+    elif rule["code"] == "v3-healthy-normal-labs":
+        rule["conditions"].extend([
+            {"fact_key": key, "operator": "!=", "expected_value": True, "logical_operator": "and"}
+            for key in ("hypoglycemia", "urgent_flag")
+        ])
+
+# Fasting and random glucose retain distinct diagnostic meanings. Low
+# fasting readings nevertheless need the same hypoglycemia triage.
+for old_code, new_code, name in [
+    ("v3-triage-hypoglycemia", "v3-triage-fasting-hypoglycemia", "V3 Triage: Low Fasting Glucose (<70 mg/dL)"),
+    ("v3-triage-severe-hypoglycemia", "v3-triage-fasting-severe-hypoglycemia", "V3 Triage: Very Low Fasting Glucose (<54 mg/dL)"),
+]:
+    rule = deepcopy(next(item for item in DIABETES_RULE_SEED_V3 if item["code"] == old_code))
+    rule.update(code=new_code, name=name)
+    rule["conditions"][0]["fact_key"] = "fasting_glucose"
+    rule["description"] += " Reference: https://www.cdc.gov/diabetes/about/low-blood-sugar-hypoglycemia.html"
+    DIABETES_RULE_SEED_V3.append(rule)
+
+DIABETES_RULE_SEED_V3.extend(DIABETES_KNOWLEDGE_EXTENSION_RULES)

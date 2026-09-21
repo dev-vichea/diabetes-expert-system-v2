@@ -7,6 +7,12 @@ from app.utils.auth import require_auth
 rule_bp = Blueprint("rules", __name__)
 
 
+@rule_bp.get("/integrity")
+@require_auth(permissions=["rule.view"])
+def get_knowledge_integrity():
+    return success_response(data=get_rule_service().knowledge_integrity())
+
+
 @rule_bp.get("/categories")
 @require_auth(permissions=["rule.view"])
 def get_rule_categories():

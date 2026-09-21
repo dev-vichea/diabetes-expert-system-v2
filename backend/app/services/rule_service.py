@@ -4,6 +4,8 @@ import json
 from typing import Any
 
 from app.errors import NotFoundError, ValidationError
+from app.expert_system.knowledge_integrity import FactRegistry, audit_knowledge_base
+from app.expert_system.forward_chaining import _parse_fact_assignment
 from app.expert_system.condition_evaluator import (
     ConditionValidationError,
     SUPPORTED_OPERATORS,
@@ -24,9 +26,30 @@ class RuleService:
     ALLOWED_OPERATORS = set(SUPPORTED_OPERATORS)
     ALLOWED_ACTION_TYPES = {"diagnosis_conclusion", "assert_fact", "recommendation", "urgent_flag"}
 
-    def __init__(self, rule_repository, audit_log_repository=None):
+    def __init__(self, rule_repository, audit_log_repository=None, fact_repository=None):
         self.rule_repository = rule_repository
         self.audit_log_repository = audit_log_repository
+        self.fact_repository = fact_repository
+
+    def knowledge_integrity(self):
+        return audit_knowledge_base(
+            self.rule_repository.list_rules(status="active"),
+            self.fact_repository.list_facts(),
+        )
+
+    def _validate_fact_links(self, candidate, rule_id=None):
+        if not self.fact_repository:
+            return
+        current_rules = self.rule_repository.list_rules(status="active")
+        facts = self.fact_repository.list_facts()
+        baseline = audit_knowledge_base(current_rules, facts)
+        known = {(i["rule_id"], i["code"], i["fact_key"]) for i in baseline["issues"]}
+        rules = [r for r in current_rules if r.get("id") != rule_id]
+        candidate = {**candidate, "id": rule_id or -1, "code": candidate.get("code") or "new-rule"}
+        report = audit_knowledge_base([*rules, candidate], facts)
+        problems = [i for i in report["issues"] if i["rule_id"] == candidate["id"] or (i["rule_id"], i["code"], i["fact_key"]) not in known]
+        if problems:
+            raise ValidationError("Rule–fact mismatch: " + " ".join(dict.fromkeys(i["message"] for i in problems)))
 
     def list_categories(self) -> list[dict]:
         self.rule_repository.ensure_default_categories()
@@ -63,6 +86,7 @@ class RuleService:
         self.rule_repository.ensure_default_categories()
 
         normalized = self._normalize_rule_payload(payload, partial=False)
+        self._validate_fact_links(normalized)
         new_rule = self.rule_repository.add_rule(normalized, created_by_user_id=created_by_user_id)
 
         rule_model = self.rule_repository.get_rule_model(new_rule["id"])
@@ -98,6 +122,8 @@ class RuleService:
         if not normalized:
             raise ValidationError("At least one updatable field is required.")
 
+        self._validate_fact_links({**self.rule_repository.get_rule(rule_id), **normalized}, rule_id)
+
         updated_rule = self.rule_repository.update_rule(rule, normalized)
 
         self.rule_repository.create_version_snapshot(
@@ -125,6 +151,8 @@ class RuleService:
         rule = self.rule_repository.get_rule_model(rule_id)
         if not rule:
             raise NotFoundError("Rule not found.")
+
+        self._validate_fact_links({**self.rule_repository.get_rule(rule_id), "status": "archived"}, rule_id)
 
         archived_rule = self.rule_repository.archive_rule(rule)
 
@@ -263,6 +291,7 @@ class RuleService:
             raise ValidationError(str(exc)) from exc
 
         serialized = []
+        registry = FactRegistry(self.fact_repository.list_facts()) if self.fact_repository else None
         for index, condition in enumerate(runtime_conditions, start=1):
             operator = str(condition.get("operator") or "").strip().lower()
             if operator not in self.ALLOWED_OPERATORS:
@@ -277,7 +306,7 @@ class RuleService:
             serialized.append(
                 {
                     "expression": str(condition.get("expression") or "").strip(),
-                    "fact_key": condition.get("fact_key"),
+                    "fact_key": registry.canonical_key(condition.get("fact_key")) if registry else condition.get("fact_key"),
                     "operator": operator,
                     "expected_value": expected_value_serialized,
                     "sequence": int(condition.get("sequence", index)),
@@ -331,6 +360,11 @@ class RuleService:
 
             if raw_action_value in (None, ""):
                 raise ValidationError(f"actions[{index}].action_value is required.")
+
+            if action_type == "assert_fact" and self.fact_repository:
+                registry = FactRegistry(self.fact_repository.list_facts())
+                key, value = _parse_fact_assignment(str(raw_action_value))
+                raw_action_value = f"{registry.canonical_key(key)}={json.dumps(value)}"
 
             normalized.append(
                 {

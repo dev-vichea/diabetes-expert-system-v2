@@ -68,6 +68,7 @@ const CATEGORIES = [
   'risk_factor',
   'lab',
   'profile',
+  'derived',
   'other',
 ]
 
@@ -86,6 +87,7 @@ const CATEGORY_FALLBACKS = {
   risk_factor: 'Risk factor',
   lab: 'Lab',
   profile: 'Profile',
+  derived: 'Derived fact',
   other: 'Other',
 }
 
@@ -110,6 +112,7 @@ const FACT_TONES = {
   risk_factor: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300',
   lab: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300',
   profile: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
+  derived: 'bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-300',
   other: 'bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-300',
 }
 

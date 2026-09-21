@@ -175,7 +175,7 @@ def evaluate_condition(condition: dict, facts: dict) -> bool:
         if operator == "==" and expected_value is True:
             return False
         if operator == "==" and expected_value is False:
-            return True  # "not X" is true when X is absent
+            return False  # Unknown is not an explicit negative answer.
         if operator == "!=":
             return expected_value is True  # absent != True → True, absent != False → False
         # Numeric comparisons with missing data can't be satisfied

@@ -136,14 +136,14 @@ def test_pregnancy_without_evidence_does_not_claim_gestational_diabetes():
 def test_lab_only_result_does_not_claim_type_or_healthy_or_gestational():
     result = run_inference({"age": 52, "sex": "female", "hba1c": 7.2}, DIABETES_RULE_SEED_V2)
     conclusions = _engine_conclusions(result)
-    # diabetes + a Type-2 lean (the adaptive engine leans the same way from the
-    # lab boost + age prior) — but never gestational/healthy/risk on top.
+    # A lab threshold can establish diabetes evidence, but age alone must not
+    # assign a diabetes type without a Type 1/Type 2 presentation pattern.
     assert "diabetes_likely" in conclusions
-    assert "type2_pattern_likely" in conclusions
+    assert "type2_pattern_likely" not in conclusions
     assert "gestational_diabetes_likely" not in conclusions
     assert "healthy_normal" not in conclusions
     assert "type2_risk_increased" not in conclusions
-    assert result["suspected_type"]["type"] == "Type 2"
+    assert result["suspected_type"] is None
     assert result["urgency"] == "urgent"
 
 
