@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import api, { getApiData, getApiErrorMessage } from '@/api/client'
 import { ErrorAlert } from '@/components/ui'
-import { PatientCarePanel } from '@/components/dashboard/patient/PatientCarePanel'
 import { PatientDashboardHero } from '@/components/dashboard/patient/PatientDashboardHero'
+import { PatientGlucoseTrend } from '@/components/dashboard/patient/PatientGlucoseTrend'
 import { PatientHealthSnapshot } from '@/components/dashboard/patient/PatientHealthSnapshot'
-import { PatientReportPanel } from '@/components/dashboard/patient/PatientReportPanel'
 import { PatientSituationPanel } from '@/components/dashboard/patient/PatientSituationPanel'
+import { PatientTodayCarePlan } from '@/components/dashboard/patient/PatientTodayCarePlan'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -45,20 +45,20 @@ export function PatientDashboardPage() {
   }, [t])
 
   const latestResult = patientResults[0]
-  const urgentCount = useMemo(() => patientResults.filter((item) => item.is_urgent).length, [patientResults])
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+      {/* 1. Greeting & Hero Header */}
       <PatientDashboardHero user={user} />
 
       <ErrorAlert message={error} />
 
-      <div className="grid min-w-0 gap-5 xl:grid-cols-12">
+      {/* 2. Top Row: Status Alert Card (Left) + Health Vitals Snapshot (Right) */}
+      <div className="grid min-w-0 gap-6 xl:grid-cols-12">
         <div className="min-w-0 xl:col-span-5">
           <PatientSituationPanel
-            patientResults={patientResults}
             latestResult={latestResult}
-            urgentCount={urgentCount}
+            patientResults={patientResults}
           />
         </div>
         <div className="min-w-0 xl:col-span-7">
@@ -66,9 +66,15 @@ export function PatientDashboardPage() {
         </div>
       </div>
 
-      <PatientReportPanel results={patientResults} loading={loading} />
-
-      <PatientCarePanel latestResult={latestResult} results={patientResults} />
+      {/* 3. Lower Row (2-Column Layout): Today's Care Plan (Left) + 7-Day Glucose Trend (Right) */}
+      <div className="grid min-w-0 gap-6 xl:grid-cols-12">
+        <div className="min-w-0 xl:col-span-5">
+          <PatientTodayCarePlan latestResult={latestResult} />
+        </div>
+        <div className="min-w-0 xl:col-span-7">
+          <PatientGlucoseTrend results={patientResults} />
+        </div>
+      </div>
     </div>
   )
 }
