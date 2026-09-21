@@ -58,6 +58,11 @@ class UserRepository:
     def get_role_by_name(self, role_name: str) -> Role | None:
         return Role.query.filter(func.lower(Role.name) == role_name.lower()).first()
 
+    def get_by_google_sub(self, google_sub: str) -> User | None:
+        if not google_sub:
+            return None
+        return User.query.filter_by(google_sub=google_sub).first()
+
     def get_by_email_case_insensitive(self, email: str) -> User | None:
         return User.query.filter(func.lower(User.email) == email.lower()).first()
 
@@ -65,10 +70,11 @@ class UserRepository:
         self,
         *,
         email: str,
-        password_hash: str,
+        password_hash: str | None = None,
         name: str,
         is_active: bool,
         role_names: list[str],
+        google_sub: str | None = None,
         commit: bool = True,
     ) -> User:
         user = User(
@@ -76,9 +82,18 @@ class UserRepository:
             password_hash=password_hash,
             name=name,
             is_active=is_active,
+            google_sub=google_sub,
         )
         user.roles = Role.query.filter(Role.name.in_(role_names)).all()
         db.session.add(user)
+        if commit:
+            db.session.commit()
+        else:
+            db.session.flush()
+        return user
+
+    def link_google_sub(self, user: User, google_sub: str, commit: bool = True) -> User:
+        user.google_sub = google_sub
         if commit:
             db.session.commit()
         else:

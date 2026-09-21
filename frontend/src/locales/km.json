@@ -85,7 +85,11 @@
     "errorLoginFailed": "ការចូលប្រើបរាជ័យ",
     "errorAgreeTerms": "សូមយល់ព្រមតាមលក្ខខណ្ឌនៃការប្រើប្រាស់។",
     "errorPasswordMismatch": "ពាក្យសម្ងាត់ និងការបញ្ជាក់ពាក្យសម្ងាត់ត្រូវតែត្រូវគ្នា។",
-    "errorRegistrationFailed": "ការចុះឈ្មោះបរាជ័យ"
+    "errorRegistrationFailed": "ការចុះឈ្មោះបរាជ័យ",
+    "orDivider": "ឬ",
+    "signInWithGoogle": "ចូលប្រើប្រាស់តាម Google",
+    "signUpWithGoogle": "ចុះឈ្មោះតាម Google",
+    "errorGoogleLoginFailed": "ការចូលប្រើតាម Google បានបរាជ័យ។ សូមព្យាយាមម្តងទៀត។"
   },
   "roles": {
     "user": "អ្នកប្រើប្រាស់",

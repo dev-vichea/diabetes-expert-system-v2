@@ -5,6 +5,9 @@ import api, { getApiData, getApiErrorMessage, setAuthTokens } from '../api/clien
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { LanguageSwitcher } from '@/components/auth/LanguageSwitcher'
+import { GoogleLogin } from '@react-oauth/google'
+
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
 // ── Medical White Tokens (healthcare blue family — legacy key names kept) ──
 const C = {
@@ -17,8 +20,8 @@ const C = {
 }
 
 export function LoginPage() {
-  const { setUser } = useAuth()
-  const { t } = useLanguage()
+  const { setUser, loginWithGoogle } = useAuth()
+  const { language, t } = useLanguage()
   const location = useLocation()
   const navigate = useNavigate()
   const canvasRef = useRef(null)
@@ -30,6 +33,29 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const googleWrapperRef = useRef(null)
+  const [googleWidth, setGoogleWidth] = useState(380)
+
+  useEffect(() => {
+    const el = googleWrapperRef.current
+    if (!el) return
+
+    const updateWidth = () => {
+      const rect = el.getBoundingClientRect()
+      const w = Math.floor(rect.width)
+      if (w >= 200) {
+        setGoogleWidth(Math.min(400, Math.max(200, w)))
+      }
+    }
+
+    updateWidth()
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => updateWidth())
+      ro.observe(el)
+      return () => ro.disconnect()
+    }
+  }, [])
   const transitionDirection = location.state?.authTransition
   const cardAnimationClass = transitionDirection
     ? `auth-card-route-transition auth-card-route-transition--${transitionDirection}`
@@ -117,11 +143,313 @@ export function LoginPage() {
     }
   }
 
+  async function handleGoogleSuccess(credentialResponse) {
+    if (!credentialResponse?.credential) return
+    setLoading(true)
+    setError('')
+    try {
+      const user = await loginWithGoogle(credentialResponse.credential)
+      if (user?.role === 'patient' && !user?.profile_completed) {
+        navigate('/profile-setup')
+      } else {
+        navigate('/dashboard')
+      }
+    } catch (err) {
+      setError(getApiErrorMessage(err, t('auth.errorGoogleLoginFailed', 'Google sign-in failed. Please try again.')))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function handleGoogleError() {
+    setError(t('auth.errorGoogleLoginFailed', 'Google sign-in failed. Please try again.'))
+  }
+
   return (
-    <div className="auth-shell" style={{ position: 'relative', backgroundColor: C.bg }}>
+    <div className="auth-shell auth-shell--login" style={{ position: 'relative', backgroundColor: C.bg }}>
       <style>{`
         @keyframes lpBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
         @keyframes floatSlow { 0% { transform: translate(0, 0); } 100% { transform: translate(20px, 20px); } }
+
+        /* ── Login Layout: Viewport-Fitting Responsive Rules ── */
+        @media (min-width: 961px) and (min-height: 700px) {
+          .auth-shell--login {
+            height: 100dvh;
+            min-height: 100dvh;
+            max-height: 100dvh;
+            overflow: hidden;
+            padding: clamp(10px, 2dvh, 24px) 16px;
+          }
+
+          .auth-shell--login .auth-card {
+            min-height: 0 !important;
+            max-height: calc(100dvh - clamp(20px, 4dvh, 48px));
+            width: min(1040px, 94vw);
+            border-radius: clamp(20px, 2.5dvh, 32px);
+          }
+
+          .auth-shell--login .auth-panel-accent {
+            margin: clamp(10px, 1.5dvh, 16px);
+            height: calc(100% - clamp(20px, 3dvh, 32px));
+            border-radius: clamp(20px, 2.5dvh, 32px) clamp(80px, 12dvh, 140px) clamp(80px, 12dvh, 140px) clamp(20px, 2.5dvh, 32px);
+          }
+
+          .auth-shell--login .auth-accent-content {
+            padding: clamp(12px, 2dvh, 24px) clamp(16px, 2vw, 24px);
+            max-width: 380px;
+          }
+
+          .auth-shell--login .auth-eyebrow {
+            margin-bottom: clamp(10px, 1.5dvh, 18px);
+            padding: clamp(6px, 0.8dvh, 9px) 16px;
+            font-size: clamp(11px, 1.2dvh, 13px);
+          }
+
+          .auth-shell--login .auth-accent-title {
+            margin: 0 0 clamp(10px, 1.5dvh, 18px);
+            font-size: clamp(1.8rem, 3.2dvh, 2.8rem);
+            line-height: 1.25;
+          }
+
+          .auth-shell--login .auth-accent-copy {
+            margin: 0 0 clamp(14px, 2.2dvh, 28px);
+            font-size: clamp(0.85rem, 1.2dvh, 0.96rem);
+            line-height: 1.65;
+          }
+
+          .auth-shell--login .auth-outline-button {
+            padding: clamp(8px, 1.2dvh, 12px) clamp(18px, 2vw, 24px);
+            min-width: 150px;
+            font-size: 0.92rem;
+          }
+
+          .auth-shell--login .auth-panel-form {
+            padding: clamp(14px, 2.4dvh, 32px) clamp(24px, 3.5vw, 44px);
+          }
+
+          .auth-shell--login .auth-form-inner {
+            width: min(100%, 390px);
+          }
+
+          .auth-shell--login .auth-form-header {
+            margin-bottom: clamp(10px, 1.6dvh, 18px);
+          }
+
+          .auth-shell--login .auth-form-title {
+            font-size: clamp(1.8rem, 3dvh, 2.4rem);
+            line-height: 1.25;
+          }
+
+          .auth-shell--login .auth-form-copy {
+            margin: clamp(4px, 0.6dvh, 8px) 0 0;
+            font-size: clamp(0.84rem, 1.1dvh, 0.92rem);
+            line-height: 1.45;
+          }
+
+          .auth-shell--login .auth-form {
+            gap: clamp(8px, 1.3dvh, 13px);
+          }
+
+          .auth-shell--login .auth-field {
+            gap: clamp(3px, 0.5dvh, 5px);
+          }
+
+          .auth-shell--login .auth-field-label {
+            font-size: 0.82rem;
+            line-height: 1.4;
+          }
+
+          .auth-shell--login .auth-input {
+            padding: clamp(9px, 1.3dvh, 13px) 48px clamp(9px, 1.3dvh, 13px) 44px;
+            border-radius: 14px;
+            font-size: 0.92rem;
+          }
+
+          .auth-shell--login .auth-aux-row {
+            margin-top: -2px;
+            margin-bottom: 0;
+          }
+
+          .auth-shell--login .auth-checkbox {
+            font-size: 0.86rem;
+          }
+
+          .auth-shell--login .auth-submit-button {
+            padding: clamp(10px, 1.3dvh, 13px) 20px;
+            border-radius: 14px;
+            font-size: 0.94rem;
+          }
+
+          .auth-shell--login .auth-divider {
+            margin: clamp(6px, 1dvh, 10px) 0;
+          }
+
+          .auth-shell--login .auth-google-box {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+
+          .auth-shell--login .auth-google-box > div {
+            width: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            background: transparent !important;
+            border: none !important;
+          }
+
+          .auth-shell--login .auth-google-box iframe {
+            display: block !important;
+            border-radius: 4px !important;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+            transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                        box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          }
+
+          .auth-shell--login .auth-google-box:hover iframe {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 24px rgba(31, 118, 232, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .auth-shell--login .auth-google-box:active iframe {
+            transform: translateY(0) !important;
+            box-shadow: 0 2px 6px rgba(31, 118, 232, 0.12) !important;
+          }
+
+          .auth-shell--login .auth-bottom-link {
+            margin-top: clamp(6px, 1dvh, 12px) !important;
+            font-size: 0.88rem;
+            line-height: 1.4;
+          }
+        }
+
+        /* ── Compact & Mobile Fallback: Natural Scrolling ── */
+        @media (max-height: 699px), (max-width: 960px) {
+          .auth-shell--login {
+            min-height: 100dvh;
+            height: auto !important;
+            max-height: none !important;
+            overflow-y: auto !important;
+            align-items: flex-start !important;
+            padding: 20px 14px !important;
+          }
+
+          .auth-shell--login .auth-card {
+            min-height: 0 !important;
+            max-height: none !important;
+            margin: auto 0;
+          }
+
+          .auth-shell--login .auth-panel-form {
+            padding: clamp(20px, 3dvh, 32px) clamp(16px, 3vw, 28px);
+          }
+
+          .auth-shell--login .auth-form {
+            gap: 12px;
+          }
+
+          .auth-shell--login .auth-field {
+            gap: 4px;
+          }
+
+          .auth-shell--login .auth-input {
+            padding: 10px 48px 10px 44px;
+          }
+
+          .auth-shell--login .auth-submit-button {
+            padding: 11px 20px;
+          }
+
+          .auth-shell--login .auth-divider {
+            margin: 8px 0;
+          }
+
+          .auth-shell--login .auth-google-box {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+
+          .auth-shell--login .auth-google-box > div {
+            width: 100% !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            background: transparent !important;
+            border: none !important;
+          }
+
+          .auth-shell--login .auth-google-box iframe {
+            display: block !important;
+            border-radius: 4px !important;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+            transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                        box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          }
+
+          .auth-shell--login .auth-google-box:hover iframe {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 24px rgba(31, 118, 232, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .auth-shell--login .auth-google-box:active iframe {
+            transform: translateY(0) !important;
+            box-shadow: 0 2px 6px rgba(31, 118, 232, 0.12) !important;
+          }
+
+          .auth-shell--login .auth-bottom-link {
+            margin-top: 8px !important;
+          }
+        }
+
+        /* ── Language-Specific Overrides (Khmer Vertical Breathing Room) ── */
+        html[lang='km'] .auth-shell--login .auth-accent-title {
+          line-height: 1.5 !important;
+          font-size: clamp(1.5rem, 2.7dvh, 2.2rem) !important;
+        }
+
+        html[lang='km'] .auth-shell--login .auth-accent-copy {
+          line-height: 1.75 !important;
+        }
+
+        html[lang='km'] .auth-shell--login .auth-form-title {
+          line-height: 1.5 !important;
+          font-size: clamp(1.5rem, 2.7dvh, 2.1rem) !important;
+        }
+
+        html[lang='km'] .auth-shell--login .auth-form-copy {
+          line-height: 1.65 !important;
+        }
+
+        html[lang='km'] .auth-shell--login .auth-field-label {
+          line-height: 1.65 !important;
+        }
+
+        html[lang='km'] .auth-shell--login .auth-checkbox span {
+          line-height: 1.65 !important;
+        }
+
+        html[lang='km'] .auth-shell--login .auth-bottom-link {
+          line-height: 1.65 !important;
+        }
+
+        html[lang='km'] .auth-shell--login .auth-outline-button,
+        html[lang='km'] .auth-shell--login .auth-submit-button {
+          line-height: 1.6 !important;
+        }
       `}</style>
       
       {/* ── Ambient Backgrounds (Shared with Landing) ── */}
@@ -224,9 +552,46 @@ export function LoginPage() {
                 {loading ? t('auth.signingIn', 'Signing in...') : t('auth.login', 'Login')}
               </button>
 
+              {googleClientId ? (
+                <>
+                  <div className="auth-divider relative flex items-center justify-center">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-slate-200/80" />
+                    </div>
+                    <div className="relative rounded-full border border-slate-200/60 bg-white/90 px-3.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 backdrop-blur-sm">
+                      {t('auth.orDivider', 'OR')}
+                    </div>
+                  </div>
+
+                  <div
+                    ref={googleWrapperRef}
+                    className="auth-google-box flex justify-center w-full"
+                  >
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                      locale={language || 'km'}
+                      theme="outline"
+                      size="large"
+                      width={String(googleWidth)}
+                      text="signin_with"
+                      shape="rectangular"
+                      logo_alignment="left"
+                      containerProps={{
+                        style: {
+                          width: '100%',
+                          display: 'flex',
+                          justifyContent: 'center',
+                        },
+                      }}
+                    />
+                  </div>
+                </>
+              ) : null}
+
               {error ? <p className="error-box">{error}</p> : null}
 
-              <p className="auth-bottom-link" style={{ textAlign: 'center', marginTop: '1rem' }}>
+              <p className="auth-bottom-link" style={{ textAlign: 'center' }}>
                 {t('auth.noAccount', "Don't have an account?")} <Link to="/sign-up" state={{ authTransition: 'to-register' }} style={{ color: C.teal, fontWeight: 700 }}>{t('auth.signUp', 'Sign up')}</Link>
               </p>
             </form>

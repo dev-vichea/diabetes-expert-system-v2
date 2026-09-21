@@ -106,6 +106,7 @@ def _ensure_user_profile_columns():
             ("hospital_affiliation", "VARCHAR(255)"),
             ("license_number", "VARCHAR(80)"),
             ("bio", "TEXT"),
+            ("google_sub", "VARCHAR(255)"),
         ]
         with db.engine.connect() as conn:
             for col_name, col_type in columns_to_add:

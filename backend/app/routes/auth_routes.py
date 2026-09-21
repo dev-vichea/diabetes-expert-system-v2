@@ -20,6 +20,18 @@ def login():
     return success_response(data=result, message="Login successful.")
 
 
+@auth_bp.post("/google")
+@limiter.limit("10 per minute")
+def google_login():
+    payload = request.get_json(silent=True) or {}
+    credential = payload.get("credential")
+    if not credential or not isinstance(credential, str):
+        raise ValidationError("credential is required.")
+    result = get_auth_service().login_with_google(credential)
+    return success_response(data=result, message="Google login successful.")
+
+
+
 @auth_bp.post("/register")
 @limiter.limit("5 per minute")
 def register():

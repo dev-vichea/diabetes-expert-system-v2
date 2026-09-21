@@ -8,8 +8,43 @@ import jwt
 from jwt import ExpiredSignatureError, InvalidTokenError
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from app.errors import NotFoundError, UnauthorizedError, ValidationError
+from app.errors import ForbiddenError, GoogleAuthNotConfiguredError, NotFoundError, UnauthorizedError, ValidationError
 from app.extensions import db
+
+
+def _get_google_auth_request():
+    try:
+        from google.auth.transport.requests import Request
+        return Request()
+    except Exception:
+        import urllib.request
+        from google.auth.transport import Response
+
+        class _StdLibResponse(Response):
+            def __init__(self, status: int, headers: dict, data: bytes):
+                self._status = status
+                self._headers = headers
+                self._data = data
+
+            @property
+            def status(self):
+                return self._status
+
+            @property
+            def headers(self):
+                return self._headers
+
+            @property
+            def data(self):
+                return self._data
+
+        class _StdLibRequest:
+            def __call__(self, url, method="GET", body=None, headers=None, timeout=None, **kwargs):
+                req = urllib.request.Request(url, data=body, headers=headers or {}, method=method)
+                with urllib.request.urlopen(req, timeout=timeout or 10) as resp:
+                    return _StdLibResponse(status=resp.status, headers=dict(resp.headers), data=resp.read())
+
+        return _StdLibRequest()
 
 
 class AuthService:
@@ -26,6 +61,7 @@ class AuthService:
         refresh_token_expires_seconds: int,
         audit_log_repository=None,
         patient_repository=None,
+        google_client_id: str | None = None,
     ):
         self.user_repository = user_repository
         self.token_repository = token_repository
@@ -35,6 +71,7 @@ class AuthService:
         self.refresh_token_expires_seconds = refresh_token_expires_seconds
         self.audit_log_repository = audit_log_repository
         self.patient_repository = patient_repository
+        self.google_client_id = google_client_id
 
     def register(self, payload: dict) -> dict:
         if not isinstance(payload, dict):
@@ -104,7 +141,7 @@ class AuthService:
             raise ValidationError("Email and password are required.")
 
         user = self.user_repository.get_by_email(email)
-        if not user or not check_password_hash(user.password_hash, password):
+        if not user or not user.password_hash or not check_password_hash(user.password_hash, password):
             raise UnauthorizedError("Invalid credentials.")
 
         if not user.is_active:
@@ -116,6 +153,130 @@ class AuthService:
         if self.audit_log_repository:
             self.audit_log_repository.create(
                 action="auth.login",
+                entity_type="user",
+                entity_id=str(user.id),
+                actor_user_id=user.id,
+                metadata={"email": user.email},
+            )
+
+        return {
+            **tokens,
+            "user": public_user,
+        }
+
+    def login_with_google(self, credential: str) -> dict:
+        if not self.google_client_id:
+            raise GoogleAuthNotConfiguredError("Google login is not configured on the server.")
+
+        if not credential or not isinstance(credential, str) or not credential.strip():
+            raise ValidationError("credential is required.")
+
+        credential = credential.strip()
+
+        try:
+            from google.oauth2 import id_token
+
+            id_info = id_token.verify_oauth2_token(
+                credential,
+                _get_google_auth_request(),
+                self.google_client_id,
+            )
+        except ValueError as e:
+            raise UnauthorizedError(f"Invalid Google credential: {e}")
+        except Exception as e:
+            raise UnauthorizedError(f"Failed to verify Google credential: {e}")
+
+        if not id_info.get("email_verified"):
+            raise UnauthorizedError("Google account email is not verified.")
+
+        google_sub = str(id_info.get("sub") or "").strip()
+        email = str(id_info.get("email") or "").strip().lower()
+        name = str(id_info.get("name") or id_info.get("given_name") or email.split("@")[0]).strip()
+        picture = id_info.get("picture")
+
+        if not google_sub or not email:
+            raise UnauthorizedError("Invalid Google credential claims.")
+
+        # 1. Lookup by google_sub
+        user = self.user_repository.get_by_google_sub(google_sub)
+
+        # 2. Lookup by email if not found by google_sub
+        if not user:
+            user = self.user_repository.get_by_email_case_insensitive(email)
+            if user:
+                # Reject if existing account is not a patient
+                user_roles = [r.name.lower() for r in user.roles]
+                staff_roles = {"admin", "doctor", "nurse", "super_admin"}
+                if any(role in staff_roles for role in user_roles) or (user_roles and "patient" not in user_roles):
+                    raise ForbiddenError("Google login is restricted to patient accounts and cannot be linked to staff accounts.")
+
+                self.user_repository.link_google_sub(user, google_sub)
+                if self.audit_log_repository:
+                    self.audit_log_repository.create(
+                        action="auth.google_link",
+                        entity_type="user",
+                        entity_id=str(user.id),
+                        actor_user_id=user.id,
+                        metadata={"email": user.email, "google_sub": google_sub},
+                    )
+
+        # 3. Create new user if account does not exist
+        if not user:
+            patient_role = self.user_repository.get_role_by_name("patient")
+            if not patient_role:
+                raise ValidationError("Patient self-registration is not available because the patient role is not configured.")
+
+            try:
+                user = self.user_repository.create_user(
+                    email=email,
+                    password_hash=None,
+                    name=name,
+                    is_active=True,
+                    role_names=["patient"],
+                    google_sub=google_sub,
+                    commit=False,
+                )
+                if picture and not getattr(user, "avatar_url", None):
+                    user.avatar_url = picture
+
+                self.patient_repository.create_patient(
+                    {
+                        "user_id": user.id,
+                        "full_name": name,
+                        "gender": "unknown",
+                        "date_of_birth": None,
+                        "phone": None,
+                        "notes": "Created through Google authentication.",
+                    },
+                    commit=False,
+                )
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+                raise
+
+            if self.audit_log_repository:
+                self.audit_log_repository.create(
+                    action="auth.google_register",
+                    entity_type="user",
+                    entity_id=str(user.id),
+                    actor_user_id=user.id,
+                    metadata={"email": user.email, "roles": ["patient"], "google_sub": google_sub},
+                )
+
+        if not user.is_active:
+            raise UnauthorizedError("User account is inactive.")
+
+        if picture and not getattr(user, "avatar_url", None):
+            user.avatar_url = picture
+            db.session.commit()
+
+        public_user = self.user_repository.to_public_dict(user)
+        tokens = self.issue_tokens(public_user)
+
+        if self.audit_log_repository:
+            self.audit_log_repository.create(
+                action="auth.google_login",
                 entity_type="user",
                 entity_id=str(user.id),
                 actor_user_id=user.id,
@@ -346,7 +507,7 @@ class AuthService:
             raise NotFoundError("User not found.")
 
         # Clean old local avatar file if exists
-        self._remove_local_avatar_file(user.avatar_url)
+        self._remove_local_avatar_file(user.avatar_url, user_id)
 
         avatar_dir = self.get_avatar_dir()
         filename = f"avatar_{user_id}_{int(time.time())}_{uuid4().hex[:8]}{original_ext}"
@@ -362,15 +523,20 @@ class AuthService:
         if not user:
             raise NotFoundError("User not found.")
 
-        self._remove_local_avatar_file(user.avatar_url)
+        self._remove_local_avatar_file(user.avatar_url, user_id)
         updated_user = self.user_repository.update_profile(user, {"avatar_url": None})
         return self.user_repository.to_public_dict(updated_user)
 
-    def _remove_local_avatar_file(self, avatar_url: str | None):
+    def _remove_local_avatar_file(self, avatar_url: str | None, user_id: int):
         if not avatar_url or not avatar_url.startswith("/api/auth/avatar/"):
             return
-        filename = avatar_url.replace("/api/auth/avatar/", "")
-        file_path = self.get_avatar_dir() / filename
+        filename = avatar_url.removeprefix("/api/auth/avatar/")
+        if not filename.startswith(f"avatar_{user_id}_") or "/" in filename or "\\" in filename:
+            return
+        avatar_dir = self.get_avatar_dir().resolve()
+        file_path = (avatar_dir / filename).resolve()
+        if file_path.parent != avatar_dir:
+            return
         try:
             if file_path.is_file():
                 file_path.unlink()
