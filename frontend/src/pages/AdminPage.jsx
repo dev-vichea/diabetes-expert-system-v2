@@ -1,1013 +1,241 @@
-import { useEffect, useMemo, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { useAuth } from '@/contexts/AuthContext'
-import { useLanguage } from '@/contexts/LanguageContext'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from 'recharts'
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import {
   Activity,
-  ArrowUpDown,
-  Download,
-  Pencil,
+  ArrowRight,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardCheck,
+  FileText,
+  KeyRound,
+  Loader2,
+  LockKeyhole,
   Plus,
   Search,
-  Settings2,
   Shield,
-  Siren,
+  ShieldCheck,
   Stethoscope,
-  Trash2,
-  UserRoundCheck,
+  UserRound,
   Users,
-  X,
+  XCircle,
 } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
-import { AdminHeroCard, AdminInsightPanel, AdminMetricCard } from '@/components/admin'
-import { formatDateTime, getDateTimeTimestamp } from '@/lib/datetime'
+import { getDateTimeTimestamp } from '@/lib/datetime'
 import { notify } from '@/lib/toast'
-import {
-  AppSelect,
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-  ConfirmDialog,
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  EmptyState,
-  StatusBadge,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  UserAvatar,
-  Skeleton,
-} from '@/components/ui'
 
-const DEFAULT_EDITOR = {
-  id: null,
-  name: '',
-  email: '',
-  password: '',
-  role: 'patient',
-  is_active: true,
+const ROLE_FILTERS = ['all', 'admin', 'doctor', 'patient']
+
+function initials(name) {
+  const parts = String(name || 'User').trim().split(/\s+/).filter(Boolean).slice(0, 2)
+  return parts.map((part) => part[0]?.toUpperCase()).join('') || 'U'
 }
 
-const STATUS_TABS = [
-  { value: 'all', label: 'common.all' },
-  { value: 'active', label: 'common.active' },
-  { value: 'inactive', label: 'common.inactive' },
-  { value: 'suspended', label: 'common.suspended' },
-]
-
-const PAGE_SIZE_OPTIONS = [10, 20, 50]
-
-function formatRelativeTime(value, t) {
-  if (!value) return t('time.noActivity')
-
-  const time = getDateTimeTimestamp(value)
-  if (Number.isNaN(time)) return t('time.noActivity')
-  const now = Date.now()
-  const diffMinutes = Math.max(0, Math.round((now - time) / 60000))
-
-  if (diffMinutes < 1) return t('time.justNow')
-  if (diffMinutes < 60) return t('time.minAgo', { count: diffMinutes })
-  if (diffMinutes < 1440) {
-    const hours = Math.round(diffMinutes / 60)
-    return hours >= 2 ? t('time.hoursAgo', { count: hours }) : t('time.hourAgo', { count: hours })
-  }
-  const days = Math.round(diffMinutes / 1440)
-  return days > 1 ? t('time.daysAgo', { count: days }) : t('time.dayAgo', { count: days })
+function formatRelativeTime(value) {
+  if (!value) return 'No activity'
+  const timestamp = getDateTimeTimestamp(value)
+  if (Number.isNaN(timestamp)) return 'No activity'
+  const minutes = Math.max(0, Math.round((Date.now() - timestamp) / 60000))
+  if (minutes < 1) return 'Just now'
+  if (minutes < 60) return `${minutes} min ago`
+  if (minutes < 1440) return `${Math.round(minutes / 60)} hr ago`
+  const days = Math.round(minutes / 1440)
+  return `${days} day${days === 1 ? '' : 's'} ago`
 }
 
-function getInitials(name) {
-  const parts = String(name || '')
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-  if (!parts.length) return 'U'
-  return parts.map((part) => part[0].toUpperCase()).join('')
+function roleLabel(role) {
+  return String(role || 'patient').replace(/[_-]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
-function roleBadgeClass(role) {
+function roleClasses(role) {
   const normalized = String(role || '').toLowerCase()
-  if (normalized === 'super_admin') return 'bg-amber-100 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-800/60'
-  if (normalized === 'admin') return 'bg-violet-100 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:ring-violet-800/60'
-  if (normalized === 'doctor') return 'bg-sky-100 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-950/30 dark:text-sky-300 dark:ring-sky-800/60'
-  if (normalized === 'patient') return 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-800/60'
-  return 'bg-slate-100 text-slate-700 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800/60'
+  if (normalized === 'admin' || normalized === 'super_admin') return 'bg-violet-50 text-violet-700 ring-violet-200'
+  if (normalized === 'doctor' || normalized === 'nurse') return 'bg-sky-50 text-sky-700 ring-sky-200'
+  return 'bg-emerald-50 text-emerald-700 ring-emerald-200'
 }
 
-function exportUsersCsv(users, t) {
-  const header = [
-    t('usersPage.table.headers.name'),
-    t('usersPage.table.headers.email'),
-    t('usersPage.table.headers.role'),
-    t('usersPage.table.headers.status'),
-    t('usersPage.table.headers.access'),
-    t('usersPage.table.headers.created'),
-    t('usersPage.table.headers.updated'),
-  ]
-  const rows = users.map((user) => [
-    user.name,
-    user.email,
-    user.role || '',
-    user.is_active ? t('common.active') : t('common.inactive'),
-    user.permissions?.join('; ') || '',
-    user.created_at || '',
-    user.updated_at || '',
-  ])
-  const csv = [header, ...rows]
-    .map((row) => row.map((cell) => `"${String(cell ?? '').replaceAll('"', '""')}"`).join(','))
-    .join('\n')
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = 'admin-users-export.csv'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
-  notify.info(t('usersPage.notifications.exportSuccess'))
+function statusClasses(active) {
+  return active ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200'
 }
 
-function compareValues(left, right) {
-  if (left == null && right == null) return 0
-  if (left == null) return 1
-  if (right == null) return -1
-  return String(left).localeCompare(String(right), undefined, { numeric: true, sensitivity: 'base' })
+function activityTone(action) {
+  const value = String(action || '').toLowerCase()
+  if (value.includes('status') || value.includes('suspend')) return { icon: XCircle, classes: 'bg-orange-50 text-orange-600' }
+  if (value.includes('role') || value.includes('permission')) return { icon: ShieldCheck, classes: 'bg-violet-50 text-violet-600' }
+  if (value.includes('create') || value.includes('reactivat')) return { icon: CheckCircle2, classes: 'bg-emerald-50 text-emerald-600' }
+  return { icon: Activity, classes: 'bg-sky-50 text-sky-600' }
 }
 
-function sortUsers(users, sortKey, sortDirection) {
-  const sorted = [...users].sort((a, b) => {
-    let result = 0
-
-    if (sortKey === 'name') result = compareValues(a.name, b.name)
-    if (sortKey === 'role') result = compareValues(a.role || a.roles?.[0], b.role || b.roles?.[0])
-    if (sortKey === 'status') result = compareValues(a.is_active ? 'active' : 'inactive', b.is_active ? 'active' : 'inactive')
-    if (sortKey === 'updated_at') result = compareValues(a.updated_at || a.created_at, b.updated_at || b.created_at)
-
-    return sortDirection === 'asc' ? result : -result
-  })
-
-  return sorted
+function readableAction(action) {
+  return String(action || 'System activity').replace(/[._]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
-function UserEditorDialog({
-  open,
-  mode,
-  editor,
-  roleOptions,
-  saving,
-  onClose,
-  onChange,
-  onSubmit,
-}) {
-  const { t } = useLanguage()
-  if (!open) return null
+function Card({ children, className = '' }) {
+  return <section className={`admin-dashboard-card rounded-[20px] border border-slate-200/90 bg-white shadow-[0_8px_30px_rgba(31,85,120,0.06)] ${className}`}>{children}</section>
+}
 
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/45 px-3 py-4 backdrop-blur-[2px] animate-in fade-in-0 sm:px-4">
-      <div className="surface dark-hover-border max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-[#1f2640] dark:bg-[#070712] animate-in zoom-in-95">
-        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-[#1f2640] sm:px-6 sm:py-5">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-              {mode === 'create' ? t('usersPage.editor.newAccount') : t('usersPage.editor.editAccount')}
-            </p>
-            <h3 className="mt-1 break-words text-2xl font-bold text-slate-950 dark:text-slate-50">
-              {mode === 'create' ? t('usersPage.editor.addUser') : t('usersPage.editor.updateUser')}
-            </h3>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {mode === 'create'
-                ? t('usersPage.editor.createDesc')
-                : t('usersPage.editor.editDesc')}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 text-slate-500 transition hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900"
-            onClick={onClose}
-            disabled={saving}
-            aria-label={t('common.closeSidebar')}
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <form className="grid gap-4 px-4 py-5 sm:grid-cols-2 sm:px-6 sm:py-6" onSubmit={onSubmit}>
-          <label className="block sm:col-span-2">
-            <span className="label-text">{t('usersPage.editor.fields.fullName')}</span>
-            <input
-              className="input-base"
-              value={editor.name}
-              onChange={(event) => onChange({ ...editor, name: event.target.value })}
-              required
-            />
-          </label>
-
-          <label className="block sm:col-span-2">
-            <span className="label-text">{t('usersPage.editor.fields.email')}</span>
-            <input
-              className="input-base"
-              type="email"
-              value={editor.email}
-              onChange={(event) => onChange({ ...editor, email: event.target.value })}
-              required
-            />
-          </label>
-
-          {mode === 'create' ? (
-            <label className="block sm:col-span-2">
-              <span className="label-text">{t('usersPage.editor.fields.password')}</span>
-              <input
-                className="input-base"
-                type="password"
-                value={editor.password}
-                onChange={(event) => onChange({ ...editor, password: event.target.value })}
-                required
-              />
-            </label>
-          ) : null}
-
-          <label className="block">
-            <span className="label-text">{t('usersPage.editor.fields.role')}</span>
-            <AppSelect
-              value={editor.role}
-              onValueChange={(value) => onChange({ ...editor, role: value })}
-              options={roleOptions}
-            />
-          </label>
-
-          <label className="block">
-            <span className="label-text">{t('usersPage.editor.fields.status')}</span>
-            <AppSelect
-              value={editor.is_active ? 'active' : 'inactive'}
-              onValueChange={(value) => onChange({ ...editor, is_active: value === 'active' })}
-              options={[
-                { value: 'active', label: t('common.active') },
-                { value: 'inactive', label: t('common.inactive') },
-              ]}
-            />
-          </label>
-
-          <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:col-span-2 sm:flex-row sm:items-center sm:justify-end dark:border-slate-800">
-            <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>
-              {t('usersPage.editor.actions.cancel')}
-            </button>
-            <button type="submit" className="btn-primary gap-2" disabled={saving}>
-              {mode === 'create' ? <Plus className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
-              {saving ? t('usersPage.editor.actions.saving') : mode === 'create' ? t('usersPage.editor.actions.createUser') : t('usersPage.editor.actions.saveChanges')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>,
-    document.body
+function SectionHeading({ title, description, action }) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div><h2 className="text-[17px] font-bold tracking-[-0.02em] text-slate-950">{title}</h2>{description ? <p className="mt-1 text-sm text-slate-500">{description}</p> : null}</div>
+      {action}
+    </div>
   )
+}
+
+function AdminPageSkeleton() {
+  return <div className="space-y-5 animate-pulse">{[1, 2, 3].map((row) => <div key={row} className="h-28 rounded-[20px] bg-slate-200/70" />)}</div>
 }
 
 export function AdminPage() {
   const { user: currentUser } = useAuth()
-  const { t } = useLanguage()
   const navigate = useNavigate()
+  const activityRef = useRef(null)
   const [stats, setStats] = useState(null)
-  const [activityOverview, setActivityOverview] = useState({ summary: null, recent_events: [] })
+  const [clinicalStats, setClinicalStats] = useState(null)
+  const [activity, setActivity] = useState([])
   const [users, setUsers] = useState([])
   const [roles, setRoles] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [loadingUsers, setLoadingUsers] = useState(false)
-  const [savingUser, setSavingUser] = useState(false)
-  const [error, setError] = useState('')
   const [search, setSearch] = useState('')
-  const [statusTab, setStatusTab] = useState('all')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-  const [sortKey, setSortKey] = useState('updated_at')
-  const [sortDirection, setSortDirection] = useState('desc')
-  const [showEditor, setShowEditor] = useState(false)
-  const [editorMode, setEditorMode] = useState('create')
-  const [editor, setEditor] = useState(DEFAULT_EDITOR)
-  const [pendingStatusUser, setPendingStatusUser] = useState(null)
-  const [showStatusConfirm, setShowStatusConfirm] = useState(false)
-  const [visibleColumns, setVisibleColumns] = useState({
-    role: true,
-    access: true,
-    status: true,
-    updated_at: true,
-  })
+  const [roleFilter, setRoleFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [loading, setLoading] = useState(true)
+  const [usersLoading, setUsersLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [updatingId, setUpdatingId] = useState(null)
+  const [showCreateUser, setShowCreateUser] = useState(false)
+  const [creatingUser, setCreatingUser] = useState(false)
+  const [createForm, setCreateForm] = useState({ name: '', email: '', password: '', role: 'patient' })
 
-  const roleDistributionData = useMemo(
-    () => Object.entries(stats?.users?.by_role || {}).map(([role, count]) => ({ role, count })),
-    [stats]
-  )
-  const rulesStatusData = useMemo(
-    () => Object.entries(stats?.rules?.by_status || {}).map(([status, count]) => ({ status, count })),
-    [stats]
-  )
-  const topActionData = useMemo(
-    () => (activityOverview.summary?.top_actions || []).slice(0, 6).map((row) => ({
-      action: row.action.replace(/\./g, ' '),
-      count: row.count,
-    })),
-    [activityOverview]
-  )
-
-  const currentActorRoles = useMemo(
-    () => new Set(currentUser?.roles || (currentUser?.role ? [currentUser.role] : [])),
-    [currentUser]
-  )
-  const actorIsSuperAdmin = currentActorRoles.has('super_admin')
-  const roleOptions = useMemo(
-    () => roles
-      .filter((role) => actorIsSuperAdmin || role.name !== 'super_admin')
-      .map((role) => ({ value: role.name, label: role.name })),
-    [actorIsSuperAdmin, roles]
-  )
-
-  const sortedUsers = useMemo(() => sortUsers(users, sortKey, sortDirection), [users, sortKey, sortDirection])
-  const pageCount = Math.max(1, Math.ceil(sortedUsers.length / pageSize))
-  const paginatedUsers = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return sortedUsers.slice(start, start + pageSize)
-  }, [sortedUsers, page, pageSize])
-
-  const statsCards = [
-    {
-      title: t('adminStats.totalUsers'),
-      description: t('adminStats.totalUsersDesc'),
-      value: stats?.users?.total ?? 0,
-      icon: Users,
-      iconClass: 'bg-violet-100/20 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-900/10 dark:text-violet-300 dark:ring-violet-500/30',
-      shellClass: 'from-violet-50 via-white to-white dark:from-violet-950/20 dark:via-[#070712] dark:to-[#070712]',
-      glowClass: 'bg-violet-300/25 dark:bg-violet-500/10',
-      accentClass: 'bg-violet-500',
-    },
-    {
-      title: t('adminStats.patients'),
-      description: t('adminStats.patientsDesc'),
-      value: stats?.patients?.total ?? 0,
-      icon: Stethoscope,
-      iconClass: 'bg-sky-100/20 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-900/10 dark:text-sky-300 dark:ring-sky-500/30',
-      shellClass: 'from-sky-50 via-white to-white dark:from-sky-950/20 dark:via-[#070712] dark:to-[#070712]',
-      glowClass: 'bg-sky-300/25 dark:bg-sky-500/10',
-      accentClass: 'bg-sky-500',
-    },
-    {
-      title: t('adminStats.diagnosisTotal'),
-      description: t('adminStats.diagnosisDesc'),
-      value: stats?.diagnosis?.total ?? 0,
-      icon: Shield,
-      iconClass: 'bg-cyan-100/20 text-cyan-700 ring-1 ring-cyan-200 dark:bg-cyan-900/10 dark:text-cyan-300 dark:ring-cyan-500/30',
-      shellClass: 'from-cyan-50 via-white to-white dark:from-cyan-950/20 dark:via-[#070712] dark:to-[#070712]',
-      glowClass: 'bg-cyan-300/25 dark:bg-cyan-500/10',
-      accentClass: 'bg-cyan-500',
-    },
-    {
-      title: t('adminStats.urgentCases'),
-      description: t('adminStats.urgentCasesDesc'),
-      value: stats?.diagnosis?.urgent ?? 0,
-      icon: Siren,
-      iconClass: 'bg-amber-100/20 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/10 dark:text-amber-300 dark:ring-amber-500/30',
-      shellClass: 'from-amber-50 via-white to-white dark:from-amber-950/20 dark:via-[#070712] dark:to-[#070712]',
-      glowClass: 'bg-amber-300/25 dark:bg-amber-500/10',
-      accentClass: 'bg-amber-500',
-    },
-  ]
-
-  const pageSectionClass = 'p-0'
-
-  useEffect(() => {
-    setPage(1)
-  }, [search, statusTab, pageSize])
-
-  useEffect(() => {
-    async function loadInitial() {
-      await Promise.all([loadDashboard(), loadUsers({ searchValue: '', statusValue: 'all' })])
+  async function loadUsers() {
+    setUsersLoading(true)
+    try {
+      const params = new URLSearchParams({ limit: '200' })
+      if (search.trim()) params.set('search', search.trim())
+      if (roleFilter !== 'all') params.set('role', roleFilter)
+      if (statusFilter !== 'all') params.set('status', statusFilter)
+      const response = await api.get(`/admin/users?${params.toString()}`)
+      setUsers(getApiData(response) || [])
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Unable to load users.'))
+    } finally {
+      setUsersLoading(false)
     }
-
-    loadInitial()
-  }, [])
-
-  useEffect(() => {
-    const handle = window.setTimeout(() => {
-      loadUsers({ searchValue: search, statusValue: statusTab })
-    }, 250)
-
-    return () => window.clearTimeout(handle)
-  }, [search, statusTab])
+  }
 
   async function loadDashboard() {
     setLoading(true)
     setError('')
-
     try {
-      const [statsResponse, activityResponse] = await Promise.all([
+      const [statsResponse, activityResponse, rolesResponse, clinicalResponse] = await Promise.allSettled([
         api.get('/admin/stats'),
-        api.get('/admin/activity?days=7&limit=30'),
+        api.get('/admin/activity?days=7&limit=6'),
+        api.get('/admin/roles'),
+        api.get('/dashboard/clinical'),
       ])
-
-      setStats(getApiData(statsResponse) || null)
-      setActivityOverview(getApiData(activityResponse) || { summary: null, recent_events: [] })
-    } catch (err) {
-      setError(getApiErrorMessage(err, t('usersPage.notifications.loadError')))
+      if (statsResponse.status === 'fulfilled') setStats(getApiData(statsResponse.value) || null)
+      if (activityResponse.status === 'fulfilled') setActivity(getApiData(activityResponse.value)?.recent_events || [])
+      if (rolesResponse.status === 'fulfilled') setRoles(getApiData(rolesResponse.value) || [])
+      if (clinicalResponse.status === 'fulfilled') setClinicalStats(getApiData(clinicalResponse.value) || null)
+      if (statsResponse.status === 'rejected') setError(getApiErrorMessage(statsResponse.reason, 'Unable to load dashboard statistics.'))
     } finally {
       setLoading(false)
     }
   }
 
-  async function loadUsers({ searchValue = search, statusValue = statusTab } = {}) {
-    setLoadingUsers(true)
-    setError('')
+  useEffect(() => { loadDashboard() }, [])
+  useEffect(() => {
+    const timer = window.setTimeout(loadUsers, 220)
+    return () => window.clearTimeout(timer)
+  }, [search, roleFilter, statusFilter])
 
+  const userCounts = stats?.users || {}
+  const activeUsers = Number(userCounts.active || 0)
+  const inactiveUsers = Number(userCounts.inactive || 0)
+  const byRole = userCounts.by_role || {}
+  const totalUsers = Number(userCounts.total || users.length || 0)
+  const doctors = Number(byRole.doctor || 0)
+  const admins = Number((byRole.admin || 0) + (byRole.super_admin || 0))
+  const patients = Number(stats?.patients?.total || byRole.patient || 0)
+  const assessments = Number(clinicalStats?.assessments?.value ?? stats?.diagnosis?.total ?? 0)
+  const treatmentPlans = Number(clinicalStats?.treatment_plans?.value ?? 0)
+  const reviews = Number(stats?.diagnosis?.reviewed ?? clinicalStats?.doctor_workload?.reviewed_by_me ?? 0)
+  const accountData = [{ name: 'Active', value: activeUsers, color: '#39a76a' }, { name: 'Inactive', value: inactiveUsers, color: '#e6a23c' }, { name: 'Suspended', value: 0, color: '#e06b72' }]
+  const visibleUsers = useMemo(() => users.slice(0, 6), [users])
+  const roleCards = useMemo(() => ['admin', 'doctor', 'patient'].map((roleName) => {
+    const role = roles.find((item) => item.name === roleName)
+    return { name: roleName, count: Number(role?.user_count ?? byRole[roleName] ?? 0), description: role?.description || ({ admin: 'Full system access', doctor: 'Patient and clinical access', patient: 'Personal health information only' }[roleName]) }
+  }), [roles, byRole])
+
+  async function toggleUserStatus(target) {
+    setUpdatingId(target.id)
     try {
-      if (statusValue === 'suspended') {
-        const rolesResponse = await api.get('/admin/roles')
-        setUsers([])
-        setRoles(getApiData(rolesResponse) || [])
-        return
-      }
-
-      const params = new URLSearchParams({ limit: '200' })
-      const normalizedSearch = searchValue.trim()
-      if (normalizedSearch) params.set('search', normalizedSearch)
-      if (statusValue !== 'all') params.set('status', statusValue)
-
-      const [usersResponse, rolesResponse] = await Promise.all([
-        api.get(`/admin/users?${params.toString()}`),
-        api.get('/admin/roles'),
-      ])
-
-      setUsers(getApiData(usersResponse) || [])
-      setRoles(getApiData(rolesResponse) || [])
+      await api.patch(`/admin/users/${target.id}/status`, { is_active: !target.is_active })
+      notify.success(target.is_active ? 'Account deactivated.' : 'Account activated.')
+      await Promise.all([loadDashboard(), loadUsers()])
     } catch (err) {
-      setError(getApiErrorMessage(err, t('usersPage.notifications.loadError')))
+      notify.error(getApiErrorMessage(err, 'Unable to update account status.'))
     } finally {
-      setLoadingUsers(false)
+      setUpdatingId(null)
     }
   }
 
-  function openCreateUser() {
-    setEditorMode('create')
-    setEditor(DEFAULT_EDITOR)
-    setShowEditor(true)
-  }
-
-  function openEditUser(user) {
-    navigate(`/users/${user.id}/edit`)
-  }
-
-  function closeEditor() {
-    if (savingUser) return
-    setShowEditor(false)
-    setEditorMode('create')
-    setEditor(DEFAULT_EDITOR)
-  }
-
-  async function submitEditor(event) {
+  async function createUser(event) {
     event.preventDefault()
-    setSavingUser(true)
-    setError('')
-    const loadingToast = notify.loading(editorMode === 'create' ? t('usersPage.notifications.creating') : t('usersPage.notifications.updating'))
-
+    setCreatingUser(true)
     try {
-      if (editorMode === 'create') {
-        await api.post('/admin/users', {
-          name: editor.name,
-          email: editor.email,
-          password: editor.password,
-          roles: [editor.role],
-          is_active: editor.is_active,
-        })
-      } else {
-        await api.patch(`/admin/users/${editor.id}`, {
-          name: editor.name,
-          email: editor.email,
-        })
-        await api.patch(`/admin/users/${editor.id}/roles`, {
-          roles: [editor.role],
-        })
-        await api.patch(`/admin/users/${editor.id}/status`, {
-          is_active: editor.is_active,
-        })
-      }
-
-      await Promise.all([
-        loadUsers({ searchValue: search, statusValue: statusTab }),
-        loadDashboard(),
-      ])
-      notify.dismiss(loadingToast)
-      notify.success(editorMode === 'create' ? t('usersPage.notifications.createSuccess') : t('usersPage.notifications.updateSuccess'))
-      closeEditor()
+      await api.post('/admin/users', { name: createForm.name, email: createForm.email, password: createForm.password, roles: [createForm.role], is_active: true })
+      notify.success('User account created.')
+      setShowCreateUser(false)
+      setCreateForm({ name: '', email: '', password: '', role: 'patient' })
+      await Promise.all([loadDashboard(), loadUsers()])
     } catch (err) {
-      notify.dismiss(loadingToast)
-      notify.error(getApiErrorMessage(err, editorMode === 'create' ? t('usersPage.notifications.createError') : t('usersPage.notifications.updateError')))
+      notify.error(getApiErrorMessage(err, 'Unable to create user account.'))
     } finally {
-      setSavingUser(false)
+      setCreatingUser(false)
     }
   }
 
-  function requestStatusToggle(user) {
-    setPendingStatusUser(user)
-    setShowStatusConfirm(true)
+  function scrollToActivity() {
+    activityRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 
-  async function confirmStatusToggle() {
-    if (!pendingStatusUser) return
-
-    setSavingUser(true)
-    setError('')
-    const loadingToast = notify.loading(pendingStatusUser.is_active ? t('usersPage.notifications.disabling') : t('usersPage.notifications.enabling'))
-
-    try {
-      await api.patch(`/admin/users/${pendingStatusUser.id}/status`, {
-        is_active: !pendingStatusUser.is_active,
-      })
-      await Promise.all([
-        loadUsers({ searchValue: search, statusValue: statusTab }),
-        loadDashboard(),
-      ])
-      notify.dismiss(loadingToast)
-      notify.success(t('usersPage.notifications.statusSuccess'))
-    } catch (err) {
-      notify.dismiss(loadingToast)
-      notify.error(getApiErrorMessage(err, t('usersPage.notifications.updateError')))
-    } finally {
-      setSavingUser(false)
-      setShowStatusConfirm(false)
-      setPendingStatusUser(null)
-    }
-  }
-
-  function toggleSort(nextKey) {
-    if (sortKey === nextKey) {
-      setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'))
-      return
-    }
-    setSortKey(nextKey)
-    setSortDirection(nextKey === 'updated_at' ? 'desc' : 'asc')
-  }
-
-  function toggleColumn(column) {
-    setVisibleColumns((current) => ({ ...current, [column]: !current[column] }))
-  }
-
-  const showingFrom = sortedUsers.length ? (page - 1) * pageSize + 1 : 0
-  const showingTo = Math.min(page * pageSize, sortedUsers.length)
+  if (loading && !stats) return <AdminPageSkeleton />
 
   return (
-    <div className="space-y-6">
-      <section className={pageSectionClass}>
-        <AdminHeroCard
-          eyebrow={t('usersPage.hero.eyebrow')}
-          eyebrowIcon={Users}
-          title={t('usersPage.hero.title')}
-          description={t('usersPage.hero.description')}
-          action={(
-            <button
-              type="button"
-              className="btn-primary gap-2 self-start rounded-2xl px-5 py-3 shadow-lg shadow-cyan-700/15"
-              onClick={openCreateUser}
-            >
-              <Plus className="h-4 w-4" />
-              {t('usersPage.hero.addUser')}
-            </button>
-          )}
-        />
-      </section>
-
-      <section className={pageSectionClass}>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {statsCards.map((card) => (
-            <AdminMetricCard
-              key={card.title}
-              title={card.title}
-              description={card.description}
-              value={card.value}
-              icon={card.icon}
-              iconClass={card.iconClass}
-              shellClass={card.shellClass}
-              glowClass={card.glowClass}
-              accentClass={card.accentClass}
-              loading={loading}
-            />
-          ))}
+    <div className="admin-dashboard-shell space-y-5 pb-8">
+      <Card className="admin-dashboard-hero overflow-hidden bg-gradient-to-r from-white via-sky-50/80 to-cyan-50/70 p-5 sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div><div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-sky-600"><Shield className="h-4 w-4" /> System administration</div><h1 className="mt-2 text-2xl font-bold tracking-[-0.03em] text-slate-950 sm:text-[28px]">Good evening, Admin</h1><p className="mt-1 text-sm text-slate-600">Manage users, roles, permissions, and system access.</p></div>
+          <div className="flex flex-wrap gap-2"><button type="button" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#2479d8] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1c68bd]" onClick={() => setShowCreateUser(true)}><Plus className="h-4 w-4" /> Add User</button><button type="button" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700" onClick={() => navigate('/roles-permissions')}><KeyRound className="h-4 w-4" /> Manage Roles</button><button type="button" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700" onClick={scrollToActivity}><FileText className="h-4 w-4" /> View Audit Log</button></div>
         </div>
+      </Card>
 
-        <div className="mt-5 grid gap-4 xl:grid-cols-3">
-          <AdminInsightPanel
-            title={t('usersPage.insights.rolesTitle')}
-            description={t('usersPage.insights.rolesDesc')}
-            icon={Users}
-            iconClass="text-violet-500"
-            glowClass="bg-violet-200/20 dark:bg-violet-500/10"
-          >
-            {!roleDistributionData.length ? (
-              <EmptyState title={t('usersPage.insights.noRoleData')} description={t('usersPage.insights.noRoleDataDesc')} />
-            ) : (
-              <ChartContainer className="h-64 w-full" config={{ count: { label: t('usersPage.insights.usersCount'), color: '#1f76e8' } }}>
-                <BarChart accessibilityLayer data={roleDistributionData} margin={{ left: 6, right: 8 }}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis dataKey="role" tickLine={false} axisLine={false} />
-                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
-                  <Bar dataKey="count" fill="var(--color-count)" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ChartContainer>
-            )}
-          </AdminInsightPanel>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[
+        { title: 'Total Users', value: totalUsers, detail: 'Live user directory', icon: Users, accent: 'text-sky-700 bg-sky-50 ring-sky-100', tone: 'admin-kpi-blue bg-gradient-to-br from-sky-50/70 via-white to-white' },
+        { title: 'Doctors', value: doctors, detail: 'Clinical staff', icon: Stethoscope, accent: 'text-indigo-700 bg-indigo-50 ring-indigo-100', tone: 'admin-kpi-indigo bg-gradient-to-br from-indigo-50/70 via-white to-white' },
+        { title: 'Patients', value: patients, detail: patients ? 'Registered patients' : 'No records yet', icon: UserRound, accent: 'text-emerald-700 bg-emerald-50 ring-emerald-100', tone: 'admin-kpi-green bg-gradient-to-br from-emerald-50/70 via-white to-white' },
+        { title: 'Admins', value: admins, detail: 'System administrators', icon: ShieldCheck, accent: 'text-violet-700 bg-violet-50 ring-violet-100', tone: 'admin-kpi-violet bg-gradient-to-br from-violet-50/70 via-white to-white' },
+      ].map(({ title, value, detail, icon: Icon, accent, tone }) => <Card key={title} className={`admin-dashboard-kpi p-4 ${tone}`}><div className="flex items-start justify-between gap-3"><span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ring-1 ${accent}`}><Icon className="h-4 w-4" /></span><span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400"><i className="admin-live-dot h-1.5 w-1.5 rounded-full bg-emerald-500" />Live data</span></div><p className="mt-4 text-2xl font-bold tracking-[-0.03em] text-slate-950">{value}</p><p className="mt-0.5 text-sm font-semibold text-slate-700">{title}</p><p className="mt-1 text-xs text-slate-500">{detail}</p></Card>)}
+      </div>
 
-          <AdminInsightPanel
-            title={t('usersPage.insights.rulesTitle')}
-            description={t('usersPage.insights.rulesDesc')}
-            icon={Shield}
-            iconClass="text-cyan-500"
-            glowClass="bg-cyan-200/20 dark:bg-cyan-500/10"
-          >
-            {!rulesStatusData.length ? (
-              <EmptyState title={t('usersPage.insights.noRuleData')} description={t('usersPage.insights.noRuleDataDesc')} />
-            ) : (
-              <ChartContainer
-                className="h-64 w-full"
-                config={{
-                  active: { label: t('common.active'), color: '#16a34a' },
-                  inactive: { label: t('common.inactive'), color: '#f59e0b' },
-                  archived: { label: t('common.archived'), color: '#94a3b8' },
-                }}
-              >
-                <PieChart>
-                  <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                  <Pie data={rulesStatusData} dataKey="count" nameKey="status" innerRadius={46} outerRadius={86} stroke="none" strokeWidth={0}>
-                    {rulesStatusData.map((entry) => (
-                      <Cell key={entry.status} fill={`var(--color-${entry.status})`} stroke="none" />
-                    ))}
-                  </Pie>
-                  <ChartLegend content={<ChartLegendContent />} />
-                </PieChart>
-              </ChartContainer>
-            )}
-          </AdminInsightPanel>
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <Card className="min-w-0 p-5 sm:p-6"><SectionHeading title="User Management" description="Manage system users and their access." action={<button type="button" className="hidden items-center gap-1 text-sm font-semibold text-sky-700 sm:inline-flex" onClick={() => navigate('/users')}>View all users <ArrowRight className="h-4 w-4" /></button>} />
+          <div className="mt-5 flex flex-col gap-3 lg:flex-row"><label className="relative min-w-0 flex-1"><Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, email, or ID..." className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100" /></label><div className="flex gap-2"><select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none focus:border-sky-400"><option value="all">All Roles</option><option value="admin">Admin</option><option value="doctor">Doctor</option><option value="patient">Patient</option></select><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none focus:border-sky-400"><option value="all">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div></div>
+          <div className="mt-4 flex gap-1 overflow-x-auto pb-1">{ROLE_FILTERS.map((filter) => <button key={filter} type="button" onClick={() => setRoleFilter(filter)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition ${roleFilter === filter ? 'bg-sky-100 text-sky-700' : 'text-slate-500 hover:bg-slate-100'}`}>{filter === 'all' ? 'All' : roleLabel(filter)}</button>)}</div>
+          {error ? <div className="mt-4 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"><XCircle className="h-4 w-4" />{error}</div> : null}
+          <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200"><table className="w-full min-w-[720px] text-left"><thead className="bg-slate-50/80"><tr>{['User', 'Email', 'Role', 'Status', 'Last active', 'Action'].map((heading) => <th key={heading} className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">{heading}</th>)}</tr></thead><tbody>{usersLoading ? <tr><td colSpan="6" className="px-4 py-10 text-center text-sm text-slate-500"><Loader2 className="mx-auto h-5 w-5 animate-spin text-sky-600" /></td></tr> : null}{!usersLoading && !visibleUsers.length ? <tr><td colSpan="6" className="px-4 py-10 text-center text-sm text-slate-500">No users match your filters.</td></tr> : null}{!usersLoading ? visibleUsers.map((item) => { const primaryRole = item.role || item.roles?.[0] || 'patient'; return <tr key={item.id} className="border-t border-slate-100 transition hover:bg-slate-50/60"><td className="px-3 py-3"><div className="flex items-center gap-2.5"><span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700">{initials(item.name)}</span><div className="min-w-0"><p className="max-w-[150px] truncate text-sm font-semibold text-slate-900">{item.name}</p><p className="text-[11px] text-slate-400">#{item.id}</p></div></div></td><td className="max-w-[190px] truncate px-3 py-3 text-sm text-slate-600">{item.email}</td><td className="px-3 py-3"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${roleClasses(primaryRole)}`}>{roleLabel(primaryRole)}</span></td><td className="px-3 py-3"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${statusClasses(item.is_active)}`}>{item.is_active ? 'Active' : 'Inactive'}</span></td><td className="px-3 py-3 text-xs text-slate-500">{formatRelativeTime(item.updated_at || item.created_at)}</td><td className="px-3 py-3"><button type="button" className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-sky-300 hover:text-sky-700" onClick={() => navigate(`/users/${item.id}/edit`)}>Manage <ChevronRight className="h-3.5 w-3.5" /></button><button type="button" disabled={updatingId === item.id} className="ml-2 text-[11px] font-medium text-slate-400 hover:text-slate-700 disabled:opacity-50" onClick={() => toggleUserStatus(item)}>{updatingId === item.id ? 'Saving…' : item.is_active ? 'Disable' : 'Enable'}</button></td></tr> }) : null}</tbody></table></div>
+          <button type="button" className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-sky-700 sm:hidden" onClick={() => navigate('/users')}>View all users <ArrowRight className="h-4 w-4" /></button>
+        </Card>
 
-          <AdminInsightPanel
-            title={t('usersPage.insights.actionsTitle')}
-            description={t('usersPage.insights.actionsDesc')}
-            icon={Activity}
-            iconClass="text-emerald-500"
-            glowClass="bg-emerald-200/20 dark:bg-emerald-500/10"
-          >
-            {!topActionData.length ? (
-              <EmptyState title={t('usersPage.insights.noActionData')} description={t('usersPage.insights.noActionDataDesc')} />
-            ) : (
-              <ChartContainer className="h-64 w-full" config={{ count: { label: t('usersPage.insights.eventsCount'), color: '#2f8cff' } }}>
-                <BarChart accessibilityLayer data={topActionData} layout="vertical" margin={{ left: 4, right: 4 }}>
-                  <CartesianGrid horizontal={false} />
-                  <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />
-                  <YAxis type="category" dataKey="action" width={120} tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
-                  <Bar dataKey="count" fill="var(--color-count)" radius={[0, 8, 8, 0]} />
-                </BarChart>
-              </ChartContainer>
-            )}
-          </AdminInsightPanel>
-        </div>
+        <div ref={activityRef} className="space-y-5"><Card className="flex items-center justify-between gap-3 bg-gradient-to-br from-violet-50 to-sky-50 p-4"><div className="flex items-center gap-3"><span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white text-violet-600 shadow-sm"><LockKeyhole className="h-5 w-5" /></span><div><p className="text-sm font-bold text-slate-900">Access needs attention</p><p className="mt-0.5 text-xs text-slate-600">{inactiveUsers ? `${inactiveUsers} inactive account${inactiveUsers === 1 ? '' : 's'} to review` : 'No pending account issues'}</p></div></div><ChevronRight className="h-5 w-5 text-slate-400" /></Card><Card className="p-5"><SectionHeading title="Recent Admin Activity" action={<button type="button" className="text-xs font-semibold text-sky-700" onClick={scrollToActivity}>View all →</button>} /><div className="mt-4">{activity.length ? activity.slice(0, 5).map((event, index) => { const tone = activityTone(event.action); const Icon = tone.icon; return <div key={`${event.id || event.action}-${index}`} className="flex gap-3 border-b border-slate-100 py-3 first:pt-0 last:border-0 last:pb-0"><span className={`mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${tone.classes}`}><Icon className="h-4 w-4" /></span><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-slate-800">{readableAction(event.action)}</p><p className="mt-0.5 truncate text-xs text-slate-500">{event.entity_type ? `${event.entity_type} #${event.entity_id || '—'}` : 'System activity'}</p></div><span className="shrink-0 text-[11px] text-slate-400">{formatRelativeTime(event.created_at)}</span></div> }) : <p className="py-4 text-sm text-slate-500">No recent admin activity.</p>}</div></Card></div>
+      </div>
 
-        <div className="surface mt-6 min-w-0 p-4">
-          <Tabs value={statusTab} onValueChange={setStatusTab}>
-            <TabsList className="max-w-full overflow-x-auto">
-              {STATUS_TABS.map((tab) => (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className={tab.value === 'suspended' ? 'opacity-80' : ''}
-                >
-                  {t(tab.label)}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]"><Card className="p-5 sm:p-6"><SectionHeading title="Role & Permission Overview" description="Manage roles and access permissions." action={<button type="button" className="inline-flex items-center gap-1 text-sm font-semibold text-sky-700" onClick={() => navigate('/roles-permissions')}>View all roles <ArrowRight className="h-4 w-4" /></button>} /><div className="mt-5 grid gap-3 md:grid-cols-3">{roleCards.map((role) => { const Icon = role.name === 'doctor' ? Stethoscope : role.name === 'patient' ? UserRound : ShieldCheck; return <div key={role.name} className="admin-role-card rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50/80 to-white p-4"><span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ring-1 ${roleClasses(role.name)}`}><Icon className="h-4 w-4" /></span><p className="mt-3 text-sm font-bold text-slate-900">{roleLabel(role.name)}</p><p className="mt-1 text-2xl font-bold text-slate-900">{role.count} <span className="text-xs font-medium text-slate-500">users</span></p><p className="mt-1 min-h-8 text-xs leading-5 text-slate-500">{role.description}</p><button type="button" className="mt-3 text-xs font-bold text-sky-700" onClick={() => navigate('/roles-permissions')}>Manage →</button></div> })}</div></Card><Card className="p-5 sm:p-6"><SectionHeading title="Account Status" description="User account distribution" /><div className="mt-3 flex items-center gap-4"><div className="relative h-36 w-36 shrink-0"><ResponsiveContainer width="100%" height="100%"><PieChart><Tooltip formatter={(value, name) => [`${value}`, name]} /><Pie data={accountData} dataKey="value" nameKey="name" innerRadius={47} outerRadius={66} paddingAngle={2} stroke="none">{accountData.map((item) => <Cell key={item.name} fill={item.color} />)}</Pie></PieChart></ResponsiveContainer><div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"><strong className="text-xl text-slate-900">{totalUsers}</strong><span className="text-[10px] text-slate-500">Total users</span></div></div><div className="min-w-0 flex-1 space-y-2.5">{accountData.map((item) => { const percent = totalUsers ? ((item.value / totalUsers) * 100).toFixed(1) : '0.0'; return <div key={item.name} className="flex items-center justify-between gap-2 text-xs"><span className="flex items-center gap-2 text-slate-600"><i className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />{item.name}</span><span className="font-semibold text-slate-800">{item.value} <span className="font-normal text-slate-400">{percent}%</span></span></div> })}</div></div><button type="button" className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-sky-700" onClick={() => navigate('/users')}>Manage accounts <ArrowRight className="h-4 w-4" /></button></Card></div>
 
-          <div className="mt-5 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="relative w-full max-w-xl">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                className="input-base rounded-2xl pl-11"
-                placeholder={t('usersPage.table.searchPlaceholder')}
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button type="button" className="btn-secondary gap-2 rounded-2xl">
-                    <Settings2 className="h-4 w-4" />
-                    {t('usersPage.table.columns')}
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuLabel>{t('usersPage.table.visibleColumns')}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {[
-                    ['role', t('usersPage.table.headers.role')],
-                    ['access', t('usersPage.table.headers.access')],
-                    ['status', t('usersPage.table.headers.status')],
-                    ['updated_at', t('usersPage.table.headers.lastActive')],
-                  ].map(([key, label]) => (
-                    <DropdownMenuCheckboxItem
-                      key={key}
-                      checked={visibleColumns[key]}
-                      onCheckedChange={() => toggleColumn(key)}
-                    >
-                      {label}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <button type="button" className="btn-secondary gap-2 rounded-2xl" onClick={() => exportUsersCsv(sortedUsers, t)}>
-                <Download className="h-4 w-4" />
-                {t('usersPage.table.export')}
-              </button>
-            </div>
-          </div>
-
-          {statusTab === 'suspended' ? (
-            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
-              {t('usersPage.table.suspendedNotice')}
-            </div>
-          ) : null}
-
-          <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[860px] bg-white dark:bg-slate-950/20">
-                <thead className="bg-slate-50/80 dark:bg-slate-950/60">
-                  <tr>
-                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
-                      <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('name')}>
-                        {t('usersPage.table.headers.name')}
-                        <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                      </button>
-                    </th>
-                    {visibleColumns.role ? (
-                      <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
-                        <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('role')}>
-                          {t('usersPage.table.headers.role')}
-                          <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                        </button>
-                      </th>
-                    ) : null}
-                    {visibleColumns.access ? <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">{t('usersPage.table.headers.access')}</th> : null}
-                    {visibleColumns.status ? (
-                      <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
-                        <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('status')}>
-                          {t('usersPage.table.headers.status')}
-                          <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                        </button>
-                      </th>
-                    ) : null}
-                    {visibleColumns.updated_at ? (
-                      <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
-                        <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('updated_at')}>
-                          {t('usersPage.table.headers.lastActive')}
-                          <ArrowUpDown className="h-4 w-4 text-slate-400" />
-                        </button>
-                      </th>
-                    ) : null}
-                    <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">{t('usersPage.table.headers.actions')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loadingUsers
-                    ? Array.from({ length: 6 }).map((_, idx) => (
-                        <tr key={idx} className="border-b border-slate-100 last:border-0 dark:border-slate-800">
-                          <td className="px-3 py-3.5">
-                            <div className="flex items-center gap-3">
-                              <Skeleton className="h-9 w-9 rounded-full shrink-0" />
-                              <div className="space-y-1.5 min-w-0">
-                                <Skeleton className="h-4 w-32" />
-                                <Skeleton className="h-3 w-44" />
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-3.5">
-                            <Skeleton className="h-6 w-20 rounded-full" />
-                          </td>
-                          <td className="px-3 py-3.5">
-                            <Skeleton className="h-6 w-16 rounded-full" />
-                          </td>
-                          {visibleColumns.access && (
-                            <td className="px-3 py-3.5">
-                              <Skeleton className="h-4 w-24" />
-                            </td>
-                          )}
-                          {visibleColumns.lastActive && (
-                            <td className="px-3 py-3.5">
-                              <Skeleton className="h-4 w-28" />
-                            </td>
-                          )}
-                          <td className="px-3 py-3.5 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <Skeleton className="h-8 w-8 rounded-lg" />
-                              <Skeleton className="h-8 w-8 rounded-lg" />
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    : null}
-
-                  {!loadingUsers && !paginatedUsers.length ? (
-                    <tr>
-                      <td colSpan="6" className="px-4 py-10">
-                        <EmptyState title={t('usersPage.table.states.noneFound')} description={t('usersPage.table.states.noneFoundDesc')} />
-                      </td>
-                    </tr>
-                  ) : null}
-
-                  {!loadingUsers
-                    ? paginatedUsers.map((user) => {
-                      const primaryRole = user.role || user.roles?.[0] || 'patient'
-                      const count = user.permissions?.length || 0
-                      const accessLabel = t('usersPage.table.states.permissions', { count })
-                      return (
-                        <tr key={user.id} className="border-t border-slate-200 transition hover:bg-slate-50/70 dark:border-slate-800 dark:hover:bg-slate-950/40">
-                          <td className="px-3 py-3">
-                            <div className="flex items-center gap-2.5">
-                              <UserAvatar
-                                name={user.name}
-                                src={user.avatar_url}
-                                className="h-9 w-9 text-xs"
-                              />
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-slate-950 dark:text-slate-50">{user.name}</p>
-                                <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-slate-500 dark:text-slate-400">
-                                  {user.email}
-                                </p>
-                              </div>
-                            </div>
-                          </td>
-                          {visibleColumns.role ? (
-                            <td className="px-3 py-3">
-                              <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${roleBadgeClass(primaryRole)}`}>
-                                {t(`roles.${primaryRole}`)}
-                              </span>
-                            </td>
-                          ) : null}
-                          {visibleColumns.access ? (
-                            <td className="px-3 py-3 text-xs text-slate-600 dark:text-slate-400">
-                              <p>{accessLabel}</p>
-                              <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">Created {formatDateTime(user.created_at)}</p>
-                            </td>
-                          ) : null}
-                          {visibleColumns.status ? (
-                            <td className="px-3 py-3">
-                              <button type="button" className="group flex items-center gap-2" onClick={() => requestStatusToggle(user)}>
-                                <StatusBadge status={user.is_active ? 'active' : 'inactive'} />
-                              </button>
-                            </td>
-                          ) : null}
-                          {visibleColumns.updated_at ? (
-                            <td className="px-3 py-3 text-xs text-slate-500 dark:text-slate-400">
-                              {formatRelativeTime(user.updated_at || user.created_at, t)}
-                            </td>
-                          ) : null}
-                          <td className="px-3 py-3">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                type="button"
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900"
-                                onClick={() => openEditUser(user)}
-                                aria-label={`Edit ${user.name}`}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition ${user.is_active
-                                  ? 'text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30'
-                                  : 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30'
-                                  }`}
-                                onClick={() => requestStatusToggle(user)}
-                                aria-label={`${user.is_active ? 'Disable' : 'Enable'} ${user.name}`}
-                              >
-                                {user.is_active ? <Trash2 className="h-3.5 w-3.5" /> : <UserRoundCheck className="h-3.5 w-3.5" />}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })
-                    : null}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {t('common.showing', { from: showingFrom, to: showingTo, total: sortedUsers.length })}
-            </p>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-              <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                <span>{t('common.rows')}</span>
-                <div className="min-w-[88px]">
-                  <AppSelect
-                    value={String(pageSize)}
-                    onValueChange={(value) => setPageSize(Number(value))}
-                    options={PAGE_SIZE_OPTIONS.map((size) => ({ value: String(size), label: String(size) }))}
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  className="btn-secondary rounded-2xl px-4 py-2"
-                  disabled={page === 1}
-                  onClick={() => setPage((current) => Math.max(1, current - 1))}
-                >
-                  {t('common.previous')}
-                </button>
-
-                <div className="flex items-center gap-2">
-                  {Array.from({ length: Math.min(pageCount, 3) }, (_, index) => {
-                    let pageNumber = index + 1
-                    if (pageCount > 3 && page > 2) {
-                      pageNumber = Math.min(pageCount - 2 + index, pageCount)
-                    }
-                    if (pageCount > 3 && page >= pageCount - 1) {
-                      pageNumber = pageCount - 2 + index
-                    }
-                    const active = page === pageNumber
-                    return (
-                      <button
-                        key={pageNumber}
-                        type="button"
-                        className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl border text-sm font-semibold transition ${active
-                          ? 'border-violet-500 bg-violet-600 text-white shadow-sm'
-                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950/30 dark:text-slate-200 dark:hover:bg-slate-900'
-                          }`}
-                        onClick={() => setPage(pageNumber)}
-                      >
-                        {pageNumber}
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <button
-                  type="button"
-                  className="btn-secondary rounded-2xl px-4 py-2"
-                  disabled={page >= pageCount}
-                  onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
-                >
-                  {t('common.next')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </section>
-
-      {error ? <p className="error-box">{error}</p> : null}
-
-      <UserEditorDialog
-        open={showEditor}
-        mode={editorMode}
-        editor={editor}
-        roleOptions={roleOptions}
-        saving={savingUser}
-        onClose={closeEditor}
-        onChange={setEditor}
-        onSubmit={submitEditor}
-      />
-
-      <ConfirmDialog
-        open={showStatusConfirm}
-        title={pendingStatusUser?.is_active ? t('common.disableAccount') : t('common.enableAccount')}
-        description={
-          pendingStatusUser
-            ? pendingStatusUser.is_active
-              ? t('common.disableDesc', { name: pendingStatusUser.name })
-              : t('common.enableDesc', { name: pendingStatusUser.name })
-            : t('common.confirmStatusChange')
-        }
-        confirmLabel={pendingStatusUser?.is_active ? t('common.disableUser') : t('common.enableUser')}
-        confirmTone="danger"
-        loading={savingUser}
-        onCancel={() => {
-          if (savingUser) return
-          setShowStatusConfirm(false)
-          setPendingStatusUser(null)
-        }}
-        onConfirm={confirmStatusToggle}
-      />
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.72fr)]"><Card className="p-5 sm:p-6"><SectionHeading title="System Overview" description="Key system statistics" /><div className="mt-4 grid gap-1 sm:grid-cols-2">{[[Users, 'Users', totalUsers, 'text-sky-600'], [ClipboardCheck, 'Assessments', assessments, 'text-indigo-600'], [FileText, 'Treatment plans', treatmentPlans, 'text-emerald-600'], [ShieldCheck, 'Patient reviews', reviews, 'text-violet-600'], [CheckCircle2, 'Active accounts', `${totalUsers ? Math.round((activeUsers / totalUsers) * 100) : 0}%`, 'text-teal-600']].map(([Icon, label, value, color]) => <div key={label} className="flex items-center justify-between border-b border-slate-100 px-2 py-3 last:border-0"><span className="flex items-center gap-2.5 text-sm text-slate-600"><Icon className={`h-4 w-4 ${color}`} />{label}</span><strong className="text-sm text-slate-900">{value}</strong></div>)}</div></Card><Card className="p-5 sm:p-6"><SectionHeading title="Permission coverage" description="Current shared access model" /><div className="mt-4 space-y-3">{['User management', 'Role management', 'Clinical access', 'Audit visibility'].map((label, index) => <div key={label}><div className="mb-1.5 flex justify-between text-xs"><span className="font-medium text-slate-600">{label}</span><span className="font-semibold text-slate-800">{index < 2 ? (currentUser?.permissions?.includes(index === 0 ? 'user.manage' : 'permission.manage') ? 'Enabled' : 'View only') : 'Shared'}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${index < 2 ? 'bg-sky-500' : 'bg-emerald-500'}`} style={{ width: index < 2 && !currentUser?.permissions?.includes(index === 0 ? 'user.manage' : 'permission.manage') ? '55%' : '100%' }} /></div></div>)}</div><button type="button" className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-sky-700" onClick={() => navigate('/roles-permissions')}>Review permissions <ArrowRight className="h-4 w-4" /></button></Card></div>
+      {showCreateUser ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm"><form onSubmit={createUser} className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-600">User management</p><h2 className="mt-1 text-xl font-bold text-slate-950">Add a new user</h2><p className="mt-1 text-sm text-slate-500">Create an account in the shared system directory.</p></div><button type="button" className="rounded-xl p-2 text-slate-400 hover:bg-slate-100" onClick={() => setShowCreateUser(false)}><XCircle className="h-5 w-5" /></button></div><div className="mt-5 grid gap-4 sm:grid-cols-2"><label className="sm:col-span-2"><span className="mb-1.5 block text-xs font-semibold text-slate-600">Full name</span><input required value={createForm.name} onChange={(event) => setCreateForm({ ...createForm, name: event.target.value })} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-sky-400" /></label><label className="sm:col-span-2"><span className="mb-1.5 block text-xs font-semibold text-slate-600">Email</span><input required type="email" value={createForm.email} onChange={(event) => setCreateForm({ ...createForm, email: event.target.value })} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-sky-400" /></label><label><span className="mb-1.5 block text-xs font-semibold text-slate-600">Temporary password</span><input required minLength="6" type="password" value={createForm.password} onChange={(event) => setCreateForm({ ...createForm, password: event.target.value })} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-sky-400" /></label><label><span className="mb-1.5 block text-xs font-semibold text-slate-600">Role</span><select value={createForm.role} onChange={(event) => setCreateForm({ ...createForm, role: event.target.value })} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-sky-400"><option value="patient">Patient</option><option value="doctor">Doctor</option><option value="admin">Admin</option></select></label></div><div className="mt-6 flex justify-end gap-2"><button type="button" className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600" onClick={() => setShowCreateUser(false)}>Cancel</button><button type="submit" disabled={creatingUser} className="inline-flex items-center gap-2 rounded-xl bg-[#2479d8] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">{creatingUser ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Create user</button></div></form></div> : null}
     </div>
   )
 }

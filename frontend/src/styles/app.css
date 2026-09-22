@@ -336,6 +336,414 @@
     box-shadow: 0 0 0 1px rgba(77, 88, 128, 0.35);
   }
 
+  /* Doctor dashboard: quiet clinical texture and semantic metric accents. */
+  .clinical-grid {
+    background-image:
+      linear-gradient(rgba(148, 163, 184, 0.09) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.09) 1px, transparent 1px);
+    background-size: 36px 36px;
+    -webkit-mask-image: linear-gradient(to bottom right, black, transparent 78%);
+    mask-image: linear-gradient(to bottom right, black, transparent 78%);
+  }
+
+  .clinical-stat {
+    border-color: rgb(226 232 240 / 0.9);
+  }
+
+  html.dark .clinical-stat {
+    border-color: var(--dark-border);
+  }
+
+  .clinical-stat--blue { color: #2563eb; }
+  .clinical-stat--amber { color: #d97706; }
+  .clinical-stat--rose { color: #e11d48; }
+  .clinical-stat--emerald { color: #059669; }
+
+  .clinical-stat--blue .clinical-stat__icon { background: #eff6ff; color: #2563eb; }
+  .clinical-stat--amber .clinical-stat__icon { background: #fffbeb; color: #d97706; }
+  .clinical-stat--rose .clinical-stat__icon { background: #fff1f2; color: #e11d48; }
+  .clinical-stat--emerald .clinical-stat__icon { background: #ecfdf5; color: #059669; }
+
+  .clinical-stat--blue .clinical-stat__action { background: #eff6ff; color: #2563eb; }
+  .clinical-stat--amber .clinical-stat__action { background: #fffbeb; color: #b45309; }
+  .clinical-stat--rose .clinical-stat__action { background: #fff1f2; color: #be123c; }
+  .clinical-stat--emerald .clinical-stat__action { background: #ecfdf5; color: #047857; }
+
+  html.dark .clinical-stat--blue .clinical-stat__icon { background: rgb(37 99 235 / 0.14); color: #93c5fd; }
+  html.dark .clinical-stat--amber .clinical-stat__icon { background: rgb(217 119 6 / 0.14); color: #fcd34d; }
+  html.dark .clinical-stat--rose .clinical-stat__icon { background: rgb(225 29 72 / 0.14); color: #fda4af; }
+  html.dark .clinical-stat--emerald .clinical-stat__icon { background: rgb(5 150 105 / 0.14); color: #6ee7b7; }
+  html.dark .clinical-stat--blue .clinical-stat__action { background: rgb(37 99 235 / 0.14); color: #93c5fd; }
+  html.dark .clinical-stat--amber .clinical-stat__action { background: rgb(217 119 6 / 0.14); color: #fcd34d; }
+  html.dark .clinical-stat--rose .clinical-stat__action { background: rgb(225 29 72 / 0.14); color: #fda4af; }
+  html.dark .clinical-stat--emerald .clinical-stat__action { background: rgb(5 150 105 / 0.14); color: #6ee7b7; }
+
+  .clinical-queue__checkbox {
+    width: 1.05rem;
+    height: 1.05rem;
+    accent-color: #2563eb;
+    border-radius: 0.35rem;
+  }
+
+  .clinical-queue__badge,
+  .clinical-queue__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+    border-radius: 9999px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+
+  .clinical-queue__badge--high,
+  .clinical-queue__status--unreviewed { background-color: #fff1f2 !important; color: #be123c !important; }
+  .clinical-queue__badge--medium,
+  .clinical-queue__status--pending { background-color: #fffbeb !important; color: #b45309 !important; }
+  .clinical-queue__badge--low,
+  .clinical-queue__status--onTrack { background-color: #ecfdf5 !important; color: #047857 !important; }
+
+  .clinical-queue__review {
+    display: inline-flex;
+    width: 100%;
+    min-width: 0;
+    min-height: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    border-radius: 0.7rem;
+    background: #2563eb;
+    padding: 0.5rem 0.45rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+    box-shadow: 0 3px 10px rgb(37 99 235 / 0.16);
+    transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+  }
+
+  .clinical-queue__review:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 13px rgb(37 99 235 / 0.22);
+  }
+
+  .clinical-queue__review:focus-visible {
+    outline: 2px solid #60a5fa;
+    outline-offset: 2px;
+  }
+
+  /* The activity panel beside the KPI cards is taller than the cards. Lift
+   * the queue into the resulting left-column whitespace on wide layouts,
+   * while keeping normal document flow (and mobile stacking) intact. */
+  @media (min-width: 1280px) {
+    .clinical-queue--elevated {
+      position: relative;
+      top: -11rem;
+    }
+  }
+
+  html.dark .clinical-queue__badge--high,
+  html.dark .clinical-queue__status--unreviewed { background: rgb(225 29 72 / 0.14); color: #fda4af; }
+  html.dark .clinical-queue__badge--medium,
+  html.dark .clinical-queue__status--pending { background: rgb(217 119 6 / 0.14); color: #fcd34d; }
+  html.dark .clinical-queue__badge--low,
+  html.dark .clinical-queue__status--onTrack { background: rgb(5 150 105 / 0.14); color: #6ee7b7; }
+
+  /* ── Dashboard motion ────────────────────────────────── */
+  @keyframes dashboardFadeUp {
+    0% {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .dash-fade-up {
+    animation: dashboardFadeUp 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* Opacity-only variant — transforms don't apply to table rows */
+  @keyframes dashboardFadeIn {
+    0% {
+      opacity: 0;
+    }
+
+    100% {
+      opacity: 1;
+    }
+  }
+
+  .dash-fade-in {
+    animation: dashboardFadeIn 420ms ease-out both;
+  }
+
+  /* Staggered children: apply .dash-stagger on the parent, .dash-fade-up on each child */
+  .dash-stagger > .dash-fade-up:nth-child(1) { animation-delay: 40ms; }
+  .dash-stagger > .dash-fade-up:nth-child(2) { animation-delay: 100ms; }
+  .dash-stagger > .dash-fade-up:nth-child(3) { animation-delay: 160ms; }
+  .dash-stagger > .dash-fade-up:nth-child(4) { animation-delay: 220ms; }
+  .dash-stagger > .dash-fade-up:nth-child(5) { animation-delay: 280ms; }
+  .dash-stagger > .dash-fade-up:nth-child(6) { animation-delay: 340ms; }
+
+  .dash-stagger-rows > .dash-fade-in:nth-child(1) { animation-delay: 40ms; }
+  .dash-stagger-rows > .dash-fade-in:nth-child(2) { animation-delay: 90ms; }
+  .dash-stagger-rows > .dash-fade-in:nth-child(3) { animation-delay: 140ms; }
+  .dash-stagger-rows > .dash-fade-in:nth-child(4) { animation-delay: 190ms; }
+  .dash-stagger-rows > .dash-fade-in:nth-child(5) { animation-delay: 240ms; }
+  .dash-stagger-rows > .dash-fade-in:nth-child(6) { animation-delay: 290ms; }
+  .dash-stagger-rows > .dash-fade-in:nth-child(7) { animation-delay: 340ms; }
+  .dash-stagger-rows > .dash-fade-in:nth-child(8) { animation-delay: 390ms; }
+
+  /* Slow ambient drift for the hero glow orbs */
+  @keyframes dashboardOrbDrift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    50% {
+      transform: translate3d(-34px, 22px, 0) scale(1.15);
+    }
+  }
+
+  .dash-orb-drift {
+    animation: dashboardOrbDrift 12s ease-in-out infinite;
+  }
+
+  .dash-orb-drift-alt {
+    animation: dashboardOrbDrift 16s ease-in-out infinite reverse;
+  }
+
+  /* Risk-mix bar fills in from the left on mount */
+  @keyframes dashboardBarGrow {
+    0% {
+      transform: scaleX(0);
+    }
+
+    100% {
+      transform: scaleX(1);
+    }
+  }
+
+  .dash-bar-grow {
+    transform-origin: left center;
+    animation: dashboardBarGrow 900ms cubic-bezier(0.22, 1, 0.36, 1) 240ms both;
+  }
+
+  /* Sweeping sheen overlay for progress fills (parent needs relative + overflow-hidden) */
+  @keyframes dashboardShimmer {
+    0% {
+      transform: translateX(-120%);
+    }
+
+    60%,
+    100% {
+      transform: translateX(260%);
+    }
+  }
+
+  .dash-shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+    animation: dashboardShimmer 2.6s ease-in-out infinite;
+  }
+
+  /* Animated gradient accent strip (hero top edge) */
+  @keyframes dashboardAurora {
+    0% {
+      background-position: 0% 50%;
+    }
+
+    100% {
+      background-position: 200% 50%;
+    }
+  }
+
+  .dash-aurora {
+    background-size: 200% 100%;
+    animation: dashboardAurora 6s linear infinite;
+  }
+
+  /* Pulsing "live" status dot */
+  @keyframes dashboardLiveDot {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45);
+    }
+
+    50% {
+      box-shadow: 0 0 0 5px rgba(16, 185, 129, 0);
+    }
+  }
+
+  .dash-live-dot {
+    animation: dashboardLiveDot 2s ease-in-out infinite;
+  }
+
+  /* Expanding attention ring for the urgent-cases icon */
+  @keyframes dashboardPulseRing {
+    0% {
+      box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.35);
+    }
+
+    70%,
+    100% {
+      box-shadow: 0 0 0 10px rgba(217, 119, 6, 0);
+    }
+  }
+
+  .dash-pulse-ring {
+    animation: dashboardPulseRing 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Periodic shine sweep for wide call-to-action buttons
+     (parent needs relative + overflow-hidden) */
+  @keyframes dashboardShine {
+    0% {
+      transform: translateX(-140%) skewX(-18deg);
+    }
+
+    55%,
+    100% {
+      transform: translateX(320%) skewX(-18deg);
+    }
+  }
+
+  .dash-shine::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 34%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+    transform: translateX(-140%) skewX(-18deg);
+    animation: dashboardShine 4.5s ease-in-out infinite;
+  }
+
+  /* Gentle bob for KPI icon chips */
+  @keyframes dashboardFloat {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+
+  .dash-float {
+    animation: dashboardFloat 5s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dash-fade-up,
+    .dash-fade-in,
+    .dash-orb-drift,
+    .dash-orb-drift-alt,
+    .dash-bar-grow,
+    .dash-float,
+    .dash-aurora,
+    .dash-live-dot,
+    .dash-pulse-ring,
+    .dash-shine::before,
+    .dash-shimmer::after {
+      animation: none;
+    }
+  }
+
+  /* ── Date-range picker motion ─────────────────────────── */
+  /* Sliding highlight that glides under the active range preset */
+  .dash-range-glide {
+    position: absolute;
+    top: 0.25rem;
+    bottom: 0.25rem;
+    left: 0;
+    border-radius: 0.75rem;
+    background-image: linear-gradient(135deg, #2f8cff 0%, #1f76e8 55%, #175bb7 100%);
+    box-shadow: 0 12px 22px -14px rgba(23, 91, 183, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    pointer-events: none;
+    transition:
+      transform 340ms cubic-bezier(0.22, 1, 0.36, 1),
+      width 340ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 220ms ease;
+  }
+
+  html.dark .dash-range-glide {
+    background-image: linear-gradient(135deg, #1f76e8 0%, #154d99 100%);
+    box-shadow: 0 12px 22px -14px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+
+  /* Soft breathing halo on the active preset (sits behind the glide fill) */
+  @keyframes dashboardRangeHalo {
+    0%,
+    100% {
+      opacity: 0.35;
+      transform: scale(0.98);
+    }
+
+    50% {
+      opacity: 0.75;
+      transform: scale(1.04);
+    }
+  }
+
+  .dash-range-halo {
+    animation: dashboardRangeHalo 3.6s ease-in-out infinite;
+  }
+
+  /* Entrance for the custom-range popover panel */
+  @keyframes dashboardPanelIn {
+    0% {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.97);
+    }
+
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .dash-panel-in {
+    animation: dashboardPanelIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* Doctor workload tiles: lift + crisp border on hover */
+  .dash-workload-tile {
+    transition:
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 220ms ease,
+      border-color 220ms ease;
+  }
+
+  .dash-workload-tile:hover {
+    transform: translateY(-3px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dash-range-glide,
+    .dash-workload-tile {
+      transition: none;
+    }
+
+    .dash-range-halo,
+    .dash-panel-in {
+      animation: none;
+    }
+  }
+
   .section-title {
     @apply text-lg font-bold tracking-tight text-slate-900 sm:text-xl;
   }
@@ -1221,6 +1629,116 @@
     .assessment-result-enter {
       animation: none !important;
     }
+  }
+}
+
+/* Admin dashboard: restrained motion and role-aware healthcare colour. */
+@keyframes adminCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.992);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes adminLivePulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.28);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0);
+  }
+}
+
+.admin-dashboard-shell > * {
+  animation: adminCardEnter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.admin-dashboard-shell > :nth-child(2) { animation-delay: 45ms; }
+.admin-dashboard-shell > :nth-child(3) { animation-delay: 90ms; }
+.admin-dashboard-shell > :nth-child(4) { animation-delay: 135ms; }
+.admin-dashboard-shell > :nth-child(5) { animation-delay: 180ms; }
+
+.admin-dashboard-card {
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.admin-dashboard-card:hover {
+  transform: translateY(-2px);
+  border-color: rgb(186 230 253 / 0.95);
+  box-shadow: 0 14px 34px rgba(31, 85, 120, 0.1);
+}
+
+.admin-dashboard-hero {
+  position: relative;
+  isolation: isolate;
+}
+
+.admin-dashboard-hero::after {
+  position: absolute;
+  z-index: -1;
+  right: -2.5rem;
+  top: -4.5rem;
+  width: 15rem;
+  height: 15rem;
+  content: '';
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.18), rgba(99, 102, 241, 0.04) 58%, transparent 70%);
+}
+
+.admin-dashboard-kpi {
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-dashboard-kpi::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  content: '';
+  border-radius: 9999px;
+  background: var(--admin-kpi-accent, #38bdf8);
+}
+
+.admin-kpi-blue { --admin-kpi-accent: #38bdf8; }
+.admin-kpi-indigo { --admin-kpi-accent: #818cf8; }
+.admin-kpi-green { --admin-kpi-accent: #34d399; }
+.admin-kpi-violet { --admin-kpi-accent: #a78bfa; }
+
+.admin-live-dot {
+  animation: adminLivePulse 2s ease-in-out infinite;
+}
+
+.admin-role-card {
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.admin-role-card:hover {
+  transform: translateY(-2px);
+  border-color: rgb(186 230 253);
+  box-shadow: 0 10px 24px rgba(31, 85, 120, 0.08);
+}
+
+html.dark .admin-dashboard-card:hover,
+html.dark .admin-role-card:hover {
+  border-color: var(--dark-border-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-dashboard-shell > *,
+  .admin-live-dot {
+    animation: none !important;
+  }
+
+  .admin-dashboard-card,
+  .admin-role-card {
+    transition: none !important;
   }
 }
 
