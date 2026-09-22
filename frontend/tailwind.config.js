@@ -48,7 +48,7 @@ export default {
         4.5: '1.125rem',
       },
       fontFamily: {
-        sans: ['var(--app-font-sans)', 'Manrope', 'Noto Sans Khmer', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['var(--app-font-sans)', 'Inter', 'Noto Sans Khmer', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
     },
   },

@@ -29,6 +29,8 @@ import {
   SheetHeader,
   SheetTitle,
   Tabs, TabsList, TabsTrigger, TabsContent,
+  Skeleton,
+  TableSkeletonRows,
 } from '@/components/ui'
 
 // The @xyflow graph editor is heavy (~127 kB min / 41 kB gzipped with deps) —
@@ -640,7 +642,19 @@ export function RulesPage() {
             ) : null}
           </div>
           <div className="flex-1 w-full relative min-h-0 bg-slate-50 dark:bg-slate-900/20">
-            <Suspense fallback={<div className="flex h-full items-center justify-center"><LoadingState /></div>}>
+            <Suspense
+              fallback={
+                <div className="flex h-full min-h-[360px] w-full items-center justify-center p-8">
+                  <div className="flex items-center gap-5">
+                    <Skeleton className="h-16 w-36 rounded-2xl" />
+                    <Skeleton className="h-0.5 w-10" />
+                    <Skeleton className="h-20 w-44 rounded-2xl" />
+                    <Skeleton className="h-0.5 w-10" />
+                    <Skeleton className="h-16 w-36 rounded-2xl" />
+                  </div>
+                </div>
+              }
+            >
               <VisualLogicMap form={form} />
             </Suspense>
           </div>
@@ -768,9 +782,7 @@ export function RulesPage() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr>
-                    <td colSpan={tableColSpan}><LoadingState label={t('rules.dashboard.loadingRules', 'Loading rules...')} /></td>
-                  </tr>
+                  <TableSkeletonRows rows={8} columns={tableColSpan} />
                 ) : !pagedRules.length ? (
                   <tr>
                     <td colSpan={tableColSpan} className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">

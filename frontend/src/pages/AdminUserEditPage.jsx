@@ -6,7 +6,18 @@ import { ArrowLeft, Save, Shield, Users } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { AdminHeroCard } from '@/components/admin'
 import { AdminUserSidebar } from '@/components/admin/AdminUserSidebar'
-import { AppSelect, Checkbox, Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from '@/components/ui'
+import {
+  AppSelect,
+  Checkbox,
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  PageHeaderSkeleton,
+  TwoColumnPageSkeleton,
+} from '@/components/ui'
 import { notify } from '@/lib/toast'
 
 const CUSTOM_ROLE_DRAFT = 'custom'
@@ -310,6 +321,15 @@ export function AdminUserEditPage() {
     }
   }
 
+  if (loading && !user) {
+    return (
+      <div className="space-y-6 pb-12">
+        <PageHeaderSkeleton hasActions={true} />
+        <TwoColumnPageSkeleton />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <AdminHeroCard
@@ -351,7 +371,6 @@ export function AdminUserEditPage() {
               <p className="section-subtitle mt-1">{t(`${EDIT_NS}.detailsDescription`)}</p>
             </div>
 
-            {loading ? <p className="state-box mt-4">{t(`${EDIT_NS}.loading`)}</p> : null}
 
             <form id="admin-user-edit-form" className="mt-4 grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
               <label className="block md:col-span-2">

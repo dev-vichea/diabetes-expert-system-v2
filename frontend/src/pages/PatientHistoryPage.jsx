@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, FileText, FlaskConical, LayoutDashboard, Thermometer, UserCog } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
-import { AppSelect, Sparkline, StatusBadge, UserAvatar } from '@/components/ui'
+import { AppSelect, Sparkline, StatusBadge, UserAvatar, Skeleton, StatCardsSkeleton, CardListSkeleton } from '@/components/ui'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 const EMPTY_SYMPTOM_FORM = {
@@ -211,6 +211,28 @@ export function PatientHistoryPage() {
     { key: 'profile', icon: UserCog, label: t('historyPage.tabs.profile', 'Profile'), count: null },
   ]
 
+  if (loading && !patient) {
+    return (
+      <div className="space-y-5 animate-in fade-in duration-150">
+        <div className="surface p-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-16 w-16 rounded-full shrink-0" />
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-3.5 w-32" />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Skeleton className="h-12 w-24 rounded-2xl" />
+            <Skeleton className="h-12 w-24 rounded-2xl" />
+          </div>
+        </div>
+        <StatCardsSkeleton count={3} />
+        <CardListSkeleton count={3} />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-5">
       {/* ── Patient header card ─────────────────────────────── */}
@@ -286,7 +308,6 @@ export function PatientHistoryPage() {
         })}
       </nav>
 
-      {loading ? <p className="state-box">{t('patientsPage.table.loading', 'Loading patient history...')}</p> : null}
 
       {activeTab === 'overview' ? (
         <div className="space-y-5">

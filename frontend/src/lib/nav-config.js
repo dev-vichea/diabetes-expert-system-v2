@@ -9,12 +9,14 @@ import {
   ShieldCheck,
   UserCog,
   Users,
+  Stethoscope,
 } from 'lucide-react'
 import { translate } from '@/lib/i18n'
 
 export const NAV_ITEMS = [
   { to: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, section: 'workspace' },
   { to: '/diagnosis', labelKey: 'nav.assessment', icon: Microscope, section: 'workspace', permissions: ['diagnosis.run'] },
+  { to: '/treatment-plans', labelKey: 'nav.treatmentPlans', icon: Stethoscope, section: 'workspace', notRoles: ['patient'], permissions: ['diagnosis.review_any', 'rule.view', 'patient.view'], permissionMode: 'any' },
   { to: '/patients', labelKey: 'nav.patients', icon: Users, section: 'workspace', permissions: ['patient.view'] },
   { to: '/rules', labelKey: 'nav.knowledgeBase', icon: BookOpen, section: 'documents', permissions: ['rule.view'] },
   { to: '/review', labelKey: 'nav.patientReview', icon: ClipboardCheck, section: 'documents', permissions: ['diagnosis.review_any'] },
@@ -35,6 +37,8 @@ export const PAGE_TITLE_BY_PATH = [
   { pattern: '/patients', titleKey: 'page.patientManagement.title', subtitleKey: 'page.patientManagement.subtitle' },
   { pattern: '/rules', titleKey: 'page.knowledgeBase.title', subtitleKey: 'page.knowledgeBase.subtitle' },
   { pattern: '/review', titleKey: 'page.clinicalReview.title', subtitleKey: 'page.clinicalReview.subtitle' },
+  { pattern: '/treatment-plans/create', titleKey: 'page.treatmentPlanningCreate.title', subtitleKey: 'page.treatmentPlanningCreate.subtitle' },
+  { pattern: '/treatment-plans', titleKey: 'page.treatmentPlanning.title', subtitleKey: 'page.treatmentPlanning.subtitle' },
   {
     pattern: '/my-results',
     titleKey: 'page.myDiagnosisResults.title',

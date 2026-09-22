@@ -7,12 +7,12 @@
 
 @layer base {
   :root {
-    --app-font-sans: 'Manrope';
-    --app-font-display: 'Poppins';
+    --app-font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --app-font-display: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
     /* Latin-first stacks used by the marketing/auth surfaces. Noto Sans Khmer
        sits before the generic fallback so Khmer glyphs render consistently
        even when the surrounding element forces a Latin-first family. */
-    --font-latin-sans: 'DM Sans', 'Noto Sans Khmer', sans-serif;
+    --font-latin-sans: 'Inter', 'Noto Sans Khmer', sans-serif;
     --font-latin-display: 'Outfit', 'Noto Sans Khmer', sans-serif;
     --color-primary: 14 116 144;
     --color-success: 22 163 74;
@@ -71,8 +71,8 @@
   }
 
   html[lang='km'] {
-    --app-font-sans: 'Noto Sans Khmer';
-    --app-font-display: 'Noto Sans Khmer';
+    --app-font-sans: 'Noto Sans Khmer', 'Inter', sans-serif;
+    --app-font-display: 'Noto Sans Khmer', 'Inter', sans-serif;
   }
 
   ::selection {

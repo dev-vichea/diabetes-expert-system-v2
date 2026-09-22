@@ -26,6 +26,7 @@ import {
   SheetHeader,
   SheetTitle,
   StatusBadge,
+  TableSkeletonRows,
 } from '@/components/ui'
 
 // Doctor-managed fact/symptom knowledge catalog (Knowledge Base → Facts).
@@ -618,11 +619,7 @@ export function FactCatalog() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={tableColSpan}>
-                    <LoadingState label={t('knowledgeBase.facts.loading', 'Loading facts…')} />
-                  </td>
-                </tr>
+                <TableSkeletonRows rows={8} columns={tableColSpan} />
               ) : !pagedFacts.length ? (
                 <tr>
                   <td colSpan={tableColSpan} className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">

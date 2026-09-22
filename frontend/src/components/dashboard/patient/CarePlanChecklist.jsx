@@ -8,7 +8,6 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { SectionCard } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
 const STORAGE_DONE_PREFIX = 'des-care-plan-done-v2'
@@ -183,29 +182,39 @@ export function CarePlanChecklist({ items = [], resultId, t }) {
   ]
 
   return (
-    <SectionCard
-      title={t('patientDashboard.carePlanPage.checklist.title', 'Action checklist')}
-      description={t('patientDashboard.carePlanPage.checklist.description', 'Practical next steps based on your latest assessment.')}
-      actions={
-        doneCount > 0 ? (
+    <section className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] sm:p-6 dark:border-slate-800 dark:bg-slate-900">
+      {/* Header */}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg dark:text-slate-100">
+            {t('patientDashboard.carePlanPage.checklist.title', 'Action checklist')}
+          </h2>
+          <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+            {t('patientDashboard.carePlanPage.checklist.description', 'Practical next steps based on your latest assessment.')}
+          </p>
+        </div>
+
+        {doneCount > 0 ? (
           <button
             type="button"
             onClick={resetAll}
-            className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            {t('patientDashboard.carePlanPage.checklist.reset', 'Reset')}
+            <span>{t('patientDashboard.carePlanPage.checklist.reset', 'Reset')}</span>
           </button>
-        ) : null
-      }
-    >
+        ) : null}
+      </div>
+
       {/* Sleek Progress Bar */}
       <div className="mb-4">
         <div className="flex items-center justify-between gap-3 text-xs font-medium text-slate-500 dark:text-slate-400">
-          <span className="font-semibold text-slate-800 dark:text-slate-200">
+          <span className="font-semibold text-slate-700 dark:text-slate-200">
             {t('patientDashboard.carePlanPage.checklist.progress', '{{done}} of {{total}} completed', { done: doneCount, total: totalCount })}
           </span>
-          <span className="font-bold text-primary-600 dark:text-primary-400">{percent}%</span>
+          <span className={cn('font-bold', isAllDone ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary-600 dark:text-primary-400')}>
+            {percent}%
+          </span>
         </div>
         <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
           <div
@@ -218,7 +227,7 @@ export function CarePlanChecklist({ items = [], resultId, t }) {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Filter Tabs */}
       {tabs.length > 1 && (
         <div className="mb-3.5 flex flex-wrap gap-1.5">
           {tabs.map((tab) => {
@@ -231,7 +240,7 @@ export function CarePlanChecklist({ items = [], resultId, t }) {
                 className={cn(
                   'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all',
                   isActive
-                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                    ? 'bg-slate-900 text-white shadow-xs dark:bg-slate-100 dark:text-slate-900'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                 )}
               >
@@ -251,7 +260,7 @@ export function CarePlanChecklist({ items = [], resultId, t }) {
       )}
 
       {/* Unified List Container */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-950/40">
+      <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-2xs dark:border-slate-800 dark:bg-slate-900/40">
         {visibleTasks.length === 0 ? (
           <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400">
             {activeTab === 'custom'
@@ -290,10 +299,10 @@ export function CarePlanChecklist({ items = [], resultId, t }) {
 
                     <span
                       className={cn(
-                        'text-sm leading-6 transition-colors',
+                        'text-sm leading-relaxed transition-colors',
                         isDone
                           ? 'text-slate-400 line-through decoration-slate-300 dark:text-slate-500 dark:decoration-slate-600'
-                          : 'text-slate-800 dark:text-slate-200'
+                          : 'text-slate-800 dark:text-slate-200 font-normal'
                       )}
                     >
                       {task.text}
@@ -328,12 +337,12 @@ export function CarePlanChecklist({ items = [], resultId, t }) {
               value={newGoalText}
               onChange={(e) => setNewGoalText(e.target.value)}
               placeholder={t('patientDashboard.carePlanPage.checklist.addGoalPlaceholder', 'Add a personal health goal...')}
-              className="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
+              className="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
             <button
               type="submit"
               disabled={!newGoalText.trim()}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-700 disabled:opacity-50"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-primary-700 disabled:opacity-50"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>{t('patientDashboard.carePlanPage.checklist.addGoalButton', 'Add Goal')}</span>
@@ -344,7 +353,7 @@ export function CarePlanChecklist({ items = [], resultId, t }) {
                 setIsAddingGoal(false)
                 setNewGoalText('')
               }}
-              className="rounded-xl p-1.5 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300"
+              className="rounded-xl p-2 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300"
             >
               <X className="h-4 w-4" />
             </button>
@@ -363,10 +372,10 @@ export function CarePlanChecklist({ items = [], resultId, t }) {
 
       {/* Celebration Banner */}
       {isAllDone && (
-        <div className="mt-4 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+        <div className="mt-4 flex items-start gap-3 rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
           <PartyPopper className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-300" />
           <div>
-            <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+            <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
               {t('patientDashboard.carePlanPage.checklist.completedTitle', 'All done for now!')}
             </p>
             <p className="mt-0.5 text-xs leading-5 text-emerald-700/90 dark:text-emerald-400">
@@ -375,6 +384,6 @@ export function CarePlanChecklist({ items = [], resultId, t }) {
           </div>
         </div>
       )}
-    </SectionCard>
+    </section>
   )
 }

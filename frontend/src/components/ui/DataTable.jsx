@@ -1,5 +1,5 @@
 import { EmptyState } from '@/components/ui/EmptyState'
-import { LoadingState } from '@/components/ui/LoadingState'
+import { TableSkeletonRows } from '@/components/ui/Skeleton'
 import { cn } from '@/lib/utils'
 
 function normalizeColumn(column) {
@@ -36,11 +36,7 @@ export function DataTable({
         </thead>
         <tbody>
           {loading ? (
-            <tr>
-              <td colSpan={colSpan}>
-                <LoadingState label={loadingMessage} />
-              </td>
-            </tr>
+            <TableSkeletonRows rows={5} columns={colSpan} />
           ) : null}
           {!loading && isEmpty ? (
             <tr>

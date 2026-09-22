@@ -12,7 +12,6 @@ import {
   Sparkles,
   Target,
 } from 'lucide-react'
-import { SectionCard } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { getCarePlanConditionKey } from './patient-dashboard-utils'
 
@@ -90,19 +89,25 @@ export function CarePlanPrevention({ latestResult, t }) {
   ]
 
   return (
-    <SectionCard
-      title={t('patientDashboard.carePlanPage.prevention.sectionTitle', 'Prevention & Care Strategy')}
-      description={t(
-        'patientDashboard.carePlanPage.prevention.sectionSubtitle',
-        'Evidence-based lifestyle interventions and clinical goals tailored to your result.'
-      )}
-      actions={
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-          <ShieldCheck className="h-3.5 w-3.5" />
+    <section className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] sm:p-6 dark:border-slate-800 dark:bg-slate-900">
+      {/* Section Header */}
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg dark:text-slate-100">
+            {t('patientDashboard.carePlanPage.prevention.sectionTitle', 'Prevention & Care Strategy')}
+          </h2>
+          <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+            {t(
+              'patientDashboard.carePlanPage.prevention.sectionSubtitle',
+              'Evidence-based lifestyle interventions and clinical goals tailored to your result.'
+            )}
+          </p>
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
           <span>{t('patientDashboard.carePlanPage.prevention.evidenceBadge', 'Evidence-based (ADA / DPP)')}</span>
         </span>
-      }
-    >
+      </div>
       {/* Condition Focus Callout Banner */}
       <div className="mb-5 rounded-2xl border border-primary-100 bg-gradient-to-r from-primary-50/70 via-sky-50/40 to-emerald-50/30 p-4 sm:p-5 dark:border-primary-900/50 dark:from-primary-950/30 dark:via-sky-950/20 dark:to-emerald-950/10">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -327,6 +332,6 @@ export function CarePlanPrevention({ latestResult, t }) {
           </div>
         </div>
       )}
-    </SectionCard>
+    </section>
   )
 }

@@ -37,6 +37,7 @@ import {
   StatusBadge,
   ConfirmDialog,
   LoadingState,
+  DiagnosisResultSkeleton,
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -570,7 +571,7 @@ export function DiagnosisResultPage() {
   }, [result?.fact_education])
 
   if (loadingRemote && !result) {
-    return <LoadingState label={t('diagnosisResult.loading', 'Loading diagnosis result...')} className="py-16" />
+    return <DiagnosisResultSkeleton />
   }
 
   if (!result) {

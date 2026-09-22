@@ -29,7 +29,15 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { AdminHeroCard } from '@/components/admin'
-import { Checkbox, EmptyState, ErrorAlert, SectionCard } from '@/components/ui'
+import {
+  Checkbox,
+  EmptyState,
+  ErrorAlert,
+  SectionCard,
+  Skeleton,
+  PageHeaderSkeleton,
+  TwoColumnPageSkeleton,
+} from '@/components/ui'
 import { notify } from '@/lib/toast'
 import { useLanguage } from '@/contexts/LanguageContext'
 
@@ -422,6 +430,15 @@ export function RolePermissionsPage() {
   const selectedCount = form.permissions.length
   const totalCount = permissions.length
 
+  if (loading && !roles.length) {
+    return (
+      <div className="space-y-6 pb-12">
+        <PageHeaderSkeleton hasActions={true} />
+        <TwoColumnPageSkeleton />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <AdminHeroCard
@@ -482,7 +499,20 @@ export function RolePermissionsPage() {
             )}
 
             <div className="space-y-2.5">
-              {loading ? <p className="state-box">{t('rolesPage.list.loading')}</p> : null}
+              {loading ? (
+                <div className="space-y-2.5">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3.5 rounded-2xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900 animate-pulse">
+                      <Skeleton className="h-9 w-9 rounded-xl shrink-0" />
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <Skeleton className="h-4 w-28" />
+                        <Skeleton className="h-3 w-40" />
+                      </div>
+                      <Skeleton className="h-5 w-14 rounded-full shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              ) : null}
               {!loading && !filteredRoles.length ? (
                 <EmptyState title={t('rolesPage.list.emptyTitle')} description={t('rolesPage.list.emptyDescription')} />
               ) : null}

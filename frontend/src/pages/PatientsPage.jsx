@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Activity, ChevronRight, Loader2, Pencil, Search, SlidersHorizontal, UserPlus, X } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
-import { AppSelect, ErrorAlert, StatusBadge, UserAvatar } from '@/components/ui'
+import { AppSelect, ErrorAlert, StatusBadge, UserAvatar, Skeleton } from '@/components/ui'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 const DEFAULT_FILTERS = {
@@ -284,9 +284,16 @@ export function PatientsPage() {
 
         <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-2 pb-3">
           {loading && !patients.length ? (
-            <div className="flex items-center justify-center gap-2 px-4 py-10 text-sm text-slate-500">
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              {t('patientsPage.table.loading', 'Loading patients...')}
+            <div className="space-y-2 p-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-xl p-2.5">
+                  <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-3.5 w-32" />
+                    <Skeleton className="h-2.5 w-20" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : null}
 

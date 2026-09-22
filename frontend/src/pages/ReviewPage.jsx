@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   CheckCircle2,
   AlertCircle,
@@ -20,12 +20,14 @@ import {
   Sparkles,
   Droplet,
   HeartPulse,
+  Stethoscope,
   X,
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
-import { EmptyState, ErrorAlert, UserAvatar, AppSelect } from '@/components/ui'
+import { EmptyState, ErrorAlert, UserAvatar, AppSelect, Skeleton } from '@/components/ui'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { notify } from '@/lib/toast'
 
 function toCertaintyPercent(certainty) {
@@ -64,6 +66,8 @@ function getRiskTextColor(percent) {
 
 export function ReviewPage() {
   const { t, tExact, isKhmer } = useLanguage()
+  const { user } = useAuth()
+  const navigate = useNavigate()
   const [results, setResults] = useState([])
   const [selectedResultId, setSelectedResultId] = useState(null)
   const [selectedPatientKey, setSelectedPatientKey] = useState(null)
@@ -508,9 +512,16 @@ export function ReviewPage() {
         {/* Queue Items List */}
         <div className="max-h-[50vh] flex-1 space-y-1.5 overflow-y-auto bg-slate-50/40 p-2 dark:bg-transparent xl:max-h-none">
           {loading && !results.length && (
-            <div className="flex items-center justify-center gap-2 p-8 text-sm text-slate-500">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-600 border-t-transparent" />
-              {t('reviewPage.states.loading', 'Loading queue...')}
+            <div className="space-y-2 p-2">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <div key={idx} className="rounded-xl border border-slate-200/70 bg-white p-3 space-y-2 dark:border-slate-800 dark:bg-slate-900">
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-12 rounded-full" />
+                  </div>
+                  <Skeleton className="h-3 w-44" />
+                </div>
+              ))}
             </div>
           )}
 
@@ -1066,6 +1077,64 @@ export function ReviewPage() {
                     )}
                   </div>
                 </form>
+
+                {/* Direct Treatment Plan formulation */}
+                <div className="mt-4 rounded-2xl border border-primary-200/80 bg-primary-50/50 p-4 dark:border-primary-900/50 dark:bg-primary-950/20">
+                  <div className="flex items-center gap-2">
+                    <Stethoscope className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                      Custom Treatment Plan Formulation
+                    </h4>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    Formulate structured clinical procedures, medication schedule, and glycemic milestones for this patient.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const initialData = {
+                        patientName: selectedResult.patient_name || selectedResult.user_name || 'Patient',
+                        patientId: selectedResult.patient_id ? `P-00${selectedResult.patient_id}` : (selectedResult.id ? `P-${selectedResult.id}` : 'P-1042'),
+                        doctorName: user?.name || 'Dr. Marco Rossi',
+                        protocolName: `${selectedResult.disease_name || 'Diabetes'} Clinical Treatment Protocol`,
+                        diagnosis: selectedResult.disease_name || 'Type 2 Diabetes Mellitus',
+                        targetGlucose: '80–130 mg/dL',
+                        targetA1c: '< 6.5%',
+                        procedures: [
+                          {
+                            id: 'proc-1',
+                            title: 'Prescribed Pharmacotherapy Regimen',
+                            description: selectedResult.recommendation ? `Based on review: ${selectedResult.recommendation.slice(0, 160)}` : 'Adhere to daily prescribed medications.',
+                            category: 'Medication Management',
+                            priority: 'High Priority',
+                            scheduledDate: new Date().toISOString().split('T')[0],
+                          },
+                          {
+                            id: 'proc-2',
+                            title: 'Postprandial Exercise & Physical Regimen',
+                            description: 'Daily 30-minute post-meal brisk walking to stimulate non-insulin-mediated glucose uptake.',
+                            category: 'Lifestyle Medicine',
+                            priority: 'Medium Priority',
+                            scheduledDate: new Date().toISOString().split('T')[0],
+                          },
+                          {
+                            id: 'proc-3',
+                            title: 'Diabetic Foot & Microvascular Screening',
+                            description: 'Routine clinical examination and microvascular risk mitigation.',
+                            category: 'Preventive Diagnostics',
+                            priority: 'Medium Priority',
+                            scheduledDate: new Date().toISOString().split('T')[0],
+                          },
+                        ],
+                      }
+                      navigate('/treatment-plans/create', { state: { initialData } })
+                    }}
+                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-primary-700 active:scale-[0.98]"
+                  >
+                    <Stethoscope className="h-4 w-4" />
+                    <span>Create Custom Treatment Plan</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
