@@ -267,7 +267,7 @@ export function Topbar({
                 >
                   <div className="flex items-center gap-2.5">
                     <UsFlag />
-                    <span>English (EN)</span>
+                    <span>English</span>
                   </div>
                   {language === 'en' && <Check className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />}
                 </button>
@@ -287,7 +287,7 @@ export function Topbar({
                 >
                   <div className="flex items-center gap-2.5">
                     <CambodiaFlag />
-                    <span>ភាសាខ្មែរ (KM)</span>
+                    <span>ភាសាខ្មែរ</span>
                   </div>
                   {language === 'km' && <Check className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />}
                 </button>

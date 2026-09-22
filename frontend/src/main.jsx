@@ -12,8 +12,8 @@ import './styles/app.css'
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
 function GoogleAuthProviderWrapper({ children }) {
-  if (!googleClientId) return children
-  return <GoogleOAuthProvider clientId={googleClientId}>{children}</GoogleOAuthProvider>
+  const effectiveClientId = googleClientId || 'google-auth-disabled'
+  return <GoogleOAuthProvider clientId={effectiveClientId}>{children}</GoogleOAuthProvider>
 }
 
 // Automatically reload the page when a dynamic chunk fails to load due to a new build / deployment
