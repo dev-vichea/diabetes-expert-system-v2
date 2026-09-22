@@ -51,9 +51,10 @@ import {
   DashboardSkeleton,
 } from '@/components/ui'
 import api, { getApiData } from '@/api/client'
-import { CAMBODIA_TIME_ZONE, formatDateTime } from '@/lib/datetime'
+import { CAMBODIA_TIME_ZONE, formatDateTime, formatRelativeTime } from '@/lib/datetime'
 import { getLocaleForLanguage } from '@/lib/i18n'
 import { notify } from '@/lib/toast'
+import { cn, cleanRuleName } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 
@@ -127,17 +128,6 @@ function AnimatedNumber({ value, ready = true, className }) {
   const count = useCountUp(ready ? value : null)
   if (!ready) return <span className={className}>—</span>
   return <span className={className}>{count}</span>
-}
-
-function formatRelativeTime(value) {
-  const timestamp = new Date(value).getTime()
-  if (!Number.isFinite(timestamp)) return '—'
-  const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60000))
-  if (minutes < 60) return `${minutes || 1} min ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`
-  const days = Math.floor(hours / 24)
-  return `${days} day${days === 1 ? '' : 's'} ago`
 }
 
 /** Patient-list filters that back the risk-mix segments. */
@@ -508,6 +498,8 @@ export function ClinicalDashboard({ activeRole }) {
   const [customRange, setCustomRange] = useState({ start: '', end: '' })
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [kbChartType, setKbChartType] = useState('rules')
+  const [hoveredRisk, setHoveredRisk] = useState(null)
+  const [isPieHovered, setIsPieHovered] = useState(false)
 
   const dateRanges = useMemo(
     () =>
@@ -721,6 +713,11 @@ export function ClinicalDashboard({ activeRole }) {
     }
   }, [stats?.risk_classification, riskClassificationData, t])
 
+  const activeRiskRows = useMemo(
+    () => riskSummary.rows.filter((row) => row.value > 0),
+    [riskSummary.rows]
+  )
+
   const goToRiskFilter = useCallback(
     (rawName) => {
       if (!rawName || rawName === 'No Data') return
@@ -754,37 +751,80 @@ export function ClinicalDashboard({ activeRole }) {
                 : category === 'classification'
                 ? '#06b6d4'
                 : '#2563eb'
+            const translatedCat = t(`kbDashboard.categories.${category}`, category.charAt(0).toUpperCase() + category.slice(1))
+            const rawName = r.name || `Rule #${i + 1}`
+            const localizedName = tExact(rawName) || rawName
+            const cleaned = cleanRuleName(localizedName) || localizedName
             return {
               id: r.id || i + 1,
-              name: r.name?.length > 20 ? `${r.name.slice(0, 18)}…` : r.name || `Rule #${i + 1}`,
-              fullName: r.name || `Rule #${i + 1}`,
+              name: cleaned?.length > 18 ? `${cleaned.slice(0, 16)}…` : cleaned,
+              fullName: localizedName,
               hits: Number(r.hits) || 0,
-              category: category.charAt(0).toUpperCase() + category.slice(1),
+              category: translatedCat,
               color,
             }
           })
         : [
-            { id: 1, name: 'Hyperglycemia Triage', fullName: 'Severe Hyperglycemia Triage Protocol', hits: 45, category: 'Triage', color: '#f59e0b' },
-            { id: 2, name: 'T2D Diagnostic Criteria', fullName: 'Type 2 Diabetes Diagnostic Criteria', hits: 38, category: 'Diagnosis', color: '#2563eb' },
-            { id: 3, name: 'Lifestyle Guidance', fullName: 'Dietary & Physical Activity Guidance', hits: 31, category: 'Recommendation', color: '#10b981' },
-            { id: 4, name: 'HbA1c Stratification', fullName: 'HbA1c Glycemic Stratification Protocol', hits: 24, category: 'Classification', color: '#06b6d4' },
-            { id: 5, name: 'Hypoglycemia Safety', fullName: 'Acute Hypoglycemia Alert & Safety Protocol', hits: 18, category: 'Triage', color: '#f59e0b' },
+            {
+              id: 1,
+              name: t('kbDashboard.mockRules.hyperglycemiaTriage', 'Hyperglycemia Triage'),
+              fullName: t('kbDashboard.mockRules.hyperglycemiaTriageFull', 'Severe Hyperglycemia Triage Protocol'),
+              hits: 45,
+              category: t('kbDashboard.categories.triage', 'Triage'),
+              color: '#f59e0b',
+            },
+            {
+              id: 2,
+              name: t('kbDashboard.mockRules.t2dCriteria', 'T2D Criteria'),
+              fullName: t('kbDashboard.mockRules.t2dCriteriaFull', 'Type 2 Diabetes Diagnostic Criteria'),
+              hits: 38,
+              category: t('kbDashboard.categories.diagnosis', 'Diagnosis'),
+              color: '#2563eb',
+            },
+            {
+              id: 3,
+              name: t('kbDashboard.mockRules.lifestyleGuidance', 'Lifestyle Guidance'),
+              fullName: t('kbDashboard.mockRules.lifestyleGuidanceFull', 'Dietary & Physical Activity Guidance'),
+              hits: 31,
+              category: t('kbDashboard.categories.recommendation', 'Recommendation'),
+              color: '#10b981',
+            },
+            {
+              id: 4,
+              name: t('kbDashboard.mockRules.hba1cStrat', 'HbA1c Stratification'),
+              fullName: t('kbDashboard.mockRules.hba1cStratFull', 'HbA1c Glycemic Stratification Protocol'),
+              hits: 24,
+              category: t('kbDashboard.categories.classification', 'Classification'),
+              color: '#06b6d4',
+            },
+            {
+              id: 5,
+              name: t('kbDashboard.mockRules.hypoglycemiaSafety', 'Hypoglycemia Safety'),
+              fullName: t('kbDashboard.mockRules.hypoglycemiaSafetyFull', 'Acute Hypoglycemia Alert & Safety Protocol'),
+              hits: 18,
+              category: t('kbDashboard.categories.triage', 'Triage'),
+              color: '#f59e0b',
+            },
           ]
 
     // Category distribution
     const rawDistribution = rulesAnalytics?.rule_distribution || []
     const categoryData =
       rawDistribution.length > 0
-        ? rawDistribution.map((c) => ({
-            name: c.name,
-            value: Number(c.value) || 0,
-            color: c.color || '#2563eb',
-          }))
+        ? rawDistribution.map((c) => {
+            const catKey = String(c.name || '').toLowerCase()
+            return {
+              rawName: c.name,
+              name: t(`kbDashboard.categories.${catKey}`, c.name),
+              value: Number(c.value) || 0,
+              color: c.color || '#2563eb',
+            }
+          })
         : [
-            { name: 'Diagnosis', value: 14, color: '#2563eb' },
-            { name: 'Recommendation', value: 10, color: '#10b981' },
-            { name: 'Triage', value: 8, color: '#f59e0b' },
-            { name: 'Classification', value: 6, color: '#06b6d4' },
+            { rawName: 'Diagnosis', name: t('kbDashboard.categories.diagnosis', 'Diagnosis'), value: 14, color: '#2563eb' },
+            { rawName: 'Recommendation', name: t('kbDashboard.categories.recommendation', 'Recommendation'), value: 10, color: '#10b981' },
+            { rawName: 'Triage', name: t('kbDashboard.categories.triage', 'Triage'), value: 8, color: '#f59e0b' },
+            { rawName: 'Classification', name: t('kbDashboard.categories.classification', 'Classification'), value: 6, color: '#06b6d4' },
           ]
 
     return {
@@ -795,7 +835,7 @@ export function ClinicalDashboard({ activeRole }) {
       topRulesData,
       categoryData,
     }
-  }, [rulesAnalytics])
+  }, [rulesAnalytics, t, tExact])
 
   const recentActivity = (stats?.recent_cases || []).slice(0, 4).map((item) => ({
     ...item,
@@ -1015,7 +1055,7 @@ export function ClinicalDashboard({ activeRole }) {
                   <Link key={item.id} to={`/diagnosis/result?diagnosis_result_id=${item.id}`} className="flex flex-1 items-center gap-2.5 py-2.5 transition hover:bg-primary-50/50 dark:hover:bg-primary-900/10">
                     <span className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${item.is_urgent ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/25 dark:text-rose-300' : item.has_care_plan ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/25 dark:text-emerald-300' : 'bg-primary-50 text-primary-600 dark:bg-primary-900/25 dark:text-primary-300'}`}><CircleCheckBig className="h-3.5 w-3.5" aria-hidden /></span>
                     <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold text-slate-700 dark:text-slate-200">{item.title}</span><span className="block truncate text-[11px] text-slate-400">{item.patient_name}</span></span>
-                    <span className="shrink-0 text-[10px] text-slate-400">{formatRelativeTime(item.created_at)}</span>
+                    <span className="shrink-0 text-[10px] text-slate-400">{formatRelativeTime(item.created_at, language, t)}</span>
                   </Link>
                 )) : <p className="py-5 text-xs text-slate-500">{t('dashboard.focus.noRecentActivity', 'No recent activity')}</p>}
               </div>
@@ -1088,27 +1128,38 @@ export function ClinicalDashboard({ activeRole }) {
               {/* Chart visualization */}
               <div className="h-[200px] w-full">
                 {kbChartType === 'rules' ? (
-                  <ChartContainer config={{ hits: { label: 'Triggers' } }} className="h-full w-full">
+                  <ChartContainer config={{ hits: { label: t('kbDashboard.columns.hits', 'Triggers') } }} className="h-full w-full">
                     <BarChart
                       layout="vertical"
                       data={kbStats.topRulesData}
-                      margin={{ top: 2, right: 20, left: -10, bottom: 0 }}
+                      margin={{ top: 2, right: 16, left: 0, bottom: 0 }}
                     >
                       <CartesianGrid horizontal={false} strokeDasharray="3 3" opacity={0.25} />
                       <XAxis type="number" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
                       <YAxis
                         type="category"
                         dataKey="name"
-                        width={125}
+                        width={105}
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 11, fill: 'currentColor' }}
+                        tick={({ x, y, payload }) => (
+                          <text
+                            x={x}
+                            y={y}
+                            dy={3.5}
+                            textAnchor="end"
+                            fontSize={11}
+                            className="fill-slate-600 dark:fill-slate-400 font-medium"
+                          >
+                            {payload.value}
+                          </text>
+                        )}
                       />
                       <ChartTooltip
                         content={
                           <ChartTooltipContent
                             formatter={(value, name, item) => [
-                              `${value} clinical triggers (${item?.payload?.category})`,
+                              `${value} ${t('kbDashboard.triggersCount', 'clinical triggers')} (${item?.payload?.category})`,
                               item?.payload?.fullName || name,
                             ]}
                           />
@@ -1122,7 +1173,7 @@ export function ClinicalDashboard({ activeRole }) {
                     </BarChart>
                   </ChartContainer>
                 ) : (
-                  <ChartContainer config={{ value: { label: 'Rules' } }} className="h-full w-full">
+                  <ChartContainer config={{ value: { label: t('kbDashboard.ruleDistribution', 'Rules') } }} className="h-full w-full">
                     <BarChart
                       data={kbStats.categoryData}
                       margin={{ top: 10, right: 16, left: -16, bottom: 0 }}
@@ -1133,7 +1184,10 @@ export function ClinicalDashboard({ activeRole }) {
                       <ChartTooltip
                         content={
                           <ChartTooltipContent
-                            formatter={(value, name, item) => [`${value} rules configured`, item?.payload?.name]}
+                            formatter={(value, name, item) => [
+                              `${value} ${t('kbDashboard.rulesConfigured', 'rules configured')}`,
+                              item?.payload?.name,
+                            ]}
                           />
                         }
                       />
@@ -1188,15 +1242,32 @@ export function ClinicalDashboard({ activeRole }) {
             >
               {riskSummary.total > 0 ? (
                 <div className="mt-2 grid items-center gap-5 sm:grid-cols-[minmax(9rem,0.9fr)_minmax(10rem,1.1fr)]">
-                  <div className="relative mx-auto h-[175px] w-full max-w-[200px]" role="img" aria-label={`${riskSummary.total} total patients by risk category`}>
-                    <ChartContainer config={{ risk: { label: 'Patients' } }} className="h-full w-full">
+                  <div
+                    className="relative mx-auto h-[175px] w-full max-w-[200px]"
+                    role="img"
+                    aria-label={`${riskSummary.total} total patients by risk category`}
+                    onMouseLeave={() => {
+                      setHoveredRisk(null)
+                      setIsPieHovered(false)
+                    }}
+                  >
+                    <ChartContainer config={{ risk: { label: t('dashboard.focus.patient', 'Patients') } }} className="h-full w-full">
                       <PieChart>
                         <ChartTooltip
-                          cursor={false}
-                          content={<ChartTooltipContent nameKey="label" formatter={(value, name, item) => [`${value} patients (${item?.payload?.percent ?? 0}%)`, name]} />}
+                          wrapperStyle={{ zIndex: 50, pointerEvents: 'none' }}
+                          allowEscapeViewBox={{ x: true, y: true }}
+                          content={
+                            <ChartTooltipContent
+                              nameKey="label"
+                              formatter={(value, name, item) => [
+                                `${value} ${t('dashboard.focus.patientsCount', 'patients')} (${item?.payload?.percent ?? 0}%)`,
+                                name,
+                              ]}
+                            />
+                          }
                         />
                         <Pie
-                          data={riskSummary.rows.filter((row) => row.value > 0)}
+                          data={activeRiskRows}
                           dataKey="value"
                           nameKey="label"
                           cx="50%"
@@ -1207,35 +1278,78 @@ export function ClinicalDashboard({ activeRole }) {
                           cornerRadius={5}
                           strokeWidth={0}
                           animationDuration={700}
-                          onClick={(entry) => goToRiskFilter(entry.key)}
+                          onMouseEnter={(entry) => {
+                            setIsPieHovered(true)
+                            const item = entry?.payload || entry
+                            if (item?.key) setHoveredRisk(item)
+                          }}
+                          onMouseLeave={() => {
+                            setIsPieHovered(false)
+                            setHoveredRisk(null)
+                          }}
+                          onClick={(entry) => goToRiskFilter(entry?.key || entry?.payload?.key)}
                           className="cursor-pointer focus:outline-none"
                         >
-                          {riskSummary.rows.filter((row) => row.value > 0).map((row) => <Cell key={row.key} fill={row.fill} />)}
+                          {activeRiskRows.map((row) => (
+                            <Cell
+                              key={row.key}
+                              fill={row.fill}
+                              opacity={hoveredRisk ? (hoveredRisk.key === row.key ? 1 : 0.45) : 1}
+                              className="transition-opacity duration-200"
+                            />
+                          ))}
                         </Pie>
                       </PieChart>
                     </ChartContainer>
-                    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-                      <span className="text-2xl font-bold tracking-tight text-slate-950 tabular-nums dark:text-white">{riskSummary.total}</span>
-                      <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">{t('dashboard.focus.totalPatients', 'Total patients')}</span>
+
+                    {/* Donut center display: shows total patients when idle, or selected category when hovering legend */}
+                    <div
+                      className={cn(
+                        'pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center text-center transition-opacity duration-150',
+                        isPieHovered ? 'opacity-0' : 'opacity-100'
+                      )}
+                    >
+                      <span className="text-2xl font-bold tracking-tight text-slate-950 tabular-nums dark:text-white">
+                        {hoveredRisk && !isPieHovered ? hoveredRisk.value : riskSummary.total}
+                      </span>
+                      <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                        {hoveredRisk && !isPieHovered
+                          ? `${hoveredRisk.label} (${hoveredRisk.percent}%)`
+                          : t('dashboard.focus.totalPatients', 'Total patients')}
+                      </span>
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    {riskSummary.rows.map((row) => (
-                      <button
-                        key={row.key}
-                        type="button"
-                        disabled={row.value === 0}
-                        onClick={() => goToRiskFilter(row.key)}
-                        className="group flex min-h-8 w-full items-center gap-2 rounded-lg px-2 text-left transition duration-200 hover:bg-slate-50 disabled:cursor-default dark:hover:bg-[#0c1024]"
-                        aria-label={`${row.label}: ${row.value} patients, ${row.percent}%`}
-                      >
-                        <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: row.fill, boxShadow: `0 0 0 4px ${row.fill}22` }} aria-hidden />
-                        <span className="min-w-0 flex-1 text-xs font-semibold text-slate-700 dark:text-slate-200">{row.label}</span>
-                        <span className="text-xs font-bold text-slate-900 tabular-nums dark:text-white">{row.value}</span>
-                        <span className="w-9 text-right text-[11px] text-slate-400 tabular-nums">({row.percent}%)</span>
-                      </button>
-                    ))}
+                    {riskSummary.rows.map((row) => {
+                      const isHovered = hoveredRisk?.key === row.key
+                      return (
+                        <button
+                          key={row.key}
+                          type="button"
+                          disabled={row.value === 0}
+                          onClick={() => goToRiskFilter(row.key)}
+                          onMouseEnter={() => row.value > 0 && setHoveredRisk(row)}
+                          onMouseLeave={() => setHoveredRisk(null)}
+                          className={cn(
+                            'group flex min-h-8 w-full items-center gap-2 rounded-lg px-2 text-left transition duration-200 hover:bg-slate-50 disabled:cursor-default dark:hover:bg-[#0c1024]',
+                            isHovered && 'bg-slate-100/90 dark:bg-slate-800/60'
+                          )}
+                          aria-label={`${row.label}: ${row.value} patients, ${row.percent}%`}
+                        >
+                          <span
+                            className={cn('h-2 w-2 shrink-0 rounded-full transition-transform duration-150', isHovered && 'scale-125')}
+                            style={{ backgroundColor: row.fill, boxShadow: `0 0 0 4px ${row.fill}22` }}
+                            aria-hidden
+                          />
+                          <span className={cn('min-w-0 flex-1 text-xs font-semibold text-slate-700 dark:text-slate-200', isHovered && 'text-slate-950 dark:text-white')}>
+                            {row.label}
+                          </span>
+                          <span className="text-xs font-bold text-slate-900 tabular-nums dark:text-white">{row.value}</span>
+                          <span className="w-9 text-right text-[11px] text-slate-400 tabular-nums">({row.percent}%)</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               ) : (
@@ -1366,11 +1480,15 @@ export function ClinicalDashboard({ activeRole }) {
                         <td className="px-4 py-3.5 max-w-xs">
                           <p className="truncate font-medium text-slate-800 dark:text-slate-200">{tExact(caseItem.diagnosis)}</p>
                           <p className="mt-0.5 truncate text-xs text-slate-400">
-                            {caseItem.recommendation || (Number.isFinite(Number(caseItem.certainty)) ? `${Math.round(Number(caseItem.certainty) * 100)}% certainty` : 'Clinical finding')}
+                            {caseItem.recommendation
+                              ? tExact(caseItem.recommendation)
+                              : Number.isFinite(Number(caseItem.certainty))
+                              ? `${Math.round(Number(caseItem.certainty) * 100)}% ${t('dashboard.focus.certainty', 'certainty')}`
+                              : t('dashboard.focus.clinicalFinding', 'Clinical finding')}
                           </p>
                         </td>
                         <td className="px-4 py-3.5 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
-                          {formatRelativeTime(caseItem.created_at)}
+                          {formatRelativeTime(caseItem.created_at, language, t)}
                         </td>
                         <td className="px-4 py-3.5 whitespace-nowrap">
                           <StatusBadge tone={statusTone} size="sm">
@@ -1412,19 +1530,34 @@ export function ClinicalDashboard({ activeRole }) {
                         </div>
                       </div>
                       <StatusBadge tone={riskTone} size="sm">
-                        {risk === 'high' ? 'High' : risk === 'medium' ? 'Medium' : 'Low'}
+                        {risk === 'high'
+                          ? t('dashboard.focus.highRisk', 'High')
+                          : risk === 'medium'
+                          ? t('dashboard.focus.mediumRisk', 'Medium')
+                          : t('dashboard.focus.lowRisk', 'Low')}
                       </StatusBadge>
                     </div>
                     <div>
                       <p className="font-medium text-slate-800 dark:text-slate-200">{tExact(caseItem.diagnosis)}</p>
-                      <p className="mt-1 text-xs text-slate-500">{caseItem.recommendation || 'Clinical finding'} · {formatRelativeTime(caseItem.created_at)}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {caseItem.recommendation
+                          ? tExact(caseItem.recommendation)
+                          : Number.isFinite(Number(caseItem.certainty))
+                          ? `${Math.round(Number(caseItem.certainty) * 100)}% ${t('dashboard.focus.certainty', 'certainty')}`
+                          : t('dashboard.focus.clinicalFinding', 'Clinical finding')}{' '}
+                        · {formatRelativeTime(caseItem.created_at, language, t)}
+                      </p>
                     </div>
                     <div className="flex items-center justify-between gap-3 pt-1">
                       <StatusBadge tone={statusTone} size="sm">
-                        {status === 'onTrack' ? 'On track' : status === 'unreviewed' ? 'Unreviewed' : 'Pending'}
+                        {status === 'onTrack'
+                          ? t('dashboard.focus.onTrack', 'On track')
+                          : status === 'unreviewed'
+                          ? t('dashboard.focus.unreviewed', 'Unreviewed')
+                          : t('dashboard.focus.pending', 'Pending')}
                       </StatusBadge>
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 dark:text-primary-400">
-                        Review <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                        {t('dashboard.focus.review', 'Review')} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
                       </span>
                     </div>
                   </article>

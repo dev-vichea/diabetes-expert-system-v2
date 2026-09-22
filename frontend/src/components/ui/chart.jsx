@@ -126,6 +126,10 @@ const ChartTooltipContent = React.forwardRef(
             const indicatorColor = color || item.payload?.fill || item.color
             const itemLabel = itemConfig?.label || item.payload?.[labelKey || 'label'] || item.name
 
+            const formatted = formatter ? formatter(item.value, item.name, item, item.payload) : item.value
+            const formattedValue = Array.isArray(formatted) ? formatted[0] : formatted
+            const displayLabel = (Array.isArray(formatted) && formatted[1]) || itemLabel
+
             return (
               <div key={`${key}-${index}`} className="flex items-center gap-2 px-1 text-xs">
                 {!hideIndicator ? (
@@ -137,9 +141,9 @@ const ChartTooltipContent = React.forwardRef(
                     style={{ backgroundColor: indicatorColor }}
                   />
                 ) : null}
-                <span className="flex-1 text-slate-600 dark:text-slate-300">{itemLabel}</span>
+                <span className="flex-1 text-slate-600 dark:text-slate-300">{displayLabel}</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
-                  {formatter ? formatter(item.value, item.name, item, item.payload) : item.value}
+                  {formattedValue}
                 </span>
               </div>
             )

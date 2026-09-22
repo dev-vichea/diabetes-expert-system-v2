@@ -75,6 +75,25 @@
     --app-font-display: 'Noto Sans Khmer', 'Inter', sans-serif;
   }
 
+  html[lang='km'] body {
+    line-height: 1.6;
+  }
+
+  /* Prevent letter-spacing from breaking Khmer ligature clusters and subscript vowels */
+  html[lang='km'] * {
+    letter-spacing: normal;
+  }
+
+  /* Provide ample vertical breathing room for Khmer glyphs in tables, cards, and badges */
+  html[lang='km'] .clinical-stat,
+  html[lang='km'] .surface,
+  html[lang='km'] table,
+  html[lang='km'] button,
+  html[lang='km'] input,
+  html[lang='km'] .badge {
+    line-height: 1.5;
+  }
+
   ::selection {
     background: rgba(47, 140, 255, 0.18);
     color: #0f172a;
