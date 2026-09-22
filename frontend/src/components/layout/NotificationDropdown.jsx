@@ -163,7 +163,7 @@ export function NotificationDropdown({ className = '' }) {
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="relative flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition-colors hover:border-slate-300 hover:bg-primary-50 hover:text-primary-700 dark:border-[#1e2234] dark:bg-[#101020] dark:text-slate-300 dark:hover:bg-[#181830] dark:hover:text-primary-300"
+        className="relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all duration-150 hover:bg-slate-100/80 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-100 outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
         aria-label={t('topbar.notifications')}
         aria-expanded={isOpen}
       >
@@ -171,11 +171,11 @@ export function NotificationDropdown({ className = '' }) {
 
         {/* Badge counter */}
         {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-900">
-            {unreadCount > 99 ? '99+' : unreadCount}
+          <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
             {hasUrgentUnread && (
-              <span className="absolute inset-0 -z-10 animate-ping rounded-full bg-rose-400 opacity-75" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
             )}
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
           </span>
         )}
       </button>

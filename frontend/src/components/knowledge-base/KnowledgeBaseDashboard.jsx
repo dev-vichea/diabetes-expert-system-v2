@@ -12,6 +12,8 @@ import { Activity, AlertTriangle, RefreshCw, ArrowRight, Zap, Target, BookOpen, 
 import {
   ChartContainer,
   SectionCard,
+  Skeleton,
+  StatCardsSkeleton,
 } from '@/components/ui'
 import api, { getApiData } from '@/api/client'
 import { formatDateTime } from '@/lib/datetime'
@@ -145,9 +147,20 @@ export function KnowledgeBaseDashboard() {
       </div>
 
       {loading ? (
-        <div className="flex h-64 items-center justify-center surface gap-3 text-slate-500">
-          <Activity className="h-5 w-5 animate-spin" />
-          {t('kbDashboard.loading', 'Loading analytics...')}
+        <div className="space-y-6 animate-in fade-in duration-150">
+          <StatCardsSkeleton count={4} />
+          <div className="grid gap-6 xl:grid-cols-12">
+            <div className="xl:col-span-8 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900 space-y-4">
+              <Skeleton className="h-5 w-44" />
+              <Skeleton className="h-64 w-full rounded-xl" />
+            </div>
+            <div className="xl:col-span-4 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900 space-y-4">
+              <Skeleton className="h-5 w-36" />
+              <div className="flex items-center justify-center py-4">
+                <Skeleton className="h-44 w-44 rounded-full" />
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
         <>

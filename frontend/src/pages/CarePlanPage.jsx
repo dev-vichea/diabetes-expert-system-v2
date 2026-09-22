@@ -1,18 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Activity,
   AlertCircle,
   AlertTriangle,
   ArrowRight,
+  Calendar,
   CalendarClock,
   CheckCircle2,
+  ChevronDown,
   ClipboardList,
-  ClipboardPlus,
   Clock,
   FileText,
   HeartPulse,
-  Plus,
+  PlusCircle,
   ShieldAlert,
   Siren,
   Sparkles,
@@ -20,73 +21,38 @@ import {
   UserCheck,
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '@/api/client'
-import { ErrorAlert, LoadingState, StatusBadge } from '@/components/ui'
+import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { ErrorAlert, LoadingState, StatusBadge, Skeleton, StatCardsSkeleton, CardListSkeleton } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import { CarePlanChecklist } from '@/components/dashboard/patient/CarePlanChecklist'
-import { CarePlanPrevention } from '@/components/dashboard/patient/CarePlanPrevention'
-import { CarePlanRoutine } from '@/components/dashboard/patient/CarePlanRoutine'
-import { CarePlanWatchlist } from '@/components/dashboard/patient/CarePlanWatchlist'
-import { PatientRecommendations } from '@/components/dashboard/patient/PatientRecommendations'
-import { buildAutoRecommendations } from '@/components/dashboard/patient/patient-recommendations'
 import {
-  buildCareChecklist,
+  CarePlanActivitySnapshot,
+  CarePlanAppointments,
+  CarePlanGoals,
+  CarePlanMedications,
+  CarePlanProgressTracker,
+  CarePlanVitalsSnapshot,
+} from '@/components/dashboard/patient/CarePathHubComponents'
+import { AppointmentCalendarCanvas } from '@/components/dashboard/patient/AppointmentCalendarCanvas'
+import { CarePlanPrevention } from '@/components/dashboard/patient/CarePlanPrevention'
+import { getTreatmentPlanForUser } from '@/lib/treatmentPlanStore'
+import { TreatmentPlanDetailView } from '@/components/dashboard/treatment/TreatmentPlanDetailView'
+import {
   getDaysSinceCheck,
   getLatestFacts,
   getRelativeCheckAge,
   getReportedSymptomLabels,
   getUrgencyLabel,
-  toNumberOrNull,
-  toPercentValue,
 } from '@/components/dashboard/patient/patient-dashboard-utils'
-import { useLanguage } from '@/contexts/LanguageContext'
 
 const SAFETY_ITEM_KEYS = [1, 2, 3, 4, 5].map((n) => `patientDashboard.carePlanPage.safety.item${n}`)
 
-const chipClass = 'inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur-xs'
-
-function OnboardingState({ t }) {
-  const steps = [
-    { title: t('patientDashboard.carePlanPage.onboarding.step1', 'Complete a health assessment'), text: t('patientDashboard.carePlanPage.onboarding.step1Text') },
-    { title: t('patientDashboard.carePlanPage.onboarding.step2', 'Get your instant result'), text: t('patientDashboard.carePlanPage.onboarding.step2Text') },
-    { title: t('patientDashboard.carePlanPage.onboarding.step3', 'Follow your personal plan'), text: t('patientDashboard.carePlanPage.onboarding.step3Text') },
-  ]
-
-  return (
-    <section className="surface mx-auto flex max-w-2xl flex-col items-center p-6 text-center sm:p-10">
-      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 dark:bg-primary-950/50 dark:text-primary-300">
-        <ClipboardPlus className="h-7 w-7" aria-hidden />
-      </span>
-      <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-50">
-        {t('patientDashboard.carePlanPage.onboarding.title', "Let's build your care plan")}
-      </h1>
-      <p className="mt-2 max-w-md text-sm leading-6 text-slate-600 dark:text-slate-300">
-        {t('patientDashboard.carePlanPage.onboarding.description', 'Three quick steps and everything below fills in with your own results.')}
-      </p>
-
-      <ol className="mt-8 w-full space-y-4 text-left">
-        {steps.map((step, index) => (
-          <li key={step.title} className="flex items-start gap-3.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white">
-              {index + 1}
-            </span>
-            <div className="min-w-0 pt-0.5">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{step.title}</p>
-              <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">{step.text}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-
-      <Link
-        to="/diagnosis"
-        className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-700"
-      >
-        <Plus className="h-4 w-4" />
-        {t('patientDashboard.carePlanPage.onboarding.cta', 'Start my first assessment')}
-      </Link>
-    </section>
-  )
-}
+const TABS = ['Overview', 'Treatment Plan', 'Medications', 'Appointments']
+const PHASES = [
+  'Phase 1: Clinical Stabilization',
+  'Phase 2: Active Intervention',
+  'Phase 3: Long-term Maintenance',
+]
 
 function DoctorNoteCard({ latestResult, t }) {
   const { isKhmer } = useLanguage()
@@ -95,15 +61,15 @@ function DoctorNoteCard({ latestResult, t }) {
   const reviewerName = reviewer?.name ? (reviewer.name.startsWith('Dr.') ? reviewer.name : `Dr. ${reviewer.name}`) : null
 
   return (
-    <section className="surface min-w-0 p-5 sm:p-6">
+    <section className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] sm:p-6 dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-950/50 dark:text-primary-300">
             <Stethoscope className="h-5 w-5" aria-hidden />
           </span>
           <div>
-            <h2 className="section-title text-base sm:text-lg">
-              {t('patientDashboard.carePlanPage.doctorNote.title', "Doctor's note")}
+            <h2 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg dark:text-slate-100">
+              {t('patientDashboard.carePlanPage.doctorNote.title', "Doctor's Clinical Note")}
             </h2>
             {reviewerName && (
               <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -119,7 +85,7 @@ function DoctorNoteCard({ latestResult, t }) {
             <span>{t('patientDashboard.carePlanPage.doctorNote.officialBadge', 'Verified Clinical Review')}</span>
           </StatusBadge>
         ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300">
             <Clock className="h-3.5 w-3.5" />
             <span>{t('patientDashboard.carePlanPage.doctorNote.awaitingTitle', 'Awaiting Clinical Review')}</span>
           </span>
@@ -127,7 +93,7 @@ function DoctorNoteCard({ latestResult, t }) {
       </div>
 
       {latestResult.review_note ? (
-        <div className="mt-4 rounded-2xl border border-primary-200/70 bg-gradient-to-br from-primary-50/50 to-sky-50/30 p-5 text-sm leading-7 text-slate-800 dark:border-primary-900/60 dark:from-primary-950/30 dark:to-slate-900/40 dark:text-slate-200">
+        <div className="mt-4 rounded-2xl border border-primary-200/70 bg-gradient-to-br from-primary-50/30 to-sky-50/20 p-5 text-sm leading-7 text-slate-800 dark:border-primary-900/60 dark:from-primary-950/30 dark:to-slate-900/40 dark:text-slate-200">
           <div className="flex items-start gap-3">
             <UserCheck className="mt-1 h-5 w-5 shrink-0 text-primary-600 dark:text-primary-400" />
             <div className="min-w-0 flex-1">
@@ -143,70 +109,31 @@ function DoctorNoteCard({ latestResult, t }) {
           </div>
         </div>
       ) : (
-        <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-xs leading-6 text-slate-500 dark:border-slate-800 dark:bg-slate-900/30 dark:text-slate-400">
+        <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-4 text-xs leading-6 text-slate-500 dark:border-slate-800 dark:bg-slate-900/30 dark:text-slate-400">
           {t('patientDashboard.carePlanPage.doctorNote.awaitingDescription', 'Your assessment is currently logged in the clinic review queue. When your physician reviews your case, their official notes, lab interpretations, and personalized guidance will appear here.')}
         </div>
       )}
 
       {/* Priority guidance box */}
-      <div
-        className={cn(
-          'mt-4 flex items-start gap-3 rounded-2xl border p-4',
-          isUrgent
-            ? 'border-rose-200 bg-rose-50/70 dark:border-rose-900/50 dark:bg-rose-950/20'
-            : 'border-slate-200/80 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/40'
-        )}
-      >
-        <AlertTriangle
-          className={cn('mt-0.5 h-5 w-5 shrink-0', isUrgent ? 'text-rose-600 dark:text-rose-300' : 'text-slate-500 dark:text-slate-400')}
-        />
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            {t('patientDashboard.carePlan.currentPriority', 'Current priority')}
-          </h3>
-          <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            {isUrgent
-              ? t('patientDashboard.carePlan.urgentPriorityText')
-              : t('patientDashboard.carePlan.routinePriorityText')}
-          </p>
-          {isUrgent && latestResult.urgent_reason ? (
-            <p className="mt-2 text-xs font-medium text-rose-700 dark:text-rose-300">
-              {t('patientDashboard.situation.urgentReason', 'Reason: {{reason}}', {
-                reason: isKhmer ? (latestResult.urgent_reason_km || latestResult.urgent_reason) : latestResult.urgent_reason,
-              })}
+      {isUrgent && (
+        <div className="mt-4 flex items-start gap-3 rounded-xl border border-rose-200/80 bg-rose-50/60 p-4 text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-200">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600 dark:text-rose-400" />
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-rose-900 dark:text-rose-100">
+              {t('patientDashboard.carePlan.currentPriority', 'Current priority: Urgent Action')}
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-rose-800 dark:text-rose-300">
+              {t('patientDashboard.carePlan.urgentPriorityText')}
             </p>
-          ) : null}
+            {latestResult.urgent_reason ? (
+              <p className="mt-2 text-xs font-medium text-rose-700 dark:text-rose-300">
+                {t('patientDashboard.situation.urgentReason', 'Reason: {{reason}}', {
+                  reason: isKhmer ? (latestResult.urgent_reason_km || latestResult.urgent_reason) : latestResult.urgent_reason,
+                })}
+              </p>
+            ) : null}
+          </div>
         </div>
-      </div>
-    </section>
-  )
-}
-
-function SymptomsCard({ symptoms, t }) {
-  return (
-    <section className="surface min-w-0 p-4 sm:p-6">
-      <div className="flex items-center gap-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-          <HeartPulse className="h-4 w-4" />
-        </span>
-        <h2 className="section-title text-base">{t('patientDashboard.carePlanPage.symptoms.title', 'Symptoms from your latest assessment')}</h2>
-      </div>
-
-      {symptoms.length ? (
-        <div className="mt-3.5 flex flex-wrap gap-2">
-          {symptoms.map((label) => (
-            <span
-              key={label}
-              className="inline-flex items-center rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-800"
-            >
-              {label}
-            </span>
-          ))}
-        </div>
-      ) : (
-        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-          {t('patientDashboard.carePlan.noSymptoms', 'No symptoms reported in your latest assessment.')}
-        </p>
       )}
     </section>
   )
@@ -214,14 +141,14 @@ function SymptomsCard({ symptoms, t }) {
 
 function SafetyCard({ t }) {
   return (
-    <section className="min-w-0 rounded-2xl border border-rose-200 bg-rose-50/60 p-5 dark:border-rose-900/50 dark:bg-rose-950/20">
+    <section className="min-w-0 rounded-2xl border border-rose-200/80 bg-rose-50/50 p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] dark:border-rose-900/50 dark:bg-rose-950/20">
       <div className="flex items-center gap-2.5">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-300">
           <Siren className="h-4 w-4" aria-hidden />
         </span>
-        <h2 className="text-sm font-bold text-rose-900 dark:text-rose-200">
+        <h3 className="text-sm font-bold text-rose-900 dark:text-rose-200">
           {t('patientDashboard.carePlanPage.safety.title', 'Seek care urgently if')}
-        </h2>
+        </h3>
       </div>
       <ul className="mt-3.5 space-y-2.5">
         {SAFETY_ITEM_KEYS.map((key) => (
@@ -238,186 +165,19 @@ function SafetyCard({ t }) {
   )
 }
 
-function CertaintyRadialGauge({ value, label }) {
-  const radius = 36
-  const stroke = 6
-  const circumference = 2 * Math.PI * radius
-  const strokeDashoffset = circumference - (value / 100) * circumference
-
-  return (
-    <div className="flex flex-col items-center justify-center">
-      <div className="relative flex items-center justify-center">
-        <svg className="h-24 w-24 -rotate-90 transform" viewBox="0 0 100 100">
-          <circle
-            cx="50"
-            cy="50"
-            r={radius}
-            stroke="currentColor"
-            strokeWidth={stroke}
-            className="text-white/20"
-            fill="transparent"
-          />
-          <circle
-            cx="50"
-            cy="50"
-            r={radius}
-            stroke="currentColor"
-            strokeWidth={stroke}
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            className="text-emerald-300 drop-shadow-[0_0_10px_rgba(110,231,183,0.7)] transition-all duration-1000 ease-out"
-            fill="transparent"
-          />
-        </svg>
-        <div className="absolute flex flex-col items-center text-center">
-          <span className="text-xl font-black tracking-tight text-white">{value}%</span>
-        </div>
-      </div>
-      <span className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-white/85">{label}</span>
-    </div>
-  )
-}
-
-function CareHero({ latestResult, resultCount, urgentCount, t }) {
-  const { isKhmer } = useLanguage()
-  const isUrgent = Boolean(latestResult?.is_urgent)
-  const facts = getLatestFacts([latestResult])
-  const age = toNumberOrNull(facts.age)
-  const confidence = toPercentValue(latestResult?.certainty)
-
-  return (
-    <section
-      className={cn(
-        'relative overflow-hidden rounded-3xl p-6 text-white shadow-xl sm:p-8',
-        isUrgent
-          ? 'bg-gradient-to-br from-rose-600 via-rose-700 to-red-950'
-          : 'bg-gradient-to-br from-sky-700 via-primary-800 to-indigo-950'
-      )}
-    >
-      {/* Decorative background blurs */}
-      <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 -left-12 h-52 w-52 rounded-full bg-sky-400/15 blur-3xl" />
-
-      <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-        {/* Left / Info Column */}
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
-              {t('patientDashboard.carePlanPage.hero.eyebrow', 'Your care plan')}
-            </p>
-            <span
-              className={cn(
-                'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em]',
-                isUrgent ? 'bg-rose-500/40 text-white ring-1 ring-white/30' : 'bg-white/20 text-white backdrop-blur-xs'
-              )}
-            >
-              {isUrgent ? (
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-200 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-100" />
-                </span>
-              ) : (
-                <span className="h-2 w-2 rounded-full bg-emerald-300" />
-              )}
-              {getUrgencyLabel(latestResult, t)}
-            </span>
-          </div>
-
-          <h1 className="mt-3 text-2xl font-black leading-tight tracking-tight sm:text-3xl lg:text-[2rem]">
-            {latestResult.diagnosis || t('patientDashboard.hero.noDiagnosisYet', 'No diagnosis result yet')}
-          </h1>
-
-          <p className="mt-2 max-w-xl text-sm leading-6 text-white/90">
-            {isUrgent
-              ? t('patientDashboard.situation.urgent', 'Your latest assessment was flagged for urgent follow-up.')
-              : t('patientDashboard.carePlan.description', 'What matters most after your latest assessment.')}
-          </p>
-
-          {isUrgent && latestResult.urgent_reason ? (
-            <p className="mt-3 inline-flex items-center gap-2 rounded-xl bg-black/30 px-3 py-2 text-xs font-medium backdrop-blur-xs">
-              <AlertTriangle className="h-4 w-4 text-amber-300" />
-              <span>
-                {t('patientDashboard.situation.urgentReason', 'Reason: {{reason}}', {
-                  reason: isKhmer ? (latestResult.urgent_reason_km || latestResult.urgent_reason) : latestResult.urgent_reason,
-                })}
-              </span>
-            </p>
-          ) : null}
-
-          {/* Action Buttons */}
-          <div className="mt-6 flex flex-wrap items-center gap-3 print:hidden">
-            <Link
-              to="/diagnosis"
-              className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-bold text-primary-900 shadow-md transition hover:bg-white/95 hover:shadow-lg"
-            >
-              <Plus className="h-4 w-4 stroke-[3]" />
-              {t('patientDashboard.situation.newAssessment', 'New assessment')}
-            </Link>
-
-            <Link
-              to={latestResult?.id ? `/diagnosis/result?diagnosis_result_id=${latestResult.id}` : '/my-results'}
-              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-xs transition hover:bg-white/20"
-            >
-              <FileText className="h-4 w-4" />
-              {t('patientDashboard.carePlanPage.hero.viewFullReport', 'View Full Report')}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-
-        {/* Right / Certainty Radial Ring */}
-        {confidence > 0 && (
-          <div className="flex shrink-0 items-center justify-center rounded-2xl bg-white/10 p-5 backdrop-blur-md border border-white/15">
-            <CertaintyRadialGauge
-              value={confidence}
-              label={t('patientDashboard.carePlanPage.hero.certaintyScore', 'Certainty')}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Meta Bar */}
-      <div className="relative mt-6 flex flex-wrap items-center gap-2.5 border-t border-white/15 pt-4">
-        <span className={chipClass}>
-          <ClipboardList className="h-3.5 w-3.5" />
-          {resultCount} {t('patientDashboard.hero.assessments', 'Assessments')}
-        </span>
-
-        <span className={chipClass}>
-          <CalendarClock className="h-3.5 w-3.5" />
-          {t('patientDashboard.carePlanPage.hero.lastCheck', 'Last check')}: {getRelativeCheckAge(latestResult.created_at, t) ?? '—'}
-        </span>
-
-        {age !== null ? (
-          <span className={chipClass}>
-            {t('patientDashboard.situation.ageLabel', 'Age')}: {age}
-          </span>
-        ) : null}
-
-        {urgentCount > 0 ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/30 px-3 py-1 text-xs font-semibold text-rose-100">
-            <ShieldAlert className="h-3.5 w-3.5" />
-            {urgentCount} {t('patientDashboard.recentAssessments.urgent', 'Urgent')}
-          </span>
-        ) : null}
-
-        {latestResult.review_note ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/30 px-3 py-1 text-xs font-semibold text-emerald-100">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            {t('patientDashboard.carePlanPage.history.reviewed', 'Doctor reviewed')}
-          </span>
-        ) : null}
-      </div>
-    </section>
-  )
-}
-
 export function CarePlanPage() {
+  const { user } = useAuth()
   const { t } = useLanguage()
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [activeTab, setActiveTab] = useState('Overview')
+  const [selectedPhase, setSelectedPhase] = useState('Phase 2: Active Intervention')
+  const [phaseDropdownOpen, setPhaseDropdownOpen] = useState(false)
+
+  const patientPlan = useMemo(() => {
+    return getTreatmentPlanForUser(user?.name, user?.email)
+  }, [user])
 
   useEffect(() => {
     let cancelled = false
@@ -448,47 +208,248 @@ export function CarePlanPage() {
   }, [t])
 
   if (loading) {
-    return <LoadingState label={t('patientDashboard.carePlanPage.loading', 'Loading your care plan...')} className="py-16" />
+    return (
+      <div className="space-y-6 pb-12 animate-in fade-in duration-150">
+        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-4 w-96" />
+            </div>
+            <Skeleton className="h-10 w-32 rounded-xl" />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Skeleton className="h-8 w-24 rounded-lg" />
+            <Skeleton className="h-8 w-28 rounded-lg" />
+            <Skeleton className="h-8 w-24 rounded-lg" />
+          </div>
+        </div>
+        <StatCardsSkeleton count={4} />
+        <CardListSkeleton count={3} />
+      </div>
+    )
   }
 
   const latestResult = results[0]
-  const urgentCount = results.filter((item) => item.is_urgent).length
-  const recommendations = latestResult
-    ? buildAutoRecommendations({ latestResult, results, t, daysSinceLastCheck: getDaysSinceCheck(latestResult.created_at) })
-    : []
+  const firstName = (user?.name || '').trim().split(/\s+/)[0] || 'Patient'
+  const isUrgent = Boolean(latestResult?.is_urgent)
+
+  const formattedToday = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date())
+
+  const lastCheckDate = latestResult?.created_at
+    ? getRelativeCheckAge(latestResult.created_at, t) ?? 'Today'
+    : 'Recent'
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
       <ErrorAlert message={error} />
 
-      {!latestResult ? (
-        <OnboardingState t={t} />
-      ) : (
-        <>
-          <CareHero latestResult={latestResult} resultCount={results.length} urgentCount={urgentCount} t={t} />
+      {/* ==================================================================== */}
+      {/* 1. TOP HERO: Clean Status Banner (Pure White, Crisp Border, Brand)    */}
+      {/* ==================================================================== */}
+      <section className="relative flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all duration-200 dark:border-slate-800 dark:bg-slate-900">
+        <div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+              Personal Care Plan • {formattedToday}
+            </span>
 
-          <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-            {/* Main column */}
-            <div className="flex min-w-0 flex-col gap-6">
-              <CarePlanChecklist
-                items={buildCareChecklist(latestResult, t)}
-                resultId={latestResult.id}
-                t={t}
-              />
-              <CarePlanPrevention latestResult={latestResult} t={t} />
-              <CarePlanRoutine latestResult={latestResult} t={t} />
-              <PatientRecommendations recommendations={recommendations} t={t} variant="full" />
-              <DoctorNoteCard latestResult={latestResult} t={t} />
-              <SymptomsCard symptoms={getReportedSymptomLabels(latestResult, t)} t={t} />
-            </div>
-
-            {/* Side column */}
-            <div className="flex min-w-0 flex-col gap-6">
-              <CarePlanWatchlist results={results} t={t} />
-              <SafetyCard t={t} />
-            </div>
+            {isUrgent ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-200/90 bg-rose-50/90 px-3 py-1 text-xs font-semibold text-rose-700 shadow-2xs dark:border-rose-800/70 dark:bg-rose-950/60 dark:text-rose-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
+                Attention Required
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/90 bg-emerald-50/90 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-2xs dark:border-emerald-800/70 dark:bg-emerald-950/60 dark:text-emerald-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Optimal • Routine Monitoring
+              </span>
+            )}
           </div>
-        </>
+
+          <h1 className="mt-3 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-50">
+            Care Protocol for {firstName}
+          </h1>
+
+          <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300 max-w-2xl font-normal">
+            {latestResult?.diagnosis
+              ? `Personalized diabetes care plan formulated for: ${latestResult.diagnosis}. Follow your daily glycemic targets, prescribed pharmacotherapy, and exercise regimen.`
+              : 'Evidence-based personalized treatment protocol, daily health targets, and medication schedule tailored to your glycemic baseline.'}
+          </p>
+        </div>
+
+        <div className="mt-6 pt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Link
+              to="/diagnosis"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm transition-all hover:bg-primary-700 hover:shadow active:scale-[0.98] dark:bg-primary-500 dark:hover:bg-primary-600"
+            >
+              <PlusCircle className="h-4 w-4" />
+              <span>Start Assessment</span>
+            </Link>
+
+            <Link
+              to={latestResult?.id ? `/diagnosis/result?diagnosis_result_id=${latestResult.id}` : '/my-results'}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-slate-50 px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              <FileText className="h-4 w-4 text-slate-400" />
+              <span>View Full Report</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('Treatment Plan')}
+              className="inline-flex items-center gap-2 rounded-xl border border-primary-200/90 bg-primary-50/80 px-4 py-2.5 text-xs sm:text-sm font-semibold text-primary-700 shadow-2xs transition-all hover:bg-primary-100 hover:text-primary-800 active:scale-[0.98] dark:border-primary-900/60 dark:bg-primary-950/50 dark:text-primary-300 dark:hover:bg-primary-900/60"
+            >
+              <Stethoscope className="h-4 w-4" />
+              <span>Doctor's Treatment Plan</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+            <CalendarClock className="h-3.5 w-3.5" />
+            <span>Last check: {lastCheckDate}</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================================================================== */}
+      {/* 2. NAVIGATION PILLS & PHASE SELECTOR BAR                             */}
+      {/* ==================================================================== */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-0.5">
+        {/* Navigation Tab Pills styled like Dashboard */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  'rounded-xl px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all',
+                  isActive
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+                )}
+              >
+                {tab}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Phase Plan Selector Dropdown */}
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => setPhaseDropdownOpen((prev) => !prev)}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700/80"
+          >
+            <Calendar className="h-3.5 w-3.5 text-slate-400" />
+            <span>{selectedPhase}</span>
+            <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+          </button>
+
+          {phaseDropdownOpen && (
+            <div className="absolute right-0 top-full z-20 mt-1.5 w-60 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+              {PHASES.map((phase) => (
+                <button
+                  key={phase}
+                  type="button"
+                  onClick={() => {
+                    setSelectedPhase(phase)
+                    setPhaseDropdownOpen(false)
+                  }}
+                  className={cn(
+                    'w-full text-left rounded-lg px-3 py-2 text-xs font-medium transition',
+                    selectedPhase === phase
+                      ? 'bg-primary-50 text-primary-700 font-bold dark:bg-primary-950/60 dark:text-primary-300'
+                      : 'text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/50'
+                  )}
+                >
+                  {phase}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ==================================================================== */}
+      {/* 3. MASTER SAAS 2-COLUMN GRID (Matching Dashboard 8/4 proportion)    */}
+      {/* ==================================================================== */}
+      {activeTab === 'Overview' && (
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+          {/* ================================================================ */}
+          {/* LEFT COLUMN (8 cols / ~67%): Main Protocol & Regimen Actions     */}
+          {/* ================================================================ */}
+          <div className="xl:col-span-8 space-y-6 min-w-0">
+            {/* 1. Today's Care Goals (Daily Checklist) */}
+            <CarePlanGoals t={t} />
+
+            {/* 2. Prescribed Medications Table */}
+            <CarePlanMedications t={t} />
+
+            {/* 3. Prevention & Lifestyle Strategy */}
+            {latestResult && <CarePlanPrevention latestResult={latestResult} t={t} />}
+
+            {/* 4. Doctor's Official Clinical Note */}
+            {latestResult && <DoctorNoteCard latestResult={latestResult} t={t} />}
+          </div>
+
+          {/* ================================================================ */}
+          {/* RIGHT COLUMN (4 cols / ~33%): Milestones, Visits, Biometrics     */}
+          {/* ================================================================ */}
+          <div className="xl:col-span-4 space-y-6 min-w-0">
+            {/* 1. Care Plan Progress Tracker (Milestone Stepper) */}
+            <CarePlanProgressTracker t={t} />
+
+            {/* 2. Upcoming Appointments & Lab Orders */}
+            <CarePlanAppointments t={t} />
+
+            {/* 3. Dual Biometric Snapshot Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
+              <CarePlanVitalsSnapshot results={results} t={t} />
+              <CarePlanActivitySnapshot t={t} />
+            </div>
+
+            {/* 4. Emergency Red Flags & Safety */}
+            <SafetyCard t={t} />
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Treatment Plan (Official Doctor Plan matching Screenshot 2) */}
+      {activeTab === 'Treatment Plan' && (
+        <div className="space-y-6">
+          <TreatmentPlanDetailView
+            plan={patientPlan}
+            onBack={() => setActiveTab('Overview')}
+            isDoctor={false}
+            t={t}
+          />
+        </div>
+      )}
+
+      {/* Tab: Medications */}
+      {activeTab === 'Medications' && (
+        <div className="space-y-6">
+          <CarePlanMedications t={t} />
+          {latestResult && <CarePlanPrevention latestResult={latestResult} t={t} />}
+        </div>
+      )}
+
+      {/* Tab: Appointments with interactive Calendar Canvas */}
+      {activeTab === 'Appointments' && (
+        <div className="space-y-6">
+          <AppointmentCalendarCanvas t={t} />
+        </div>
       )}
     </div>
   )

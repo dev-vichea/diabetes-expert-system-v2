@@ -44,6 +44,7 @@ import {
   TabsList,
   TabsTrigger,
   UserAvatar,
+  Skeleton,
 } from '@/components/ui'
 
 const DEFAULT_EDITOR = {
@@ -781,13 +782,43 @@ export function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {loadingUsers ? (
-                    <tr>
-                      <td colSpan="6" className="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
-                        {t('usersPage.table.states.loading')}
-                      </td>
-                    </tr>
-                  ) : null}
+                  {loadingUsers
+                    ? Array.from({ length: 6 }).map((_, idx) => (
+                        <tr key={idx} className="border-b border-slate-100 last:border-0 dark:border-slate-800">
+                          <td className="px-3 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <Skeleton className="h-9 w-9 rounded-full shrink-0" />
+                              <div className="space-y-1.5 min-w-0">
+                                <Skeleton className="h-4 w-32" />
+                                <Skeleton className="h-3 w-44" />
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-3 py-3.5">
+                            <Skeleton className="h-6 w-20 rounded-full" />
+                          </td>
+                          <td className="px-3 py-3.5">
+                            <Skeleton className="h-6 w-16 rounded-full" />
+                          </td>
+                          {visibleColumns.access && (
+                            <td className="px-3 py-3.5">
+                              <Skeleton className="h-4 w-24" />
+                            </td>
+                          )}
+                          {visibleColumns.lastActive && (
+                            <td className="px-3 py-3.5">
+                              <Skeleton className="h-4 w-28" />
+                            </td>
+                          )}
+                          <td className="px-3 py-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Skeleton className="h-8 w-8 rounded-lg" />
+                              <Skeleton className="h-8 w-8 rounded-lg" />
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    : null}
 
                   {!loadingUsers && !paginatedUsers.length ? (
                     <tr>

@@ -85,7 +85,11 @@
     "errorLoginFailed": "Login failed",
     "errorAgreeTerms": "Please agree to the terms and conditions.",
     "errorPasswordMismatch": "Password and confirm password must match.",
-    "errorRegistrationFailed": "Registration failed"
+    "errorRegistrationFailed": "Registration failed",
+    "orDivider": "OR",
+    "signInWithGoogle": "Sign in with Google",
+    "signUpWithGoogle": "Sign up with Google",
+    "errorGoogleLoginFailed": "Google sign-in failed. Please try again."
   },
   "roles": {
     "user": "User",
@@ -99,6 +103,7 @@
     "dashboard": "Dashboard",
     "assessment": "Assessment",
     "patients": "Patients",
+    "treatmentPlans": "Treatment Plans",
     "knowledgeBase": "Knowledge Base",
     "patientReview": "Patient Review",
     "myResults": "My Results",
@@ -113,6 +118,14 @@
     "diabetesGuide": "Diabetes Guide"
   },
   "page": {
+    "treatmentPlanning": {
+      "title": "Treatment Planning",
+      "subtitle": "Create and manage comprehensive diabetes treatment plans"
+    },
+    "treatmentPlanningCreate": {
+      "title": "Create Treatment Plan",
+      "subtitle": "Formulate personalized procedures, targets, and prescriptions"
+    },
     "diabetesGuide": {
       "title": "Diabetes & Symptoms Guide",
       "subtitle": "Clinical classifications, symptom physiology, and evidence-based self-care"

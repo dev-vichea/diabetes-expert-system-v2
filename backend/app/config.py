@@ -101,6 +101,9 @@ class Config:
         default=["http://127.0.0.1:5173", "http://localhost:5173"],
     )
 
+    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip() or None
+
+
     # Rate limiting
     RATELIMIT_DEFAULT = os.getenv("RATELIMIT_DEFAULT", "200 per minute")
     RATELIMIT_STORAGE_URI = os.getenv("RATELIMIT_STORAGE_URI", "memory://")

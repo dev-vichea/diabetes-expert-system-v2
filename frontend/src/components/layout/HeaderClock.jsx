@@ -57,14 +57,9 @@ export function HeaderClock({ theme = 'light', language = 'en' }) {
     <div className="group relative hidden xl:inline-flex">
       <button
         type="button"
-        className={cn(
-          'inline-flex min-h-10 items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition-colors',
-          isDark
-            ? 'border-[#1e2234] bg-[#101020] text-slate-300 hover:bg-[#181830] hover:text-primary-300'
-            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-primary-50 hover:text-primary-700'
-        )}
+        className="inline-flex h-9 items-center gap-2 rounded-xl px-2.5 text-xs font-medium text-slate-600 transition-all duration-150 hover:bg-slate-100/80 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-100 outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
       >
-        <CalendarDays className="h-4 w-4" />
+        <CalendarDays className="h-4 w-4 text-slate-400" />
         <span>{snapshot.dateValue}</span>
       </button>
 

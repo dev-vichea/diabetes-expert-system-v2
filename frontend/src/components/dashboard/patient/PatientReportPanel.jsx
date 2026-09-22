@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { EmptyState, LoadingState, SectionCard } from '@/components/ui'
+import { EmptyState, SectionCard, Skeleton } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import {
   buildConfidenceSeries,
@@ -100,7 +100,17 @@ export function PatientReportPanel({ results, loading }) {
       description={t('patientDashboard.report.description', 'What your assessments show over time.')}
     >
       {loading ? (
-        <LoadingState label={t('patientDashboard.recentAssessments.loading', 'Loading your assessments...')} />
+        <div className="space-y-5 animate-in fade-in duration-150">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-slate-200 p-4 dark:border-slate-800 space-y-2">
+                <Skeleton className="h-3.5 w-24" />
+                <Skeleton className="h-7 w-20" />
+              </div>
+            ))}
+          </div>
+          <Skeleton className="h-56 w-full rounded-2xl" />
+        </div>
       ) : !hasResults ? (
         <EmptyState
           icon={Activity}

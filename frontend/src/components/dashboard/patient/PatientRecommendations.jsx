@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Sparkles } from 'lucide-react'
-import { SectionCard, StatusBadge } from '@/components/ui'
+import { StatusBadge } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
 const NS = 'patientDashboard.recommendations'
@@ -117,11 +117,18 @@ export function PatientRecommendations({ recommendations = [], t, variant = 'ful
   ].filter((f) => f.id === 'all' || f.count > 0)
 
   return (
-    <SectionCard
-      title={t(`${NS}.title`, 'Recommended for you')}
-      description={t(`${NS}.description`, 'Generated automatically from your latest assessment data.')}
-      actions={
-        filterTabs.length > 2 ? (
+    <section className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] sm:p-6 dark:border-slate-800 dark:bg-slate-900">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg dark:text-slate-100">
+            {t(`${NS}.title`, 'Recommended for you')}
+          </h2>
+          <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+            {t(`${NS}.description`, 'Generated automatically from your latest assessment data.')}
+          </p>
+        </div>
+
+        {filterTabs.length > 2 ? (
           <div className="flex flex-wrap gap-1.5">
             {filterTabs.map((tab) => {
               const isActive = activeFilter === tab.id
@@ -133,7 +140,7 @@ export function PatientRecommendations({ recommendations = [], t, variant = 'ful
                   className={cn(
                     'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all',
                     isActive
-                      ? 'bg-primary-600 text-white shadow-xs'
+                      ? 'bg-slate-900 text-white shadow-xs dark:bg-slate-100 dark:text-slate-900'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                   )}
                 >
@@ -141,7 +148,7 @@ export function PatientRecommendations({ recommendations = [], t, variant = 'ful
                   <span
                     className={cn(
                       'rounded-full px-1.5 py-0.2 text-[10px] font-bold',
-                      isActive ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+                      isActive ? 'bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900' : 'bg-slate-200/80 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
                     )}
                   >
                     {tab.count}
@@ -150,9 +157,9 @@ export function PatientRecommendations({ recommendations = [], t, variant = 'ful
               )
             })}
           </div>
-        ) : null
-      }
-    >
+        ) : null}
+      </div>
+
       {items.length === 0 ? (
         <p className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
           No recommendations found for this priority.
@@ -172,6 +179,6 @@ export function PatientRecommendations({ recommendations = [], t, variant = 'ful
           })}
         </div>
       )}
-    </SectionCard>
+    </section>
   )
 }

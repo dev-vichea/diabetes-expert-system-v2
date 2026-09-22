@@ -12,7 +12,7 @@ import {
 import api, { getApiData, getApiErrorMessage } from '@/api/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { UserAvatar } from '@/components/ui'
+import { FormSkeleton, UserAvatar } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
 /*
@@ -691,7 +691,9 @@ export function ProfilePage() {
           <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{t(`${NS}.healthSubtitle`, 'Keep this up to date — every new assessment starts pre-filled from here.')}</p>
 
           {healthLoading ? (
-            <div className="py-10"><Loader2 className="mx-auto h-6 w-6 animate-spin text-primary-500" /></div>
+            <div className="py-6">
+              <FormSkeleton fields={6} />
+            </div>
           ) : healthLoadError ? (
             <p className="mt-5 rounded-xl bg-rose-50 px-3.5 py-2.5 text-xs font-medium text-rose-700 dark:bg-rose-950/30 dark:text-rose-300">{healthLoadError}</p>
           ) : (

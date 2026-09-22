@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 export function AdminMetricCard({
   title,
@@ -26,9 +27,15 @@ export function AdminMetricCard({
         <div className={cn('h-11 w-1 shrink-0 rounded-full', accentClass)} />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
-          <p className="mt-1 text-[1.9rem] font-bold leading-none tracking-tight text-slate-950 dark:text-slate-100">
-            {loading ? '...' : value}
-          </p>
+          <div className="mt-1">
+            {loading ? (
+              <Skeleton className="h-7 w-20 rounded-lg" />
+            ) : (
+              <p className="text-[1.9rem] font-bold leading-none tracking-tight text-slate-950 dark:text-slate-100">
+                {value}
+              </p>
+            )}
+          </div>
           {description ? <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{description}</p> : null}
         </div>
         {Icon ? (

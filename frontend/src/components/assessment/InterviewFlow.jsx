@@ -5,7 +5,7 @@ import {
   GlassWater, Globe, Hand, HeartCrack, HeartPulse, Info, PenTool, Plus, RefreshCw, Scale, ShieldAlert, Soup,
   Sparkles, Stethoscope, TestTube2, Timer, TrendingDown, Trash2, UserRound, Users, Vibrate, Waves, Weight, X,
 } from 'lucide-react'
-import { AppSelect, LoadingState } from '@/components/ui'
+import { AppSelect, Skeleton } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/contexts/LanguageContext'
 import {
@@ -243,7 +243,7 @@ export function InterviewFlow(props) {
 
   if (node.kind === 'patient') {
     body = loadingPatients
-      ? <LoadingState label="Loading patients..." />
+      ? <Skeleton className="h-11 w-full rounded-xl" />
       : (
         <AppSelect
           value={form.patient_id}

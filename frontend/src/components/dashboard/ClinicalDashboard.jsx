@@ -19,6 +19,7 @@ import {
   ChartTooltipContent,
   SectionCard,
   UserAvatar,
+  DashboardSkeleton,
 } from '@/components/ui'
 import api, { getApiData } from '@/api/client'
 import { formatDateTime } from '@/lib/datetime'
@@ -288,10 +289,7 @@ export function ClinicalDashboard({ activeRole }) {
 
       {/* ── Main content ───────────────────────────────────────── */}
       {loading ? (
-        <div className="flex h-64 items-center justify-center surface gap-3 text-slate-500">
-          <Activity className="h-5 w-5 animate-spin" />
-          {t('dashboard.loading', 'Loading dashboard data...')}
-        </div>
+        <DashboardSkeleton />
       ) : (
         <>
           {/* KPI cards */}

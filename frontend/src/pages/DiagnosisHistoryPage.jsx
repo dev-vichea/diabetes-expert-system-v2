@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
-import { AppSelect, EmptyState, ErrorAlert, LoadingState, SearchInput, StatCard, StatusBadge, UserAvatar } from '@/components/ui'
+import { AppSelect, EmptyState, ErrorAlert, LoadingState, SearchInput, StatCard, StatusBadge, UserAvatar, StatCardsSkeleton, TableSkeleton } from '@/components/ui'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { userHasStaffRole } from '@/lib/nav-config'
@@ -314,7 +314,10 @@ export function DiagnosisHistoryPage() {
       <ErrorAlert message={error} />
 
       {loading && !results.length ? (
-        <LoadingState label={t('myResults.loading', 'Loading diagnosis history...')} className="py-20" />
+        <div className="space-y-6 animate-in fade-in duration-150">
+          <StatCardsSkeleton count={4} />
+          <TableSkeleton rows={6} columns={5} />
+        </div>
       ) : !results.length ? (
         <OnboardingEmptyState t={t} />
       ) : (

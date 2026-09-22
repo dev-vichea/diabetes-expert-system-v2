@@ -6,7 +6,15 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { LanguageProvider } from '@/contexts/LanguageContext'
 import { NotificationProvider } from '@/contexts/NotificationContext'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import './styles/app.css'
+
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+
+function GoogleAuthProviderWrapper({ children }) {
+  if (!googleClientId) return children
+  return <GoogleOAuthProvider clientId={googleClientId}>{children}</GoogleOAuthProvider>
+}
 
 // Automatically reload the page when a dynamic chunk fails to load due to a new build / deployment
 if (typeof window !== 'undefined') {
@@ -19,15 +27,17 @@ if (typeof window !== 'undefined') {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <LanguageProvider>
-        <AuthProvider>
-          <NotificationProvider>
-            <BrowserRouter>
-              <App />
-            </BrowserRouter>
-          </NotificationProvider>
-        </AuthProvider>
-      </LanguageProvider>
+      <GoogleAuthProviderWrapper>
+        <LanguageProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              <BrowserRouter>
+                <App />
+              </BrowserRouter>
+            </NotificationProvider>
+          </AuthProvider>
+        </LanguageProvider>
+      </GoogleAuthProviderWrapper>
     </ErrorBoundary>
   </React.StrictMode>
 )

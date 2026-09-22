@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { RefreshCw, Search } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '@/api/client'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { ErrorAlert, LoadingState } from '@/components/ui'
+import { ErrorAlert, Skeleton } from '@/components/ui'
 
 export function KnowledgeIntegrityPanel() {
   const { t } = useLanguage()
@@ -39,7 +39,19 @@ export function KnowledgeIntegrityPanel() {
         </button>
       </div>
       {error ? <ErrorAlert message={error} /> : null}
-      {loading ? <LoadingState label={t('knowledgeIntegrity.loading', 'Checking rules and facts…')} /> : !error && report ? (
+      {loading ? (
+        <div className="space-y-4 animate-in fade-in duration-150">
+          <div className="grid gap-3 sm:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-slate-200 p-4 dark:border-slate-800 space-y-2">
+                <Skeleton className="h-3.5 w-24" />
+                <Skeleton className="h-7 w-16" />
+              </div>
+            ))}
+          </div>
+          <Skeleton className="h-11 w-full rounded-xl" />
+        </div>
+      ) : !error && report ? (
         <>
           <div className="grid gap-3 sm:grid-cols-3">
             {[

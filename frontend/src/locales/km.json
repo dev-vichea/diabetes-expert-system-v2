@@ -85,7 +85,11 @@
     "errorLoginFailed": "ការចូលប្រើបរាជ័យ",
     "errorAgreeTerms": "សូមយល់ព្រមតាមលក្ខខណ្ឌនៃការប្រើប្រាស់។",
     "errorPasswordMismatch": "ពាក្យសម្ងាត់ និងការបញ្ជាក់ពាក្យសម្ងាត់ត្រូវតែត្រូវគ្នា។",
-    "errorRegistrationFailed": "ការចុះឈ្មោះបរាជ័យ"
+    "errorRegistrationFailed": "ការចុះឈ្មោះបរាជ័យ",
+    "orDivider": "ឬ",
+    "signInWithGoogle": "ចូលប្រើប្រាស់តាម Google",
+    "signUpWithGoogle": "ចុះឈ្មោះតាម Google",
+    "errorGoogleLoginFailed": "ការចូលប្រើតាម Google បានបរាជ័យ។ សូមព្យាយាមម្តងទៀត។"
   },
   "roles": {
     "user": "អ្នកប្រើប្រាស់",
@@ -99,6 +103,7 @@
     "dashboard": "ផ្ទាំងគ្រប់គ្រង",
     "assessment": "ការវាយតម្លៃ",
     "patients": "អ្នកជំងឺ",
+    "treatmentPlans": "ផែនការព្យាបាល",
     "knowledgeBase": "មូលដ្ឋានចំណេះដឹង",
     "patientReview": "ការពិនិត្យអ្នកជំងឺ",
     "myResults": "លទ្ធផលរបស់ខ្ញុំ",
@@ -113,6 +118,14 @@
     "diabetesGuide": "មគ្គុទ្ទេសក៍ទឹកនោមផ្អែម"
   },
   "page": {
+    "treatmentPlanning": {
+      "title": "ការរៀបចំផែនការព្យាបាល",
+      "subtitle": "បង្កើត និងគ្រប់គ្រងផែនការព្យាបាលជំងឺទឹកនោមផ្អែមគ្រប់ជ្រុងជ្រោយ"
+    },
+    "treatmentPlanningCreate": {
+      "title": "បង្កើតផែនការព្យាបាល",
+      "subtitle": "កំណត់នីតិវិធីផ្ទាល់ខ្លួន គោលដៅជាតិស្ករ និងវេជ្ជបញ្ជា"
+    },
     "diabetesGuide": {
       "title": "ស្វែងយល់ពីជំងឺទឹកនោមផ្អែម និងរោគសញ្ញា",
       "subtitle": "ការបែងចែកប្រភេទជំងឺ មូលហេតុរោគសញ្ញា និងការថែទាំសុខភាព"
