@@ -142,13 +142,13 @@ export function Topbar({
   return (
     <header
       className={cn(
-        'sticky top-0 z-20 w-full px-4 py-3 sm:px-6 select-none backdrop-blur-md transition-all duration-150',
+        'sticky top-0 z-20 flex h-[72px] shrink-0 w-full items-center px-4 sm:px-6 select-none backdrop-blur-md transition-all duration-150',
         isDark
           ? 'bg-[#070712]/90 border-b border-slate-800/60'
           : 'bg-white/90 border-b border-slate-200/60'
       )}
     >
-      <div className="flex min-w-0 items-center justify-between gap-3">
+      <div className="flex min-w-0 w-full items-center justify-between gap-3">
         {/* ======================================================== */}
         {/* Left Section: Sidebar Toggle + Title & Subtitle          */}
         {/* ======================================================== */}

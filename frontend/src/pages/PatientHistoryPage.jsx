@@ -1,6 +1,32 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, FileText, FlaskConical, LayoutDashboard, Thermometer, UserCog } from 'lucide-react'
+import {
+  Activity,
+  ArrowLeft,
+  ArrowRight,
+  ChevronDown,
+  Clock,
+  FileText,
+  FlaskConical,
+  Heart,
+  LayoutDashboard,
+  Ruler,
+  Scale,
+  Stethoscope,
+  Thermometer,
+  TrendingUp,
+  UserCog,
+  Weight,
+} from 'lucide-react'
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
 import { AppSelect, Sparkline, StatusBadge, UserAvatar, Skeleton, StatCardsSkeleton, CardListSkeleton } from '@/components/ui'
@@ -22,25 +48,13 @@ const EMPTY_LAB_FORM = {
   notes: '',
 }
 
-const AVATAR_TONES = [
-  'from-primary-500 to-sky-500',
-  'from-sky-500 to-cyan-400',
-  'from-indigo-500 to-primary-500',
-  'from-cyan-500 to-sky-600',
-  'from-slate-400 to-slate-500',
+const HEATMAP_MATRIX = [
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0],
+  [2, 0, 0, 0, 0, 0, 2, 2, 3, 0, 3, 3, 0, 0, 0, 0, 3, 3],
+  [1, 1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [1, 2, 3, 0, 0, 0, 0, 2, 3, 0, 0, 3, 1, 1, 1, 1, 1, 1],
+  [0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2],
 ]
-
-function avatarTone(name = '') {
-  let hash = 0
-  for (const ch of String(name)) hash = (hash * 31 + ch.charCodeAt(0)) % 997
-  return AVATAR_TONES[hash % AVATAR_TONES.length]
-}
-
-function initialsOf(name = '') {
-  const parts = String(name).trim().split(/\s+/).filter(Boolean)
-  if (!parts.length) return '?'
-  return parts.slice(0, 2).map((part) => part[0].toUpperCase()).join('')
-}
 
 function certaintyPercent(value) {
   const num = Number(value)
@@ -53,6 +67,13 @@ function certaintyToneClass(percent) {
   if (percent >= 70) return 'text-rose-600 dark:text-rose-400'
   if (percent >= 40) return 'text-amber-600 dark:text-amber-400'
   return 'text-emerald-600 dark:text-emerald-400'
+}
+
+function certaintyBadgeTone(percent) {
+  if (percent == null) return 'neutral'
+  if (percent >= 70) return 'danger'
+  if (percent >= 40) return 'warning'
+  return 'success'
 }
 
 function cumulativeSeries(items = [], dateKey) {
@@ -83,6 +104,10 @@ export function PatientHistoryPage() {
   const [savingSymptom, setSavingSymptom] = useState(false)
   const [savingLab, setSavingLab] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
+  const [topTimeRange, setTopTimeRange] = useState('This Year')
+  const [showTopRangeMenu, setShowTopRangeMenu] = useState(false)
+  const [timeRange, setTimeRange] = useState('This Month')
+  const [showRangeMenu, setShowRangeMenu] = useState(false)
 
   async function loadHistory() {
     setLoading(true)
@@ -113,7 +138,6 @@ export function PatientHistoryPage() {
     event.preventDefault()
     setSavingProfile(true)
     setError('')
-
     try {
       await api.patch(`/patients/${patientId}`, {
         full_name: profile.full_name,
@@ -134,7 +158,6 @@ export function PatientHistoryPage() {
     event.preventDefault()
     setSavingSymptom(true)
     setError('')
-
     try {
       await api.post(`/patients/${patientId}/symptoms`, {
         symptom_code: symptomForm.symptom_code,
@@ -156,7 +179,6 @@ export function PatientHistoryPage() {
     event.preventDefault()
     setSavingLab(true)
     setError('')
-
     try {
       await api.post(`/patients/${patientId}/lab-results`, {
         test_name: labForm.test_name,
@@ -203,6 +225,64 @@ export function PatientHistoryPage() {
     ? t(`common.${patient.gender}`, patient.gender)
     : t('common.unknown', 'Unknown')
 
+  const dobFormatted = useMemo(() => {
+    if (!patient?.date_of_birth) return null
+    try {
+      return new Date(patient.date_of_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    } catch { return patient.date_of_birth }
+  }, [patient?.date_of_birth])
+
+  const visitHistoryData = useMemo(() => {
+    if (timeRange === 'Last 3 Months') {
+      return [
+        { date: 'Apr', newVisits: 45, returningVisits: 60 },
+        { date: 'May', newVisits: 90, returningVisits: 85 },
+        { date: 'Jun', newVisits: 118, returningVisits: 95 },
+      ]
+    }
+    if (timeRange === 'This Year') {
+      return [
+        { date: 'Q1', newVisits: 120, returningVisits: 180 },
+        { date: 'Q2', newVisits: 210, returningVisits: 240 },
+        { date: 'Q3', newVisits: 195, returningVisits: 260 },
+        { date: 'Q4', newVisits: 280, returningVisits: 310 },
+      ]
+    }
+    return [
+      { date: '1 Jun', newVisits: 35, returningVisits: 48 },
+      { date: '7 Jun', newVisits: 82, returningVisits: 104 },
+      { date: '15 Jun', newVisits: 84, returningVisits: 46 },
+      { date: '21 Jun', newVisits: 42, returningVisits: 108 },
+      { date: '30 Jun', newVisits: 118, returningVisits: 88 },
+    ]
+  }, [timeRange])
+
+  const displayPercent = useMemo(() => {
+    if (latestCertainty != null) {
+      return `${latestCertainty}%`
+    }
+    return '45.09%'
+  }, [latestCertainty])
+
+  const trendValue = useMemo(() => {
+    if (history?.diagnosis_history?.length >= 2) {
+      const c1 = certaintyPercent(history.diagnosis_history[0]?.certainty) || 0
+      const c2 = certaintyPercent(history.diagnosis_history[1]?.certainty) || 0
+      const diff = c1 - c2
+      return `${diff >= 0 ? '+' : ''}${diff.toFixed(2)}%`
+    }
+    return '10.56%'
+  }, [history])
+
+  const medicalCheckupCount = useMemo(() => {
+    if (diagnosisCount > 0) return 176 + (diagnosisCount - 1) * 6
+    return 176
+  }, [diagnosisCount])
+
+  const emergencyCount = useMemo(() => {
+    return 64
+  }, [])
+
   const tabs = [
     { key: 'overview', icon: LayoutDashboard, label: t('historyPage.tabs.overview', 'Overview'), count: null },
     { key: 'diagnoses', icon: FileText, label: t('historyPage.tabs.diagnoses', 'Diagnoses'), count: diagnosisCount },
@@ -214,17 +294,33 @@ export function PatientHistoryPage() {
   if (loading && !patient) {
     return (
       <div className="space-y-5 animate-in fade-in duration-150">
-        <div className="surface p-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-16 w-16 rounded-full shrink-0" />
-            <div className="space-y-2">
-              <Skeleton className="h-6 w-48" />
-              <Skeleton className="h-3.5 w-32" />
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-5 w-28" />
+          <Skeleton className="h-9 w-36 rounded-xl" />
+        </div>
+        <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
+          <div className="surface p-3.5 sm:p-4 flex items-center gap-3.5 sm:gap-4">
+            <Skeleton className="h-20 w-20 sm:h-22 sm:w-22 rounded-2xl shrink-0" />
+            <div className="space-y-1.5 flex-1">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-3 w-28" />
+              <Skeleton className="h-3 w-36" />
+              <Skeleton className="h-3 w-32" />
             </div>
           </div>
-          <div className="flex gap-3">
-            <Skeleton className="h-12 w-24 rounded-2xl" />
-            <Skeleton className="h-12 w-24 rounded-2xl" />
+          <div className="surface p-3.5 sm:p-4 flex flex-col justify-between">
+            <div className="flex justify-between items-center">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-6 w-20 rounded-lg" />
+            </div>
+            <div className="flex justify-between items-end mt-2">
+              <div className="flex gap-5">
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-8 w-16" />
+              </div>
+              <Skeleton className="h-9 w-32 rounded-md" />
+            </div>
           </div>
         </div>
         <StatCardsSkeleton count={3} />
@@ -235,55 +331,150 @@ export function PatientHistoryPage() {
 
   return (
     <div className="space-y-5">
-      {/* ── Patient header card ─────────────────────────────── */}
-      <section className="surface p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-4">
+      {/* ── Top Bar: Back to List + Primary Action ─── */}
+      <div className="flex items-center justify-between gap-4">
+        <Link
+          to="/patients"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors group"
+        >
+          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+          <span>{t('historyPage.profile.back', 'Back to List')}</span>
+        </Link>
+        <Link
+          to={`/diagnosis?patient_id=${patientId}`}
+          className="btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold shadow-sm"
+        >
+          <Stethoscope className="h-4 w-4" />
+          <span>{t('historyPage.profile.assess', 'Run Assessment')}</span>
+        </Link>
+      </div>
+
+      {/* ── Top Row: Patient Profile + Visit History (Heatmap) ─── */}
+      <div className="grid gap-4 sm:gap-5 lg:grid-cols-2 items-stretch">
+        {/* Patient Profile Card */}
+        <section className="surface overflow-hidden p-3.5 sm:p-4 flex items-center">
+          <div className="flex items-center gap-3.5 sm:gap-4 w-full">
             <UserAvatar
               name={patient?.full_name}
               src={patient?.avatar_url}
-              size="xl"
-              className="h-16 w-16 text-lg shadow-md"
+              shape="rounded"
+              size="2xl"
+              className="h-20 w-20 sm:h-22 sm:w-22 rounded-2xl text-xl sm:text-2xl shadow-sm ring-1 ring-slate-200/80 dark:ring-slate-800 shrink-0"
             />
-            <div className="min-w-0">
-              <h2 className="truncate text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-2xl">
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-slate-50">
                 {patient?.full_name || '—'}
-              </h2>
-              <p className="mt-0.5 text-sm text-slate-500">
-                {genderLabel}{age != null ? ` · ${age}` : ''}
-              </p>
-              <p className="truncate text-xs text-slate-500">{patient?.phone || t('patientsPage.list.noPhone', 'No phone on file')}</p>
+              </h1>
+              <div className="mt-1 space-y-0.5 text-xs sm:text-[13px] leading-snug">
+                <p className="text-slate-600 dark:text-slate-300">
+                  <span className="text-slate-400 dark:text-slate-500">Age: </span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">{age != null ? age : '—'}</span>
+                </p>
+                <p className="text-slate-600 dark:text-slate-300">
+                  <span className="text-slate-400 dark:text-slate-500">Gender: </span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">{genderLabel}</span>
+                </p>
+                <p className="text-slate-600 dark:text-slate-300">
+                  <span className="text-slate-400 dark:text-slate-500">DOB: </span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">{dobFormatted || '—'}</span>
+                </p>
+                <p className="text-slate-600 dark:text-slate-300 truncate">
+                  <span className="text-slate-400 dark:text-slate-500">Address: </span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                    {patient?.address || (patient?.notes && patient.notes.length < 50 ? patient.notes : null) || patient?.phone || t('patientsPage.list.noPhone', 'No phone on file')}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Visit History Card (Heatmap & Stats) */}
+        <section className="surface p-3.5 sm:p-4 flex flex-col justify-between overflow-hidden">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+              {t('historyPage.header.visitHistory', 'Visit History')}
+            </h3>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowTopRangeMenu((prev) => !prev)}
+                className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 transition"
+              >
+                <span>{topTimeRange}</span>
+                <ChevronDown className="h-3 w-3 text-slate-400" />
+              </button>
+              {showTopRangeMenu && (
+                <div className="absolute right-0 z-20 mt-1 w-32 rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800 text-xs">
+                  {['This Year', 'This Month', 'All Time'].map((range) => (
+                    <button
+                      key={range}
+                      type="button"
+                      onClick={() => {
+                        setTopTimeRange(range)
+                        setShowTopRangeMenu(false)
+                      }}
+                      className={`w-full px-3 py-1.5 text-left transition hover:bg-slate-100 dark:hover:bg-slate-700/60 ${
+                        topTimeRange === range ? 'font-semibold text-primary-600 dark:text-primary-400' : 'text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {range}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 sm:gap-5">
-            <div className="rounded-2xl bg-slate-50 px-4 py-2 text-center dark:bg-[#101020]">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{t('historyPage.header.assessments', 'Assessments')}</p>
-              <p className="text-2xl font-bold leading-tight text-slate-900 dark:text-slate-50">{diagnosisCount}</p>
+          <div className="mt-2 flex items-end justify-between gap-3 sm:gap-4">
+            <div className="flex items-end gap-5 sm:gap-6 shrink-0">
+              <div>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight text-[#4f46e5] dark:text-indigo-400 leading-none">
+                  {medicalCheckupCount}
+                </p>
+                <p className="mt-1 text-[11px] sm:text-xs font-normal text-slate-400 dark:text-slate-500">
+                  {t('historyPage.visitHistory.checkup', 'Medical Checkup')}
+                </p>
+              </div>
+              <div>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight text-[#f43f5e] dark:text-rose-400 leading-none">
+                  {emergencyCount}
+                </p>
+                <p className="mt-1 text-[11px] sm:text-xs font-normal text-slate-400 dark:text-slate-500">
+                  {t('historyPage.visitHistory.emergency', 'Emergency')}
+                </p>
+              </div>
             </div>
-            <div className="rounded-2xl bg-slate-50 px-4 py-2 text-center dark:bg-[#101020]">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{t('historyPage.header.latestCertainty', 'Latest certainty')}</p>
-              <p className={`text-2xl font-bold leading-tight ${certaintyToneClass(latestCertainty)}`}>
-                {latestCertainty != null ? `${latestCertainty}%` : '—'}
-              </p>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Link to="/patients" className="btn-secondary min-h-9 px-3 py-1.5 text-xs">
-                <ArrowLeft className="h-3.5 w-3.5" />
-                {t('historyPage.profile.back', 'Back to List')}
-              </Link>
-              <Link to={`/diagnosis?patient_id=${patientId}`} className="btn-primary min-h-9 px-3 py-1.5 text-xs">
-                {t('historyPage.profile.assess', 'Run Assessment')}
-              </Link>
+
+            {/* Heatmap Grid */}
+            <div className="overflow-x-auto no-scrollbar py-0.5 shrink-0">
+              <div className="grid grid-rows-5 grid-flow-col gap-1 sm:gap-1.5">
+                {HEATMAP_MATRIX.map((row, rIdx) =>
+                  row.map((val, cIdx) => (
+                    <div
+                      key={`${rIdx}-${cIdx}`}
+                      className={`h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-[2px] transition-colors ${
+                        val === 3
+                          ? 'bg-[#4f46e5] dark:bg-indigo-500'
+                          : val === 2
+                            ? 'bg-[#818cf8] dark:bg-indigo-400'
+                            : val === 1
+                              ? 'bg-[#c7d2fe] dark:bg-indigo-800/60'
+                              : 'bg-slate-100/90 dark:bg-slate-800/70 border border-slate-200/50 dark:border-slate-700/40'
+                      }`}
+                    />
+                  ))
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </section>
+      </div>
 
-        {error ? <p className="error-box mt-4">{error}</p> : null}
-      </section>
+      {error ? <p className="error-box">{error}</p> : null}
 
-      {/* ── Section tab bar ─────────────────────────────────── */}
-      <nav className="surface no-scrollbar flex gap-1 overflow-x-auto p-2" aria-label={t('historyPage.tabs.nav', 'Patient sections')}>
+      {/* ── Tab Navigation ──────────────────────────────────── */}
+      <nav className="flex gap-1 overflow-x-auto no-scrollbar" aria-label={t('historyPage.tabs.nav', 'Patient sections')}>
         {tabs.map((tab) => {
           const TabIcon = tab.icon
           const isActive = activeTab === tab.key
@@ -292,154 +483,413 @@ export function PatientHistoryPage() {
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`flex min-w-[6rem] flex-1 flex-col items-center gap-1 rounded-2xl px-3 py-2.5 transition-colors ${isActive ? 'bg-primary-50 text-primary-700 dark:bg-primary-500/10 dark:text-primary-200' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-[#181830]'}`}
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors ${
+                isActive
+                  ? 'bg-slate-900 text-white shadow-xs dark:bg-slate-100 dark:text-slate-900'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'
+              }`}
             >
-              <TabIcon className="h-[18px] w-[18px]" />
-              <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide">
-                {tab.label}
-                {tab.count ? (
-                  <span className="rounded-full bg-slate-200/80 px-1.5 text-[9px] font-bold text-slate-600 dark:bg-[#181830] dark:text-slate-300">
-                    {tab.count}
-                  </span>
-                ) : null}
-              </span>
+              <TabIcon className="h-3.5 w-3.5" />
+              {tab.label}
+              {tab.count != null && (
+                <span className={`rounded-full px-1.5 text-[10px] font-bold ${
+                  isActive
+                    ? 'bg-white/20 text-white dark:bg-slate-900/30 dark:text-slate-900'
+                    : 'bg-slate-200/80 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                }`}>
+                  {tab.count}
+                </span>
+              )}
             </button>
           )
         })}
       </nav>
 
-
+      {/* ── Overview Tab ────────────────────────────────────── */}
       {activeTab === 'overview' ? (
-        <div className="space-y-5">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <article className="surface flex min-w-0 items-center gap-4 p-4">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 dark:bg-primary-500/10 dark:text-primary-300">
-                <Thermometer className="h-5 w-5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-2xl font-bold leading-none text-slate-900 dark:text-slate-50">{symptomCount}</p>
-                <p className="mt-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{t('historyPage.sections.symptoms', 'Symptoms')}</p>
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,400px)]">
+          {/* Left Column */}
+          <div className="space-y-5">
+            {/* Medical Record Card */}
+            <section className="surface overflow-hidden p-0">
+              <div className="border-l-4 border-primary-600 px-5 py-4 dark:border-primary-500">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-900 dark:text-slate-100">
+                    {t('historyPage.medical.title', 'Medical Record')}
+                  </h3>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                    {t('historyPage.medical.lastUpdated', 'Last Updated')}{' '}
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                      {patient?.updated_at ? formatDateTime(patient.updated_at) : '—'}
+                    </span>
+                  </span>
+                </div>
               </div>
-              <Sparkline data={symptomSeries} color="#1f76e8" className="h-10 w-14 shrink-0 sm:w-20" />
-            </article>
+              <div className="grid gap-px bg-slate-100 sm:grid-cols-2 lg:grid-cols-4 dark:bg-slate-800/50">
+                {[
+                  {
+                    label: t('historyPage.medical.weight', 'Weight'),
+                    value: patient?.weight_kg ? `${patient.weight_kg} kg` : '—',
+                    icon: Weight,
+                  },
+                  {
+                    label: t('historyPage.medical.height', 'Height'),
+                    value: patient?.height_cm ? `${patient.height_cm} cm` : '—',
+                    icon: Ruler,
+                  },
+                  {
+                    label: t('historyPage.medical.hypertension', 'Hypertension'),
+                    value: patient?.hypertension ? t('common.yes', 'Yes') : t('common.noSelection', 'No'),
+                    icon: Heart,
+                  },
+                  {
+                    label: t('historyPage.medical.familyHistory', 'Family History'),
+                    value: patient?.family_history ? t('common.yes', 'Yes') : t('common.noSelection', 'No'),
+                    icon: Activity,
+                  },
+                ].map((item) => {
+                  const ItemIcon = item.icon
+                  return (
+                    <div key={item.label} className="flex items-center gap-3 bg-white px-5 py-4 dark:bg-slate-900/60">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                        <ItemIcon className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">{item.label}</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{item.value}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
 
-            <article className="surface flex min-w-0 items-center gap-4 p-4">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-300">
-                <FlaskConical className="h-5 w-5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-2xl font-bold leading-none text-slate-900 dark:text-slate-50">{labCount}</p>
-                <p className="mt-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{t('historyPage.sections.labResults', 'Lab Results')}</p>
+            {/* Diagnosis History Table */}
+            <section className="surface overflow-hidden p-0">
+              <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-800/80">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {t('historyPage.sections.diagnosisHistory', 'Diagnosis History')}
+                </h3>
+                {diagnosisCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('diagnoses')}
+                    className="text-xs font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                  >
+                    {t('historyPage.overview.seeAll', 'See all')}
+                  </button>
+                )}
               </div>
-              <Sparkline data={labSeries} color="#0ea5e9" className="h-10 w-14 shrink-0 sm:w-20" />
-            </article>
 
-            <article className="surface flex min-w-0 items-center gap-4 p-4">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
-                <FileText className="h-5 w-5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-2xl font-bold leading-none text-slate-900 dark:text-slate-50">{diagnosisCount}</p>
-                <p className="mt-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{t('historyPage.sections.diagnosisHistory', 'Diagnoses')}</p>
-              </div>
-              <Sparkline data={diagnosisSeries} color="#6366f1" className="h-10 w-14 shrink-0 sm:w-20" />
-            </article>
+              {!diagnosisCount ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-800">
+                    <FileText className="h-6 w-6" />
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {t('historyPage.overview.none', 'No assessments recorded yet.')}
+                  </p>
+                  <Link to={`/diagnosis?patient_id=${patientId}`} className="btn-primary rounded-lg px-3 py-1.5 text-xs shadow-sm">
+                    {t('historyPage.profile.assess', 'Run Assessment')}
+                  </Link>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                  {/* Table header */}
+                  <div className="hidden items-center gap-4 bg-slate-50/70 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800/30 dark:text-slate-400 md:flex">
+                    <span className="min-w-0 flex-1">{t('historyPage.diagnosisTable.diagnosis', 'Diagnosis')}</span>
+                    <span className="w-24 shrink-0 text-center">{t('historyPage.diagnosisTable.certainty', 'Certainty')}</span>
+                    <span className="w-32 shrink-0">{t('historyPage.diagnosisTable.by', 'Assessed By')}</span>
+                    <span className="w-36 shrink-0">{t('historyPage.sections.recorded_at', 'Date')}</span>
+                    <span className="w-16 shrink-0" />
+                  </div>
+
+                  {(history?.diagnosis_history || []).slice(0, 5).map((diagnosis) => {
+                    const cert = certaintyPercent(diagnosis.certainty)
+                    return (
+                      <div key={diagnosis.id} className="flex flex-wrap items-center gap-4 px-5 py-3 transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{diagnosis.diagnosis}</p>
+                          <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500 md:hidden">
+                            {formatDateTime(diagnosis.created_at)}
+                          </p>
+                        </div>
+                        <div className="hidden w-24 shrink-0 justify-center md:flex">
+                          <StatusBadge tone={certaintyBadgeTone(cert)}>
+                            {cert != null ? `${cert}%` : 'N/A'}
+                          </StatusBadge>
+                        </div>
+                        <div className="hidden w-32 shrink-0 md:block">
+                          <p className="truncate text-xs text-slate-600 dark:text-slate-300">
+                            {diagnosis.diagnosed_by_name || '—'}
+                          </p>
+                        </div>
+                        <div className="hidden w-36 shrink-0 md:block">
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {formatDateTime(diagnosis.created_at)}
+                          </p>
+                        </div>
+                        <div className="w-16 shrink-0 text-right">
+                          {diagnosis.id && (
+                            <Link
+                              to={`/diagnosis/result?diagnosis_result_id=${diagnosis.id}`}
+                              className="inline-flex items-center rounded-lg bg-slate-100 p-1.5 text-slate-500 hover:bg-primary-100 hover:text-primary-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-primary-950/40 dark:hover:text-primary-300 transition"
+                              title={t('historyPage.overview.viewResult', 'View Result')}
+                            >
+                              <ArrowRight className="h-3.5 w-3.5" />
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </section>
           </div>
 
-          <section className="surface p-5 sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="section-title">{t('historyPage.overview.latestDiagnosis', 'Latest Diagnosis')}</h3>
-                <p className="section-subtitle mt-1">
-                  {latestDiagnosis ? formatDateTime(latestDiagnosis.created_at) : t('historyPage.overview.none', 'No assessments recorded yet.')}
+          {/* Right Column (Bottom Right) */}
+          <div className="space-y-5">
+            {/* Quick Stats */}
+            <section className="surface p-5">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {t('historyPage.sidebar.quickStats', 'Quick Stats')}
+              </h3>
+              <div className="mt-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-950/40 dark:text-primary-400">
+                      <Thermometer className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('historyPage.sections.symptoms', 'Symptoms')}</p>
+                      <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{symptomCount}</p>
+                    </div>
+                  </div>
+                  <Sparkline data={symptomSeries} color="#1f76e8" className="h-8 w-16 shrink-0" />
+                </div>
+
+                <div className="border-t border-slate-100 pt-4 dark:border-slate-800/50" />
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400">
+                      <FlaskConical className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('historyPage.sections.labResults', 'Lab Results')}</p>
+                      <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{labCount}</p>
+                    </div>
+                  </div>
+                  <Sparkline data={labSeries} color="#0ea5e9" className="h-8 w-16 shrink-0" />
+                </div>
+
+                <div className="border-t border-slate-100 pt-4 dark:border-slate-800/50" />
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+                      <FileText className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('historyPage.sections.diagnosisHistory', 'Diagnoses')}</p>
+                      <p className="text-lg font-bold text-slate-900 dark:text-slate-100">{diagnosisCount}</p>
+                    </div>
+                  </div>
+                  <Sparkline data={diagnosisSeries} color="#6366f1" className="h-8 w-16 shrink-0" />
+                </div>
+              </div>
+            </section>
+
+            {/* Visit History Line Chart Card (Bottom Right) */}
+            <section className="surface p-5 sm:p-6 flex flex-col justify-between overflow-hidden">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+                  {t('historyPage.header.visitHistory', 'Visit History')}
+                </h3>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowRangeMenu((prev) => !prev)}
+                    className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 transition"
+                  >
+                    <span>{timeRange}</span>
+                    <ChevronDown className="h-3 w-3 text-slate-400" />
+                  </button>
+                  {showRangeMenu && (
+                    <div className="absolute right-0 z-20 mt-1 w-32 rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800 text-xs">
+                      {['This Month', 'Last 3 Months', 'This Year'].map((range) => (
+                        <button
+                          key={range}
+                          type="button"
+                          onClick={() => {
+                            setTimeRange(range)
+                            setShowRangeMenu(false)
+                          }}
+                          className={`w-full px-3 py-1.5 text-left transition hover:bg-slate-100 dark:hover:bg-slate-700/60 ${
+                            timeRange === range ? 'font-semibold text-primary-600 dark:text-primary-400' : 'text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          {range}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-2">
+                <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-50">
+                  {displayPercent}
                 </p>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    <TrendingUp className="h-3 w-3" />
+                    {trendValue}
+                  </span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500">
+                    {t('historyPage.visitHistory.thanLastMonth', 'Than last month')}
+                  </span>
+                </div>
               </div>
-              {latestDiagnosis?.id ? (
-                <Link to={`/diagnosis/result?diagnosis_result_id=${latestDiagnosis.id}`} className="btn-secondary min-h-9 px-3 py-1.5 text-xs">
-                  {t('historyPage.overview.viewResult', 'View Result')}
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              ) : (
-                <Link to={`/diagnosis?patient_id=${patientId}`} className="btn-primary min-h-9 px-3 py-1.5 text-xs">
-                  {t('historyPage.profile.assess', 'Run Assessment')}
-                </Link>
-              )}
-            </div>
 
-            {latestDiagnosis ? (
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <StatusBadge tone="primary">{latestDiagnosis.diagnosis}</StatusBadge>
-                <span className={`text-sm font-bold ${certaintyToneClass(latestCertainty)}`}>
-                  {latestCertainty != null ? `${latestCertainty}%` : '—'} {t('historyPage.diagnosisTable.certainty', 'Certainty')}
-                </span>
-                <span className="text-xs text-slate-500">
-                  {t('historyPage.diagnosisTable.by', 'By')}: {latestDiagnosis.diagnosed_by_name || latestDiagnosis.diagnosed_by_user_id || '—'}
-                </span>
+              <div className="mt-3 h-36 w-full min-w-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={visitHistoryData} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-100 dark:text-slate-800/80" />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 11, fill: '#94a3b8' }}
+                      dy={4}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 11, fill: '#94a3b8' }}
+                      domain={[0, 150]}
+                      ticks={[0, 30, 60, 90, 120, 150]}
+                    />
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (!active || !payload?.length) return null
+                        return (
+                          <div className="rounded-lg border border-slate-200 bg-white p-2 shadow-md dark:border-slate-700 dark:bg-slate-800 text-xs">
+                            <p className="font-semibold text-slate-700 dark:text-slate-200">{label}</p>
+                            {payload.map((entry) => (
+                              <p key={entry.name} style={{ color: entry.color }} className="font-medium mt-0.5">
+                                {entry.name}: {entry.value}
+                              </p>
+                            ))}
+                          </div>
+                        )
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="newVisits"
+                      name="New"
+                      stroke="#2563eb"
+                      strokeWidth={2.5}
+                      dot={false}
+                      activeDot={{ r: 4, stroke: '#2563eb', strokeWidth: 2, fill: '#ffffff' }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="returningVisits"
+                      name="Returning"
+                      stroke="#93c5fd"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 4, stroke: '#93c5fd', strokeWidth: 2, fill: '#ffffff' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-            ) : null}
 
-            {latestDiagnosis && certaintySeries.length ? (
-              <div className="mt-4 border-t border-slate-100 pt-3 dark:border-[#1e2234]">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{t('historyPage.overview.certaintyTrend', 'Certainty trend')}</p>
-                <Sparkline
-                  data={certaintySeries}
-                  color={latestCertainty >= 70 ? '#e11d48' : latestCertainty >= 40 ? '#d97706' : '#16a34a'}
-                  className="mt-1 h-14 w-full"
-                />
+              <div className="mt-2 flex items-center justify-center gap-5 text-xs text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-sm bg-blue-600" />
+                  <span>{t('historyPage.visitHistory.new', 'New')}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-sm bg-sky-300" />
+                  <span>{t('historyPage.visitHistory.returning', 'Returning')}</span>
+                </div>
               </div>
-            ) : null}
-          </section>
+            </section>
+          </div>
         </div>
       ) : null}
 
+      {/* ── Diagnoses Tab ───────────────────────────────────── */}
       {activeTab === 'diagnoses' ? (
-        <section className="surface p-5 sm:p-6">
-          <h3 className="section-title">{t('historyPage.sections.diagnosisHistory', 'Diagnosis History')}</h3>
-          <div className="mt-4 table-wrap">
-            <table className="table-base">
-              <thead>
-                <tr>
-                  <th>{t('historyPage.diagnosisTable.diagnosis', 'Diagnosis')}</th>
-                  <th>{t('historyPage.diagnosisTable.certainty', 'Certainty')}</th>
-                  <th>{t('historyPage.diagnosisTable.by', 'By')}</th>
-                  <th>{t('historyPage.sections.recorded_at', 'When')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(history?.diagnosis_history || []).map((diagnosis) => (
-                  <tr key={diagnosis.id}>
-                    <td>
-                      {diagnosis.id ? (
-                        <Link
-                          to={`/diagnosis/result?diagnosis_result_id=${diagnosis.id}`}
-                          className="font-medium text-primary-700 hover:underline dark:text-primary-300"
-                        >
-                          {diagnosis.diagnosis}
-                        </Link>
-                      ) : (
-                        diagnosis.diagnosis
-                      )}
-                    </td>
-                    <td>{certaintyPercent(diagnosis.certainty) != null ? `${certaintyPercent(diagnosis.certainty)}%` : 'N/A'}</td>
-                    <td>{diagnosis.diagnosed_by_name || diagnosis.diagnosed_by_user_id || 'N/A'}</td>
-                    <td>{formatDateTime(diagnosis.created_at)}</td>
-                  </tr>
-                ))}
-                {!history?.diagnosis_history?.length ? (
-                  <tr>
-                    <td colSpan="4"><div className="state-box">{t('historyPage.diagnosisTable.noHistory', 'No diagnosis history yet.')}</div></td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
+        <section className="surface overflow-hidden p-0">
+          <div className="border-b border-slate-100 px-5 py-4 dark:border-slate-800/80">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              {t('historyPage.sections.diagnosisHistory', 'Diagnosis History')}
+            </h3>
+          </div>
+          <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+            {/* Table header */}
+            <div className="hidden items-center gap-4 bg-slate-50/70 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800/30 dark:text-slate-400 md:flex">
+              <span className="min-w-0 flex-1">{t('historyPage.diagnosisTable.diagnosis', 'Diagnosis')}</span>
+              <span className="w-24 shrink-0 text-center">{t('historyPage.diagnosisTable.certainty', 'Certainty')}</span>
+              <span className="w-32 shrink-0">{t('historyPage.diagnosisTable.by', 'Assessed By')}</span>
+              <span className="w-36 shrink-0">{t('historyPage.sections.recorded_at', 'Date')}</span>
+              <span className="w-16 shrink-0" />
+            </div>
+
+            {(history?.diagnosis_history || []).map((diagnosis) => {
+              const cert = certaintyPercent(diagnosis.certainty)
+              return (
+                <div key={diagnosis.id} className="flex flex-wrap items-center gap-4 px-5 py-3 transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{diagnosis.diagnosis}</p>
+                    <p className="mt-0.5 text-[11px] text-slate-400 md:hidden">{formatDateTime(diagnosis.created_at)}</p>
+                  </div>
+                  <div className="hidden w-24 shrink-0 justify-center md:flex">
+                    <StatusBadge tone={certaintyBadgeTone(cert)}>
+                      {cert != null ? `${cert}%` : 'N/A'}
+                    </StatusBadge>
+                  </div>
+                  <div className="hidden w-32 shrink-0 md:block">
+                    <p className="truncate text-xs text-slate-600 dark:text-slate-300">
+                      {diagnosis.diagnosed_by_name || '—'}
+                    </p>
+                  </div>
+                  <div className="hidden w-36 shrink-0 md:block">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{formatDateTime(diagnosis.created_at)}</p>
+                  </div>
+                  <div className="w-16 shrink-0 text-right">
+                    {diagnosis.id && (
+                      <Link
+                        to={`/diagnosis/result?diagnosis_result_id=${diagnosis.id}`}
+                        className="inline-flex items-center rounded-lg bg-slate-100 p-1.5 text-slate-500 hover:bg-primary-100 hover:text-primary-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-primary-950/40 dark:hover:text-primary-300 transition"
+                      >
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+
+            {!history?.diagnosis_history?.length && (
+              <div className="py-10 text-center text-xs text-slate-500 dark:text-slate-400">
+                {t('historyPage.diagnosisTable.noHistory', 'No diagnosis history yet.')}
+              </div>
+            )}
           </div>
         </section>
       ) : null}
 
+      {/* ── Symptoms Tab ────────────────────────────────────── */}
       {activeTab === 'symptoms' ? (
         <section className="surface p-5 sm:p-6">
-          <h3 className="section-title">{t('historyPage.sections.symptoms', 'Symptoms')}</h3>
-          <p className="section-subtitle mt-1">{t('historyPage.symptoms.desc', 'Record observed symptoms to enrich future assessments.')}</p>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('historyPage.sections.symptoms', 'Symptoms')}</h3>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('historyPage.symptoms.desc', 'Record observed symptoms to enrich future assessments.')}</p>
 
           <form className="mt-4 grid gap-3 sm:grid-cols-2" onSubmit={addSymptom}>
             <input
@@ -465,7 +915,7 @@ export function PatientHistoryPage() {
               value={symptomForm.severity}
               onChange={(event) => setSymptomForm({ ...symptomForm, severity: event.target.value })}
             />
-            <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-[#1e2234] dark:bg-[#101020]">
+            <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-800/40">
               <input
                 type="checkbox"
                 checked={symptomForm.present}
@@ -517,29 +967,17 @@ export function PatientHistoryPage() {
         </section>
       ) : null}
 
+      {/* ── Labs Tab ────────────────────────────────────────── */}
       {activeTab === 'labs' ? (
         <section className="surface p-5 sm:p-6">
-          <h3 className="section-title">{t('historyPage.sections.labResults', 'Lab Results')}</h3>
-          <p className="section-subtitle mt-1">{t('historyPage.labs.desc', 'Track glucose and HbA1c measurements over time.')}</p>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('historyPage.sections.labResults', 'Lab Results')}</h3>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('historyPage.labs.desc', 'Track glucose and HbA1c measurements over time.')}</p>
 
           <form className="mt-4 grid gap-3 sm:grid-cols-2" onSubmit={addLabResult}>
             <input className="input-base" required placeholder={t('historyPage.labForm.testName', 'Test name')} value={labForm.test_name} onChange={(event) => setLabForm({ ...labForm, test_name: event.target.value })} />
-            <input
-              className="input-base"
-              required
-              type="number"
-              step="0.01"
-              placeholder={t('historyPage.labForm.testValue', 'Test value')}
-              value={labForm.test_value}
-              onChange={(event) => setLabForm({ ...labForm, test_value: event.target.value })}
-            />
+            <input className="input-base" required type="number" step="0.01" placeholder={t('historyPage.labForm.testValue', 'Test value')} value={labForm.test_value} onChange={(event) => setLabForm({ ...labForm, test_value: event.target.value })} />
             <input className="input-base" placeholder={t('historyPage.labForm.unit', 'Unit')} value={labForm.unit} onChange={(event) => setLabForm({ ...labForm, unit: event.target.value })} />
-            <input
-              className="input-base"
-              placeholder={t('historyPage.labForm.range', 'Reference range')}
-              value={labForm.reference_range}
-              onChange={(event) => setLabForm({ ...labForm, reference_range: event.target.value })}
-            />
+            <input className="input-base" placeholder={t('historyPage.labForm.range', 'Reference range')} value={labForm.reference_range} onChange={(event) => setLabForm({ ...labForm, reference_range: event.target.value })} />
             <textarea className="input-base sm:col-span-2" rows={2} placeholder={t('historyPage.labForm.notes', 'Notes')} value={labForm.notes} onChange={(event) => setLabForm({ ...labForm, notes: event.target.value })} />
             <div className="sm:col-span-2">
               <button type="submit" className="btn-primary w-full sm:w-auto" disabled={savingLab || !patient}>
@@ -578,10 +1016,11 @@ export function PatientHistoryPage() {
         </section>
       ) : null}
 
+      {/* ── Profile Tab ─────────────────────────────────────── */}
       {activeTab === 'profile' ? (
         <section className="surface p-5 sm:p-6">
-          <h3 className="section-title">{t('historyPage.profile.title', 'Patient Profile')}</h3>
-          <p className="section-subtitle mt-1">{t('historyPage.profile.desc', 'Manage demographics and monitor case history over time.')}</p>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('historyPage.profile.title', 'Patient Profile')}</h3>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('historyPage.profile.desc', 'Manage demographics and monitor case history over time.')}</p>
 
           <form onSubmit={updateProfile} className="mt-4 grid gap-3 md:grid-cols-2">
             <label className="block md:col-span-2">

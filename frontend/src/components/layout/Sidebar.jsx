@@ -102,8 +102,8 @@ export function Sidebar({
         {/* Top Branding (no background, no border) */}
         <div
           className={cn(
-            'relative shrink-0 py-3.5 transition-all',
-            collapsed ? 'px-2 flex justify-center' : 'px-4'
+            'relative flex h-[72px] shrink-0 items-center transition-all',
+            collapsed ? 'justify-center px-2' : 'px-4'
           )}
         >
           <Link
@@ -148,7 +148,7 @@ export function Sidebar({
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-3 top-3.5 flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 lg:hidden"
+              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 lg:hidden"
               aria-label={t('common.closeSidebar', 'Close sidebar')}
             >
               <X className="h-4.5 w-4.5" />
