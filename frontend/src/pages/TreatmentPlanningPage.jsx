@@ -136,7 +136,7 @@ export function TreatmentPlanningPage() {
               className="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-primary-700 active:scale-[0.98] dark:bg-primary-500 dark:hover:bg-primary-600 shrink-0"
             >
               <Plus className="h-4 w-4" />
-              <span>+ Create Plan</span>
+              <span>Create Plan</span>
             </Link>
           )}
         </div>
