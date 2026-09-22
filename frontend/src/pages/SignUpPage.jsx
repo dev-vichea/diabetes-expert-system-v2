@@ -51,7 +51,16 @@ export function SignUpPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const transitionDirection = location.state?.authTransition
+  const formAnimationClass =
+    transitionDirection === 'to-register'
+      ? 'auth-anim-to-register'
+      : transitionDirection === 'to-login'
+      ? 'auth-anim-to-login'
+      : 'auth-anim-default'
+
   const isValid = useMemo(
+
     () =>
       Boolean(
         formData.name.trim() &&
@@ -154,6 +163,60 @@ export function SignUpPage() {
           line-height: 1.4;
         }
 
+        @keyframes authSlideInFromLeft {
+          0% {
+            opacity: 0;
+            transform: translateX(-36px) scale(0.985);
+            filter: blur(4px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+            filter: blur(0);
+          }
+        }
+
+        @keyframes authSlideInFromRight {
+          0% {
+            opacity: 0;
+            transform: translateX(36px) scale(0.985);
+            filter: blur(4px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+            filter: blur(0);
+          }
+        }
+
+        @keyframes authFadeInUp {
+          0% {
+            opacity: 0;
+            transform: translateY(16px) scale(0.99);
+            filter: blur(3px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            filter: blur(0);
+          }
+        }
+
+        .auth-anim-to-login {
+          animation: authSlideInFromLeft 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+          will-change: transform, opacity, filter;
+        }
+
+        .auth-anim-to-register {
+          animation: authSlideInFromRight 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+          will-change: transform, opacity, filter;
+        }
+
+        .auth-anim-default {
+          animation: authFadeInUp 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+          will-change: transform, opacity, filter;
+        }
+
         @media (min-height: 620px) {
           .auth-form-column {
             overflow-y: hidden !important;
@@ -188,7 +251,8 @@ export function SignUpPage() {
         </div>
 
         {/* Center Form Container */}
-        <div className="w-full max-w-[440px] mx-auto my-auto py-2 sm:py-2.5">
+        <div className={`w-full max-w-[440px] mx-auto my-auto py-2 sm:py-2.5 ${formAnimationClass}`}>
+
           {/* Eyebrow badge */}
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/70 dark:border-emerald-800/60 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mb-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse" />
