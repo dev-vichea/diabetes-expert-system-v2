@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { LanguageSwitcher } from '@/components/auth/LanguageSwitcher'
 import { AuthShowcasePanel } from '@/components/auth/AuthShowcasePanel'
-import { GoogleLogin } from '@react-oauth/google'
+import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton'
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
@@ -33,30 +33,7 @@ export function LoginPage() {
       ? 'auth-anim-to-register'
       : 'auth-anim-default'
 
-  const googleWrapperRef = useRef(null)
 
-  const [googleWidth, setGoogleWidth] = useState(380)
-
-  useEffect(() => {
-    const el = googleWrapperRef.current
-    if (!el) return
-
-    const updateWidth = () => {
-      const rect = el.getBoundingClientRect()
-      const w = Math.floor(rect.width)
-      if (w >= 200) {
-        setGoogleWidth(Math.min(400, Math.max(200, w)))
-      }
-    }
-
-    updateWidth()
-
-    if (typeof ResizeObserver !== 'undefined') {
-      const ro = new ResizeObserver(() => updateWidth())
-      ro.observe(el)
-      return () => ro.disconnect()
-    }
-  }, [])
 
   const isValid = useMemo(
     () => Boolean(formData.email.trim() && formData.password.trim()),
@@ -89,12 +66,13 @@ export function LoginPage() {
     }
   }
 
-  async function handleGoogleSuccess(credentialResponse) {
-    if (!credentialResponse?.credential) return
+  async function handleGoogleSuccess(tokenOrCredential) {
+    const token = tokenOrCredential?.access_token || tokenOrCredential?.credential || tokenOrCredential
+    if (!token) return
     setLoading(true)
     setError('')
     try {
-      const user = await loginWithGoogle(credentialResponse.credential)
+      const user = await loginWithGoogle(token)
       if (user?.role === 'patient' && !user?.profile_completed) {
         navigate('/profile-setup')
       } else {
@@ -107,51 +85,15 @@ export function LoginPage() {
     }
   }
 
-  function handleGoogleError() {
+  function handleGoogleError(err) {
+    console.error('Google login error:', err)
     setError(t('auth.errorGoogleLoginFailed', 'Google sign-in failed. Please try again.'))
   }
 
   return (
     <div className="h-screen h-[100dvh] max-h-[100dvh] w-full flex flex-col lg:flex-row overflow-hidden bg-slate-50 dark:bg-slate-950 font-sans selection:bg-blue-500/20">
       <style>{`
-        .auth-google-box {
-          position: relative;
-          width: 100%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          background: transparent !important;
-          border: none !important;
-          box-shadow: none !important;
-          padding: 0 !important;
-        }
 
-        .auth-google-box > div {
-          width: 100% !important;
-          display: flex !important;
-          justify-content: center !important;
-          align-items: center !important;
-          background: transparent !important;
-          border: none !important;
-        }
-
-        .auth-google-box iframe {
-          display: block !important;
-          border-radius: 10px !important;
-          box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04) !important;
-          transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-                      box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
-        }
-
-        .auth-google-box:hover iframe {
-          transform: translateY(-1px) !important;
-          box-shadow: 0 6px 18px rgba(31, 118, 232, 0.16) !important;
-        }
-
-        .auth-google-box:active iframe {
-          transform: translateY(0) !important;
-          box-shadow: 0 2px 6px rgba(31, 118, 232, 0.12) !important;
-        }
 
         html[lang='km'] .auth-heading {
           line-height: 1.4;
@@ -364,26 +306,12 @@ export function LoginPage() {
                   </div>
                 </div>
 
-                <div ref={googleWrapperRef} className="auth-google-box flex justify-center w-full min-h-[40px]">
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                    locale={language || 'km'}
-                    theme="outline"
-                    size="medium"
-                    width={String(googleWidth)}
-                    text="signin_with"
-                    shape="rectangular"
-                    logo_alignment="left"
-                    containerProps={{
-                      style: {
-                        width: '100%',
-                        display: 'flex',
-                        justifyContent: 'center',
-                      },
-                    }}
-                  />
-                </div>
+                <GoogleAuthButton
+                  mode="signin"
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  disabled={loading}
+                />
               </>
             ) : null}
 

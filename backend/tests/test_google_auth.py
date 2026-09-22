@@ -197,3 +197,26 @@ def test_google_login_rejects_inactive_user(client, app):
         body = response.get_json()
         assert body["success"] is False
         assert "inactive" in body["error"]["message"].lower()
+
+
+def test_google_login_with_access_token_success(client, app):
+    userinfo_claims = {
+        "sub": "google-sub-oauth-user",
+        "email": "oauthuser@example.com",
+        "email_verified": True,
+        "name": "OAuth User",
+        "picture": "https://example.com/avatar.jpg",
+    }
+    class MockResponse:
+        status_code = 200
+        def json(self):
+            return userinfo_claims
+
+    with patch("requests.get", return_value=MockResponse()):
+        response = client.post("/api/auth/google", json={"credential": "ya29.mock-access-token"})
+        assert response.status_code == 200
+        body = response.get_json()
+        assert body["success"] is True
+        assert body["data"]["user"]["email"] == "oauthuser@example.com"
+        assert body["data"]["user"]["name"] == "OAuth User"
+

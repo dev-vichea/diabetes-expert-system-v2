@@ -142,13 +142,13 @@ export function Topbar({
   return (
     <header
       className={cn(
-        'sticky top-0 z-20 w-full px-4 py-3 sm:px-6 select-none backdrop-blur-md transition-all duration-150',
+        'sticky top-0 z-20 flex h-[72px] shrink-0 w-full items-center px-4 sm:px-6 select-none backdrop-blur-md transition-all duration-150',
         isDark
           ? 'bg-[#070712]/90 border-b border-slate-800/60'
           : 'bg-white/90 border-b border-slate-200/60'
       )}
     >
-      <div className="flex min-w-0 items-center justify-between gap-3">
+      <div className="flex min-w-0 w-full items-center justify-between gap-3">
         {/* ======================================================== */}
         {/* Left Section: Sidebar Toggle + Title & Subtitle          */}
         {/* ======================================================== */}
@@ -267,7 +267,7 @@ export function Topbar({
                 >
                   <div className="flex items-center gap-2.5">
                     <UsFlag />
-                    <span>English (EN)</span>
+                    <span>English</span>
                   </div>
                   {language === 'en' && <Check className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />}
                 </button>
@@ -287,7 +287,7 @@ export function Topbar({
                 >
                   <div className="flex items-center gap-2.5">
                     <CambodiaFlag />
-                    <span>ភាសាខ្មែរ (KM)</span>
+                    <span>ភាសាខ្មែរ</span>
                   </div>
                   {language === 'km' && <Check className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />}
                 </button>
@@ -344,7 +344,7 @@ export function Topbar({
                 name={user?.name}
                 src={user?.avatar_url}
                 size="sm"
-                className="h-8 w-8 shadow-xs"
+                className="h-8 w-8 shrink-0 rounded-full"
               />
 
               <ChevronDown className="h-3 w-3 text-slate-400" />
@@ -352,24 +352,24 @@ export function Topbar({
 
             {/* Profile Dropdown Popover */}
             {userMenuOpen && (
-              <div className="absolute right-0 z-30 mt-2 w-[min(16rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 p-1.5 shadow-xl backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
+              <div className="absolute right-0 z-30 mt-2 w-[min(17.5rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 p-1.5 shadow-xl backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
                 {/* User Summary Header */}
-                <div className="flex items-center gap-3 border-b border-slate-100 px-3.5 py-3 dark:border-slate-800/80">
+                <div className="flex items-center gap-3 border-b border-slate-100 p-2.5 dark:border-slate-800/80">
                   <UserAvatar
                     name={user?.name}
                     src={user?.avatar_url}
                     size="md"
-                    className="h-8.5 w-8.5 shadow-xs"
+                    className="h-10 w-10 shrink-0 rounded-full"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-bold text-slate-900 dark:text-slate-100">
+                    <p className="truncate text-xs font-bold text-slate-900 dark:text-slate-100" title={user?.name}>
                       {user?.name || t('common.unknownUser')}
                     </p>
-                    <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                    <p className="truncate text-[11px] text-slate-500 dark:text-slate-400" title={user?.email}>
                       {user?.email || t('common.noEmail')}
                     </p>
-                    <span className="mt-1 inline-flex rounded-full bg-primary-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary-700 dark:bg-primary-500/10 dark:text-primary-300">
-                      {t(`roles.${activeRole}`)}
+                    <span className="mt-1 inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary-700 dark:bg-primary-500/10 dark:text-primary-300">
+                      {roleLabel}
                     </span>
                   </div>
                 </div>

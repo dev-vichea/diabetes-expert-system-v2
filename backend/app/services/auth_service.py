@@ -178,19 +178,42 @@ class AuthService:
 
         credential = credential.strip()
 
-        try:
-            from google.oauth2 import id_token
+        id_info = None
+        is_access_token = credential.startswith("ya29.")
 
-            id_info = id_token.verify_oauth2_token(
-                credential,
-                _get_google_auth_request(),
-                client_id,
-            )
+        if not is_access_token:
+            try:
+                from google.oauth2 import id_token
 
-        except ValueError as e:
-            raise UnauthorizedError(f"Invalid Google credential: {e}")
-        except Exception as e:
-            raise UnauthorizedError(f"Failed to verify Google credential: {e}")
+                id_info = id_token.verify_oauth2_token(
+                    credential,
+                    _get_google_auth_request(),
+                    client_id,
+                )
+            except ValueError as e:
+                if "Wrong number of segments in token" in str(e):
+                    is_access_token = True
+                else:
+                    raise UnauthorizedError(f"Invalid Google credential: {e}")
+            except Exception as e:
+                raise UnauthorizedError(f"Failed to verify Google credential: {e}")
+
+        if is_access_token:
+            try:
+                import requests
+
+                userinfo_resp = requests.get(
+                    "https://www.googleapis.com/oauth2/v3/userinfo",
+                    headers={"Authorization": f"Bearer {credential}"},
+                    timeout=10,
+                )
+                if userinfo_resp.status_code != 200:
+                    raise UnauthorizedError("Failed to verify Google access token with Google API.")
+                id_info = userinfo_resp.json()
+            except UnauthorizedError:
+                raise
+            except Exception as e:
+                raise UnauthorizedError(f"Failed to verify Google credential: {e}")
 
         if not id_info.get("email_verified"):
             raise UnauthorizedError("Google account email is not verified.")

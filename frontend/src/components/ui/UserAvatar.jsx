@@ -66,6 +66,7 @@ export function UserAvatar({
   name = '',
   src,
   size = 'md',
+  shape = 'circle',
   gradient,
   status,
   alt,
@@ -83,37 +84,45 @@ export function UserAvatar({
   const initials = children || getInitials(name)
   const bgGradient = gradient || getAvatarGradient(name)
   const sizeConfig = SIZE_CONFIGS[size] || SIZE_CONFIGS.md
+  const shapeClass = shape === 'rounded' ? 'rounded-2xl' : shape === 'square' ? 'rounded-xl' : 'rounded-full'
 
   return (
     <div
       className={cn(
-        'relative inline-flex shrink-0 items-center justify-center rounded-full select-none',
+        'relative inline-flex shrink-0 items-center justify-center select-none aspect-square',
+        shapeClass,
         sizeConfig.container,
         className
       )}
       {...props}
     >
-      {src && !imgError ? (
-        <img
-          src={src}
-          alt={alt || name || 'User avatar'}
-          onError={() => setImgError(true)}
-          className={cn(
-            'h-full w-full rounded-full object-cover shadow-sm ring-1 ring-black/5 dark:ring-white/10',
-            imageClassName
-          )}
-        />
-      ) : (
-        <span
-          className={cn(
-            'inline-flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br text-white shadow-sm transition-transform',
-            bgGradient,
-            sizeConfig.text
-          )}
-        >
-          {initials}
-        </span>
-      )}
+      <div className={cn("relative flex h-full w-full shrink-0 items-center justify-center overflow-hidden aspect-square bg-slate-100 dark:bg-slate-800", shapeClass)}>
+        {src && !imgError ? (
+          <img
+            src={src}
+            alt={alt || name || 'User avatar'}
+            onError={() => setImgError(true)}
+            className={cn(
+              'h-full w-full object-cover',
+              shapeClass,
+              imageClassName
+            )}
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <span
+            className={cn(
+              'inline-flex h-full w-full items-center justify-center bg-gradient-to-br text-white shadow-sm transition-transform font-bold uppercase tracking-wider',
+              shapeClass,
+              bgGradient,
+              sizeConfig.text
+            )}
+          >
+            {initials}
+          </span>
+        )}
+      </div>
 
       {status !== undefined && status !== null && (
         <span
