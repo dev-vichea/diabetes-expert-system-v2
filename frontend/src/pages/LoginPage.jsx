@@ -1,30 +1,21 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
-import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import api, { getApiData, getApiErrorMessage, setAuthTokens } from '../api/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { LanguageSwitcher } from '@/components/auth/LanguageSwitcher'
+import { AuthShowcasePanel } from '@/components/auth/AuthShowcasePanel'
 import { GoogleLogin } from '@react-oauth/google'
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
-
-// ── Medical White Tokens (healthcare blue family — legacy key names kept) ──
-const C = {
-  bg:         '#f4f7f9',
-  teal:       '#1f76e8',
-  tealLight:  '#2f8cff',
-  tealBright: '#0ea5e9',
-  blue:       '#3b82f6',
-  sky:        '#0ea5e9',
-}
 
 export function LoginPage() {
   const { setUser, loginWithGoogle } = useAuth()
   const { language, t } = useLanguage()
   const location = useLocation()
   const navigate = useNavigate()
-  const canvasRef = useRef(null)
+
   const [formData, setFormData] = useState({
     email: 'doctor@example.com',
     password: 'doctor123',
@@ -33,6 +24,7 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
   const googleWrapperRef = useRef(null)
   const [googleWidth, setGoogleWidth] = useState(380)
 
@@ -56,66 +48,11 @@ export function LoginPage() {
       return () => ro.disconnect()
     }
   }, [])
-  const transitionDirection = location.state?.authTransition
-  const cardAnimationClass = transitionDirection
-    ? `auth-card-route-transition auth-card-route-transition--${transitionDirection}`
-    : 'page-open-motion'
 
-  /* ── Language-Specific Overrides (Khmer Vertical Breathing Room) ── */
-  /* Note: These styles are injected via CSS files, this is a placeholder for logic flow */
-
-  /* ── Particle Canvas (Shared with Landing) ── */
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    const PARTICLE_COUNT = 40 // Slightly fewer for login to focus on form
-    const MAX_DIST = 140
-    let W, H, particles, raf
-
-    const resize = () => {
-      W = canvas.width = window.innerWidth
-      H = canvas.height = window.innerHeight
-    }
-
-    const createParticle = () => ({
-      x: Math.random() * W,
-      y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3,
-      r: Math.random() * 1.5 + 1,
-      a: Math.random() * 0.2 + 0.1
-    })
-
-    const draw = () => {
-      ctx.clearRect(0, 0, W, H)
-      particles.forEach(p => {
-        p.x += p.vx; p.y += p.vy
-        if (p.x < 0 || p.x > W) p.vx *= -1
-        if (p.y < 0 || p.y > H) p.vy *= -1
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(47, 140, 255, ${p.a})`; ctx.fill()
-      })
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x
-          const dy = particles[i].y - particles[j].y
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < MAX_DIST) {
-            ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y)
-            ctx.strokeStyle = `rgba(47, 140, 255, ${(1 - dist / MAX_DIST) * 0.1})`; ctx.stroke()
-          }
-        }
-      }
-      raf = requestAnimationFrame(draw)
-    }
-
-    resize(); particles = Array.from({ length: PARTICLE_COUNT }, createParticle); draw()
-    window.addEventListener('resize', resize)
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize) }
-  }, [])
-
-  const isValid = useMemo(() => formData.email.trim() && formData.password.trim(), [formData.email, formData.password])
+  const isValid = useMemo(
+    () => Boolean(formData.email.trim() && formData.password.trim()),
+    [formData.email, formData.password]
+  )
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -166,438 +103,254 @@ export function LoginPage() {
   }
 
   return (
-    <div className="auth-shell auth-shell--login" style={{ position: 'relative', backgroundColor: C.bg }}>
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-950 font-sans selection:bg-blue-500/20">
       <style>{`
-        @keyframes lpBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-        @keyframes floatSlow { 0% { transform: translate(0, 0); } 100% { transform: translate(20px, 20px); } }
-
-        /* ── Login Layout: Viewport-Fitting Responsive Rules ── */
-        @media (min-width: 961px) and (min-height: 700px) {
-          .auth-shell--login {
-            height: 100dvh;
-            min-height: 100dvh;
-            max-height: 100dvh;
-            overflow: hidden;
-            padding: clamp(10px, 2dvh, 24px) 16px;
-          }
-
-          .auth-shell--login .auth-card {
-            min-height: 0 !important;
-            max-height: calc(100dvh - clamp(20px, 4dvh, 48px));
-            width: min(1040px, 94vw);
-            border-radius: clamp(20px, 2.5dvh, 32px);
-          }
-
-          .auth-shell--login .auth-panel-accent {
-            margin: clamp(10px, 1.5dvh, 16px);
-            height: calc(100% - clamp(20px, 3dvh, 32px));
-            border-radius: clamp(20px, 2.5dvh, 32px) clamp(80px, 12dvh, 140px) clamp(80px, 12dvh, 140px) clamp(20px, 2.5dvh, 32px);
-          }
-
-          .auth-shell--login .auth-accent-content {
-            padding: clamp(12px, 2dvh, 24px) clamp(16px, 2vw, 24px);
-            max-width: 380px;
-          }
-
-          .auth-shell--login .auth-eyebrow {
-            margin-bottom: clamp(10px, 1.5dvh, 18px);
-            padding: clamp(6px, 0.8dvh, 9px) 16px;
-            font-size: clamp(11px, 1.2dvh, 13px);
-          }
-
-          .auth-shell--login .auth-accent-title {
-            margin: 0 0 clamp(10px, 1.5dvh, 18px);
-            font-size: clamp(1.8rem, 3.2dvh, 2.8rem);
-            line-height: 1.25;
-          }
-
-          .auth-shell--login .auth-accent-copy {
-            margin: 0 0 clamp(14px, 2.2dvh, 28px);
-            font-size: clamp(0.85rem, 1.2dvh, 0.96rem);
-            line-height: 1.65;
-          }
-
-          .auth-shell--login .auth-outline-button {
-            padding: clamp(8px, 1.2dvh, 12px) clamp(18px, 2vw, 24px);
-            min-width: 150px;
-            font-size: 0.92rem;
-          }
-
-          .auth-shell--login .auth-panel-form {
-            padding: clamp(14px, 2.4dvh, 32px) clamp(24px, 3.5vw, 44px);
-          }
-
-          .auth-shell--login .auth-form-inner {
-            width: min(100%, 390px);
-          }
-
-          .auth-shell--login .auth-form-header {
-            margin-bottom: clamp(10px, 1.6dvh, 18px);
-          }
-
-          .auth-shell--login .auth-form-title {
-            font-size: clamp(1.8rem, 3dvh, 2.4rem);
-            line-height: 1.25;
-          }
-
-          .auth-shell--login .auth-form-copy {
-            margin: clamp(4px, 0.6dvh, 8px) 0 0;
-            font-size: clamp(0.84rem, 1.1dvh, 0.92rem);
-            line-height: 1.45;
-          }
-
-          .auth-shell--login .auth-form {
-            gap: clamp(8px, 1.3dvh, 13px);
-          }
-
-          .auth-shell--login .auth-field {
-            gap: clamp(3px, 0.5dvh, 5px);
-          }
-
-          .auth-shell--login .auth-field-label {
-            font-size: 0.82rem;
-            line-height: 1.4;
-          }
-
-          .auth-shell--login .auth-input {
-            padding: clamp(9px, 1.3dvh, 13px) 48px clamp(9px, 1.3dvh, 13px) 44px;
-            border-radius: 14px;
-            font-size: 0.92rem;
-          }
-
-          .auth-shell--login .auth-aux-row {
-            margin-top: -2px;
-            margin-bottom: 0;
-          }
-
-          .auth-shell--login .auth-checkbox {
-            font-size: 0.86rem;
-          }
-
-          .auth-shell--login .auth-submit-button {
-            padding: clamp(10px, 1.3dvh, 13px) 20px;
-            border-radius: 14px;
-            font-size: 0.94rem;
-          }
-
-          .auth-shell--login .auth-divider {
-            margin: clamp(6px, 1dvh, 10px) 0;
-          }
-
-          .auth-shell--login .auth-google-box {
-            position: relative;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-          }
-
-          .auth-shell--login .auth-google-box > div {
-            width: 100% !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            background: transparent !important;
-            border: none !important;
-          }
-
-          .auth-shell--login .auth-google-box iframe {
-            display: block !important;
-            border-radius: 4px !important;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05) !important;
-            transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-                        box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
-          }
-
-          .auth-shell--login .auth-google-box:hover iframe {
-            transform: translateY(-2px) !important;
-            box-shadow: 0 8px 24px rgba(31, 118, 232, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08) !important;
-          }
-
-          .auth-shell--login .auth-google-box:active iframe {
-            transform: translateY(0) !important;
-            box-shadow: 0 2px 6px rgba(31, 118, 232, 0.12) !important;
-          }
-
-          .auth-shell--login .auth-bottom-link {
-            margin-top: clamp(6px, 1dvh, 12px) !important;
-            font-size: 0.88rem;
-            line-height: 1.4;
-          }
+        .auth-google-box {
+          position: relative;
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          padding: 0 !important;
         }
 
-        /* ── Compact & Mobile Fallback: Natural Scrolling ── */
-        @media (max-height: 699px), (max-width: 960px) {
-          .auth-shell--login {
-            min-height: 100dvh;
-            height: auto !important;
-            max-height: none !important;
-            overflow-y: auto !important;
-            align-items: flex-start !important;
-            padding: 20px 14px !important;
-          }
-
-          .auth-shell--login .auth-card {
-            min-height: 0 !important;
-            max-height: none !important;
-            margin: auto 0;
-          }
-
-          .auth-shell--login .auth-panel-form {
-            padding: clamp(20px, 3dvh, 32px) clamp(16px, 3vw, 28px);
-          }
-
-          .auth-shell--login .auth-form {
-            gap: 12px;
-          }
-
-          .auth-shell--login .auth-field {
-            gap: 4px;
-          }
-
-          .auth-shell--login .auth-input {
-            padding: 10px 48px 10px 44px;
-          }
-
-          .auth-shell--login .auth-submit-button {
-            padding: 11px 20px;
-          }
-
-          .auth-shell--login .auth-divider {
-            margin: 8px 0;
-          }
-
-          .auth-shell--login .auth-google-box {
-            position: relative;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-          }
-
-          .auth-shell--login .auth-google-box > div {
-            width: 100% !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            background: transparent !important;
-            border: none !important;
-          }
-
-          .auth-shell--login .auth-google-box iframe {
-            display: block !important;
-            border-radius: 4px !important;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05) !important;
-            transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-                        box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
-          }
-
-          .auth-shell--login .auth-google-box:hover iframe {
-            transform: translateY(-2px) !important;
-            box-shadow: 0 8px 24px rgba(31, 118, 232, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08) !important;
-          }
-
-          .auth-shell--login .auth-google-box:active iframe {
-            transform: translateY(0) !important;
-            box-shadow: 0 2px 6px rgba(31, 118, 232, 0.12) !important;
-          }
-
-          .auth-shell--login .auth-bottom-link {
-            margin-top: 8px !important;
-          }
+        .auth-google-box > div {
+          width: 100% !important;
+          display: flex !important;
+          justify-content: center !important;
+          align-items: center !important;
+          background: transparent !important;
+          border: none !important;
         }
 
-        /* ── Language-Specific Overrides (Khmer Vertical Breathing Room) ── */
-        html[lang='km'] .auth-shell--login .auth-accent-title {
-          line-height: 1.5 !important;
-          font-size: clamp(1.5rem, 2.7dvh, 2.2rem) !important;
+        .auth-google-box iframe {
+          display: block !important;
+          border-radius: 10px !important;
+          box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+          transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                      box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
         }
 
-        html[lang='km'] .auth-shell--login .auth-accent-copy {
-          line-height: 1.75 !important;
+        .auth-google-box:hover iframe {
+          transform: translateY(-2px) !important;
+          box-shadow: 0 8px 24px rgba(31, 118, 232, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08) !important;
         }
 
-        html[lang='km'] .auth-shell--login .auth-form-title {
-          line-height: 1.5 !important;
-          font-size: clamp(1.5rem, 2.7dvh, 2.1rem) !important;
+        .auth-google-box:active iframe {
+          transform: translateY(0) !important;
+          box-shadow: 0 2px 6px rgba(31, 118, 232, 0.12) !important;
         }
 
-        html[lang='km'] .auth-shell--login .auth-form-copy {
-          line-height: 1.65 !important;
-        }
-
-        html[lang='km'] .auth-shell--login .auth-field-label {
-          line-height: 1.65 !important;
-        }
-
-        html[lang='km'] .auth-shell--login .auth-checkbox span {
-          line-height: 1.65 !important;
-        }
-
-        html[lang='km'] .auth-shell--login .auth-bottom-link {
-          line-height: 1.65 !important;
-        }
-
-        html[lang='km'] .auth-shell--login .auth-outline-button,
-        html[lang='km'] .auth-shell--login .auth-submit-button {
-          line-height: 1.6 !important;
+        html[lang='km'] .auth-heading {
+          line-height: 1.5;
         }
       `}</style>
-      
-      {/* ── Ambient Backgrounds (Shared with Landing) ── */}
-      <div style={{ position: 'fixed', top: '-10%', left: '-5%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, rgba(20,184,166,0.12) 0%, rgba(255,255,255,0) 70%)', filter: 'blur(60px)', zIndex: 0, pointerEvents: 'none', animation: 'floatSlow 20s ease-in-out infinite alternate' }} />
-      <div style={{ position: 'fixed', bottom: '-20%', right: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(59,130,246,0.06) 0%, rgba(255,255,255,0) 70%)', filter: 'blur(80px)', zIndex: 0, pointerEvents: 'none', animation: 'floatSlow 25s ease-in-out infinite alternate-reverse' }} />
-      
-      <canvas ref={canvasRef} style={{ position: 'fixed', inset: 0, zIndex: 1, pointerEvents: 'none' }} />
 
-      {/* ── Language Switcher ── */}
-      <LanguageSwitcher style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', zIndex: 10 }} />
+      {/* ── LEFT HALF: Sign In Form ── */}
+      <div className="w-full lg:w-1/2 min-h-screen flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-16 relative overflow-y-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-r border-slate-200/80 dark:border-slate-800">
+        {/* Header bar: Logo & Language Switcher */}
+        <div className="flex items-center justify-between gap-4 w-full">
+          <Link to="/" className="inline-flex items-center gap-3 group transition-opacity hover:opacity-90">
+            <img
+              src="/images/logo.png"
+              alt="Diabetes Expert System Logo"
+              className="w-10 h-10 object-contain drop-shadow-sm group-hover:scale-105 transition-transform"
+            />
+            <div className="flex flex-col">
+              <span
+                className="text-base font-bold text-slate-900 dark:text-white tracking-tight leading-none mb-1"
+                style={{ fontFamily: 'var(--font-latin-display)' }}
+              >
+                Diabetes Expert System
+              </span>
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-none">
+                {language === 'km' ? 'ប្រព័ន្ធជំនាញគ្លីនិក v3.0' : 'Clinical Decision Support v3.0'}
+              </span>
+            </div>
+          </Link>
 
-      <section className={`auth-card ${cardAnimationClass}`} style={{ zIndex: 5 }}>
-        <aside className="auth-panel auth-panel-accent auth-panel-accent--left">
-          <div className="auth-accent-content">
-            <span className="auth-eyebrow" style={{ fontFamily: 'var(--font-latin-display)' }}>{t('auth.accentEyebrow', 'Diabetes Expert System')}</span>
-            <h1 className="auth-accent-title" style={{ fontFamily: 'var(--font-latin-display)' }}>
-              {t('auth.greetingTitleSplit', 'Hello|Welcome!').split('|').map((line, i) => (
-                <span key={i} style={{ display: 'block' }}>
-                  {line}
-                </span>
-              ))}
-            </h1>
-            <p className="auth-accent-copy" style={{ fontFamily: 'var(--font-latin-sans)' }}>
-              {t('auth.accentCopy', "Don't have an account yet? Create one to access diagnosis tools, patient history, and smarter follow-up care.")}
-            </p>
-            <Link to="/sign-up" state={{ authTransition: 'to-register' }} className="auth-outline-button" style={{ fontFamily: 'var(--font-latin-display)' }}>{t('auth.register', 'Register')}</Link>
+          <LanguageSwitcher />
+        </div>
+
+        {/* Center Form Container */}
+        <div className="w-full max-w-[420px] mx-auto my-auto py-8 sm:py-12">
+          {/* Eyebrow badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200/70 dark:border-blue-800/60 text-xs font-semibold text-blue-600 dark:text-blue-400 mb-3.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse" />
+            <span>{t('auth.accentEyebrow', 'Diabetes Expert System')}</span>
           </div>
-        </aside>
 
-        <section className="auth-panel auth-panel-form">
-          <div className="auth-form-inner">
-            <div className="auth-form-header">
-              <h1 className="auth-form-title" style={{ fontFamily: 'var(--font-latin-display)' }}>{t('auth.loginPageTitle', 'Login')}</h1>
-              <p className="auth-form-copy" style={{ fontFamily: 'var(--font-latin-sans)' }}>{t('auth.loginPageSub', 'Sign in to continue to your dashboard.')}</p>
+          <h1
+            className="auth-heading text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight"
+            style={{ fontFamily: 'var(--font-latin-display)' }}
+          >
+            {t('auth.loginPageTitle', 'Sign In')}
+          </h1>
+          <p
+            className="text-sm text-slate-500 dark:text-slate-400 mt-1.5 mb-6"
+            style={{ fontFamily: 'var(--font-latin-sans)' }}
+          >
+            {t('auth.loginPageSub', 'Sign in to continue to your clinical dashboard.')}
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-4" style={{ fontFamily: 'var(--font-latin-sans)' }}>
+            {/* Email Field */}
+            <div className="space-y-1.5">
+              <label htmlFor="email" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                {t('auth.emailLabel', 'Email')}
+              </label>
+              <div className="relative flex items-center">
+                <span className="absolute left-3.5 text-slate-400 dark:text-slate-500 pointer-events-none">
+                  <Mail size={18} />
+                </span>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all"
+                  placeholder={t('auth.emailPlaceholder', 'Email address')}
+                  autoComplete="username"
+                />
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="auth-form" style={{ fontFamily: 'var(--font-latin-sans)' }}>
-              <div className="auth-field">
-                <label htmlFor="email" className="auth-field-label">{t('auth.emailLabel', 'Email')}</label>
-                <div className="auth-input-box">
-                  <span className="auth-input-icon" aria-hidden="true">
-                    <Mail size={18} />
-                  </span>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(event) => setFormData({ ...formData, email: event.target.value })}
-                    className="auth-input"
-                    placeholder={t('auth.emailPlaceholder', 'Email address')}
-                    autoComplete="username"
-                  />
-                </div>
+            {/* Password Field */}
+            <div className="space-y-1.5">
+              <label htmlFor="password" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                {t('auth.passwordLabel', 'Password')}
+              </label>
+              <div className="relative flex items-center">
+                <span className="absolute left-3.5 text-slate-400 dark:text-slate-500 pointer-events-none">
+                  <LockKeyhole size={18} />
+                </span>
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full pl-10 pr-11 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all"
+                  placeholder={t('auth.passwordPlaceholder', 'Password')}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
+            </div>
 
-              <div className="auth-field">
-                <label htmlFor="password" className="auth-field-label">{t('auth.passwordLabel', 'Password')}</label>
-                <div className="auth-input-box">
-                  <span className="auth-input-icon" aria-hidden="true">
-                    <LockKeyhole size={18} />
-                  </span>
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={formData.password}
-                    onChange={(event) => setFormData({ ...formData, password: event.target.value })}
-                    className="auth-input"
-                    placeholder={t('auth.passwordPlaceholder', 'Password')}
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((current) => !current)}
-                    className="auth-toggle-button"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    aria-pressed={showPassword}
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
+            {/* Remember Me */}
+            <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 pt-0.5">
+              <label htmlFor="remember-me" className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  id="remember-me"
+                  type="checkbox"
+                  checked={formData.rememberMe}
+                  onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
+                  className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
+                <span>{t('auth.rememberMe', 'Remember me')}</span>
+              </label>
+            </div>
 
-              <div className="auth-aux-row">
-                <label htmlFor="remember-me" className="auth-checkbox">
-                  <input
-                    id="remember-me"
-                    type="checkbox"
-                    checked={formData.rememberMe}
-                    onChange={(event) => setFormData({ ...formData, rememberMe: event.target.checked })}
-                  />
-                  <span>{t('auth.rememberMe', 'Remember me')}</span>
-                </label>
-              </div>
-
-              <button type="submit" className="auth-submit-button" disabled={loading || !isValid} style={{ fontFamily: 'var(--font-latin-display)' }}>
-                {loading ? t('auth.signingIn', 'Signing in...') : t('auth.login', 'Login')}
-              </button>
-
-              {googleClientId ? (
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading || !isValid}
+              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold text-sm shadow-lg shadow-blue-500/25 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+              style={{ fontFamily: 'var(--font-latin-display)' }}
+            >
+              {loading ? (
                 <>
-                  <div className="auth-divider relative flex items-center justify-center">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-slate-200/80" />
-                    </div>
-                    <div className="relative rounded-full border border-slate-200/60 bg-white/90 px-3.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 backdrop-blur-sm">
-                      {t('auth.orDivider', 'OR')}
-                    </div>
-                  </div>
-
-                  <div
-                    ref={googleWrapperRef}
-                    className="auth-google-box flex justify-center w-full"
-                  >
-                    <GoogleLogin
-                      onSuccess={handleGoogleSuccess}
-                      onError={handleGoogleError}
-                      locale={language || 'km'}
-                      theme="outline"
-                      size="large"
-                      width={String(googleWidth)}
-                      text="signin_with"
-                      shape="rectangular"
-                      logo_alignment="left"
-                      containerProps={{
-                        style: {
-                          width: '100%',
-                          display: 'flex',
-                          justifyContent: 'center',
-                        },
-                      }}
-                    />
-                  </div>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>{t('auth.signingIn', 'Signing in...')}</span>
                 </>
-              ) : null}
+              ) : (
+                <span>{t('auth.login', 'Sign In')}</span>
+              )}
+            </button>
 
-              {error ? <p className="error-box">{error}</p> : null}
+            {/* Google OAuth Login Button */}
+            {googleClientId ? (
+              <>
+                <div className="relative my-4 flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-200/80 dark:border-slate-800" />
+                  </div>
+                  <div className="relative rounded-full border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    {t('auth.orDivider', 'OR')}
+                  </div>
+                </div>
 
-              <p className="auth-bottom-link" style={{ textAlign: 'center' }}>
-                {t('auth.noAccount', "Don't have an account?")} <Link to="/sign-up" state={{ authTransition: 'to-register' }} style={{ color: C.teal, fontWeight: 700 }}>{t('auth.signUp', 'Sign up')}</Link>
-              </p>
-            </form>
-          </div>
-        </section>
-      </section>
+                <div ref={googleWrapperRef} className="auth-google-box flex justify-center w-full min-h-[44px]">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    locale={language || 'km'}
+                    theme="outline"
+                    size="large"
+                    width={String(googleWidth)}
+                    text="signin_with"
+                    shape="rectangular"
+                    logo_alignment="left"
+                    containerProps={{
+                      style: {
+                        width: '100%',
+                        display: 'flex',
+                        justifyContent: 'center',
+                      },
+                    }}
+                  />
+                </div>
+              </>
+            ) : null}
+
+            {/* Error Display */}
+            {error ? (
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs font-medium leading-relaxed flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                <span>{error}</span>
+              </div>
+            ) : null}
+
+            {/* Bottom Link to Sign Up */}
+            <p className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400">
+              {t('auth.noAccount', "Don't have an account?")}{' '}
+              <Link
+                to="/sign-up"
+                state={{ authTransition: 'to-register' }}
+                className="font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline ml-1"
+              >
+                {t('auth.signUp', 'Create Account')}
+              </Link>
+            </p>
+          </form>
+        </div>
+
+        {/* Footer: Disclaimer / Status */}
+        <div className="pt-6 border-t border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 gap-2">
+          <span>© 2026 Diabetes Decision Support System</span>
+          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{language === 'km' ? 'ប្រព័ន្ធដំណើរការធម្មតា' : 'System Operational'}</span>
+          </span>
+        </div>
+      </div>
+
+      {/* ── RIGHT HALF: High-Impact Showcase of System ── */}
+      <AuthShowcasePanel />
     </div>
   )
 }

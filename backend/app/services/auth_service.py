@@ -165,8 +165,13 @@ class AuthService:
         }
 
     def login_with_google(self, credential: str) -> dict:
-        if not self.google_client_id:
+        client_id = self.google_client_id
+        if not client_id and current_app:
+            client_id = current_app.config.get("GOOGLE_CLIENT_ID")
+
+        if not client_id:
             raise GoogleAuthNotConfiguredError("Google login is not configured on the server.")
+
 
         if not credential or not isinstance(credential, str) or not credential.strip():
             raise ValidationError("credential is required.")
@@ -179,8 +184,9 @@ class AuthService:
             id_info = id_token.verify_oauth2_token(
                 credential,
                 _get_google_auth_request(),
-                self.google_client_id,
+                client_id,
             )
+
         except ValueError as e:
             raise UnauthorizedError(f"Invalid Google credential: {e}")
         except Exception as e:
