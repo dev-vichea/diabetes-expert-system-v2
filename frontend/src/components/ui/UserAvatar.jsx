@@ -87,33 +87,37 @@ export function UserAvatar({
   return (
     <div
       className={cn(
-        'relative inline-flex shrink-0 items-center justify-center rounded-full select-none',
+        'relative inline-flex shrink-0 items-center justify-center rounded-full select-none aspect-square',
         sizeConfig.container,
         className
       )}
       {...props}
     >
-      {src && !imgError ? (
-        <img
-          src={src}
-          alt={alt || name || 'User avatar'}
-          onError={() => setImgError(true)}
-          className={cn(
-            'h-full w-full rounded-full object-cover shadow-sm ring-1 ring-black/5 dark:ring-white/10',
-            imageClassName
-          )}
-        />
-      ) : (
-        <span
-          className={cn(
-            'inline-flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br text-white shadow-sm transition-transform',
-            bgGradient,
-            sizeConfig.text
-          )}
-        >
-          {initials}
-        </span>
-      )}
+      <div className="relative flex h-full w-full shrink-0 items-center justify-center rounded-full overflow-hidden aspect-square bg-slate-100 dark:bg-slate-800">
+        {src && !imgError ? (
+          <img
+            src={src}
+            alt={alt || name || 'User avatar'}
+            onError={() => setImgError(true)}
+            className={cn(
+              'h-full w-full rounded-full object-cover',
+              imageClassName
+            )}
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <span
+            className={cn(
+              'inline-flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br text-white shadow-sm transition-transform font-bold uppercase tracking-wider',
+              bgGradient,
+              sizeConfig.text
+            )}
+          >
+            {initials}
+          </span>
+        )}
+      </div>
 
       {status !== undefined && status !== null && (
         <span

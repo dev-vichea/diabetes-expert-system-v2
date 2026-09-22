@@ -148,7 +148,7 @@ export function NavUser({ user: propUser, collapsed = false, onLogout }) {
                   src={user.avatar_url}
                   size="md"
                   status={true}
-                  className="h-8.5 w-8.5 shadow-xs"
+                  className="h-8 w-8 shrink-0 shadow-xs"
                 />
               </button>
             </DropdownMenuTrigger>
