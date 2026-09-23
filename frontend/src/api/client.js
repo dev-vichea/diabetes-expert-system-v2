@@ -115,6 +115,33 @@ export function getApiData(response) {
   return response.data
 }
 
+export function getApiPaginated(response) {
+  if (!response || !response.data) {
+    return { data: [], page: 1, limit: 20, total: 0, totalPages: 1 }
+  }
+
+  const payload = response.data
+  const items = Array.isArray(payload.data)
+    ? payload.data
+    : Array.isArray(payload.data?.data)
+      ? payload.data.data
+      : Array.isArray(payload)
+        ? payload
+        : []
+
+  const limit = payload.limit || payload.data?.limit || items.length || 20
+  const total = payload.total ?? payload.data?.total ?? items.length
+  const totalPages = payload.total_pages || payload.data?.total_pages || Math.max(1, Math.ceil(total / limit))
+
+  return {
+    data: items,
+    page: payload.page || payload.data?.page || 1,
+    limit,
+    total,
+    totalPages,
+  }
+}
+
 export function getApiErrorMessage(error, fallbackMessage = 'Request failed') {
   const serverMessage = error?.response?.data?.error?.message
   const legacyMessage = error?.response?.data?.error

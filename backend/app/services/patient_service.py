@@ -43,18 +43,19 @@ class PatientService:
     def list_patients(
         self,
         *,
-        search: str | None,
-        gender: str | None,
-        has_diagnosis: bool | None,
-        limit: int,
-    ) -> list[dict]:
-        patients = self.patient_repository.list_patients(
+        search: str | None = None,
+        gender: str | None = None,
+        has_diagnosis: bool | None = None,
+        page: int = 1,
+        limit: int = 20,
+    ) -> tuple[list[dict], int]:
+        return self.patient_repository.paginate_patients(
             search=search,
             gender=gender,
             has_diagnosis=has_diagnosis,
+            page=page,
             limit=limit,
         )
-        return [self.patient_repository.serialize_patient(patient) for patient in patients]
 
     def get_patient_profile(self, patient_id: int) -> dict:
         patient = self.patient_repository.get_patient(patient_id)

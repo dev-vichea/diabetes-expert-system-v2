@@ -111,7 +111,7 @@ export function AdminPage() {
   async function loadUsers() {
     setUsersLoading(true)
     try {
-      const params = new URLSearchParams({ limit: '200' })
+      const params = new URLSearchParams({ limit: '20' })
       if (search.trim()) params.set('search', search.trim())
       if (roleFilter !== 'all') params.set('role', roleFilter)
       if (statusFilter !== 'all') params.set('status', statusFilter)
@@ -128,16 +128,14 @@ export function AdminPage() {
     setLoading(true)
     setError('')
     try {
-      const [statsResponse, activityResponse, rolesResponse, clinicalResponse] = await Promise.allSettled([
+      const [statsResponse, activityResponse, rolesResponse] = await Promise.allSettled([
         api.get('/admin/stats'),
         api.get('/admin/activity?days=7&limit=6'),
         api.get('/admin/roles'),
-        api.get('/dashboard/clinical'),
       ])
       if (statsResponse.status === 'fulfilled') setStats(getApiData(statsResponse.value) || null)
       if (activityResponse.status === 'fulfilled') setActivity(getApiData(activityResponse.value)?.recent_events || [])
       if (rolesResponse.status === 'fulfilled') setRoles(getApiData(rolesResponse.value) || [])
-      if (clinicalResponse.status === 'fulfilled') setClinicalStats(getApiData(clinicalResponse.value) || null)
       if (statsResponse.status === 'rejected') setError(getApiErrorMessage(statsResponse.reason, 'Unable to load dashboard statistics.'))
     } finally {
       setLoading(false)
@@ -158,9 +156,9 @@ export function AdminPage() {
   const doctors = Number(byRole.doctor || 0)
   const admins = Number((byRole.admin || 0) + (byRole.super_admin || 0))
   const patients = Number(stats?.patients?.total || byRole.patient || 0)
-  const assessments = Number(clinicalStats?.assessments?.value ?? stats?.diagnosis?.total ?? 0)
-  const treatmentPlans = Number(clinicalStats?.treatment_plans?.value ?? 0)
-  const reviews = Number(stats?.diagnosis?.reviewed ?? clinicalStats?.doctor_workload?.reviewed_by_me ?? 0)
+  const assessments = Number(stats?.assessments?.total ?? stats?.diagnosis?.total ?? 0)
+  const treatmentPlans = Number(stats?.treatment_plans?.total ?? stats?.diagnosis?.treatment_plans ?? 0)
+  const reviews = Number(stats?.diagnosis?.reviewed ?? 0)
   const accountData = [{ name: 'Active', value: activeUsers, color: '#39a76a' }, { name: 'Inactive', value: inactiveUsers, color: '#e6a23c' }, { name: 'Suspended', value: 0, color: '#e06b72' }]
   const visibleUsers = useMemo(() => users.slice(0, 6), [users])
   const roleCards = useMemo(() => ['admin', 'doctor', 'patient'].map((roleName) => {

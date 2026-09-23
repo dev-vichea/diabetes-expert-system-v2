@@ -32,15 +32,16 @@ class AuditLogRepository:
     def list_by_entity(self, *, entity_type: str, entity_id: str, limit: int = 100) -> list[dict]:
         return self.list_logs(entity_type=entity_type, entity_id=entity_id, limit=limit)
 
-    def list_logs(
+    def paginate_logs(
         self,
         *,
         action: str | None = None,
         entity_type: str | None = None,
         entity_id: str | None = None,
         actor_user_id: int | None = None,
+        page: int = 1,
         limit: int = 100,
-    ) -> list[dict]:
+    ) -> tuple[list[dict], int]:
         query = AuditLog.query
 
         if action:
@@ -52,9 +53,33 @@ class AuditLogRepository:
         if actor_user_id is not None:
             query = query.filter(AuditLog.actor_user_id == actor_user_id)
 
-        safe_limit = max(1, min(int(limit or 100), 500))
-        rows = query.order_by(AuditLog.created_at.desc(), AuditLog.id.desc()).limit(safe_limit).all()
-        return self._serialize_many(rows)
+        total = query.order_by(None).count()
+
+        safe_page = max(1, int(page or 1))
+        safe_limit = max(1, min(int(limit or 100), 200))
+        offset = (safe_page - 1) * safe_limit
+
+        rows = query.order_by(AuditLog.created_at.desc(), AuditLog.id.desc()).offset(offset).limit(safe_limit).all()
+        return self._serialize_many(rows), total
+
+    def list_logs(
+        self,
+        *,
+        action: str | None = None,
+        entity_type: str | None = None,
+        entity_id: str | None = None,
+        actor_user_id: int | None = None,
+        limit: int = 100,
+    ) -> list[dict]:
+        items, _ = self.paginate_logs(
+            action=action,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            actor_user_id=actor_user_id,
+            page=1,
+            limit=limit,
+        )
+        return items
 
     def count_recent_events(self, *, hours: int = 24) -> int:
         since = utc_now() - timedelta(hours=max(1, int(hours or 24)))

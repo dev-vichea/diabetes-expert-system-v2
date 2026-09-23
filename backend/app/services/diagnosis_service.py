@@ -289,12 +289,13 @@ class DiagnosisService:
             for row in self.diagnosis_repository.list_by_patient_id(patient_id)
         ]
 
-    def list_review_results(self, limit: int = 100) -> list[dict]:
+    def list_review_results(self, limit: int = 100, page: int = 1) -> tuple[list[dict], int]:
         safe_limit = max(1, min(int(limit or 100), 300))
+        rows, total = self.diagnosis_repository.paginate_recent(page=page, limit=safe_limit)
         return [
             self._normalize_persisted_texts(row)
-            for row in self.diagnosis_repository.list_recent(limit=safe_limit)
-        ]
+            for row in rows
+        ], total
 
     def _get_accessible_result(self, diagnosis_result_id: int, current_user: dict):
         result = self.diagnosis_repository.get_result(diagnosis_result_id)

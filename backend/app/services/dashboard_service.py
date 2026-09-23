@@ -251,7 +251,17 @@ class DashboardService:
     @staticmethod
     def _recent_cases(range_start, range_end=None, limit: int = 10):
         q = (
-            db.session.query(DiagnosisResult, Patient, User)
+            db.session.query(
+                DiagnosisResult.id,
+                Patient.full_name,
+                DiagnosisResult.diagnosis,
+                DiagnosisResult.recommendation,
+                DiagnosisResult.certainty,
+                DiagnosisResult.is_urgent,
+                DiagnosisResult.created_at,
+                User.name.label("user_name"),
+                DiagnosisResult.reviewed_at,
+            )
             .join(Patient, DiagnosisResult.patient_id == Patient.id)
             .outerjoin(User, DiagnosisResult.diagnosed_by_user_id == User.id)
         )
@@ -264,17 +274,17 @@ class DashboardService:
         return [
             {
                 "id": r.id,
-                "patient_name": p.full_name,
+                "patient_name": r.full_name,
                 "diagnosis": r.diagnosis,
                 "recommendation": r.recommendation,
                 "has_care_plan": bool(r.recommendation and str(r.recommendation).strip()),
                 "certainty": r.certainty,
                 "is_urgent": r.is_urgent,
                 "created_at": r.created_at.isoformat(),
-                "assessed_by": u.name if u else "System",
+                "assessed_by": r.user_name if r.user_name else "System",
                 "status": "Reviewed" if r.reviewed_at else "Pending",
             }
-            for r, p, u in rows
+            for r in rows
         ]
 
     @staticmethod

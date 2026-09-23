@@ -165,7 +165,7 @@ export function ReviewPage() {
     setLoading(true)
     setError('')
     try {
-      const response = await api.get('/diagnosis/review?limit=300')
+      const response = await api.get('/diagnosis/review?limit=50')
       const loaded = getApiData(response) || []
       setResults(loaded)
 

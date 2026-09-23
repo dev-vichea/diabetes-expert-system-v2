@@ -43,7 +43,8 @@
     "enableDesc": "{{name}} will be restored and allowed to sign in again.",
     "disableUser": "Disable User",
     "enableUser": "Enable User",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "yearsShort": "yrs"
   },
   "auth": {
     "loginTitle": "Welcome Back",
@@ -2962,16 +2963,31 @@
       "reset": "Reset"
     },
     "table": {
+      "patient": "Patient",
       "name": "Name",
       "gender": "Gender",
       "phone": "Phone",
+      "age": "Age",
+      "condition": "Condition",
       "diagnoses": "Diagnoses",
+      "lastActivity": "Last Activity",
       "actions": "Actions",
       "loading": "Loading patients...",
       "empty": "No patients found for current filters.",
       "history": "History",
       "latestResult": "Latest Result",
-      "assess": "Assess"
+      "result": "Result",
+      "assess": "Assess",
+      "notAssessed": "Not Assessed",
+      "noDiagnosisYet": "No diagnosis recorded yet",
+      "callPatient": "Call {{phone}}"
+    },
+    "conditions": {
+      "diabetes": "Likely Diabetes",
+      "prediabetes": "Prediabetes",
+      "elevatedRisk": "Elevated Risk",
+      "possibleSigns": "Possible Signs",
+      "normal": "Normal Glucose"
     },
     "form": {
       "editTitle": "Edit Patient",

@@ -1,12 +1,13 @@
 from flask import Blueprint, g, request
 
 from app.dependencies import get_patient_service
-from app.utils.api_response import success_response
+from app.utils.api_response import paginated_response, success_response
 from app.utils.auth import require_auth
 
 patient_bp = Blueprint("patients", __name__)
 
 
+@patient_bp.get("")
 @patient_bp.get("/")
 @require_auth(permissions=["patient.view"])
 def list_patients():
@@ -14,15 +15,17 @@ def list_patients():
     gender = request.args.get("gender", default="", type=str).strip() or None
     has_diagnosis_raw = request.args.get("has_diagnosis", default="", type=str).strip()
     has_diagnosis = _parse_optional_bool(has_diagnosis_raw)
-    limit = request.args.get("limit", default=200, type=int)
+    page = max(1, request.args.get("page", default=1, type=int))
+    limit = min(max(1, request.args.get("limit", default=20, type=int)), 200)
 
-    patients = get_patient_service().list_patients(
+    patients, total = get_patient_service().list_patients(
         search=search,
         gender=gender,
         has_diagnosis=has_diagnosis,
+        page=page,
         limit=limit,
     )
-    return success_response(data=patients)
+    return paginated_response(items=patients, page=page, limit=limit, total=total)
 
 
 @patient_bp.post("/")

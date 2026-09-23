@@ -61,8 +61,12 @@ class User(db.Model):
     license_number = db.Column(db.String(80), nullable=True)
     bio = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now, index=True)
     updated_at = db.Column(db.DateTime, nullable=False, default=utc_now, onupdate=utc_now)
+
+    __table_args__ = (
+        db.Index("ix_users_active_created", "is_active", "created_at"),
+    )
 
     roles = db.relationship("Role", secondary=user_roles, back_populates="users")
     diagnoses_made = db.relationship(
@@ -88,7 +92,7 @@ class Patient(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True, unique=True)
-    full_name = db.Column(db.String(120), nullable=False)
+    full_name = db.Column(db.String(120), nullable=False, index=True)
     gender = db.Column(db.String(20), nullable=True)
     date_of_birth = db.Column(db.Date, nullable=True)
     phone = db.Column(db.String(40), nullable=True)
@@ -102,8 +106,8 @@ class Patient(db.Model):
     hypertension = db.Column(db.Boolean, nullable=True)
     high_cholesterol = db.Column(db.Boolean, nullable=True)
     profile_completed_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
-    updated_at = db.Column(db.DateTime, nullable=False, default=utc_now, onupdate=utc_now)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now, index=True)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utc_now, onupdate=utc_now, index=True)
 
     user = db.relationship("User", back_populates="patient_profile")
     symptoms = db.relationship("Symptom", back_populates="patient", cascade="all, delete-orphan")
@@ -123,8 +127,12 @@ class AssessmentSession(db.Model):
     started_at = db.Column(db.DateTime, nullable=True)
     submitted_at = db.Column(db.DateTime, nullable=True)
     completed_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now, index=True)
     updated_at = db.Column(db.DateTime, nullable=False, default=utc_now, onupdate=utc_now)
+
+    __table_args__ = (
+        db.Index("ix_assessment_sessions_patient_created", "patient_id", "created_at"),
+    )
 
     patient = db.relationship("Patient", back_populates="assessment_sessions")
     submitted_by_user = db.relationship("User", back_populates="assessment_sessions_submitted", foreign_keys=[submitted_by_user_id])
@@ -157,6 +165,10 @@ class Symptom(db.Model):
     recorded_at = db.Column(db.DateTime, nullable=False, default=utc_now)
     notes = db.Column(db.Text, nullable=True)
 
+    __table_args__ = (
+        db.Index("ix_symptoms_patient_recorded", "patient_id", "recorded_at"),
+    )
+
     patient = db.relationship("Patient", back_populates="symptoms")
 
 
@@ -171,6 +183,10 @@ class LabResult(db.Model):
     reference_range = db.Column(db.String(120), nullable=True)
     measured_at = db.Column(db.DateTime, nullable=False, default=utc_now)
     notes = db.Column(db.Text, nullable=True)
+
+    __table_args__ = (
+        db.Index("ix_lab_results_patient_measured", "patient_id", "measured_at"),
+    )
 
     patient = db.relationship("Patient", back_populates="lab_results")
 
@@ -293,10 +309,14 @@ class Fact(db.Model):
     is_emergency = db.Column(db.Boolean, nullable=False, default=False)
     aliases = db.Column(db.JSON, nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
-    display_order = db.Column(db.Integer, nullable=False, default=100)
+    display_order = db.Column(db.Integer, nullable=False, default=100, index=True)
     source = db.Column(db.String(20), nullable=False, default="seed")
     created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
     updated_at = db.Column(db.DateTime, nullable=False, default=utc_now, onupdate=utc_now)
+
+    __table_args__ = (
+        db.Index("ix_facts_active_category", "is_active", "category"),
+    )
 
 
 class DiagnosisResult(db.Model):
@@ -318,7 +338,14 @@ class DiagnosisResult(db.Model):
     reviewed_at = db.Column(db.DateTime, nullable=True)
     is_urgent = db.Column(db.Boolean, nullable=False, default=False)
     urgent_reason = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now, index=True)
+
+    __table_args__ = (
+        db.Index("ix_diagnosis_results_urgent_review", "is_urgent", "reviewed_at"),
+        db.Index("ix_diagnosis_results_patient_created", "patient_id", "created_at"),
+        db.Index("ix_diagnosis_results_doctor_created", "diagnosed_by_user_id", "created_at"),
+        db.Index("ix_diagnosis_results_reviewer_reviewed", "reviewed_by_user_id", "reviewed_at"),
+    )
 
     assessment_session = db.relationship("AssessmentSession", back_populates="diagnosis_results")
     patient = db.relationship("Patient", back_populates="diagnosis_results")
@@ -335,7 +362,13 @@ class AuditLog(db.Model):
     entity_type = db.Column(db.String(120), nullable=False, index=True)
     entity_id = db.Column(db.String(120), nullable=True)
     metadata_json = db.Column(db.JSON, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now, index=True)
+
+    __table_args__ = (
+        db.Index("ix_audit_logs_actor_created", "actor_user_id", "created_at"),
+        db.Index("ix_audit_logs_action_created", "action", "created_at"),
+        db.Index("ix_audit_logs_entity_created", "entity_type", "created_at"),
+    )
 
 
 class RevokedToken(db.Model):

@@ -2,7 +2,7 @@ from io import BytesIO
 from flask import Blueprint, g, request, send_file
 
 from app.dependencies import get_diagnosis_service, get_conversational_assessment_service
-from app.utils.api_response import success_response
+from app.utils.api_response import paginated_response, success_response
 from app.utils.auth import require_auth, optional_auth
 
 assessment_bp = Blueprint("assessment", __name__)
@@ -53,9 +53,10 @@ def get_my_assessments():
 @require_auth(permissions=["diagnosis.review_any"])
 def get_recent_assessments():
     """List recent assessments for clinical review."""
-    limit = request.args.get("limit", default=100, type=int)
-    results = get_diagnosis_service().list_review_results(limit=limit)
-    return success_response(data=results)
+    page = max(1, request.args.get("page", default=1, type=int))
+    limit = min(max(1, request.args.get("limit", default=100, type=int)), 300)
+    results, total = get_diagnosis_service().list_review_results(limit=limit, page=page)
+    return paginated_response(items=results, page=page, limit=limit, total=total)
 
 
 @assessment_bp.get("/<int:diagnosis_result_id>")
