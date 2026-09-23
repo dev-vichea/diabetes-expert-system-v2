@@ -23,6 +23,8 @@ import {
   PenTool,
   PlusCircle,
   Building2,
+  Edit3,
+  X,
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import {
@@ -35,7 +37,7 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
-import { saveDiagnosisResultSnapshot } from '@/lib/diagnosis-result-storage'
+import { saveDiagnosisResultSnapshot, clearAssessmentSession } from '@/lib/diagnosis-result-storage'
 import { InterviewFlow } from '@/components/assessment/InterviewFlow'
 import {
   INTERVIEW_NODES, INSIGHT_BANNERS,
@@ -44,6 +46,7 @@ import {
   firstOpenNode, interviewProgress, interviewPosition, applicableNodes,
   buildFactsFromAnswers, buildFieldGroupsFromFacts,
 } from '@/components/assessment/interview-flow'
+import { getNodeTheme } from '@/components/assessment/assessment-themes'
 
 /* ── Constants ────────────────────────── */
 /* v4: staff drafts may hold a silently auto-picked patient — discard them so
@@ -232,7 +235,7 @@ export function DiagnosisPage() {
   const navigate = useNavigate()
 
   const STEP_ITEMS_CONFIG = [
-    { id: 1, title: t('assessment.steps.interview.title', 'Evidence Interview'), description: t('assessment.steps.interview.description', 'One question at a time — adapts to your answers'), icon: HeartPulse },
+    { id: 1, title: t('assessment.steps.interview.title', 'Evidence Interview'), description: t('assessment.steps.interview.description', 'Adaptive questions'), icon: HeartPulse },
     { id: 2, title: t('assessment.steps.review.title', 'Lab & Review'), description: t('assessment.steps.review.description', 'Lab results (optional) & submit'), icon: FlaskConical },
   ]
 
@@ -348,8 +351,8 @@ export function DiagnosisPage() {
     }))
   }, [fieldGroups, factsMap, language, t])
 
-  const TOTAL_STEPS = 3
   const storageKey = useMemo(() => getDraftKey(user), [user?.id, user?.sub, user?.email])
+  const [dismissedBanners, setDismissedBanners] = useState([])
 
   const [step, setStep] = useState(1)
   const [maxReached, setMaxReached] = useState(1)
@@ -652,22 +655,28 @@ export function DiagnosisPage() {
   function calculateBmi(w, h) {
     const weight = Number(w)
     const heightCm = Number(h)
-    // Plausibility gate (matches the inputs' min attributes): prevents garbage
-    // BMIs from partial input, e.g. height "1" while typing 170.
-    if (!Number.isNaN(weight) && weight >= 2 && !Number.isNaN(heightCm) && heightCm >= 40) {
+    // Plausibility gate: strictly prevent dump input (e.g. weight 35935 kg or height 12414 cm)
+    if (
+      !Number.isNaN(weight) && weight >= 10 && weight <= 350 &&
+      !Number.isNaN(heightCm) && heightCm >= 50 && heightCm <= 250
+    ) {
       const height = heightCm / 100
-      const calculatedBmi = (weight / (height * height)).toFixed(1)
+      const calculatedBmi = Number((weight / (height * height)).toFixed(1))
 
-      let group = 'custom'
-      const bmiNum = Number(calculatedBmi)
-      if (bmiNum < 18.5) group = 'underweight'
-      else if (bmiNum < 23) group = 'normal'
-      else if (bmiNum < 27.5) group = 'Overweight'
-      else group = 'obese'
+      if (calculatedBmi >= 10 && calculatedBmi <= 80) {
+        let group = 'custom'
+        if (calculatedBmi < 18.5) group = 'underweight'
+        else if (calculatedBmi < 23) group = 'normal'
+        else if (calculatedBmi < 27.5) group = 'Overweight'
+        else group = 'obese'
 
-      setQcm(p => ({ ...p, bmi_group: group }))
-      setForm(p => ({ ...p, bmi: calculatedBmi }))
+        setQcm(p => ({ ...p, bmi_group: group }))
+        setForm(p => ({ ...p, bmi: String(calculatedBmi) }))
+        return
+      }
     }
+    // If invalid or out of bounds, clear any previously calculated BMI
+    setForm(p => ({ ...p, bmi: '' }))
   }
 
   function addExtraLab() {
@@ -717,6 +726,7 @@ export function DiagnosisPage() {
     /* Restart always lands back on question 1 ("Who is this assessment for?")
        — the previously selected patient is NOT kept, so a doctor can pick a
        different person. Explicit preservePatient is for special flows only. */
+    clearAssessmentSession(user)
     const pid = opts.preservePatient ? form.patient_id : ''
     window.localStorage.removeItem(storageKey)
     const resetForm = { ...DEFAULT_FORM, patient_id: pid }
@@ -735,6 +745,7 @@ export function DiagnosisPage() {
     setExtraLabs([]); setResult(null); setError(''); setStep(1); setMaxReached(1)
     setInterviewDone([]); setInterviewSkipped([]); setCursorOverride(null); setInterviewTrail([])
     setSubjectMode(null)
+    setDismissedBanners([])
     /* Let the patient-record / profile prefills run again after the reset,
        even if the same person (or "myself") is chosen once more. */
     prefilledPatientRef.current = null
@@ -744,16 +755,19 @@ export function DiagnosisPage() {
   function getStepErrors(s = step) {
     const errs = []
     if (s === 1) {
-      if (needsPatient && !form.patient_id) errs.push('Please select a patient.')
-      if (form.age && (Number(form.age) < 0 || Number(form.age) > 120)) errs.push('Age must be between 0 and 120.')
-      if (form.bmi && (Number(form.bmi) < 10 || Number(form.bmi) > 80)) errs.push('BMI must be between 10 and 80.')
+      if (needsPatient && !form.patient_id) errs.push(t('assessment.patient.pleaseSelect', 'Please select a patient.'))
+      if (form.age && (Number(form.age) < 1 || Number(form.age) > 120)) errs.push(t('assessment.validation.ageRange', 'Age must be between 1 and 120.'))
+      if (form.bmi && (Number(form.bmi) < 10 || Number(form.bmi) > 80)) errs.push(t('assessment.validation.bmiRange', 'BMI must be between 10 and 80.'))
+      if (form.weight_kg && (Number(form.weight_kg) < 10 || Number(form.weight_kg) > 350)) errs.push(t('assessment.validation.weightRange', 'Weight must be between 10 and 350 kg.'))
+      if (form.height_cm && (Number(form.height_cm) < 50 || Number(form.height_cm) > 250)) errs.push(t('assessment.validation.heightRange', 'Height must be between 50 and 250 cm.'))
+      if (form.waist_circumference && (Number(form.waist_circumference) < 40 || Number(form.waist_circumference) > 220)) errs.push(t('assessment.validation.waistRange', 'Waist must be between 40 and 220 cm.'))
     }
     if (s === REVIEW_STEP) {
       const fg = String(form.fasting_glucose || '').trim()
       const hb = String(form.hba1c || '').trim()
       const rg = String(form.random_plasma_glucose || '').trim()
-      if (fg) { const n = Number(fg); if (Number.isNaN(n) || n < 40 || n > 600) errs.push('Fasting glucose must be 40–600 mg/dL.') }
-      if (hb) { const n = Number(hb); if (Number.isNaN(n) || n < 3 || n > 20) errs.push('HbA1c must be 3–20%.') }
+      if (fg) { const n = Number(fg); if (Number.isNaN(n) || n < 40 || n > 600) errs.push(t('assessment.validation.fastingRange', 'Fasting glucose must be 40–600 mg/dL.')) }
+      if (hb) { const n = Number(hb); if (Number.isNaN(n) || n < 3 || n > 20) errs.push(t('assessment.validation.hba1cRange', 'HbA1c must be 3–20%.')) }
       if (rg) { const n = Number(rg); if (Number.isNaN(n) || n < 30 || n > 1000) errs.push('Random glucose must be 30–1000 mg/dL.') }
     }
     return errs
@@ -792,7 +806,6 @@ export function DiagnosisPage() {
   }
 
   function handleYesNo(node, value) {
-    if (!beginAdvance()) return
     if (node.id === 'has_labs') {
       up('has_labs', value ? 'yes' : 'no')
       if (value) {
@@ -848,19 +861,14 @@ export function DiagnosisPage() {
     } else {
       up(node.field, value)
     }
-    settleNode(node.id)
-    setCursorOverride(null)
   }
 
   function handleChoice(node, value) {
-    if (!beginAdvance()) return
     if (node.id === 'sex' && value !== 'female') {
       setForm(p => ({ ...p, sex: value, currently_pregnant: false, pregnancy_stage: '', gestational_history: false }))
     } else {
       up(node.field, value)
     }
-    settleNode(node.id)
-    setCursorOverride(null)
   }
 
   function handleMultiNone(node) {
@@ -884,9 +892,71 @@ export function DiagnosisPage() {
 
   function handleInterviewContinue() {
     /* Confirm the node on screen and return to natural flow position. */
-    if (!beginAdvance()) return
     if (currentNodeId) {
+      if (currentNodeId === 'age') {
+        const raw = String(form.age || '').trim()
+        const a = Number(raw)
+        if (raw !== '' && (Number.isNaN(a) || a < 1 || a > 120)) {
+          setError(t('assessment.validation.ageRange', 'Age must be between 1 and 120.'))
+          return
+        }
+      }
+      if (currentNodeId === 'body') {
+        const w = Number(form.weight_kg)
+        const h = Number(form.height_cm)
+        const b = Number(form.bmi)
+        if (form.weight_kg && (Number.isNaN(w) || w < 10 || w > 350)) {
+          setError(t('assessment.validation.weightRange', 'Weight must be between 10 and 350 kg.'))
+          return
+        }
+        if (form.height_cm && (Number.isNaN(h) || h < 50 || h > 250)) {
+          setError(t('assessment.validation.heightRange', 'Height must be between 50 and 250 cm.'))
+          return
+        }
+        if (form.bmi && (Number.isNaN(b) || b < 10 || b > 80)) {
+          setError(t('assessment.validation.bmiRange', 'BMI must be between 10 and 80.'))
+          return
+        }
+      }
+      if (currentNodeId === 'waist') {
+        const raw = String(form.waist_circumference || '').trim()
+        const wc = Number(raw)
+        if (raw !== '' && (Number.isNaN(wc) || wc < 40 || wc > 220)) {
+          setError(t('assessment.validation.waistRange', 'Waist must be between 40 and 220 cm.'))
+          return
+        }
+      }
+      if (currentNodeId === 'labs') {
+        const fg = String(form.fasting_glucose || '').trim()
+        if (fg) {
+          const n = Number(fg)
+          if (Number.isNaN(n) || n < 40 || n > 600) {
+            setError(t('assessment.validation.fastingRange', 'Fasting glucose must be 40–600 mg/dL.'))
+            return
+          }
+        }
+        const hb = String(form.hba1c || '').trim()
+        if (hb) {
+          const n = Number(hb)
+          if (Number.isNaN(n) || n < 3 || n > 20) {
+            setError(t('assessment.validation.hba1cRange', 'HbA1c must be 3–20%.'))
+            return
+          }
+        }
+        const og = String(form.ogtt_2h || '').trim()
+        if (og) {
+          const n = Number(og)
+          if (Number.isNaN(n) || n < 40 || n > 800) {
+            setError(t('assessment.validation.ogttRange', '2-hour OGTT must be 40–800 mg/dL.'))
+            return
+          }
+        }
+      }
+      setError('')
+      if (!beginAdvance()) return
       settleNode(currentNodeId)
+    } else {
+      if (!beginAdvance()) return
     }
     setCursorOverride(null)
   }
@@ -1080,243 +1150,646 @@ export function DiagnosisPage() {
   const sexLabel = form.sex
     ? ({ male: t('assessment.interview.sexMale', 'Male'), female: t('assessment.interview.sexFemale', 'Female'), other: t('assessment.interview.sexOther', 'Other') }[form.sex] || form.sex)
     : '—'
-  const totalAnswered = SYMPTOM_PILLS.filter(i => form[i.key]).length + SAFETY_PILLS.filter(i => form[i.key]).length + RISK_PILLS.filter(i => form[i.key]).length + (form.age ? 1 : 0) + (form.bmi ? 1 : 0)
+  const currentTheme = useMemo(() => getNodeTheme(currentNode), [currentNode])
+  const isColoredInterview = step === 1 && Boolean(currentNode)
+  const totalQNum = applicableCount || 8
+  const currentQNum = currentNode ? interviewPosition(INTERVIEW_NODES, interviewCtx, interviewDone, interviewSkipped, currentNodeId) : totalQNum
   const stepFill = result ? 100 : step === REVIEW_STEP ? 100 : interviewPct
   const inset = 50 / TOTAL_STEPS
 
+  const reviewCalculations = useMemo(() => {
+    // 1. Age Points (ADA criteria)
+    const ageVal = parseFloat(form.age)
+    let agePts = 0
+    if (!isNaN(ageVal)) {
+      if (ageVal >= 60) agePts = 3
+      else if (ageVal >= 50) agePts = 2
+      else if (ageVal >= 40) agePts = 1
+      else agePts = 0
+    }
+
+    // 2. Gender Points
+    const sexPts = form.sex === 'male' ? 1 : 0
+
+    // 3. Ethnicity
+    const ethnicityMap = {
+      asian: t('assessment.interview.ethnicityAsian', 'Asian (South, East, Southeast)'),
+      black: t('assessment.interview.ethnicityBlack', 'Black / African American'),
+      hispanic: t('assessment.interview.ethnicityHispanic', 'Hispanic / Latino'),
+      caucasian: t('assessment.interview.ethnicityCaucasian', 'White / Caucasian'),
+      indigenous: t('assessment.interview.ethnicityIndigenous', 'Indigenous / Pacific Islander'),
+      other: t('assessment.interview.ethnicityOther', 'Other / Mixed background'),
+    }
+    const ethnicityLabel = form.ethnicity ? (ethnicityMap[form.ethnicity] || form.ethnicity) : '—'
+
+    // 4. BMI Points & Category
+    const bmiVal = parseFloat(form.bmi)
+    let bmiPts = 0
+    let bmiCat = ''
+    if (!isNaN(bmiVal)) {
+      const isAsian = form.ethnicity === 'asian'
+      if (isAsian) {
+        if (bmiVal >= 32.5) { bmiPts = 3; bmiCat = t('assessment.options.bmi.obese', 'Obese') }
+        else if (bmiVal >= 27.5) { bmiPts = 2; bmiCat = t('assessment.options.bmi.overweight', 'Overweight') }
+        else if (bmiVal >= 23.0) { bmiPts = 1; bmiCat = t('assessment.options.bmi.overweight', 'Increased Risk') }
+        else if (bmiVal < 18.5) { bmiPts = 0; bmiCat = t('assessment.options.bmi.underweight', 'Underweight') }
+        else { bmiPts = 0; bmiCat = t('assessment.options.bmi.normal', 'Normal') }
+      } else {
+        if (bmiVal >= 40.0) { bmiPts = 3; bmiCat = t('assessment.options.bmi.obese', 'Morbidly Obese') }
+        else if (bmiVal >= 30.0) { bmiPts = 2; bmiCat = t('assessment.options.bmi.obese', 'Obese') }
+        else if (bmiVal >= 25.0) { bmiPts = 1; bmiCat = t('assessment.options.bmi.overweight', 'Overweight') }
+        else if (bmiVal < 18.5) { bmiPts = 0; bmiCat = t('assessment.options.bmi.underweight', 'Underweight') }
+        else { bmiPts = 0; bmiCat = t('assessment.options.bmi.normal', 'Normal') }
+      }
+    }
+
+    // 5. Waist Points (AUSDRISK / clinical threshold)
+    const waistVal = parseFloat(form.waist_circumference)
+    let waistPts = 0
+    if (!isNaN(waistVal)) {
+      if (form.sex === 'male') {
+        if (waistVal >= 102) waistPts = 4
+        else if (waistVal >= 94) waistPts = 3
+        else waistPts = 0
+      } else {
+        if (waistVal >= 88) waistPts = 4
+        else if (waistVal >= 80) waistPts = 3
+        else waistPts = 0
+      }
+    }
+
+    // 6. Symptoms List (comma-separated lorem, lorem, lorem...)
+    const allSymptomsList = [...selectedSymptoms, ...customSymptoms]
+    const symptomsAnswer = allSymptomsList.length > 0 ? allSymptomsList.join(', ') : t('common.none', 'None reported')
+    const symptomsCount = allSymptomsList.length
+
+    // 7. Risk Factors (comma-separated)
+    const risksAnswer = selectedRisks.length > 0 ? selectedRisks.join(', ') : t('common.none', 'None reported')
+    let riskPts = 0
+    if (form.hypertension) riskPts += 1
+    if (form.physical_inactivity || form.sedentary_lifestyle) riskPts += 1
+    if (form.family_history || form.family_history_diabetes) riskPts += 1
+    if (form.gestational_history || form.macrosomia_history) riskPts += 1
+
+    // 8. Labs
+    const fpgVal = parseFloat(form.fasting_glucose)
+    let fpgStatus = '—'
+    if (!isNaN(fpgVal)) {
+      if (fpgVal >= 126) fpgStatus = t('assessment.labs.diabetic', 'Diabetic (≥ 126)')
+      else if (fpgVal >= 100) fpgStatus = t('assessment.labs.prediabetic', 'Impaired (100–125)')
+      else fpgStatus = t('assessment.labs.normal', 'Normal (< 100)')
+    }
+
+    const hba1cVal = parseFloat(form.hba1c)
+    let hba1cStatus = '—'
+    if (!isNaN(hba1cVal)) {
+      if (hba1cVal >= 6.5) hba1cStatus = t('assessment.labs.diabetic', 'Diabetic (≥ 6.5%)')
+      else if (hba1cVal >= 5.7) hba1cStatus = t('assessment.labs.prediabetic', 'Prediabetes (5.7–6.4%)')
+      else hba1cStatus = t('assessment.labs.normal', 'Normal (< 5.7%)')
+    }
+
+    const ogttVal = parseFloat(form.ogtt_2h)
+    let ogttStatus = '—'
+    if (!isNaN(ogttVal)) {
+      if (ogttVal >= 200) ogttStatus = t('assessment.labs.diabetic', 'Diabetic (≥ 200)')
+      else if (ogttVal >= 140) ogttStatus = t('assessment.labs.prediabetic', 'Impaired (140–199)')
+      else ogttStatus = t('assessment.labs.normal', 'Normal (< 140)')
+    }
+
+    // 9. Warning Signs
+    let warnAnswer = t('assessment.review.noUrgentFlags', 'No acute signs')
+    let warnPts = '0'
+    if (hasUrgentTrigger) {
+      warnAnswer = t('assessment.review.urgentWarningPresent', 'Urgent / DKA Warning signs detected')
+      warnPts = 'Urgent'
+    } else if (hasHypoTrigger) {
+      warnAnswer = t('assessment.review.hypoWarningPresent', 'Hypoglycemia risk signs reported')
+      warnPts = 'Caution'
+    }
+
+    const totalAda = agePts + sexPts + bmiPts + riskPts
+
+    const rows = [
+      {
+        num: 1,
+        question: t('assessment.review.age', 'Age'),
+        answer: form.age ? `${form.age} ${t('common.yearsUnit', 'yrs')}` : '—',
+        points: form.age ? String(agePts) : '0',
+      },
+      {
+        num: 2,
+        question: t('assessment.review.sex', 'Gender'),
+        answer: form.sex === 'female'
+          ? `${sexLabel}${form.currently_pregnant ? ` · ${t('assessment.interview.pregnantShort', 'Pregnant')}` : ''}`
+          : sexLabel,
+        points: String(sexPts),
+      },
+      {
+        num: 3,
+        question: t('assessment.interview.ethnicity', 'Ethnicity'),
+        answer: ethnicityLabel,
+        points: '0',
+      },
+      {
+        num: 4,
+        question: t('assessment.review.bmiCategory', 'Body Mass Index (BMI)'),
+        answer: form.bmi ? `${form.bmi} kg/m²${bmiCat ? ` (${bmiCat})` : ''}` : '—',
+        points: form.bmi ? String(bmiPts) : '0',
+      },
+      {
+        num: 5,
+        question: t('assessment.review.waist', 'Waist measurement'),
+        answer: form.waist_circumference ? `${form.waist_circumference} cm` : '—',
+        points: waistPts > 0 ? String(waistPts) : '0',
+      },
+      {
+        num: 6,
+        question: t('assessment.review.symptoms', 'Symptoms'),
+        answer: symptomsAnswer,
+        points: symptomsCount > 0 ? String(symptomsCount) : '0',
+      },
+      {
+        num: 7,
+        question: t('assessment.review.risks', 'Risk factors'),
+        answer: risksAnswer,
+        points: String(riskPts),
+      },
+      {
+        num: 8,
+        question: t('assessment.review.fastingGlucose', 'Fasting Blood Glucose (FPG)'),
+        answer: form.fasting_glucose ? `${form.fasting_glucose} mg/dL` : t('common.notTested', 'Not tested'),
+        points: fpgStatus,
+      },
+      {
+        num: 9,
+        question: t('assessment.review.hba1c', 'HbA1c'),
+        answer: form.hba1c ? `${form.hba1c} %` : t('common.notTested', 'Not tested'),
+        points: hba1cStatus,
+      },
+      {
+        num: 10,
+        question: t('assessment.review.ogtt', 'Oral Glucose Tolerance (OGTT 2h)'),
+        answer: form.ogtt_2h ? `${form.ogtt_2h} mg/dL` : t('common.notTested', 'Not tested'),
+        points: ogttStatus,
+      },
+      {
+        num: 11,
+        question: t('assessment.review.safetyFlags', 'Warning & Safety Flags'),
+        answer: warnAnswer,
+        points: warnPts,
+      },
+    ]
+
+    return {
+      rows,
+      totalAdaScore: totalAda,
+      isHighAdaRisk: totalAda >= 5,
+    }
+  }, [form, selectedSymptoms, customSymptoms, selectedRisks, sexLabel, hasUrgentTrigger, hasHypoTrigger, t])
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      <section className="surface min-w-0 flex-1 flex flex-col rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 md:p-10 shadow-soft dark:border-[#1a2142] dark:bg-[#0c1129] min-h-[calc(100dvh-7.5rem)]">
-        <div className="mx-auto w-full max-w-4xl flex flex-col">
-
-          {/* ── Step Progress Bar ─────────────────────────── */}
-          <div className="mb-6 px-1">
-            <div className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-              <span className="flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5 text-cyan-500" /> {t('assessment.healthAssessment', 'Health Assessment')}</span>
-              <div className="flex items-center gap-4">
-                {!isDraftPristine && !result && (
-                  <span className="hidden sm:flex items-center gap-1.5 text-[10px] font-medium tracking-normal text-emerald-600 dark:text-emerald-400/80 animate-pulse-slow">
-                    <Check className="h-3 w-3" /> {t('assessment.draftAutosaved', 'Draft autosaved')}
-                  </span>
-                )}
-                <span>{flowPercent}% {t('assessment.complete', 'Complete')}</span>
-              </div>
-            </div>
-            <div className="mt-4 overflow-x-auto pb-1">
-              <ol className="relative mx-auto flex min-w-[520px] max-w-screen-md items-start gap-0">
-                <div className="pointer-events-none absolute top-[22px]" style={{ left: `${inset}%`, right: `${inset}%` }}>
-                  <div className="h-1 rounded-full bg-slate-200 dark:bg-slate-700" />
-                  <div className="absolute left-0 top-0 h-1 rounded-full bg-gradient-to-r from-cyan-400 to-cyan-600 transition-all duration-500" style={{ width: `${stepFill}%` }} />
-                </div>
-                {STEP_ITEMS_CONFIG.map((item) => {
-                  const status = result ? 'done' : item.id < step ? 'done' : item.id === step ? 'active' : 'inactive'
-                  return <StepDot key={item.id} item={item} status={status} locked={item.id > maxReached} onClick={() => jumpTo(item.id)} />
-                })}
-              </ol>
-            </div>
+    <div className="flex-1 flex flex-col min-h-0 relative overflow-visible">
+      <section
+        style={isColoredInterview ? { backgroundColor: currentTheme.bg } : undefined}
+        className={cn(
+          "min-w-0 flex-1 flex flex-col rounded-3xl shadow-2xl transition-colors duration-700 ease-in-out relative overflow-hidden",
+          isColoredInterview
+            ? "text-white border-0 min-h-[calc(100dvh-7.5rem)] p-0"
+            : "surface p-4 sm:p-6 md:p-8 border border-slate-200/80 bg-white dark:border-[#1a2142] dark:bg-[#0c1129] text-slate-900 dark:text-slate-100 min-h-[calc(100dvh-7.5rem)]"
+        )}
+      >
+        {/* Background decorative shapes */}
+        {isColoredInterview ? (
+          <div className="absolute inset-0 z-0 pointer-events-none">
+            <div
+              className="absolute -right-20 -top-32 h-[500px] w-[700px]
+                     rotate-12 rounded-[50%] opacity-60 transition-colors duration-700 ease-in-out"
+              style={{ backgroundColor: currentTheme.shape1 }}
+            />
+            <div
+              className="absolute right-[20%] top-20 h-[300px] w-[500px]
+                     rotate-[-15deg] rounded-[50%] opacity-40 transition-colors duration-700 ease-in-out"
+              style={{ backgroundColor: currentTheme.shape2 }}
+            />
           </div>
+        ) : null}
 
-          {/* ── Current Step Title ────────────────────────── */}
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
-            <div className="min-w-0">
-              <h2 className="section-title">{t(`assessment.steps.${step === 1 ? 'interview' : 'review'}.title`, STEP_ITEMS_CONFIG[step - 1]?.title)}</h2>
-              <p className="section-subtitle mt-1">{t(`assessment.steps.${step === 1 ? 'interview' : 'review'}.description`, STEP_ITEMS_CONFIG[step - 1]?.description)}</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {import.meta.env.DEV ? (
-                <div className="hidden sm:flex items-center gap-2 mr-2 border-r border-slate-200 dark:border-slate-700 pr-4">
-                  <span className="text-[10px] font-semibold uppercase text-slate-400 tracking-wider">{t('assessment.demoFill', 'Demo Fill:')}</span>
-                  <button type="button" onClick={() => loadDemo('t2dm')} className="rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors">T2DM</button>
-                  <button type="button" onClick={() => loadDemo('dka')} className="rounded bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 px-2 py-1 text-xs font-medium text-red-700 dark:text-red-400 transition-colors">DKA Crisis</button>
-                </div>
-              ) : null}
-              <StatusBadge tone="info">{t('assessment.step', 'Step')} {step}/{TOTAL_STEPS}</StatusBadge>
-              {step === 1 && currentNode ? (
-                <StatusBadge tone="info">
-                  {t('assessment.interview.questionN', 'Question')} {interviewPosition(INTERVIEW_NODES, interviewCtx, interviewDone, interviewSkipped, currentNodeId)}/{applicableCount}
-                </StatusBadge>
-              ) : null}
-              {totalAnswered > 0 ? <StatusBadge tone="success">{totalAnswered} {t('assessment.answered', 'answered')}</StatusBadge> : null}
-            </div>
-          </div>
+        <div className="w-full flex-1 flex flex-col relative z-10 min-h-0 h-full">
 
-          <form onSubmit={submitAssessment} className="space-y-5">
-            <div key={`step-${step}-${result ? 'r' : 'n'}`} className="assessment-step-enter">
+          {/* ── Step 1: Progress Header ── */}
+          {step === 1 ? (
+            <div className={cn("pt-4 pb-2 relative pointer-events-auto transition-all", isColoredInterview ? "px-6 sm:px-12 lg:px-16 pt-8 pb-2" : "px-0 sm:px-2")}>
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4 relative z-20">
+                <p className={cn("text-xl font-semibold", isColoredInterview ? "text-white" : "text-slate-900 dark:text-slate-100")}>
+                  {!currentNode ? (
+                    <>
+                      <span>{t('assessment.reviewSummary', 'Review Summary')}</span>
+                      <span className={cn("ml-2 text-sm font-normal", isColoredInterview ? "text-white/70" : "text-slate-500 dark:text-slate-400")}>
+                        ({totalQNum} of {totalQNum} {t('assessment.complete', 'Complete')})
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      {t('assessment.interview.questionN', 'Question')} {currentQNum}{' '}
+                      <span className={cn("font-normal", isColoredInterview ? "text-white/70" : "text-slate-500 dark:text-slate-400")}>
+                        of {totalQNum}
+                      </span>
+                    </>
+                  )}
+                </p>
 
-              {/* ═══════════════ STEP 1 — Evidence Interview ═══════════════ */}
-              {step === 1 ? (
-                <div>
-                  {!needsPatient && subjectMode === 'other' && currentNodeId !== 'subject' ? (
-                    <div className="mb-3 flex items-start gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-800 dark:bg-sky-900/20">
-                      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-sky-500" />
-                      <p className="text-sm leading-relaxed text-sky-800 dark:text-sky-300">
-                        {t('assessment.subject.otherBanner', "You are assessing someone else — answer each question using their information, not yours. The result will be saved to this account's history.")}
-                      </p>
+                <div className="flex items-center gap-3 ml-auto">
+                  {!needsPatient && subjectMode === 'other' ? (
+                    <span className={cn(
+                      "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold",
+                      isColoredInterview
+                        ? "bg-white/20 border border-white/30 text-white backdrop-blur-xs"
+                        : "bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                    )}>
+                      <UserRound className="h-3.5 w-3.5" />
+                      <span>{t('assessment.subject.assessingOther', 'Assessing someone else')}</span>
+                    </span>
+                  ) : null}
+
+                  {!isDraftPristine && !result && (
+                    <span className={cn(
+                      "hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full",
+                      isColoredInterview
+                        ? "text-white/90 bg-white/15 backdrop-blur-xs"
+                        : "text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800"
+                    )}>
+                      <Check className={cn("h-3.5 w-3.5", isColoredInterview ? "text-emerald-300" : "text-emerald-600 dark:text-emerald-400")} /> {t('assessment.draftAutosaved', 'Draft autosaved')}
+                    </span>
+                  )}
+
+                  {import.meta.env.DEV ? (
+                    <div className={cn("hidden lg:flex items-center gap-1 mr-1", isColoredInterview ? "opacity-70 hover:opacity-100" : "opacity-80 hover:opacity-100")}>
+                      <button type="button" onClick={() => loadDemo('t2dm')} className={cn("rounded px-2 py-0.5 text-[11px] font-medium transition-colors", isColoredInterview ? "text-white/80 hover:bg-white/20" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800")}>T2D demo</button>
+                      <button type="button" onClick={() => loadDemo('dka')} className={cn("rounded px-2 py-0.5 text-[11px] font-medium transition-colors", isColoredInterview ? "text-red-200 hover:bg-red-500/20" : "text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40")}>DKA demo</button>
                     </div>
                   ) : null}
 
-                  {activeBanners.map((b) => (
-                    <div key={b.id} className={cn(
-                      'mb-3 flex items-start gap-3 rounded-xl border p-4',
-                      b.tone === 'urgent' ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' :
-                        b.tone === 'warn' ? 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20' :
-                          'border-sky-200 bg-sky-50 dark:border-sky-800 dark:bg-sky-900/20',
-                    )}>
-                      <AlertTriangle className={cn('mt-0.5 h-5 w-5 shrink-0', b.tone === 'urgent' ? 'text-red-500' : b.tone === 'warn' ? 'text-amber-500' : 'text-sky-500')} />
-                      <div>
-                        <p className={cn('text-sm font-bold', b.tone === 'urgent' ? 'text-red-800 dark:text-red-200' : b.tone === 'warn' ? 'text-amber-800 dark:text-amber-200' : 'text-sky-800 dark:text-sky-200')}>{t(b.titleKey, b.titleFallback)}</p>
-                        <p className={cn('mt-0.5 text-sm leading-relaxed', b.tone === 'urgent' ? 'text-red-700 dark:text-red-300' : b.tone === 'warn' ? 'text-amber-700 dark:text-amber-300' : 'text-sky-700 dark:text-sky-300')}>{t(b.textKey, b.textFallback)}</p>
-                      </div>
-                    </div>
-                  ))}
-
-                  {currentNode ? (
-                    <InterviewFlow
-                      node={currentNode}
-                      form={form}
-                      qcm={qcm}
-                      t={t}
-                      patients={patients}
-                      loadingPatients={loadingPatients}
-                      subjectOptions={SUBJECT_OPTIONS}
-                      subjectValue={subjectMode}
-                      onSelectSubject={handleSelectSubject}
-                      ageOptions={AGE_OPTIONS.map(o => {
-                        const keyMap = { under_18: 'under18', '18_30': 'age18to30', '31_45': 'age31to45', '46_60': 'age46to60', over_60: 'over60' };
-                        return { ...o, label: t(`assessment.options.age.${keyMap[o.id] || o.id}`, o.label) };
-                      })}
-                      bmiOptions={BMI_OPTIONS.map(o => {
-                        const keyMap = { underweight: 'underweight', normal: 'normal', Overweight: 'overweight', obese: 'obese' };
-                        return { ...o, label: t(`assessment.options.bmi.${keyMap[o.id] || o.id}`, o.label) };
-                      })}
-                      labOptions={{
-                        fasting: FASTING_OPTIONS.map(o => ({ ...o, label: t(`assessment.fields.labs.fasting.${o.id}`, o.label) })),
-                        hba1c: HBA1C_OPTIONS.map(o => ({ ...o, label: t(`assessment.fields.labs.hba1c.${o.id}`, o.label) })),
-                        ogtt: OGTT_OPTIONS.map(o => ({ ...o, label: t(`assessment.options.ogtt.${o.id}`, o.label) })),
-                      }}
-                      renderBadge={renderBadge}
-                      extraLabs={extraLabs}
-                      onAddExtraLab={addExtraLab}
-                      onRemoveExtraLab={(i) => setExtraLabs(p => p.filter((_, j) => j !== i))}
-                      onField={up}
-                      onPickSegment={pickSegment}
-                      onSetCustom={setCustom}
-                      onCalculateBmi={calculateBmi}
-                      onYesNo={handleYesNo}
-                      onChoice={handleChoice}
-                      onToggleMulti={(node, field, value) => up(field, value)}
-                      onMultiNone={handleMultiNone}
-                      onContinue={handleInterviewContinue}
-                      onSkip={() => handleSkipNode(currentNode)}
-                      onBack={interviewBack}
-                      canBack={canInterviewBack}
-                      analyzing={false}
-                      editing={Boolean(cursorOverride)}
-                      doneIds={interviewDone}
-                      skippedIds={interviewSkipped}
-                      factsMap={factsMap}
-                      fieldGroups={fieldGroups}
-                    />
-                  ) : (
-                    <div className="surface mx-auto w-full max-w-2xl p-8 text-center">
-                      <span className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
-                        <Check className="h-7 w-7" strokeWidth={2.5} />
-                      </span>
-                      <h3 className="mt-4 text-lg font-bold text-slate-900 dark:text-slate-50">{t('assessment.interview.allAnsweredTitle', 'All questions answered')}</h3>
-                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t('assessment.interview.allAnsweredText', 'Review your evidence, then run the assessment.')}</p>
-                      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                        <button type="button" className="btn-secondary gap-1.5" onClick={interviewBack}>
-                          <ArrowLeft className="h-4 w-4" />
-                          {t('common.back', 'Back')}
-                        </button>
-                        <button type="button" className="btn-primary gap-1.5" onClick={() => { setStep(REVIEW_STEP); setMaxReached(p => Math.max(p, REVIEW_STEP)) }}>
-                          {t('assessment.interview.goReview', 'Review & Run')} <ArrowRight className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  {!isDraftPristine ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowRestart(true)}
+                      title={t('assessment.confirm.title', 'Start New Assessment?')}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-semibold transition-all cursor-pointer",
+                        isColoredInterview
+                          ? "border border-white/40 bg-white/10 text-white hover:bg-white/20"
+                          : "border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
+                      )}
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      <span>{t('assessment.interview.startOver', 'Start Over')}</span>
+                    </button>
+                  ) : null}
                 </div>
-              ) : null}
+              </div>
+
+              {/* Progress bar matching prototype */}
+              <div className={cn("h-2 w-full rounded-full relative z-0", isColoredInterview ? "bg-white/20" : "bg-slate-200 dark:bg-slate-800")}>
+                <div
+                  className={cn("h-2 rounded-full transition-all duration-500 ease-out", isColoredInterview ? "bg-white" : "bg-blue-600 dark:bg-blue-500")}
+                  style={{ width: !currentNode ? '100%' : `${Math.max(4, Math.round((currentQNum / totalQNum) * 100))}%` }}
+                />
+              </div>
+            </div>
+          ) : (
+            /* Step 2 Stepper */
+            <div className="mb-6 px-1">
+              <div className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+                <span className="flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5 text-cyan-500" /> {t('assessment.healthAssessment', 'Health Assessment')}</span>
+                <span>{flowPercent}% {t('assessment.complete', 'Complete')}</span>
+              </div>
+              <div className="mt-4 overflow-x-auto pb-1">
+                <ol className="relative mx-auto flex min-w-[520px] max-w-screen-md items-start gap-0">
+                  <div className="pointer-events-none absolute top-[22px]" style={{ left: `${inset}%`, right: `${inset}%` }}>
+                    <div className="h-1 rounded-full bg-slate-200 dark:bg-slate-700" />
+                    <div className="absolute left-0 top-0 h-1 rounded-full bg-gradient-to-r from-cyan-400 to-cyan-600 transition-all duration-500" style={{ width: '100%' }} />
+                  </div>
+                  {STEP_ITEMS_CONFIG.map((item) => {
+                    const status = result ? 'done' : item.id < step ? 'done' : item.id === step ? 'active' : 'inactive'
+                    return <StepDot key={item.id} item={item} status={status} locked={item.id > maxReached} onClick={() => jumpTo(item.id)} />
+                  })}
+                </ol>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={submitAssessment} className="flex-1 flex flex-col min-h-0 h-full">
+            <div key={`step-${step}-${result ? 'r' : 'n'}`} className="flex-1 flex flex-col min-h-0 h-full">
+
+              {/* ═══════════════ STEP 1 — Evidence Interview Fallback ═══════════════ */}
+              {step === 1 ? (
+                <div className="flex-1 flex flex-col min-h-0 h-full">
+                    {currentNode ? (
+                      <InterviewFlow
+                        isSplitLayout={true}
+                        theme={currentTheme}
+                        questionNumber={currentQNum}
+                        totalQuestions={totalQNum}
+                        node={currentNode}
+                        form={form}
+                        qcm={qcm}
+                        t={t}
+                        patients={patients}
+                        loadingPatients={loadingPatients}
+                        subjectOptions={SUBJECT_OPTIONS}
+                        subjectValue={subjectMode}
+                        needsPatient={needsPatient}
+                        onSelectSubject={handleSelectSubject}
+                        ageOptions={AGE_OPTIONS.map(o => {
+                          const keyMap = { under_18: 'under18', '18_30': 'age18to30', '31_45': 'age31to45', '46_60': 'age46to60', over_60: 'over60' };
+                          return { ...o, label: t(`assessment.options.age.${keyMap[o.id] || o.id}`, o.label) };
+                        })}
+                        bmiOptions={BMI_OPTIONS.map(o => {
+                          const keyMap = { underweight: 'underweight', normal: 'normal', Overweight: 'overweight', obese: 'obese' };
+                          return { ...o, label: t(`assessment.options.bmi.${keyMap[o.id] || o.id}`, o.label) };
+                        })}
+                        labOptions={{
+                          fasting: FASTING_OPTIONS.map(o => ({ ...o, label: t(`assessment.fields.labs.fasting.${o.id}`, o.label) })),
+                          hba1c: HBA1C_OPTIONS.map(o => ({ ...o, label: t(`assessment.fields.labs.hba1c.${o.id}`, o.label) })),
+                          ogtt: OGTT_OPTIONS.map(o => ({ ...o, label: t(`assessment.options.ogtt.${o.id}`, o.label) })),
+                        }}
+                        renderBadge={renderBadge}
+                        extraLabs={extraLabs}
+                        onAddExtraLab={addExtraLab}
+                        onRemoveExtraLab={(i) => setExtraLabs(p => p.filter((_, j) => j !== i))}
+                        onField={up}
+                        onPickSegment={pickSegment}
+                        onSetCustom={setCustom}
+                        onCalculateBmi={calculateBmi}
+                        onYesNo={handleYesNo}
+                        onChoice={handleChoice}
+                        onToggleMulti={(node, field, value) => up(field, value)}
+                        onMultiNone={handleMultiNone}
+                        onContinue={handleInterviewContinue}
+                        onSkip={() => handleSkipNode(currentNode)}
+                        onBack={interviewBack}
+                        canBack={canInterviewBack}
+                        analyzing={false}
+                        editing={Boolean(cursorOverride)}
+                        doneIds={interviewDone}
+                        skippedIds={interviewSkipped}
+                        factsMap={factsMap}
+                        fieldGroups={fieldGroups}
+                      />
+                    ) : (
+                      <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-4 pb-12 w-full">
+                        <div className="assessment-card-enter w-full max-w-5xl mx-auto space-y-6">
+                          {/* Header */}
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                              <div className="flex items-center gap-3">
+                                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-[#1b365d] dark:bg-blue-950/60 dark:text-blue-300">
+                                  <ClipboardList className="h-5 w-5" />
+                                </span>
+                                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                                  {t('assessment.reviewSummary', 'Review Summary')}
+                                </h3>
+                              </div>
+                              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                {t('assessment.reviewSummarySub', 'Double-check before submitting')}
+                              </p>
+                            </div>
+
+                            {/* Patient & Mode Badge */}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-3.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                <UserRound className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                                <span>{needsPatient ? (selectedPatient ? `${selectedPatient.full_name} (#${selectedPatient.id})` : t('assessment.patient.noSelection', 'Not selected')) : user?.name || t('assessment.review.currentUser', 'Current user')}</span>
+                              </span>
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 dark:bg-blue-950/50 px-3 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300">
+                                {assessmentMode === 'diagnostic' ? (
+                                  <>
+                                    <FlaskConical className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                    <span>{t('assessment.labs.diagnosticMode', 'Diagnostic Mode')}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <ClipboardList className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                    <span>{t('assessment.labs.screeningMode', 'Screening Mode')}</span>
+                                  </>
+                                )}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Normal Questionnaire Table without borders */}
+                          <div className="overflow-x-auto rounded-2xl overflow-hidden">
+                            <table className="w-full text-left border-collapse min-w-[600px]">
+                              <thead>
+                                <tr className="bg-transparent">
+                                  <th scope="col" className="py-4 px-6 sm:px-8 text-left text-base sm:text-lg font-bold text-[#1b365d] dark:text-blue-400 w-[28%] sm:w-[26%]">
+                                    {t('assessment.review.tableQuestion', 'Question')}
+                                  </th>
+                                  <th scope="col" className="py-4 px-6 sm:px-8 text-left text-base sm:text-lg font-bold text-[#1b365d] dark:text-blue-400 w-[56%] sm:w-[58%]">
+                                    {t('assessment.review.tableAnswer', 'Answer')}
+                                  </th>
+                                  <th scope="col" className="py-4 px-6 sm:px-8 text-right sm:text-center text-base sm:text-lg font-bold text-[#1b365d] dark:text-blue-400 w-[16%]">
+                                    {t('assessment.review.tablePoints', 'Points')}
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="text-sm sm:text-base">
+                                {reviewCalculations.rows.map((row, idx) => {
+                                  const isZebra = idx % 2 === 0
+                                  return (
+                                    <tr
+                                      key={row.num}
+                                      className={cn(
+                                        'transition-colors',
+                                        isZebra
+                                          ? 'bg-[#f0f9ff] dark:bg-sky-950/25 hover:bg-sky-100/60 dark:hover:bg-sky-950/40'
+                                          : 'bg-transparent hover:bg-slate-50/70 dark:hover:bg-slate-800/40'
+                                      )}
+                                    >
+                                      <td className="py-3.5 px-6 sm:px-8 font-normal text-slate-800 dark:text-slate-200 align-top">
+                                        <span className="font-semibold text-slate-900 dark:text-white mr-1.5">{row.num}.</span>
+                                        {row.question}
+                                      </td>
+                                      <td className="py-3.5 px-6 sm:px-8 font-medium text-slate-700 dark:text-slate-300 align-top leading-relaxed break-words">
+                                        {row.answer}
+                                      </td>
+                                      <td className="py-3.5 px-6 sm:px-8 font-semibold text-slate-900 dark:text-slate-100 text-right sm:text-center align-top whitespace-nowrap">
+                                        {row.points}
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                              <tfoot>
+                                <tr className="bg-slate-100/80 dark:bg-slate-800/60">
+                                  <td className="py-4 px-6 sm:px-8 text-slate-900 dark:text-white font-bold text-sm sm:text-base">
+                                    {t('assessment.review.totalRiskScore', 'Total ADA Risk Score')}
+                                  </td>
+                                  <td className="py-4 px-6 sm:px-8 text-sm sm:text-base font-medium">
+                                    {reviewCalculations.isHighAdaRisk ? (
+                                      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 px-3 py-1 text-xs font-semibold">
+                                        <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                        {t('assessment.review.highRiskAlert', 'Elevated Risk (≥ 5 points)')}
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 px-3 py-1 text-xs font-semibold">
+                                        <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                        {t('assessment.review.lowRiskAlert', 'Low / Normal Risk (< 5 points)')}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-4 px-6 sm:px-8 text-right sm:text-center text-[#1b365d] dark:text-blue-400 text-lg font-black">
+                                    {reviewCalculations.totalAdaScore}
+                                  </td>
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
+
+                          {/* Action Buttons moved outside of table/card */}
+                          <div className="pt-2 flex flex-wrap items-center justify-between gap-4">
+                            <button
+                              type="button"
+                              onClick={interviewBack}
+                              className="rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-8 py-3 text-base font-semibold text-slate-700 dark:text-slate-200 transition hover:bg-slate-100 dark:hover:bg-slate-700 active:scale-[0.98] cursor-pointer inline-flex items-center gap-2 shadow-xs"
+                            >
+                              <ArrowLeft className="h-5 w-5" />
+                              {t('common.back', 'Back')}
+                            </button>
+
+                            <button
+                              type="submit"
+                              disabled={submitting}
+                              className="rounded-full bg-blue-600 hover:bg-blue-700 text-white px-10 py-3 text-base sm:text-lg font-semibold shadow-md hover:shadow-lg transition active:scale-[0.98] cursor-pointer inline-flex items-center gap-2.5 disabled:opacity-50"
+                            >
+                              <Send className="h-5 w-5" />
+                              {submitting ? t('assessment.status.analyzing', 'Analyzing...') : t('assessment.status.runAssessment', 'Run Assessment')}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
 
               {/* ═══════════════ STEP 2 (REVIEW) — Lab & Submit ════════════ */}
               {step === REVIEW_STEP ? (
-                <div className="assessment-step-list space-y-5">
-                  <p className="text-xs text-slate-500">
-                    {t('assessment.labs.mode', 'Mode')}: <span className="font-semibold">{assessmentMode === 'diagnostic' ? (<span className="inline-flex items-center gap-1 text-cyan-700 dark:text-cyan-300"><FlaskConical className="h-3.5 w-3.5" />{t('assessment.labs.diagnosticMode', 'Diagnostic')}</span>) : (<span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300"><ClipboardList className="h-3.5 w-3.5" />{t('assessment.labs.screeningMode', 'Screening')}</span>)}</span>
-                    {' · '}
-                    <button type="button" className="font-semibold text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 transition-colors" onClick={() => { setStep(1); setCursorOverride(null) }}>
-                      {t('assessment.interview.editAnswers', 'Edit interview answers')}
-                    </button>
-                  </p>
-
-                  {/* ── Review Summary ──────────────────────── */}
-                  <QSection icon={<ClipboardList className="h-5 w-5 text-slate-500" />} title={t('assessment.reviewSummary', 'Review Summary')} sub={t('assessment.reviewSummarySub', 'Double-check before submitting')}>
-                    <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xs">
-                      <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 px-4 py-2.5 text-white">
-                        <p className="text-sm font-semibold uppercase tracking-[0.08em]">{t('assessment.review.overview', 'Assessment Overview')}</p>
+                <div className="assessment-step-list space-y-6">
+                  {/* ── Patient Profile & Assessment Context Banner ── */}
+                  <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="flex items-center gap-3.5">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-[#1b365d] dark:bg-blue-950/60 dark:text-blue-300 border border-blue-100 dark:border-blue-900/40">
+                          <UserRound className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                              {needsPatient ? (selectedPatient ? `${selectedPatient.full_name} (#${selectedPatient.id})` : t('assessment.patient.noSelection', 'Not selected')) : user?.name || t('assessment.review.currentUser', 'Current user')}
+                            </h4>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-cyan-50 border border-cyan-200 px-2.5 py-0.5 text-xs font-semibold text-cyan-800 dark:bg-cyan-950/40 dark:border-cyan-800 dark:text-cyan-300">
+                              {assessmentMode === 'diagnostic' ? (
+                                <>
+                                  <FlaskConical className="h-3 w-3" />
+                                  {t('assessment.labs.diagnosticMode', 'Diagnostic Mode')}
+                                </>
+                              ) : (
+                                <>
+                                  <ClipboardList className="h-3 w-3" />
+                                  {t('assessment.labs.screeningMode', 'Screening Mode')}
+                                </>
+                              )}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            {t('assessment.review.assessedFor', 'Assessed for')}: <span className="font-medium text-slate-700 dark:text-slate-300">{needsPatient ? t('assessment.review.forPatient', 'Registered Patient') : (subjectMode === 'other' ? t('assessment.review.forOther', 'Someone else') : t('assessment.review.forSelf', 'Myself'))}</span>
+                          </p>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-slate-700">
-                        {/* Column 1: Patient & Profile Information */}
-                        <div className="flex flex-col">
-                          <div className="bg-slate-50/80 dark:bg-slate-800/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700">
-                            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                              {t('assessment.review.overviewPatientProfile', 'Patient & Profile Information')}
-                            </span>
-                          </div>
-                          <table className="w-full border-collapse">
-                            <tbody className="divide-y divide-slate-200 dark:divide-slate-700 text-sm">
-                              {[
-                                [t('assessment.review.patient', 'Patient'), needsPatient ? (selectedPatient ? `${selectedPatient.full_name} (#${selectedPatient.id})` : t('assessment.patient.noSelection', 'Not selected')) : user?.name || 'Current user'],
-                                [t('assessment.review.assessedFor', 'Assessed for'), needsPatient ? t('assessment.review.forPatient', 'Registered Patient') : (subjectMode === 'other' ? t('assessment.review.forOther', 'Someone else') : t('assessment.review.forSelf', 'Myself'))],
-                                [t('assessment.review.mode', 'Mode'), assessmentMode === 'diagnostic' ? t('assessment.labs.diagnosticMode', 'Diagnostic') : t('assessment.labs.screeningMode', 'Screening')],
-                                [t('assessment.review.sex', 'Sex'), form.sex === 'female' ? `${sexLabel} · ${form.currently_pregnant ? t('assessment.interview.pregnantShort', 'Pregnant') : t('assessment.interview.notPregnant', 'Not pregnant')}` : sexLabel],
-                                [t('assessment.review.age', 'Age'), form.age ? `${form.age} ${t('common.yearsUnit', 'yrs')}` : '—'],
-                                [t('assessment.review.bmi', 'BMI'), form.bmi ? String(form.bmi) : '—'],
-                                [t('assessment.review.waist', 'Waist'), form.waist_circumference ? `${form.waist_circumference} cm` : '—'],
-                              ].map(([label, value]) => (
-                                <tr key={label} className="h-[42px] hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                                  <th scope="row" className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 w-px">
-                                    {label}
-                                  </th>
-                                  <td className="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-100 break-words">
-                                    {value}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
 
-                        {/* Column 2: Clinical Evidence & Lab Indicators */}
-                        <div className="flex flex-col">
-                          <div className="bg-slate-50/80 dark:bg-slate-800/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700">
-                            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                              {t('assessment.review.overviewClinicalData', 'Clinical Evidence & Lab Indicators')}
-                            </span>
-                          </div>
-                          <table className="w-full border-collapse">
-                            <tbody className="divide-y divide-slate-200 dark:divide-slate-700 text-sm">
-                              {[
-                                [t('assessment.review.fastingGlucose', 'Fasting Glucose (FPG)'), form.fasting_glucose ? `${form.fasting_glucose} mg/dL` : '—'],
-                                [t('assessment.review.hba1c', 'HbA1c'), form.hba1c ? `${form.hba1c} %` : '—'],
-                                [t('assessment.review.ogtt', 'Oral Glucose (OGTT 2h)'), form.ogtt_2h ? `${form.ogtt_2h} mg/dL` : '—'],
-                                [t('assessment.review.symptoms', 'Symptoms'), `${selectedSymptoms.length + customSymptoms.length} ${t('common.selected', 'selected')}`],
-                                [t('assessment.review.risks', 'Risk Factors'), `${selectedRisks.length} ${t('common.selected', 'selected')}`],
-                                [t('assessment.review.hypoFlag', 'Hypoglycemia Risk'), hasHypoTrigger ? t('common.yes', 'Yes') : '—'],
-                                [t('assessment.review.urgentFlag', 'Urgent Warning Flag'), hasUrgentTrigger ? t('common.yes', 'Yes') : '—'],
-                              ].map(([label, value]) => (
-                                <tr key={label} className="h-[42px] hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                                  <th scope="row" className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 w-px">
-                                    {label}
-                                  </th>
-                                  <td className="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-100 break-words">
-                                    {value}
+                      <button
+                        type="button"
+                        onClick={() => { setStep(1); setCursorOverride(null) }}
+                        className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-full px-4 py-2 text-xs font-semibold text-[#1b365d] bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900/60 transition-colors border border-blue-200/70 dark:border-blue-800/70 cursor-pointer"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                        {t('assessment.interview.editAnswers', 'Edit interview answers')}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ── Review Summary Table (Inspired by clean questionnaire style) ── */}
+                  <QSection
+                    icon={<ClipboardList className="h-5 w-5 text-[#1b365d] dark:text-blue-400" />}
+                    title={t('assessment.reviewSummary', 'Review Summary')}
+                    sub={t('assessment.reviewSummarySub', 'Double-check before submitting')}
+                  >
+                    <div className="overflow-hidden rounded-2xl border border-blue-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse min-w-[550px]">
+                          <thead>
+                            <tr className="bg-white dark:bg-slate-900 border-b border-blue-100 dark:border-slate-800">
+                              <th scope="col" className="py-4 px-6 text-left text-base sm:text-lg font-bold text-[#1b365d] dark:text-blue-300 w-[28%] sm:w-[26%]">
+                                {t('assessment.review.tableQuestion', 'Question')}
+                              </th>
+                              <th scope="col" className="py-4 px-6 text-left text-base sm:text-lg font-bold text-[#1b365d] dark:text-blue-300 w-[56%] sm:w-[58%]">
+                                {t('assessment.review.tableAnswer', 'Answer')}
+                              </th>
+                              <th scope="col" className="py-4 px-6 text-right sm:text-center text-base sm:text-lg font-bold text-[#1b365d] dark:text-blue-300 w-[16%]">
+                                {t('assessment.review.tablePoints', 'Points')}
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="text-sm sm:text-base">
+                            {reviewCalculations.rows.map((row, idx) => {
+                              const isZebra = idx % 2 === 0
+                              return (
+                                <tr
+                                  key={row.num}
+                                  className={cn(
+                                    'transition-colors hover:bg-blue-100/50 dark:hover:bg-sky-950/40',
+                                    isZebra
+                                      ? 'bg-[#f0f8ff] dark:bg-sky-950/20'
+                                      : 'bg-white dark:bg-slate-900'
+                                  )}
+                                >
+                                  <td className="py-3.5 sm:py-4 px-6 font-normal text-slate-800 dark:text-slate-200 align-top">
+                                    <span className="font-semibold text-slate-900 dark:text-slate-100 mr-1.5">{row.num}.</span>
+                                    {row.question}
+                                  </td>
+                                  <td className="py-3.5 sm:py-4 px-6 font-medium text-slate-800 dark:text-slate-100 align-top leading-relaxed break-words">
+                                    {row.answer}
+                                  </td>
+                                  <td className="py-3.5 sm:py-4 px-6 font-semibold text-slate-800 dark:text-slate-200 text-right sm:text-center align-top whitespace-nowrap">
+                                    {row.points}
                                   </td>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                              )
+                            })}
+                          </tbody>
+                          <tfoot>
+                            <tr className="border-t-2 border-blue-200 dark:border-blue-900/60 bg-blue-50/90 dark:bg-blue-950/50 font-bold">
+                              <td className="py-4 px-6 text-[#1b365d] dark:text-blue-300 text-sm sm:text-base">
+                                {t('assessment.review.totalRiskScore', 'Total ADA Risk Score')}
+                              </td>
+                              <td className="py-4 px-6 text-slate-800 dark:text-slate-100 text-sm sm:text-base">
+                                {reviewCalculations.isHighAdaRisk ? (
+                                  <span className="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-300 font-semibold">
+                                    <AlertTriangle className="h-4 w-4" />
+                                    {t('assessment.review.highRiskAlert', 'Elevated Risk (≥ 5 points)')}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 font-semibold">
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    {t('assessment.review.lowRiskAlert', 'Low / Normal Risk (< 5 points)')}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-4 px-6 text-right sm:text-center text-[#1b365d] dark:text-blue-300 text-base sm:text-lg font-black">
+                                {reviewCalculations.totalAdaScore}
+                              </td>
+                            </tr>
+                          </tfoot>
+                        </table>
                       </div>
                     </div>
                   </QSection>

@@ -51,7 +51,7 @@ import { getRiskGuideKey } from '@/lib/risk-factor-guide'
 import { bilingualField } from '@/lib/i18n'
 import { TechnicalDetailsSection } from '@/components/diagnosis/TechnicalDetailsSection'
 import PrintableClinicalReport from '@/components/assessment/PrintableClinicalReport'
-import { readDiagnosisResultSnapshot, saveDiagnosisResultSnapshot } from '@/lib/diagnosis-result-storage'
+import { readDiagnosisResultSnapshot, saveDiagnosisResultSnapshot, clearAssessmentSession } from '@/lib/diagnosis-result-storage'
 import { notify } from '@/lib/toast'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -850,9 +850,9 @@ export function DiagnosisResultPage() {
   }
 
   const handleRestartConfirm = () => {
-    localStorage.removeItem('diagnosisResultSnapshot')
+    clearAssessmentSession(user)
     setShowRestartConfirm(false)
-    navigate('/diagnosis', { state: { keepData: true } })
+    navigate('/diagnosis', { replace: true, state: { forceRestart: true } })
   }
 
   const handleDownloadReport = async (langOverride) => {

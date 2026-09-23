@@ -85,18 +85,54 @@ class TestUnifiedAssessmentService:
         assert validated["hba1c"] == 8.5
     
     def test_validate_input_range_checks(self, service):
-        """Test that range validation works."""
-        # Age too high
+        """Test that range validation works and blocks dump inputs."""
+        # Age too high or too low
         with pytest.raises(Exception):
             service._validate_input({"age": 150})
+        with pytest.raises(Exception):
+            service._validate_input({"age": 0})
         
-        # Glucose too low
+        # Glucose too low or too high
         with pytest.raises(Exception):
             service._validate_input({"fasting_glucose": 10})
+        with pytest.raises(Exception):
+            service._validate_input({"fasting_glucose": 700})
         
         # BMI out of range
         with pytest.raises(Exception):
             service._validate_input({"bmi": 100})
+        with pytest.raises(Exception):
+            service._validate_input({"bmi": 5})
+
+        # Dump weight and height (e.g. from user screenshot: 35935 kg, 12414 cm)
+        with pytest.raises(Exception):
+            service._validate_input({"weight_kg": 35935})
+        with pytest.raises(Exception):
+            service._validate_input({"weight_kg": 5})
+        with pytest.raises(Exception):
+            service._validate_input({"height_cm": 12414})
+        with pytest.raises(Exception):
+            service._validate_input({"height_cm": 30})
+
+        # Dump waist circumference
+        with pytest.raises(Exception):
+            service._validate_input({"waist_circumference": 9999})
+        with pytest.raises(Exception):
+            service._validate_input({"waist_circumference": 20})
+
+        # Valid anthropometrics should succeed
+        valid = service._validate_input({
+            "age": 45,
+            "weight_kg": 75.5,
+            "height_cm": 172.0,
+            "waist_circumference": 88.0,
+            "bmi": 25.5
+        })
+        assert valid["weight_kg"] == 75.5
+        assert valid["height_cm"] == 172.0
+        assert valid["waist_circumference"] == 88.0
+        assert valid["bmi"] == 25.5
+
     
     def test_normalize_symptoms_dict(self, service):
         """Test symptom normalization from dict."""
