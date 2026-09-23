@@ -44,7 +44,8 @@ def submit_assessment_to_care_team():
 @require_auth(permissions=["diagnosis.view_own"])
 def get_my_assessments():
     """List assessment results for the current patient user."""
-    results = get_diagnosis_service().list_my_results(g.current_user)
+    limit = min(max(1, request.args.get("limit", default=100, type=int)), 200)
+    results = get_diagnosis_service().list_my_results(g.current_user, limit=limit)
     return success_response(data=results)
 
 

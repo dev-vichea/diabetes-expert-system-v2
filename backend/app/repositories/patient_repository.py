@@ -245,11 +245,12 @@ class PatientRepository:
         db.session.commit()
         return symptom
 
-    def list_symptoms(self, patient_id: int, limit: int = 200) -> list[Symptom]:
+    def list_symptoms(self, patient_id: int, limit: int = 50) -> list[Symptom]:
+        safe_limit = min(max(1, int(limit or 50)), 200)
         return (
             Symptom.query.filter_by(patient_id=patient_id)
             .order_by(Symptom.recorded_at.desc())
-            .limit(limit)
+            .limit(safe_limit)
             .all()
         )
 
@@ -267,29 +268,70 @@ class PatientRepository:
         db.session.commit()
         return result
 
-    def list_lab_results(self, patient_id: int, limit: int = 200) -> list[LabResult]:
+    def list_lab_results(self, patient_id: int, limit: int = 50) -> list[LabResult]:
+        safe_limit = min(max(1, int(limit or 50)), 200)
         return (
             LabResult.query.filter_by(patient_id=patient_id)
             .order_by(LabResult.measured_at.desc())
-            .limit(limit)
+            .limit(safe_limit)
             .all()
         )
 
-    def list_diagnoses(self, patient_id: int, limit: int = 200) -> list[DiagnosisResult]:
+    def list_diagnoses(self, patient_id: int, limit: int = 50) -> list[DiagnosisResult]:
+        safe_limit = min(max(1, int(limit or 50)), 200)
         return (
             DiagnosisResult.query.filter_by(patient_id=patient_id)
-            .order_by(DiagnosisResult.created_at.desc())
-            .limit(limit)
+            .options(
+                joinedload(DiagnosisResult.diagnosed_by_user),
+                joinedload(DiagnosisResult.reviewed_by_user),
+            )
+            .order_by(DiagnosisResult.created_at.desc(), DiagnosisResult.id.desc())
+            .limit(safe_limit)
             .all()
         )
 
     @staticmethod
-    def serialize_patient(patient: Patient) -> dict:
-        latest_diagnosis = (
-            sorted(patient.diagnosis_results, key=lambda item: item.created_at or item.id, reverse=True)[0]
-            if patient.diagnosis_results
-            else None
-        )
+    def serialize_patient(
+        patient: Patient,
+        *,
+        symptom_count: int | None = None,
+        lab_result_count: int | None = None,
+        diagnosis_count: int | None = None,
+        latest_diagnosis: DiagnosisResult | None = None,
+    ) -> dict:
+        from sqlalchemy.orm import attributes
+
+        state = attributes.instance_state(patient)
+
+        if symptom_count is None:
+            if "symptoms" not in state.unloaded:
+                symptom_count = len(patient.symptoms)
+            else:
+                symptom_count = db.session.query(func.count(Symptom.id)).filter(Symptom.patient_id == patient.id).scalar() or 0
+
+        if lab_result_count is None:
+            if "lab_results" not in state.unloaded:
+                lab_result_count = len(patient.lab_results)
+            else:
+                lab_result_count = db.session.query(func.count(LabResult.id)).filter(LabResult.patient_id == patient.id).scalar() or 0
+
+        if diagnosis_count is None:
+            if "diagnosis_results" not in state.unloaded:
+                diagnosis_count = len(patient.diagnosis_results)
+            else:
+                diagnosis_count = db.session.query(func.count(DiagnosisResult.id)).filter(DiagnosisResult.patient_id == patient.id).scalar() or 0
+
+        if latest_diagnosis is None:
+            if "diagnosis_results" not in state.unloaded and patient.diagnosis_results:
+                latest_diagnosis = (
+                    sorted(patient.diagnosis_results, key=lambda item: item.created_at or item.id, reverse=True)[0]
+                )
+            else:
+                latest_diagnosis = (
+                    DiagnosisResult.query.filter_by(patient_id=patient.id)
+                    .order_by(DiagnosisResult.created_at.desc(), DiagnosisResult.id.desc())
+                    .first()
+                )
 
         return {
             "id": patient.id,
@@ -312,9 +354,9 @@ class PatientRepository:
             "profile_completed": patient.profile_completed_at is not None,
             "created_at": serialize_datetime(patient.created_at),
             "updated_at": serialize_datetime(patient.updated_at),
-            "symptom_count": len(patient.symptoms),
-            "lab_result_count": len(patient.lab_results),
-            "diagnosis_count": len(patient.diagnosis_results),
+            "symptom_count": symptom_count,
+            "lab_result_count": lab_result_count,
+            "diagnosis_count": diagnosis_count,
             "latest_diagnosis_result_id": latest_diagnosis.id if latest_diagnosis else None,
             "latest_diagnosis": latest_diagnosis.diagnosis if latest_diagnosis else None,
             "latest_diagnosis_created_at": serialize_datetime(latest_diagnosis.created_at) if latest_diagnosis else None,

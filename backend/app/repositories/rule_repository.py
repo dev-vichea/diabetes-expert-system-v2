@@ -78,6 +78,7 @@ class RuleRepository:
         category: str | None = None,
         status: str | None = None,
         include_archived: bool = False,
+        limit: int | None = None,
     ) -> list[dict]:
         query = Rule.query.options(
             selectinload(Rule.category_ref),
@@ -93,7 +94,11 @@ class RuleRepository:
         elif not include_archived:
             query = query.filter(Rule.status != "archived")
 
-        rules = query.order_by(Rule.updated_at.desc(), Rule.id.asc()).all()
+        query = query.order_by(Rule.updated_at.desc(), Rule.id.asc())
+        if limit:
+            query = query.limit(min(max(1, int(limit)), 500))
+
+        rules = query.all()
         return [self._serialize_rule(rule) for rule in rules]
 
     def get_rule(self, rule_id: int) -> dict | None:

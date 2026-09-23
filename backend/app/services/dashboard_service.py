@@ -473,22 +473,36 @@ class DashboardService:
             for cat, count in cat_counts
         ]
 
-        q = db.session.query(DiagnosisResult)
+        # Aggregate count and average accuracy directly in database
+        agg_query = db.session.query(
+            func.count(DiagnosisResult.id),
+            func.coalesce(func.avg(DiagnosisResult.certainty), 0.0),
+        )
+        if range_start:
+            agg_query = agg_query.filter(DiagnosisResult.created_at >= range_start)
+        if range_end:
+            agg_query = agg_query.filter(DiagnosisResult.created_at <= range_end)
+        total_diag_count, db_avg_cert = agg_query.first() or (0, 0.0)
+        avg_accuracy = round(float(db_avg_cert) * 100, 1)
+
+        # Project only triggered_rules_json and certainty from recent diagnoses (avoiding full ORM model overhead)
+        q = db.session.query(
+            DiagnosisResult.triggered_rules_json,
+            DiagnosisResult.certainty,
+        )
         if range_start:
             q = q.filter(DiagnosisResult.created_at >= range_start)
         if range_end:
             q = q.filter(DiagnosisResult.created_at <= range_end)
-        diagnoses = q.order_by(DiagnosisResult.created_at.desc()).limit(300).all()
+        diagnoses = q.order_by(DiagnosisResult.created_at.desc()).limit(100).all()
 
         n = len(diagnoses)
         total_triggered = 0
         rule_hits = {}
-        cert_sum = 0.0
 
-        for d in diagnoses:
-            rules = d.triggered_rules_json or []
+        for rules_json, cert in diagnoses:
+            rules = rules_json or []
             total_triggered += len(rules)
-            cert_sum += float(d.certainty or 0.0)
             for r in rules:
                 code = r.get("code") or r.get("id") or r.get("name")
                 if not code:
@@ -505,16 +519,21 @@ class DashboardService:
                 rule_hits[code]["hits"] += 1
 
         avg_rules = round(total_triggered / n, 1) if n > 0 else 0.0
-        avg_accuracy = round((cert_sum / n) * 100, 1) if n > 0 else 0.0
 
-        all_rules = db.session.query(Rule).all()
-        rule_models = {r.code: r for r in all_rules}
+        # Query ONLY the top 5 triggered rules rather than downloading the entire rules table
+        top_rule_entries = sorted(rule_hits.items(), key=lambda x: x[1]["hits"], reverse=True)[:5]
+        top_codes = [code for code, _ in top_rule_entries]
+        rule_models = {}
+        if top_codes:
+            matched_rules = (
+                db.session.query(Rule.code, Rule.name, Rule.category)
+                .filter(Rule.code.in_(top_codes))
+                .all()
+            )
+            rule_models = {r.code: r for r in matched_rules}
 
         top_rules = []
-        for rank_idx, (code, data) in enumerate(
-            sorted(rule_hits.items(), key=lambda x: x[1]["hits"], reverse=True)[:5],
-            start=1,
-        ):
+        for rank_idx, (code, data) in enumerate(top_rule_entries, start=1):
             rule_obj = rule_models.get(code)
             top_rules.append({
                 "id": rank_idx,
@@ -534,10 +553,10 @@ class DashboardService:
                 chunk = chronological[i : i + chunk_size]
                 if not chunk:
                     continue
-                chunk_rules = sum(len(c.triggered_rules_json or []) for c in chunk)
+                chunk_rules = sum(len(getattr(c, "triggered_rules_json", c[0]) or []) for c in chunk)
                 chunk_avg = round(chunk_rules / len(chunk), 1)
                 chunk_cert = round(
-                    sum(float(c.certainty or 0.0) for c in chunk) / len(chunk) * 100, 1
+                    sum(float(getattr(c, "certainty", c[1]) or 0.0) for c in chunk) / len(chunk) * 100, 1
                 )
                 exec_points.append({"value": len(chunk)})
                 rule_points.append({"value": chunk_avg})

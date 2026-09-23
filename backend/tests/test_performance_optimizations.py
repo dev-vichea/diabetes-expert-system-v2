@@ -115,3 +115,59 @@ def test_admin_system_stats_has_totals(client, admin_auth):
     assert "total" in data["assessments"]
     assert "treatment_plans" in data
     assert "total" in data["treatment_plans"]
+
+
+def test_patient_history_query_efficiency(client, doctor_auth, app):
+    headers = {"Authorization": f"Bearer {doctor_auth['access_token']}"}
+
+    # Fetch patient 1
+    queries = []
+    def before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+        queries.append(statement)
+
+    with app.app_context():
+        event.listen(db.engine, "before_cursor_execute", before_cursor_execute)
+        try:
+            res = client.get("/api/patients/1/history?limit=10", headers=headers)
+            assert res.status_code == 200
+        finally:
+            event.remove(db.engine, "before_cursor_execute", before_cursor_execute)
+
+    body = res.get_json()
+    data = body.get("data", {})
+    assert "patient" in data
+    assert "symptoms" in data
+    assert "lab_results" in data
+    assert "diagnosis_history" in data
+    assert len(queries) <= 8, f"Expected <= 8 queries, got {len(queries)} queries: {queries}"
+
+
+def test_rules_and_facts_limits(client, doctor_auth):
+    headers = {"Authorization": f"Bearer {doctor_auth['access_token']}"}
+
+    # Test rules with limit
+    res_rules = client.get("/api/rules?limit=3", headers=headers)
+    assert res_rules.status_code == 200
+    rules_body = res_rules.get_json()
+    assert len(rules_body.get("data", [])) <= 3
+
+    # Test facts with limit
+    res_facts = client.get("/api/facts?limit=4", headers=headers)
+    assert res_facts.status_code == 200
+    facts_body = res_facts.get_json()
+    assert len(facts_body.get("data", [])) <= 4
+
+
+def test_clinical_dashboard_aggregation(client, doctor_auth):
+    headers = {"Authorization": f"Bearer {doctor_auth['access_token']}"}
+    response = client.get("/api/dashboard/clinical?days=30", headers=headers)
+    assert response.status_code == 200
+    body = response.get_json()
+    data = body.get("data", {})
+    assert "rules_analytics" in data
+    ra = data["rules_analytics"]
+    assert "active_rules" in ra
+    assert "accuracy" in ra
+    assert "top_triggered_rules" in ra
+    assert "rule_distribution" in ra
+

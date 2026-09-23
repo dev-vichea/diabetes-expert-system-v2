@@ -282,11 +282,12 @@ class DiagnosisService:
         eval_payload["submitted_to_care_team"] = True
         return self.evaluate(eval_payload, current_user=current_user)
 
-    def list_my_results(self, current_user: dict) -> list[dict]:
+    def list_my_results(self, current_user: dict, limit: int = 100) -> list[dict]:
         patient_id = self._resolve_patient_id(payload={}, current_user=current_user, user_roles={"patient"})
+        safe_limit = min(max(1, int(limit or 100)), 200)
         return [
             self._normalize_persisted_texts(row)
-            for row in self.diagnosis_repository.list_by_patient_id(patient_id)
+            for row in self.diagnosis_repository.list_by_patient_id(patient_id, limit=safe_limit)
         ]
 
     def list_review_results(self, limit: int = 100, page: int = 1) -> tuple[list[dict], int]:

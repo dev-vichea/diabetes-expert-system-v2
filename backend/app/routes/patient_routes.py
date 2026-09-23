@@ -55,7 +55,8 @@ def update_my_profile():
 @patient_bp.get("/mine/history")
 @require_auth(permissions=["patient.view_own", "diagnosis.view_own"])
 def get_my_history():
-    history = get_patient_service().get_my_history(g.current_user)
+    limit = min(max(1, request.args.get("limit", default=50, type=int)), 200)
+    history = get_patient_service().get_my_history(g.current_user, limit=limit)
     return success_response(data=history)
 
 
@@ -78,7 +79,8 @@ def update_patient_profile(patient_id: int):
 @patient_bp.get("/<int:patient_id>/history")
 @require_auth(permissions=["patient.view"])
 def get_patient_history(patient_id: int):
-    history = get_patient_service().get_patient_history(patient_id)
+    limit = min(max(1, request.args.get("limit", default=50, type=int)), 200)
+    history = get_patient_service().get_patient_history(patient_id, limit=limit)
     return success_response(data=history)
 
 

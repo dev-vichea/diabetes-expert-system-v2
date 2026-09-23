@@ -14,7 +14,7 @@ OVERLAY_FIELDS = ("weight", "type_indication", "is_cardinal", "is_emergency", "a
 class FactRepository:
     """CRUD + lookups for the doctor-managed fact/symptom knowledge catalog."""
 
-    def list_facts(self, *, category=None, status=None, search=None) -> list[dict]:
+    def list_facts(self, *, category=None, status=None, search=None, limit=None) -> list[dict]:
         query = Fact.query
         if category:
             query = query.filter(Fact.category == str(category).strip().lower())
@@ -29,7 +29,10 @@ class FactRepository:
                 func.lower(Fact.label).like(like),
                 func.lower(Fact.medical_term).like(like),
             ))
-        rows = query.order_by(Fact.display_order.asc(), Fact.key.asc()).all()
+        query = query.order_by(Fact.display_order.asc(), Fact.key.asc())
+        if limit:
+            query = query.limit(min(max(1, int(limit)), 1000))
+        rows = query.all()
         return [self._serialize(row) for row in rows]
 
     def get_fact(self, fact_id: int) -> dict | None:

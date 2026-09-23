@@ -11,10 +11,12 @@ fact_bp = Blueprint("facts", __name__)
 @fact_bp.route("/", methods=["GET"], strict_slashes=False)
 @require_auth(permissions=["rule.view", "diagnosis.run"], permission_mode="any")
 def list_facts():
+    limit = min(max(1, request.args.get("limit", default=500, type=int)), 1000)
     facts = get_fact_service().list_facts(
         category=request.args.get("category", default="", type=str).strip() or None,
         status=request.args.get("status", default="", type=str).strip() or None,
         search=request.args.get("search", default="", type=str).strip() or None,
+        limit=limit,
     )
     return success_response(data=facts)
 

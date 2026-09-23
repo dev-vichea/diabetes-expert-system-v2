@@ -20,17 +20,20 @@ def get_rule_categories():
     return success_response(data=categories)
 
 
+@rule_bp.get("")
 @rule_bp.get("/")
 @require_auth(permissions=["rule.view"])
 def get_rules():
     category = request.args.get("category", default="", type=str).strip() or None
     status = request.args.get("status", default="", type=str).strip() or None
     include_archived = _parse_bool(request.args.get("include_archived", default="false", type=str))
+    limit = min(max(1, request.args.get("limit", default=200, type=int)), 500)
 
     rules = get_rule_service().list_rules(
         category=category,
         status=status,
         include_archived=include_archived,
+        limit=limit,
     )
     return success_response(data=rules)
 

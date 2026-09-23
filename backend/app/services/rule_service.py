@@ -61,6 +61,7 @@ class RuleService:
         category: str | None = None,
         status: str | None = None,
         include_archived: bool = False,
+        limit: int | None = None,
     ) -> list[dict]:
         normalized_category = self._normalize_category(category) if category else None
 
@@ -74,6 +75,7 @@ class RuleService:
             category=normalized_category,
             status=normalized_status,
             include_archived=include_archived,
+            limit=limit,
         )
 
     def get_rule(self, rule_id: int) -> dict:
