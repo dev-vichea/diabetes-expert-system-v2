@@ -475,7 +475,8 @@
     "hourAgo": "{{count}} hour ago",
     "hoursAgo": "{{count}} hours ago",
     "dayAgo": "{{count}} day ago",
-    "daysAgo": "{{count}} days ago"
+    "daysAgo": "{{count}} days ago",
+    "yesterday": "Yesterday"
   },
   "breadcrumbs": {
     "dashboard": "Dashboard",
@@ -2670,6 +2671,28 @@
     }
   },
   "kbDashboard": {
+    "title": "Knowledge Base Activity",
+    "desc": "Clinical decision logic execution and rule trigger frequency.",
+    "triggersCount": "clinical triggers",
+    "rulesConfigured": "rules configured",
+    "categories": {
+      "diagnosis": "Diagnosis",
+      "triage": "Triage",
+      "recommendation": "Recommendation",
+      "classification": "Classification"
+    },
+    "mockRules": {
+      "hyperglycemiaTriage": "Hyperglycemia Triage",
+      "hyperglycemiaTriageFull": "Severe Hyperglycemia Triage Protocol",
+      "t2dCriteria": "T2D Criteria",
+      "t2dCriteriaFull": "Type 2 Diabetes Diagnostic Criteria",
+      "lifestyleGuidance": "Lifestyle Guidance",
+      "lifestyleGuidanceFull": "Dietary & Physical Activity Guidance",
+      "hba1cStrat": "HbA1c Stratification",
+      "hba1cStratFull": "HbA1c Glycemic Stratification Protocol",
+      "hypoglycemiaSafety": "Hypoglycemia Safety",
+      "hypoglycemiaSafetyFull": "Acute Hypoglycemia Alert & Safety Protocol"
+    },
     "ranges": {
       "last7Days": "Last 7 Days",
       "last30Days": "Last 30 Days",
@@ -2685,7 +2708,7 @@
         "trend": "+12% from previous"
       },
       "avgRules": {
-        "title": "Avg. Rules Triggered",
+        "title": "Rules / Case",
         "desc": "Per assessment",
         "trend": "Stable"
       },
@@ -2695,12 +2718,12 @@
         "trend": "+2 this month"
       },
       "accuracy": {
-        "title": "Mean Rule Certainty",
+        "title": "Mean Certainty",
         "desc": "Model score, not measured clinical accuracy",
         "trend": "No evaluations yet"
       }
     },
-    "ruleDistribution": "Rule Distribution",
+    "ruleDistribution": "Category Distribution",
     "topTriggeredRules": "Top Triggered Rules",
     "columns": {
       "rank": "Rank",
@@ -2756,6 +2779,7 @@
       "reviewQueue": "Review patient queue",
       "newAssessment": "New assessment",
       "findPatient": "Find patient",
+      "knowledgeBase": "Knowledge Base",
       "urgent": "Urgent",
       "needReview": "Need review",
       "reviewedOfTotal": "{{reviewed}} of {{total}} reviewed",
@@ -2764,7 +2788,7 @@
       "needsReview": "Needs review",
       "needsReviewHint": "Awaiting your attention",
       "urgentPatients": "Urgent patients",
-      "urgentPatientsHint": "+2 since yesterday",
+      "urgentPatientsHint": "Awaiting urgent review",
       "reviewNow": "Review now",
       "openQueue": "Open queue",
       "viewPlans": "View plans",
@@ -2784,8 +2808,14 @@
       "lastAssessment": "Last Assessment",
       "status": "Status",
       "action": "Action",
-      "openFullQueue": "Open full queue",
+      "openFullQueue": "View full patient queue",
       "certainty": "certainty",
+      "clinicalFinding": "Clinical finding",
+      "onTrack": "On track",
+      "unreviewed": "Unreviewed",
+      "pending": "Pending",
+      "review": "Review",
+      "patientsCount": "patients",
       "queueClear": "The queue is clear",
       "patientInsight": "Patient insight",
       "currentPopulation": "Current patient population",

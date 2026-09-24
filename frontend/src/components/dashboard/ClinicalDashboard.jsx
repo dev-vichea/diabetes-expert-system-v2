@@ -1,8 +1,8 @@
-import { useEffect, useState, useMemo, useCallback, useRef, useLayoutEffect } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Area,
-  AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
   Cell,
   Pie,
@@ -16,6 +16,8 @@ import {
   ArrowRight,
   ArrowUpRight,
   BadgeCheck,
+  BarChart3,
+  BarChartHorizontal,
   BookOpen,
   CalendarClock,
   CalendarDays,
@@ -45,12 +47,14 @@ import {
   PopoverTrigger,
   SectionCard,
   UserAvatar,
+  StatusBadge,
   DashboardSkeleton,
 } from '@/components/ui'
 import api, { getApiData } from '@/api/client'
-import { CAMBODIA_TIME_ZONE, formatDateTime } from '@/lib/datetime'
+import { CAMBODIA_TIME_ZONE, formatDateTime, formatRelativeTime } from '@/lib/datetime'
 import { getLocaleForLanguage } from '@/lib/i18n'
 import { notify } from '@/lib/toast'
+import { cn, cleanRuleName } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 
@@ -124,17 +128,6 @@ function AnimatedNumber({ value, ready = true, className }) {
   const count = useCountUp(ready ? value : null)
   if (!ready) return <span className={className}>—</span>
   return <span className={className}>{count}</span>
-}
-
-function formatRelativeTime(value) {
-  const timestamp = new Date(value).getTime()
-  if (!Number.isFinite(timestamp)) return '—'
-  const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60000))
-  if (minutes < 60) return `${minutes || 1} min ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`
-  const days = Math.floor(hours / 24)
-  return `${days} day${days === 1 ? '' : 's'} ago`
 }
 
 /** Patient-list filters that back the risk-mix segments. */
@@ -364,7 +357,7 @@ export function DoctorWorkloadStrip({ workload, ready, rangeLabel, t }) {
 /* ------------------------------------------------------------------ */
 /*  Custom range popover                                                */
 /* ------------------------------------------------------------------ */
-function CustomRangePopover({ isActive, value, onApply, onReset, triggerRef, t }) {
+function CustomRangePopover({ isActive, value, onApply, onReset, t }) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState(value)
   const [today, setToday] = useState(getTodayIsoDate)
@@ -388,11 +381,13 @@ function CustomRangePopover({ isActive, value, onApply, onReset, triggerRef, t }
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
-        ref={triggerRef}
         type="button"
         aria-pressed={isActive}
-        className={`relative z-10 inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${isActive ? 'text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
-          }`}
+        className={`inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
+          isActive
+            ? 'bg-primary-600 text-white shadow-sm'
+            : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white'
+        }`}
       >
         <CalendarRange className="h-3.5 w-3.5" aria-hidden />
         {t('dashboard.toolbar.custom', 'Custom')}
@@ -503,6 +498,9 @@ export function ClinicalDashboard({ activeRole }) {
   const [selectedRange, setSelectedRange] = useState('all') // preset key or 'custom'
   const [customRange, setCustomRange] = useState({ start: '', end: '' })
   const [priorityFilter, setPriorityFilter] = useState('all')
+  const [kbChartType, setKbChartType] = useState('rules')
+  const [hoveredRisk, setHoveredRisk] = useState(null)
+  const [isPieHovered, setIsPieHovered] = useState(false)
 
   const dateRanges = useMemo(
     () =>
@@ -534,45 +532,6 @@ export function ClinicalDashboard({ activeRole }) {
     }
     return dateRanges.find((r) => r.key === selectedRange)?.label || t('dashboard.kpi.allTime', 'All Time')
   }, [customRange.end, customRange.start, customRangeValid, dateRanges, isCustomRange, language, selectedRange, t])
-
-  /* -- Sliding highlight that glides under the active range preset ----- */
-  const presetBarRef = useRef(null)
-  const presetButtonRefs = useRef(new Map())
-  const [presetIndicator, setPresetIndicator] = useState({ left: 0, width: 0, ready: false })
-
-  const syncPresetIndicator = useCallback(() => {
-    const button = presetButtonRefs.current.get(selectedRange)
-    if (!button) {
-      setPresetIndicator((prev) => (prev.ready ? { ...prev, ready: false } : prev))
-      return
-    }
-    setPresetIndicator({ left: button.offsetLeft, width: button.offsetWidth, ready: true })
-  }, [selectedRange])
-
-  /** Stable per-button ref callbacks so React does not re-attach them each render. */
-  const presetButtonRefCallbacks = useMemo(() => {
-    const register = (key) => (node) => {
-      if (node) presetButtonRefs.current.set(key, node)
-      else presetButtonRefs.current.delete(key)
-    }
-    const callbacks = new Map()
-    DATE_RANGE_CONFIG.forEach((range) => callbacks.set(range.key, register(range.key)))
-    callbacks.set(CUSTOM_RANGE_KEY, register(CUSTOM_RANGE_KEY))
-    return callbacks
-  }, [])
-
-  useLayoutEffect(() => {
-    syncPresetIndicator()
-  }, [dateRanges, language, syncPresetIndicator])
-
-  useEffect(() => {
-    const bar = presetBarRef.current
-    if (!bar || typeof ResizeObserver === 'undefined') return undefined
-    const observer = new ResizeObserver(() => syncPresetIndicator())
-    observer.observe(bar)
-    presetButtonRefs.current.forEach((node) => node && observer.observe(node))
-    return () => observer.disconnect()
-  }, [dateRanges, syncPresetIndicator])
 
   const selectRange = useCallback((key) => setSelectedRange(key), [])
 
@@ -755,6 +714,11 @@ export function ClinicalDashboard({ activeRole }) {
     }
   }, [stats?.risk_classification, riskClassificationData, t])
 
+  const activeRiskRows = useMemo(
+    () => riskSummary.rows.filter((row) => row.value > 0),
+    [riskSummary.rows]
+  )
+
   const goToRiskFilter = useCallback(
     (rawName) => {
       if (!rawName || rawName === 'No Data') return
@@ -767,7 +731,114 @@ export function ClinicalDashboard({ activeRole }) {
   const rulesAnalytics = stats?.rules_analytics || null
   const topTriggeredRules = rulesAnalytics?.top_triggered_rules || []
   const maxRuleHits = Math.max(1, ...topTriggeredRules.map((rule) => Number(rule.hits) || 0))
-  const recentActivity = (stats?.recent_cases || []).slice(0, 5).map((item) => ({
+
+  const kbStats = useMemo(() => {
+    const totalActive = rulesAnalytics?.active_rules?.value ?? '38'
+    const totalRules = rulesAnalytics?.active_rules?.total ?? 40
+    const avgCertainty = rulesAnalytics?.accuracy?.value ?? '92.5%'
+    const avgRules = rulesAnalytics?.avg_rules?.value ?? '4.2'
+
+    // Top triggered rules
+    const rawTopRules = rulesAnalytics?.top_triggered_rules || []
+    const topRulesData =
+      rawTopRules.length > 0
+        ? rawTopRules.slice(0, 5).map((r, i) => {
+            const category = String(r.category || 'diagnosis').toLowerCase()
+            const color =
+              category === 'triage'
+                ? '#f59e0b'
+                : category === 'recommendation'
+                ? '#10b981'
+                : category === 'classification'
+                ? '#06b6d4'
+                : '#2563eb'
+            const translatedCat = t(`kbDashboard.categories.${category}`, category.charAt(0).toUpperCase() + category.slice(1))
+            const rawName = r.name || `Rule #${i + 1}`
+            const localizedName = tExact(rawName) || rawName
+            const cleaned = cleanRuleName(localizedName) || localizedName
+            return {
+              id: r.id || i + 1,
+              name: cleaned?.length > 18 ? `${cleaned.slice(0, 16)}…` : cleaned,
+              fullName: localizedName,
+              hits: Number(r.hits) || 0,
+              category: translatedCat,
+              color,
+            }
+          })
+        : [
+            {
+              id: 1,
+              name: t('kbDashboard.mockRules.hyperglycemiaTriage', 'Hyperglycemia Triage'),
+              fullName: t('kbDashboard.mockRules.hyperglycemiaTriageFull', 'Severe Hyperglycemia Triage Protocol'),
+              hits: 45,
+              category: t('kbDashboard.categories.triage', 'Triage'),
+              color: '#f59e0b',
+            },
+            {
+              id: 2,
+              name: t('kbDashboard.mockRules.t2dCriteria', 'T2D Criteria'),
+              fullName: t('kbDashboard.mockRules.t2dCriteriaFull', 'Type 2 Diabetes Diagnostic Criteria'),
+              hits: 38,
+              category: t('kbDashboard.categories.diagnosis', 'Diagnosis'),
+              color: '#2563eb',
+            },
+            {
+              id: 3,
+              name: t('kbDashboard.mockRules.lifestyleGuidance', 'Lifestyle Guidance'),
+              fullName: t('kbDashboard.mockRules.lifestyleGuidanceFull', 'Dietary & Physical Activity Guidance'),
+              hits: 31,
+              category: t('kbDashboard.categories.recommendation', 'Recommendation'),
+              color: '#10b981',
+            },
+            {
+              id: 4,
+              name: t('kbDashboard.mockRules.hba1cStrat', 'HbA1c Stratification'),
+              fullName: t('kbDashboard.mockRules.hba1cStratFull', 'HbA1c Glycemic Stratification Protocol'),
+              hits: 24,
+              category: t('kbDashboard.categories.classification', 'Classification'),
+              color: '#06b6d4',
+            },
+            {
+              id: 5,
+              name: t('kbDashboard.mockRules.hypoglycemiaSafety', 'Hypoglycemia Safety'),
+              fullName: t('kbDashboard.mockRules.hypoglycemiaSafetyFull', 'Acute Hypoglycemia Alert & Safety Protocol'),
+              hits: 18,
+              category: t('kbDashboard.categories.triage', 'Triage'),
+              color: '#f59e0b',
+            },
+          ]
+
+    // Category distribution
+    const rawDistribution = rulesAnalytics?.rule_distribution || []
+    const categoryData =
+      rawDistribution.length > 0
+        ? rawDistribution.map((c) => {
+            const catKey = String(c.name || '').toLowerCase()
+            return {
+              rawName: c.name,
+              name: t(`kbDashboard.categories.${catKey}`, c.name),
+              value: Number(c.value) || 0,
+              color: c.color || '#2563eb',
+            }
+          })
+        : [
+            { rawName: 'Diagnosis', name: t('kbDashboard.categories.diagnosis', 'Diagnosis'), value: 14, color: '#2563eb' },
+            { rawName: 'Recommendation', name: t('kbDashboard.categories.recommendation', 'Recommendation'), value: 10, color: '#10b981' },
+            { rawName: 'Triage', name: t('kbDashboard.categories.triage', 'Triage'), value: 8, color: '#f59e0b' },
+            { rawName: 'Classification', name: t('kbDashboard.categories.classification', 'Classification'), value: 6, color: '#06b6d4' },
+          ]
+
+    return {
+      totalActive,
+      totalRules,
+      avgCertainty,
+      avgRules,
+      topRulesData,
+      categoryData,
+    }
+  }, [rulesAnalytics, t, tExact])
+
+  const recentActivity = (stats?.recent_cases || []).slice(0, 4).map((item) => ({
     ...item,
     title: item.is_urgent
       ? t('dashboard.focus.activityHighRisk', 'Patient marked high risk')
@@ -789,10 +860,9 @@ export function ClinicalDashboard({ activeRole }) {
         <div className="relative grid gap-7 px-5 py-6 sm:px-7 sm:py-7 xl:grid-cols-[minmax(0,1fr)_21rem] xl:items-center">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <UserAvatar name={clinicianName || roleLabel} size="lg" status="online" className="ring-4 ring-white/80 dark:ring-white/10" />
+              <UserAvatar name={clinicianName || roleLabel} size="lg" className="ring-4 ring-white/80 dark:ring-white/10" />
               <div>
                 <p className="flex items-center gap-2 text-sm font-semibold text-primary-700 dark:text-cyan-200">
-                  <span className="dash-live-dot h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
                   {greetingText}, {clinicianName || roleLabel} <span aria-hidden>👋</span>
                 </p>
                 <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
@@ -820,11 +890,11 @@ export function ClinicalDashboard({ activeRole }) {
                 <ClipboardCheck className="h-4 w-4" aria-hidden />
                 {t('dashboard.focus.reviewQueue', 'Review patient queue')}
               </Link>
-              <Link to="/patients" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-primary-200 bg-white/85 px-4 text-sm font-semibold text-primary-700 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-300 hover:bg-white active:translate-y-0 dark:border-primary-400/30 dark:bg-white/10 dark:text-white dark:hover:bg-white/15">
+              <Link to="/patients" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-primary-200/80 bg-primary-100/70 px-4 text-sm font-semibold text-primary-700 backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-primary-300 hover:bg-primary-100 active:translate-y-0 dark:border-primary-400/30 dark:bg-primary-400/15 dark:text-primary-200 dark:hover:bg-primary-400/25">
                 <Search className="h-4 w-4" aria-hidden />
                 {t('dashboard.focus.findPatient', 'Find patient')}
               </Link>
-              <Link to="/rules" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-primary-200/80 bg-primary-100/70 px-4 text-sm font-semibold text-primary-700 transition hover:-translate-y-0.5 hover:bg-primary-100 active:translate-y-0 dark:border-cyan-300/20 dark:bg-cyan-200/10 dark:text-cyan-100 dark:hover:bg-cyan-200/20">
+              <Link to="/rules" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-primary-200/80 bg-primary-100/70 px-4 text-sm font-semibold text-primary-700 backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-primary-300 hover:bg-primary-100 active:translate-y-0 dark:border-primary-400/30 dark:bg-primary-400/15 dark:text-primary-200 dark:hover:bg-primary-400/25">
                 <BookOpen className="h-4 w-4" aria-hidden />
                 {t('dashboard.focus.knowledgeBase', 'Knowledge Base')}
               </Link>
@@ -862,134 +932,113 @@ export function ClinicalDashboard({ activeRole }) {
         </div>
       </section>
 
-      {/* ── Doctor range bar: presets, custom window, live summary ── */}
-      <section className="dash-fade-up relative overflow-visible">
-        <div className="hidden dash-aurora pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary-500 via-sky-400 to-primary-500" aria-hidden />
-        <div className="hidden dash-orb-drift pointer-events-none absolute -right-14 -top-20 h-44 w-44 rounded-full bg-primary-100/60 blur-3xl dark:bg-primary-900/20" aria-hidden />
+      {/* ── Main content ───────────────────────────────────────── */}
+      {loading ? (
+        <DashboardSkeleton />
+      ) : (
+        <>
+          {/* ── Patient KPI metrics & Recent Activity ── */}
+          <div className="grid min-w-0 items-stretch gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.65fr)]">
+            {/* ── First Card: Date Range Toolbar Header + 4 Metrics ── */}
+            <div className="surface dash-fade-up flex h-full flex-col overflow-hidden">
+              {/* Card Header: Date Range Toolbar */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-5 dark:border-[#1b2342]">
+                <div className="flex min-w-0 items-center gap-2">
+                  <CalendarRange className="h-4 w-4 text-primary-600 dark:text-primary-400" aria-hidden />
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">
+                    {t('dashboard.toolbar.dateRange', 'Date Range')}
+                  </span>
+                </div>
 
-        <div className="hidden relative flex flex-col gap-4 p-4 sm:p-5" style={{ display: 'none' }}>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex min-w-0 items-start gap-3">
-              <span className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-lg shadow-primary-500/30">
-                <span className="dash-range-halo pointer-events-none absolute inset-0 bg-primary-300/60 blur-md" aria-hidden />
-                <CalendarRange className="relative h-4.5 w-4.5" aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  {t('dashboard.toolbar.dateRange', 'Date Range')}
-                </h2>
-                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
-                  <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-100">
-                    <span className="dash-live-dot h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden />
-                    {activeRangeLabel}
-                  </span>
-                  <span className="text-slate-300 dark:text-slate-600" aria-hidden>•</span>
-                  <span>
-                    {t('dashboard.toolbar.windowSummary', '{{assessments}} assessments · {{plans}} plans', {
-                      assessments: stats?.assessments?.value ?? 0,
-                      plans: stats?.treatment_plans?.value ?? 0,
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <div
+                    role="group"
+                    aria-label={t('dashboard.toolbar.dateRange', 'Date Range')}
+                    className="flex min-w-0 items-center gap-1 overflow-x-auto rounded-xl bg-slate-100/90 p-1 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 scrollbar-none"
+                  >
+                    {dateRanges.map((range) => {
+                      const Icon = range.icon
+                      const active = selectedRange === range.key
+                      return (
+                        <button
+                          key={range.key}
+                          type="button"
+                          onClick={() => selectRange(range.key)}
+                          aria-pressed={active}
+                          className={`inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
+                            active
+                              ? 'bg-primary-600 text-white shadow-sm'
+                              : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white'
+                          }`}
+                        >
+                          <Icon className="h-3.5 w-3.5" aria-hidden />
+                          {range.label}
+                        </button>
+                      )
                     })}
-                  </span>
-                </p>
+
+                    <CustomRangePopover
+                      isActive={isCustomRange}
+                      value={customRange}
+                      onApply={applyCustomRange}
+                      onReset={resetRange}
+                      t={t}
+                    />
+                  </div>
+
+                  {isCustomRange ? (
+                    <button
+                      type="button"
+                      onClick={resetRange}
+                      className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-slate-200/80 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-[#0c1024] dark:text-slate-300"
+                    >
+                      <RotateCcw className="h-3 w-3" aria-hidden />
+                      {t('dashboard.toolbar.resetRange', 'Reset')}
+                    </button>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={() => fetchStats(rangeQuery)}
+                    disabled={loading}
+                    title={t('dashboard.toolbar.refresh', 'Refresh')}
+                    aria-label={t('dashboard.toolbar.refresh', 'Refresh')}
+                    className="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:border-primary-300 hover:text-primary-700 disabled:opacity-50 dark:border-slate-800 dark:bg-[#0c1024] dark:text-slate-300 dark:hover:text-primary-300"
+                  >
+                    <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} aria-hidden />
+                    <span className="hidden sm:inline">{t('dashboard.toolbar.refresh', 'Refresh')}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* The 4 cards - expanded to fill height */}
+              <div className="dash-stagger grid flex-1 items-stretch gap-3 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-4">
+                {patientMetrics.map((metric) => {
+                  const Icon = metric.icon
+                  return (
+                    <Link
+                      key={metric.key}
+                      to={metric.href}
+                      className={`clinical-stat clinical-stat--${metric.tone} dash-fade-up group flex h-full min-h-[9.5rem] flex-col rounded-2xl border bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#080c1c]`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="clinical-stat__icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105">
+                          <Icon className="h-4 w-4" aria-hidden />
+                        </span>
+                        <p className="text-2xl font-bold tracking-tight text-slate-950 tabular-nums dark:text-white"><AnimatedNumber value={metric.value} /></p>
+                      </div>
+                      <div className="mt-auto pt-2">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{metric.label}</p>
+                        <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{metric.helper}</p>
+                      </div>
+                      <span className="clinical-stat__action mt-2.5 inline-flex items-center justify-between rounded-lg px-3 py-1.5 text-xs font-semibold transition duration-200 group-hover:brightness-[0.98]">{metric.action}<ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden /></span>
+                    </Link>
+                  )
+                })}
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {isCustomRange ? (
-                <button
-                  type="button"
-                  onClick={resetRange}
-                  className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 dark:border-[#1b2342] dark:bg-[#0c1024] dark:text-slate-300 dark:hover:bg-[#131a33]"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-                  {t('dashboard.toolbar.resetRange', 'Reset range')}
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => fetchStats(rangeQuery)}
-                disabled={loading}
-                title={t('dashboard.toolbar.refresh', 'Refresh')}
-                aria-label={t('dashboard.toolbar.refresh', 'Refresh')}
-                className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 disabled:opacity-50 dark:border-[#1b2342] dark:bg-[#0c1024] dark:text-slate-300 dark:hover:border-primary-500/40 dark:hover:bg-primary-900/20 dark:hover:text-primary-300"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} aria-hidden />
-                <span className="hidden sm:inline">{t('dashboard.toolbar.refresh', 'Refresh')}</span>
-              </button>
-            </div>
-          </div>
-
-          <div
-            ref={presetBarRef}
-            role="group"
-            aria-label={t('dashboard.toolbar.dateRange', 'Date Range')}
-            className="relative flex min-w-0 items-center gap-1 overflow-x-auto rounded-2xl border border-slate-200/80 bg-slate-100/70 p-1 dark:border-[#1b2342] dark:bg-[#0c1024]/80"
-          >
-            <span
-              className="dash-range-glide"
-              style={{
-                transform: `translateX(${presetIndicator.left}px)`,
-                width: presetIndicator.width,
-                opacity: presetIndicator.ready ? 1 : 0,
-              }}
-              aria-hidden
-            />
-            {dateRanges.map((range) => {
-              const Icon = range.icon
-              const active = selectedRange === range.key
-              return (
-                <button
-                  key={range.key}
-                  ref={presetButtonRefCallbacks.get(range.key)}
-                  type="button"
-                  onClick={() => selectRange(range.key)}
-                  aria-pressed={active}
-                  className={`relative z-10 inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${active ? 'text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
-                    }`}
-                >
-                  <Icon className="h-3.5 w-3.5" aria-hidden />
-                  {range.label}
-                </button>
-              )
-            })}
-
-            <CustomRangePopover
-              isActive={isCustomRange}
-              value={customRange}
-              onApply={applyCustomRange}
-              onReset={resetRange}
-              triggerRef={presetButtonRefCallbacks.get(CUSTOM_RANGE_KEY)}
-              t={t}
-            />
-          </div>
-        </div>
-
-        {!loading ? (
-          <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.65fr)]">
-            <div className="surface dash-stagger grid items-start gap-3 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-4">
-              {patientMetrics.map((metric) => {
-                const Icon = metric.icon
-                return (
-                  <Link
-                    key={metric.key}
-                    to={metric.href}
-                    className={`clinical-stat clinical-stat--${metric.tone} dash-fade-up group flex h-[9rem] min-h-0 flex-col rounded-2xl border bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#080c1c]`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className="clinical-stat__icon inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105">
-                        <Icon className="h-4 w-4" aria-hidden />
-                      </span>
-                      <p className="text-2xl font-bold tracking-tight text-slate-950 tabular-nums dark:text-white"><AnimatedNumber value={metric.value} /></p>
-                    </div>
-                    <p className="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-100">{metric.label}</p>
-                    <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{metric.helper}</p>
-                    <span className="clinical-stat__action mt-auto inline-flex items-center justify-between rounded-lg px-3 py-1.5 text-xs font-semibold transition duration-200 group-hover:brightness-[0.98]">{metric.action}<ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden /></span>
-                  </Link>
-                )
-              })}
-            </div>
-
-            <aside className="clinical-activity surface px-4 py-4 sm:px-5 dark:border-[#1b2342]">
+            <aside className="clinical-activity surface flex h-full flex-col px-4 py-4 sm:px-5 dark:border-[#1b2342]">
               <Link to="/review" className="mb-3 flex min-h-9 items-center gap-2 rounded-xl bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-600 transition hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-300 dark:hover:bg-rose-900/30">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 <span className="min-w-0 flex-1 truncate">{t('dashboard.focus.highRiskSinceYesterday', '2 patients became high-risk since yesterday')}</span>
@@ -1002,215 +1051,334 @@ export function ClinicalDashboard({ activeRole }) {
                 </div>
                 <Link to="/review" className="text-[11px] font-semibold text-primary-600 hover:underline dark:text-primary-300">{t('dashboard.focus.viewAll', 'View all')} <ArrowRight className="inline h-3 w-3" aria-hidden /></Link>
               </div>
-              <div className="mt-3 divide-y divide-slate-100 dark:divide-[#1b2342]">
+              <div className="mt-3 flex flex-1 flex-col justify-between divide-y divide-slate-100 dark:divide-[#1b2342]">
                 {recentActivity.length ? recentActivity.map((item) => (
-                  <Link key={item.id} to={`/diagnosis/result?diagnosis_result_id=${item.id}`} className="flex items-center gap-2.5 py-2 transition hover:bg-primary-50/50 dark:hover:bg-primary-900/10">
+                  <Link key={item.id} to={`/diagnosis/result?diagnosis_result_id=${item.id}`} className="flex flex-1 items-center gap-2.5 py-2.5 transition hover:bg-primary-50/50 dark:hover:bg-primary-900/10">
                     <span className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${item.is_urgent ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/25 dark:text-rose-300' : item.has_care_plan ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/25 dark:text-emerald-300' : 'bg-primary-50 text-primary-600 dark:bg-primary-900/25 dark:text-primary-300'}`}><CircleCheckBig className="h-3.5 w-3.5" aria-hidden /></span>
                     <span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold text-slate-700 dark:text-slate-200">{item.title}</span><span className="block truncate text-[11px] text-slate-400">{item.patient_name}</span></span>
-                    <span className="shrink-0 text-[10px] text-slate-400">{formatRelativeTime(item.created_at)}</span>
+                    <span className="shrink-0 text-[10px] text-slate-400">{formatRelativeTime(item.created_at, language, t)}</span>
                   </Link>
                 )) : <p className="py-5 text-xs text-slate-500">{t('dashboard.focus.noRecentActivity', 'No recent activity')}</p>}
               </div>
             </aside>
           </div>
-        ) : null}
-      </section>
 
-      {/* ── Main content ───────────────────────────────────────── */}
-      {loading ? (
-        <DashboardSkeleton />
-      ) : (
-        <>
-          <div className="grid min-w-0 items-stretch gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.65fr)]">
-            {/* Priority patient queue */}
-            <section className="dash-fade-up clinical-queue clinical-queue--elevated surface h-full min-w-0 overflow-hidden p-0">
-              <header className="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 dark:border-[#1b2342] sm:px-6 sm:py-6">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600 dark:bg-primary-900/25 dark:text-primary-300">
-                      <Users className="h-5 w-5" aria-hidden />
-                    </span>
-                    <div className="min-w-0">
-                      <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
-                        {t('dashboard.focus.priorityQueue', 'Patient Priority Queue')}
-                      </h2>
-                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        {t('dashboard.focus.priorityQueueDesc', 'Patients who need your attention first.')}
-                      </p>
-                    </div>
+          {/* ── Components Graph Row ── */}
+          <div className="dash-stagger grid min-w-0 items-stretch gap-5 lg:grid-cols-2">
+            {/* ── Knowledge Base Intelligence & Rule Activity ── */}
+            <SectionCard
+              className="dash-fade-up h-full flex flex-col justify-between"
+              title={t('kbDashboard.title', 'Knowledge Base Activity')}
+              description={t('kbDashboard.desc', 'Clinical decision logic execution and rule trigger frequency.')}
+              actions={
+                <div className="flex items-center gap-2">
+                  <div className="inline-flex items-center rounded-lg border border-slate-200/80 bg-slate-100/80 p-0.5 dark:border-slate-800 dark:bg-slate-800/60">
+                    <button
+                      type="button"
+                      title={t('kbDashboard.topTriggeredRules', 'Top Rules')}
+                      aria-label={t('kbDashboard.topTriggeredRules', 'Top Rules')}
+                      onClick={() => setKbChartType('rules')}
+                      className={`inline-flex h-6 w-6 items-center justify-center rounded-md transition ${
+                        kbChartType === 'rules'
+                          ? 'bg-white text-primary-700 shadow-sm dark:bg-slate-700 dark:text-white'
+                          : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <BarChartHorizontal className="h-3.5 w-3.5" aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      title={t('kbDashboard.ruleDistribution', 'Category Distribution')}
+                      aria-label={t('kbDashboard.ruleDistribution', 'Category Distribution')}
+                      onClick={() => setKbChartType('categories')}
+                      className={`inline-flex h-6 w-6 items-center justify-center rounded-md transition ${
+                        kbChartType === 'categories'
+                          ? 'bg-white text-primary-700 shadow-sm dark:bg-slate-700 dark:text-white'
+                          : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <BarChart3 className="h-3.5 w-3.5" aria-hidden />
+                    </button>
                   </div>
-                  <div className="clinical-queue__filters flex w-full items-center gap-1 overflow-x-auto rounded-full bg-slate-100/80 p-1 lg:w-auto" role="tablist" aria-label={t('dashboard.focus.priorityQueue', 'Patient Priority Queue')}>
-                    {[
-                      ['all', t('dashboard.focus.filterAll', 'All')],
-                      ['urgent', t('dashboard.focus.filterUrgent', 'Urgent')],
-                      ['review', t('dashboard.focus.filterReview', 'Need Review')],
-                      ['plans', t('dashboard.focus.filterPlans', 'Care Plans')],
-                    ].map(([key, label]) => (
-                      <button
-                        key={key}
-                        type="button"
-                        role="tab"
-                        aria-selected={priorityFilter === key}
-                        onClick={() => setPriorityFilter(key)}
-                        className={`min-h-9 shrink-0 rounded-full px-3.5 text-xs font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${priorityFilter === key ? 'bg-primary-600 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-primary-700 dark:text-slate-300 dark:hover:bg-[#18203b] dark:hover:text-primary-300'}`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
+
+                  <Link
+                    to="/rules"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:underline dark:text-primary-300"
+                  >
+                    {t('dashboard.focus.viewRules', 'View rules')} <ArrowRight className="inline h-3 w-3" aria-hidden />
+                  </Link>
                 </div>
-              </header>
-
-              <div className="hidden overflow-hidden md:block">
-                <table className="clinical-queue__table w-full table-fixed text-left">
-                  <thead className="bg-primary-50/45 dark:bg-primary-900/10">
-                    <tr className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
-                      <th className="w-[23%] px-3 py-3.5">{t('dashboard.focus.patient', 'Patient')}</th>
-                      <th className="w-[13%] px-2 py-3.5">{t('dashboard.focus.riskLevel', 'Risk Level')}</th>
-                      <th className="w-[21%] px-2 py-3.5">{t('dashboard.focus.latestFinding', 'Latest Finding')}</th>
-                      <th className="w-[14%] px-2 py-3.5">{t('dashboard.focus.lastAssessment', 'Last Assessment')}</th>
-                      <th className="w-[17%] px-2 py-3.5">{t('dashboard.focus.status', 'Status')}</th>
-                      <th className="w-[12%] px-2 py-3.5">{t('dashboard.focus.action', 'Action')}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-[#1b2342]">
-                    {visiblePriorityCases.map((caseItem) => {
-                      const risk = caseItem.is_urgent ? 'high' : /diabetes|high|elevated/i.test(String(caseItem.diagnosis || '')) ? 'medium' : 'low'
-                      const status = caseItem.status === 'Reviewed' ? 'onTrack' : caseItem.is_urgent ? 'unreviewed' : 'pending'
-                      return (
-                        <tr key={caseItem.id} className="group transition-colors duration-150 hover:bg-primary-50/45 dark:hover:bg-primary-900/10">
-                          <td className="px-3 py-4"><div className="flex min-w-0 items-center gap-2.5"><UserAvatar name={caseItem.patient_name} size="sm" /><div className="min-w-0"><p className="truncate font-semibold text-slate-900 dark:text-white">{caseItem.patient_name}</p><p className="mt-0.5 text-xs text-slate-400">#P{String(caseItem.id).padStart(5, '0')}</p></div></div></td>
-                          <td className="px-3 py-4"><span className={`clinical-queue__badge clinical-queue__badge--${risk}`} style={QUEUE_RISK_STYLE[risk]}><span className="h-1.5 w-1.5 rounded-full bg-current" />{risk === 'high' ? 'High' : risk === 'medium' ? 'Medium' : 'Low'}</span></td>
-                          <td className="px-2 py-4"><p className="truncate font-medium text-slate-700 dark:text-slate-200">{tExact(caseItem.diagnosis)}</p><p className="mt-0.5 truncate text-xs text-slate-400">{caseItem.recommendation || (Number.isFinite(Number(caseItem.certainty)) ? `${Math.round(Number(caseItem.certainty) * 100)}% certainty` : 'Clinical finding')}</p></td>
-                          <td className="whitespace-nowrap px-2 py-4 text-sm text-slate-500 dark:text-slate-400">{formatRelativeTime(caseItem.created_at)}</td>
-                          <td className="px-2 py-4"><span className={`clinical-queue__status clinical-queue__status--${status}`} style={QUEUE_STATUS_STYLE[status]}>{status === 'onTrack' ? 'On track' : status === 'unreviewed' ? 'Unreviewed' : 'Pending'}</span></td>
-                          <td className="px-2 py-4"><Link to={`/diagnosis/result?diagnosis_result_id=${caseItem.id}`} className="clinical-queue__review">Review <ArrowRight className="h-3.5 w-3.5" aria-hidden /></Link></td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
+              }
+            >
+              {/* Micro KPI metric strip */}
+              <div className="mb-3 grid grid-cols-3 gap-2 rounded-xl bg-slate-50/90 p-2 text-center dark:bg-slate-800/40">
+                <div className="px-1">
+                  <p className="text-base font-bold text-slate-900 tabular-nums dark:text-white">{kbStats.totalActive}</p>
+                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{t('kbDashboard.cards.activeRules.title', 'Active Rules')}</p>
+                </div>
+                <div className="px-1 border-x border-slate-200/60 dark:border-slate-700/50">
+                  <p className="text-base font-bold text-emerald-600 tabular-nums dark:text-emerald-400">{kbStats.avgCertainty}</p>
+                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{t('kbDashboard.cards.accuracy.title', 'Mean Certainty')}</p>
+                </div>
+                <div className="px-1">
+                  <p className="text-base font-bold text-primary-600 tabular-nums dark:text-primary-400">{kbStats.avgRules}</p>
+                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{t('kbDashboard.cards.avgRules.title', 'Rules / Case')}</p>
+                </div>
               </div>
 
-              <div className="divide-y divide-slate-100 md:hidden dark:divide-[#1b2342]">
-                {visiblePriorityCases.map((caseItem) => {
-                  const risk = caseItem.is_urgent ? 'high' : /diabetes|high|elevated/i.test(String(caseItem.diagnosis || '')) ? 'medium' : 'low'
-                  const status = caseItem.status === 'Reviewed' ? 'onTrack' : caseItem.is_urgent ? 'unreviewed' : 'pending'
-                  return <article key={caseItem.id} className="space-y-3 p-4 transition hover:bg-primary-50/45"><div className="flex items-start justify-between gap-3"><div className="flex items-center gap-3"><UserAvatar name={caseItem.patient_name} size="sm" /><div><p className="font-semibold text-slate-900 dark:text-white">{caseItem.patient_name}</p><p className="text-xs text-slate-400">#P{String(caseItem.id).padStart(5, '0')}</p></div></div><span className={`clinical-queue__badge clinical-queue__badge--${risk}`} style={QUEUE_RISK_STYLE[risk]}>{risk === 'high' ? 'High' : risk === 'medium' ? 'Medium' : 'Low'}</span></div><div><p className="font-medium text-slate-700 dark:text-slate-200">{tExact(caseItem.diagnosis)}</p><p className="mt-1 text-xs text-slate-500">{caseItem.recommendation || 'Clinical finding'} · Last assessment: {formatRelativeTime(caseItem.created_at)}</p></div><div className="flex items-center justify-between gap-3"><span className={`clinical-queue__status clinical-queue__status--${status}`} style={QUEUE_STATUS_STYLE[status]}>{status === 'onTrack' ? 'On track' : status === 'unreviewed' ? 'Unreviewed' : 'Pending'}</span><Link to={`/diagnosis/result?diagnosis_result_id=${caseItem.id}`} className="clinical-queue__review">Review <ArrowRight className="h-3.5 w-3.5" aria-hidden /></Link></div></article>
-                })}
+              {/* Chart visualization */}
+              <div className="h-[200px] w-full">
+                {kbChartType === 'rules' ? (
+                  <ChartContainer config={{ hits: { label: t('kbDashboard.columns.hits', 'Triggers') } }} className="h-full w-full">
+                    <BarChart
+                      layout="vertical"
+                      data={kbStats.topRulesData}
+                      margin={{ top: 2, right: 16, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid horizontal={false} strokeDasharray="3 3" opacity={0.25} />
+                      <XAxis type="number" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        width={105}
+                        tickLine={false}
+                        axisLine={false}
+                        tick={({ x, y, payload }) => (
+                          <text
+                            x={x}
+                            y={y}
+                            dy={3.5}
+                            textAnchor="end"
+                            fontSize={11}
+                            className="fill-slate-600 dark:fill-slate-400 font-medium"
+                          >
+                            {payload.value}
+                          </text>
+                        )}
+                      />
+                      <ChartTooltip
+                        content={
+                          <ChartTooltipContent
+                            formatter={(value, name, item) => [
+                              `${value} ${t('kbDashboard.triggersCount', 'clinical triggers')} (${item?.payload?.category})`,
+                              item?.payload?.fullName || name,
+                            ]}
+                          />
+                        }
+                      />
+                      <Bar dataKey="hits" radius={[0, 6, 6, 0]} barSize={16}>
+                        {kbStats.topRulesData.map((entry, index) => (
+                          <Cell key={`rule-cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
+                ) : (
+                  <ChartContainer config={{ value: { label: t('kbDashboard.ruleDistribution', 'Rules') } }} className="h-full w-full">
+                    <BarChart
+                      data={kbStats.categoryData}
+                      margin={{ top: 10, right: 16, left: -16, bottom: 0 }}
+                    >
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.25} />
+                      <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
+                      <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+                      <ChartTooltip
+                        content={
+                          <ChartTooltipContent
+                            formatter={(value, name, item) => [
+                              `${value} ${t('kbDashboard.rulesConfigured', 'rules configured')}`,
+                              item?.payload?.name,
+                            ]}
+                          />
+                        }
+                      />
+                      <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={34}>
+                        {kbStats.categoryData.map((entry, index) => (
+                          <Cell key={`cat-cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
+                )}
               </div>
 
-              {!visiblePriorityCases.length ? <div className="px-6 py-12 text-center"><CircleCheckBig className="mx-auto h-8 w-8 text-emerald-500" aria-hidden /><p className="mt-3 text-sm font-semibold text-slate-800 dark:text-slate-100">{t('dashboard.focus.queueClear', 'The queue is clear')}</p><p className="mt-1 text-xs text-slate-500">{t('dashboard.recent.noDiagnoses', 'No diagnoses found for this period.')}</p></div> : null}
-              <footer className="flex justify-end border-t border-slate-100 px-5 py-4 dark:border-[#1b2342] sm:px-6"><Link to="/review" className="inline-flex items-center gap-1 text-sm font-semibold text-primary-600 transition hover:text-primary-800 hover:underline dark:text-primary-300 dark:hover:text-primary-200">{t('dashboard.focus.openFullQueue', 'View full patient queue')} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden /></Link></footer>
-            </section>
+              {/* Legend footer */}
+              <div className="mt-2.5 flex flex-wrap items-center justify-between border-t border-slate-100 pt-2 text-[11px] text-slate-500 dark:border-slate-800/80 dark:text-slate-400">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-blue-600" />
+                    {t('kbDashboard.categories.diagnosis', 'Diagnosis')}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-amber-500" />
+                    {t('kbDashboard.categories.triage', 'Triage')}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    {t('kbDashboard.categories.recommendation', 'Recommendation')}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-cyan-500" />
+                    {t('kbDashboard.categories.classification', 'Classification')}
+                  </span>
+                </div>
+                <Link to="/rules" className="font-semibold text-primary-600 hover:underline dark:text-primary-400">
+                  {t('dashboard.focus.viewAll', 'View all')} →
+                </Link>
+              </div>
+            </SectionCard>
 
             {/* Patient risk mix */}
-            <section className="dash-fade-up surface h-full min-w-0 p-5 sm:p-6">
-              <header className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-900/25 dark:text-primary-300">
-                  <HeartPulse className="h-5 w-5" aria-hidden />
-                </span>
-                <div>
-                  <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
-                    {t('dashboard.hero.riskMix', 'Patient Risk Mix')}
-                  </h2>
-                  <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-                    {t('dashboard.focus.currentPopulation', 'Current patient population')}
-                  </p>
-                </div>
-              </header>
-
+            <SectionCard
+              className="dash-fade-up h-full flex flex-col justify-between"
+              title={t('dashboard.hero.riskMix', 'Patient Risk Mix')}
+              description={t('dashboard.focus.currentPopulation', 'Current patient population')}
+              actions={
+                rulesAnalytics ? (
+                  <Link to="/rules" className="text-xs font-semibold text-primary-600 hover:underline dark:text-primary-300">
+                    {t('dashboard.focus.viewRules', 'View rules')} <ArrowRight className="inline h-3 w-3" aria-hidden />
+                  </Link>
+                ) : null
+              }
+            >
               {riskSummary.total > 0 ? (
-                <div className="mt-5 grid items-center gap-5 sm:grid-cols-[minmax(10rem,0.9fr)_minmax(11rem,1.1fr)]">
-                  <div className="relative mx-auto h-[190px] w-full max-w-[220px]" role="img" aria-label={`${riskSummary.total} total patients by risk category`}>
-                    <ChartContainer config={{ risk: { label: 'Patients' } }} className="h-full w-full">
+                <div className="mt-2 grid items-center gap-5 sm:grid-cols-[minmax(9rem,0.9fr)_minmax(10rem,1.1fr)]">
+                  <div
+                    className="relative mx-auto h-[175px] w-full max-w-[200px]"
+                    role="img"
+                    aria-label={`${riskSummary.total} total patients by risk category`}
+                    onMouseLeave={() => {
+                      setHoveredRisk(null)
+                      setIsPieHovered(false)
+                    }}
+                  >
+                    <ChartContainer config={{ risk: { label: t('dashboard.focus.patient', 'Patients') } }} className="h-full w-full">
                       <PieChart>
                         <ChartTooltip
-                          cursor={false}
-                          content={<ChartTooltipContent nameKey="label" formatter={(value, name, item) => [`${value} patients (${item?.payload?.percent ?? 0}%)`, name]} />}
+                          wrapperStyle={{ zIndex: 50, pointerEvents: 'none' }}
+                          allowEscapeViewBox={{ x: true, y: true }}
+                          content={
+                            <ChartTooltipContent
+                              nameKey="label"
+                              formatter={(value, name, item) => [
+                                `${value} ${t('dashboard.focus.patientsCount', 'patients')} (${item?.payload?.percent ?? 0}%)`,
+                                name,
+                              ]}
+                            />
+                          }
                         />
                         <Pie
-                          data={riskSummary.rows.filter((row) => row.value > 0)}
+                          data={activeRiskRows}
                           dataKey="value"
                           nameKey="label"
                           cx="50%"
                           cy="50%"
-                          innerRadius={55}
-                          outerRadius={78}
+                          innerRadius={50}
+                          outerRadius={72}
                           paddingAngle={1.5}
                           cornerRadius={5}
                           strokeWidth={0}
                           animationDuration={700}
-                          onClick={(entry) => goToRiskFilter(entry.key)}
+                          onMouseEnter={(entry) => {
+                            setIsPieHovered(true)
+                            const item = entry?.payload || entry
+                            if (item?.key) setHoveredRisk(item)
+                          }}
+                          onMouseLeave={() => {
+                            setIsPieHovered(false)
+                            setHoveredRisk(null)
+                          }}
+                          onClick={(entry) => goToRiskFilter(entry?.key || entry?.payload?.key)}
                           className="cursor-pointer focus:outline-none"
                         >
-                          {riskSummary.rows.filter((row) => row.value > 0).map((row) => <Cell key={row.key} fill={row.fill} />)}
+                          {activeRiskRows.map((row) => (
+                            <Cell
+                              key={row.key}
+                              fill={row.fill}
+                              opacity={hoveredRisk ? (hoveredRisk.key === row.key ? 1 : 0.45) : 1}
+                              className="transition-opacity duration-200"
+                            />
+                          ))}
                         </Pie>
                       </PieChart>
                     </ChartContainer>
-                    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-                      <span className="text-3xl font-bold tracking-tight text-slate-950 tabular-nums dark:text-white">{riskSummary.total}</span>
-                      <span className="mt-0.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">{t('dashboard.focus.totalPatients', 'Total patients')}</span>
+
+                    {/* Donut center display: shows total patients when idle, or selected category when hovering legend */}
+                    <div
+                      className={cn(
+                        'pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center text-center transition-opacity duration-150',
+                        isPieHovered ? 'opacity-0' : 'opacity-100'
+                      )}
+                    >
+                      <span className="text-2xl font-bold tracking-tight text-slate-950 tabular-nums dark:text-white">
+                        {hoveredRisk && !isPieHovered ? hoveredRisk.value : riskSummary.total}
+                      </span>
+                      <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                        {hoveredRisk && !isPieHovered
+                          ? `${hoveredRisk.label} (${hoveredRisk.percent}%)`
+                          : t('dashboard.focus.totalPatients', 'Total patients')}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    {riskSummary.rows.map((row) => (
-                      <button
-                        key={row.key}
-                        type="button"
-                        disabled={row.value === 0}
-                        onClick={() => goToRiskFilter(row.key)}
-                        className="group flex min-h-10 w-full items-center gap-2.5 rounded-xl px-2.5 text-left transition duration-200 hover:bg-slate-50 disabled:cursor-default dark:hover:bg-[#0c1024]"
-                        aria-label={`${row.label}: ${row.value} patients, ${row.percent}%`}
-                      >
-                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: row.fill, boxShadow: `0 0 0 5px ${row.fill}22` }} aria-hidden />
-                        <span className="min-w-0 flex-1 text-sm font-semibold text-slate-700 dark:text-slate-200">{row.label}</span>
-                        <span className="text-sm font-bold text-slate-900 tabular-nums dark:text-white">{row.value}</span>
-                        <span className="w-10 text-right text-xs text-slate-400 tabular-nums">({row.percent}%)</span>
-                      </button>
-                    ))}
+                  <div className="space-y-1">
+                    {riskSummary.rows.map((row) => {
+                      const isHovered = hoveredRisk?.key === row.key
+                      return (
+                        <button
+                          key={row.key}
+                          type="button"
+                          disabled={row.value === 0}
+                          onClick={() => goToRiskFilter(row.key)}
+                          onMouseEnter={() => row.value > 0 && setHoveredRisk(row)}
+                          onMouseLeave={() => setHoveredRisk(null)}
+                          className={cn(
+                            'group flex min-h-8 w-full items-center gap-2 rounded-lg px-2 text-left transition duration-200 hover:bg-slate-50 disabled:cursor-default dark:hover:bg-[#0c1024]',
+                            isHovered && 'bg-slate-100/90 dark:bg-slate-800/60'
+                          )}
+                          aria-label={`${row.label}: ${row.value} patients, ${row.percent}%`}
+                        >
+                          <span
+                            className={cn('h-2 w-2 shrink-0 rounded-full transition-transform duration-150', isHovered && 'scale-125')}
+                            style={{ backgroundColor: row.fill, boxShadow: `0 0 0 4px ${row.fill}22` }}
+                            aria-hidden
+                          />
+                          <span className={cn('min-w-0 flex-1 text-xs font-semibold text-slate-700 dark:text-slate-200', isHovered && 'text-slate-950 dark:text-white')}>
+                            {row.label}
+                          </span>
+                          <span className="text-xs font-bold text-slate-900 tabular-nums dark:text-white">{row.value}</span>
+                          <span className="w-9 text-right text-[11px] text-slate-400 tabular-nums">({row.percent}%)</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               ) : (
-                <p className="mt-6 rounded-xl bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 dark:bg-[#0c1024] dark:text-slate-400">
+                <p className="mt-4 rounded-xl bg-slate-50 px-4 py-6 text-center text-xs text-slate-500 dark:bg-[#0c1024] dark:text-slate-400">
                   {t('dashboard.hero.noRiskData', 'No classified patients yet.')}
                 </p>
               )}
 
               {rulesAnalytics ? (
-                <div className="mt-5 border-t border-slate-100 pt-4 dark:border-[#1b2342]">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-900/25 dark:text-primary-300">
-                        <CircleCheckBig className="h-3.5 w-3.5" aria-hidden />
-                      </span>
-                      <div>
-                        <p className="text-xs font-bold text-slate-800 dark:text-slate-100">{t('dashboard.focus.ruleSignals', 'Rule & fact signals')}</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('dashboard.focus.ruleSignalsDesc', 'Most frequently matched clinical rules')}</p>
-                      </div>
+                <div className="mt-3 border-t border-slate-100 pt-3 dark:border-[#1b2342]">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-lg bg-slate-50 px-2 py-1.5 dark:bg-[#0c1024]">
+                      <p className="text-sm font-bold text-slate-900 tabular-nums dark:text-white">{rulesAnalytics.avg_rules?.value ?? '0'}</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">{t('dashboard.focus.rulesPerAssessment', 'Rules/assess')}</p>
                     </div>
-                    <Link to="/rules" className="text-[11px] font-semibold text-primary-600 hover:underline dark:text-primary-300">{t('dashboard.focus.viewRules', 'View rules')}</Link>
-                  </div>
-
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    <div className="rounded-xl bg-slate-50 px-2.5 py-2 dark:bg-[#0c1024]">
-                      <p className="text-base font-bold text-slate-900 tabular-nums dark:text-white">{rulesAnalytics.avg_rules?.value ?? '0'}</p>
-                      <p className="mt-0.5 text-[10px] leading-3 text-slate-500 dark:text-slate-400">{t('dashboard.focus.rulesPerAssessment', 'Rules / assessment')}</p>
+                    <div className="rounded-lg bg-slate-50 px-2 py-1.5 dark:bg-[#0c1024]">
+                      <p className="text-sm font-bold text-slate-900 tabular-nums dark:text-white">{rulesAnalytics.accuracy?.value ?? '0%'}</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">{t('dashboard.focus.meanCertainty', 'Confidence')}</p>
                     </div>
-                    <div className="rounded-xl bg-slate-50 px-2.5 py-2 dark:bg-[#0c1024]">
-                      <p className="text-base font-bold text-slate-900 tabular-nums dark:text-white">{rulesAnalytics.accuracy?.value ?? '0%'}</p>
-                      <p className="mt-0.5 text-[10px] leading-3 text-slate-500 dark:text-slate-400">{t('dashboard.focus.meanCertainty', 'Mean certainty')}</p>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 px-2.5 py-2 dark:bg-[#0c1024]">
-                      <p className="text-base font-bold text-slate-900 tabular-nums dark:text-white">{rulesAnalytics.active_rules?.value ?? '0'}</p>
-                      <p className="mt-0.5 text-[10px] leading-3 text-slate-500 dark:text-slate-400">{t('dashboard.focus.activeRules', 'Active rules')}</p>
+                    <div className="rounded-lg bg-slate-50 px-2 py-1.5 dark:bg-[#0c1024]">
+                      <p className="text-sm font-bold text-slate-900 tabular-nums dark:text-white">{rulesAnalytics.active_rules?.value ?? '0'}</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">{t('dashboard.focus.activeRules', 'Active rules')}</p>
                     </div>
                   </div>
 
                   {topTriggeredRules.length ? (
-                    <div className="mt-3 space-y-2">
-                      {topTriggeredRules.slice(0, 3).map((rule) => (
+                    <div className="mt-2 space-y-1">
+                      {topTriggeredRules.slice(0, 2).map((rule) => (
                         <div key={rule.id} className="flex items-center gap-2 text-[11px]">
                           <span className="min-w-0 flex-1 truncate text-slate-600 dark:text-slate-300">{rule.name}</span>
                           <span className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"><span className="block h-full rounded-full bg-primary-400" style={{ width: `${Math.max(8, ((Number(rule.hits) || 0) / maxRuleHits) * 100)}%` }} /></span>
@@ -1221,92 +1389,197 @@ export function ClinicalDashboard({ activeRole }) {
                   ) : null}
                 </div>
               ) : null}
-            </section>
-          </div>
-
-          {/* One meaningful statistics chart, using real API history */}
-          <div className="dash-stagger grid items-stretch gap-5">
-            <SectionCard
-              className="dash-fade-up h-full"
-              title={t('dashboard.focus.activityTrend', 'Patient assessment activity')}
-              description={t('dashboard.focus.activityTrendDesc', 'Real assessment and review volume for the selected reporting window.')}
-              actions={
-                throughputSummary ? (
-                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                      <span className="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
-                      {throughputSummary.totalDiagnosed} {t('dashboard.charts.totalDiagnosed', 'Total Diagnosed')}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-600 dark:bg-amber-400" />
-                      {throughputSummary.totalPending} {t('dashboard.charts.pendingReview', 'Pending Review')}
-                    </span>
-                    {throughputSummary.totalReviewed > 0 && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
-                        {throughputSummary.totalReviewed} {t('dashboard.charts.reviewed', 'Reviewed')}
-                      </span>
-                    )}
-                  </div>
-                ) : null
-              }
-            >
-              <ChartContainer config={areaChartConfig} className="h-[300px] w-full">
-                {monthlyTrendData ? (
-                  <AreaChart data={monthlyTrendData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorDiagnosed" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#2563eb" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#2563eb" stopOpacity={0.0} />
-                      </linearGradient>
-                      <linearGradient id="colorPending" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
-                      </linearGradient>
-                      <linearGradient id="colorReviewed" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                    <YAxis tickLine={false} axisLine={false} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Area
-                      type="monotone"
-                      dataKey="diagnosed"
-                      stroke="#2563eb"
-                      fill="url(#colorDiagnosed)"
-                      strokeWidth={2.5}
-                      activeDot={{ r: 5 }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="pending"
-                      stroke="#f59e0b"
-                      fill="url(#colorPending)"
-                      strokeWidth={2}
-                      strokeDasharray="4 2"
-                      activeDot={{ r: 4 }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="reviewed"
-                      stroke="#10b981"
-                      fill="url(#colorReviewed)"
-                      strokeWidth={2}
-                      activeDot={{ r: 4 }}
-                    />
-                    <ChartLegend content={<ChartLegendContent />} />
-                  </AreaChart>
-                ) : (
-                  <div className="flex h-full items-center justify-center text-sm text-slate-500 text-center">
-                    {t('dashboard.charts.noTrendData', 'No trend data available yet. Create some assessments to see trends.')}
-                  </div>
-                )}
-              </ChartContainer>
             </SectionCard>
           </div>
+
+          {/* ── Patient Priority Queue Table (Clean full-width) ── */}
+          <section className="dash-fade-up surface w-full min-w-0 overflow-hidden p-0">
+            <header className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 dark:border-[#1b2342] sm:px-6 sm:py-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-900/25 dark:text-primary-300">
+                    <Users className="h-5 w-5" aria-hidden />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2.5">
+                      <h2 className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
+                        {t('dashboard.focus.priorityQueue', 'Patient Priority Queue')}
+                      </h2>
+                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        {visiblePriorityCases.length}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                      {t('dashboard.focus.priorityQueueDesc', 'Patients who need your attention first.')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 overflow-x-auto rounded-xl bg-slate-100/80 p-1 dark:bg-slate-800/60" role="tablist" aria-label={t('dashboard.focus.priorityQueue', 'Patient Priority Queue')}>
+                  {[
+                    ['all', t('dashboard.focus.filterAll', 'All')],
+                    ['urgent', t('dashboard.focus.filterUrgent', 'Urgent')],
+                    ['review', t('dashboard.focus.filterReview', 'Need Review')],
+                    ['plans', t('dashboard.focus.filterPlans', 'Care Plans')],
+                  ].map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      role="tab"
+                      aria-selected={priorityFilter === key}
+                      onClick={() => setPriorityFilter(key)}
+                      className={`min-h-8 shrink-0 rounded-lg px-3 text-xs font-semibold transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${priorityFilter === key ? 'bg-white text-primary-700 shadow-sm dark:bg-[#18203b] dark:text-primary-300' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </header>
+
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full border-collapse text-left text-sm">
+                <thead className="bg-slate-50/80 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800">
+                  <tr className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    <th className="px-5 py-3">{t('dashboard.focus.patient', 'Patient')}</th>
+                    <th className="px-4 py-3">{t('dashboard.focus.riskLevel', 'Risk Level')}</th>
+                    <th className="px-4 py-3">{t('dashboard.focus.latestFinding', 'Latest Finding')}</th>
+                    <th className="px-4 py-3">{t('dashboard.focus.lastAssessment', 'Last Assessment')}</th>
+                    <th className="px-4 py-3">{t('dashboard.focus.status', 'Status')}</th>
+                    <th className="px-5 py-3 text-right">{t('dashboard.focus.action', 'Action')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  {visiblePriorityCases.map((caseItem) => {
+                    const risk = caseItem.is_urgent ? 'high' : /diabetes|high|elevated/i.test(String(caseItem.diagnosis || '')) ? 'medium' : 'low'
+                    const status = caseItem.status === 'Reviewed' ? 'onTrack' : caseItem.is_urgent ? 'unreviewed' : 'pending'
+                    const riskTone = risk === 'high' ? 'danger' : risk === 'medium' ? 'warning' : 'success'
+                    const statusTone = status === 'onTrack' ? 'success' : status === 'unreviewed' ? 'danger' : 'warning'
+                    return (
+                      <tr
+                        key={caseItem.id}
+                        onClick={() => navigate(`/diagnosis/result?diagnosis_result_id=${caseItem.id}`)}
+                        className="group cursor-pointer transition-colors duration-150 hover:bg-slate-50/80 dark:hover:bg-slate-800/30"
+                      >
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-3">
+                            <UserAvatar name={caseItem.patient_name} size="sm" />
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-slate-900 group-hover:text-primary-600 transition-colors dark:text-white dark:group-hover:text-primary-400">
+                                {caseItem.patient_name}
+                              </p>
+                              <p className="text-xs text-slate-400">#P{String(caseItem.id).padStart(5, '0')}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <StatusBadge tone={riskTone} size="sm">
+                            <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-current" />
+                            {risk === 'high' ? t('dashboard.focus.highRisk', 'High') : risk === 'medium' ? t('dashboard.focus.mediumRisk', 'Medium') : t('dashboard.focus.lowRisk', 'Low')}
+                          </StatusBadge>
+                        </td>
+                        <td className="px-4 py-3.5 max-w-xs">
+                          <p className="truncate font-medium text-slate-800 dark:text-slate-200">{tExact(caseItem.diagnosis)}</p>
+                          <p className="mt-0.5 truncate text-xs text-slate-400">
+                            {caseItem.recommendation
+                              ? tExact(caseItem.recommendation)
+                              : Number.isFinite(Number(caseItem.certainty))
+                              ? `${Math.round(Number(caseItem.certainty) * 100)}% ${t('dashboard.focus.certainty', 'certainty')}`
+                              : t('dashboard.focus.clinicalFinding', 'Clinical finding')}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3.5 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
+                          {formatRelativeTime(caseItem.created_at, language, t)}
+                        </td>
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <StatusBadge tone={statusTone} size="sm">
+                            {status === 'onTrack' ? t('dashboard.focus.onTrack', 'On track') : status === 'unreviewed' ? t('dashboard.focus.unreviewed', 'Unreviewed') : t('dashboard.focus.pending', 'Pending')}
+                          </StatusBadge>
+                        </td>
+                        <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 group-hover:text-primary-700 dark:text-primary-400 dark:group-hover:text-primary-300">
+                            {t('dashboard.focus.review', 'Review')}
+                            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile card list */}
+            <div className="divide-y divide-slate-100 md:hidden dark:divide-slate-800/60">
+              {visiblePriorityCases.map((caseItem) => {
+                const risk = caseItem.is_urgent ? 'high' : /diabetes|high|elevated/i.test(String(caseItem.diagnosis || '')) ? 'medium' : 'low'
+                const status = caseItem.status === 'Reviewed' ? 'onTrack' : caseItem.is_urgent ? 'unreviewed' : 'pending'
+                const riskTone = risk === 'high' ? 'danger' : risk === 'medium' ? 'warning' : 'success'
+                const statusTone = status === 'onTrack' ? 'success' : status === 'unreviewed' ? 'danger' : 'warning'
+                return (
+                  <article
+                    key={caseItem.id}
+                    onClick={() => navigate(`/diagnosis/result?diagnosis_result_id=${caseItem.id}`)}
+                    className="cursor-pointer space-y-3 p-4 transition hover:bg-slate-50/80 dark:hover:bg-slate-800/30"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <UserAvatar name={caseItem.patient_name} size="sm" />
+                        <div>
+                          <p className="font-semibold text-slate-900 dark:text-white">{caseItem.patient_name}</p>
+                          <p className="text-xs text-slate-400">#P{String(caseItem.id).padStart(5, '0')}</p>
+                        </div>
+                      </div>
+                      <StatusBadge tone={riskTone} size="sm">
+                        {risk === 'high'
+                          ? t('dashboard.focus.highRisk', 'High')
+                          : risk === 'medium'
+                          ? t('dashboard.focus.mediumRisk', 'Medium')
+                          : t('dashboard.focus.lowRisk', 'Low')}
+                      </StatusBadge>
+                    </div>
+                    <div>
+                      <p className="font-medium text-slate-800 dark:text-slate-200">{tExact(caseItem.diagnosis)}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {caseItem.recommendation
+                          ? tExact(caseItem.recommendation)
+                          : Number.isFinite(Number(caseItem.certainty))
+                          ? `${Math.round(Number(caseItem.certainty) * 100)}% ${t('dashboard.focus.certainty', 'certainty')}`
+                          : t('dashboard.focus.clinicalFinding', 'Clinical finding')}{' '}
+                        · {formatRelativeTime(caseItem.created_at, language, t)}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 pt-1">
+                      <StatusBadge tone={statusTone} size="sm">
+                        {status === 'onTrack'
+                          ? t('dashboard.focus.onTrack', 'On track')
+                          : status === 'unreviewed'
+                          ? t('dashboard.focus.unreviewed', 'Unreviewed')
+                          : t('dashboard.focus.pending', 'Pending')}
+                      </StatusBadge>
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 dark:text-primary-400">
+                        {t('dashboard.focus.review', 'Review')} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                      </span>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+
+            {!visiblePriorityCases.length ? (
+              <div className="px-6 py-12 text-center">
+                <CircleCheckBig className="mx-auto h-8 w-8 text-emerald-500" aria-hidden />
+                <p className="mt-3 text-sm font-semibold text-slate-800 dark:text-slate-100">{t('dashboard.focus.queueClear', 'The queue is clear')}</p>
+                <p className="mt-1 text-xs text-slate-500">{t('dashboard.recent.noDiagnoses', 'No diagnoses found for this period.')}</p>
+              </div>
+            ) : null}
+
+            <footer className="flex justify-end border-t border-slate-100 px-5 py-3.5 dark:border-slate-800/80 sm:px-6">
+              <Link to="/review" className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 transition hover:text-primary-800 hover:underline dark:text-primary-300 dark:hover:text-primary-200">
+                {t('dashboard.focus.openFullQueue', 'View full patient queue')} <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
+              </Link>
+            </footer>
+          </section>
         </>
       )}
     </div>

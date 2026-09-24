@@ -42,3 +42,43 @@ export function formatDateTime(value, fallback = 'N/A', language = 'en') {
 
   return formatter.format(parsed)
 }
+
+export function formatRelativeTime(value, language = 'en', t = null) {
+  const parsed = parseApiDateTime(value)
+  if (!parsed) return '—'
+
+  const diffSec = Math.max(0, Math.floor((Date.now() - parsed.getTime()) / 1000))
+  const diffMin = Math.floor(diffSec / 60)
+  const isKm = language === 'km'
+
+  if (diffMin < 1) {
+    return t ? t('time.justNow', isKm ? 'អម្បាញ់មិញ' : 'Just now') : (isKm ? 'អម្បាញ់មិញ' : 'Just now')
+  }
+
+  if (diffMin < 60) {
+    return t
+      ? t('time.minAgo', isKm ? '{{count}} នាទីមុន' : '{{count}} min ago', { count: diffMin })
+      : (isKm ? `${diffMin} នាទីមុន` : `${diffMin} min ago`)
+  }
+
+  const diffHours = Math.floor(diffMin / 60)
+  if (diffHours < 24) {
+    const key = diffHours === 1 ? 'time.hourAgo' : 'time.hoursAgo'
+    const fallback = isKm ? `${diffHours} ម៉ោងមុន` : `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
+    return t ? t(key, fallback, { count: diffHours }) : fallback
+  }
+
+  const diffDays = Math.floor(diffHours / 24)
+  if (diffDays === 1) {
+    return t ? t('time.yesterday', isKm ? 'ម្សិលមិញ' : 'Yesterday') : (isKm ? 'ម្សិលមិញ' : 'Yesterday')
+  }
+
+  if (diffDays < 30) {
+    const key = diffDays === 1 ? 'time.dayAgo' : 'time.daysAgo'
+    const fallback = isKm ? `${diffDays} ថ្ងៃមុន` : `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
+    return t ? t(key, fallback, { count: diffDays }) : fallback
+  }
+
+  return formatDateTime(value, '—', language)
+}
+
