@@ -199,7 +199,11 @@ export default function PrintableClinicalReport({
   )
 
   const impressionSummary = toText(
-    result?.summary ||
+    (isKhmer ? result?.result_summary_km : result?.result_summary) ||
+      result?.result_summary ||
+      (isKhmer ? result?.headline_explanation_km : result?.headline_explanation) ||
+      result?.headline_explanation ||
+      result?.summary ||
       explanation?.clinical_summary ||
       (isKhmer
         ? 'ការវាយតម្លៃបង្ហាញពីស្ថានភាពគ្លីនិកផ្អែកលើទិន្នន័យមន្ទីរពិសោធន៍ និងរោគសញ្ញា។'

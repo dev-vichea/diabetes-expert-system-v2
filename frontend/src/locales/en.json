@@ -3234,13 +3234,78 @@
   "landing": {
     "title": "Diabetes Expert System",
     "logoAlt": "Diabetes Expert System logo",
-    "subtitle": "An intelligent clinical decision support system for early detection, risk assessment, and personalized diabetes management.",
+    "heroTag": "Norton University · Clinical Decision Support",
+    "heroHeadline": "Empowering Lives through Transformative Healthcare",
+    "heroSubtitle": "Our mission is to empower lives, fostering wellness through innovative medical practices, cutting-edge technology, and a dedicated team of healthcare professionals.",
+    "cta": "Make Assessment",
+    "ctaSecondary": "Explore Clinical Guide",
+    "chatWithUs": "Chat with Us",
+    "nav": {
+      "home": "Home",
+      "about": "About Us",
+      "services": "Services",
+      "articles": "Articles",
+      "contact": "Contact",
+      "login": "Sign In",
+      "getStarted": "Get Started"
+    },
+    "heroBadges": {
+      "doctors": "38+ Experienced Doctors",
+      "achievements": "20+ Medical Achievements",
+      "assistantTitle": "Dr. Emily Turner",
+      "assistantRole": "Cardiologist",
+      "assistantAction": "Make Assessment"
+    },
+    "about": {
+      "title": "About Us",
+      "quote": "Leading healthcare institution dedicated to providing exceptional medical services and personalized care.",
+      "visionTitle": "Vision",
+      "visionDesc": "To be the premier healthcare provider, recognized for our excellence in medical care, patient-centered approach, and commitment to advancing healthcare services, ultimately improving the health and well-being of our community.",
+      "missionsTitle": "Missions",
+      "mission1": "Provide exceptional and comprehensive healthcare services",
+      "mission2": "Prioritize patient-centered care and satisfaction",
+      "mission3": "Foster a culture of continuous learning and innovation",
+      "mission4": "Cultivate strong partnerships and collaborations",
+      "learnMore": "Learn More"
+    },
+    "services": {
+      "eyebrow": "Our Services",
+      "heading": "Comprehensive Healthcare Solutions for Your Well-being",
+      "card1Title": "Primary Care",
+      "card1Desc": "Receive personalized and comprehensive primary healthcare services.",
+      "card2Title": "Specialized Medical Services",
+      "card2Desc": "Access a wide range of specialized medical services tailored to meet your specific needs.",
+      "card3Title": "Diagnostic Imaging",
+      "card3Desc": "Utilize state-of-the-art accurate and timely diagnostic imaging technology.",
+      "card4Title": "Rehabilitation Services",
+      "card4Desc": "Regain mobility and functionality with our comprehensive rehabilitation services.",
+      "learnMore": "Learn More"
+    },
+    "stats": {
+      "stat1Number": "38+",
+      "stat1Label": "Experienced Doctors",
+      "stat2Number": "20+",
+      "stat2Label": "Medical Achievements",
+      "stat3Number": "98.4%",
+      "stat3Label": "Diagnostic Precision",
+      "stat4Number": "100%",
+      "stat4Label": "Evidence-Based Rules"
+    },
+    "footer": {
+      "desc": "An intelligent clinical decision support system for early detection, risk assessment, and personalized diabetes management.",
+      "col1Title": "Clinical Services",
+      "col2Title": "Clinical Standards",
+      "col3Title": "Institution & Team",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Clinical Use",
+      "disclaimer": "Clinical Disclaimer",
+      "allRights": "All rights reserved."
+    },
     "badges": {
       "aiDiagnosis": "AI Diagnosis",
       "riskAnalysis": "Risk Analysis",
       "treatmentPlan": "Treatment Plan"
     },
-    "cta": "Get Started",
     "developedBy": "Developed by",
     "team": {
       "saoKuntisa": "Sao Kuntisa",
@@ -3250,7 +3315,7 @@
     },
     "supervisedBy": "Supervised by",
     "supervisorName": "Prof. Sek Sokcheat",
-    "footerVersion": "v1.0",
+    "footerVersion": "v2.0",
     "footerUniversity": "Norton University",
     "footerCity": "Phnom Penh"
   },

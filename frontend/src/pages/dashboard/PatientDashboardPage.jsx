@@ -42,81 +42,17 @@ import { ErrorAlert, DashboardSkeleton } from '@/components/ui'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { cn } from '@/lib/utils'
+import { getTreatmentPlanForUser } from '@/lib/treatmentPlanStore'
+import {
+  getReportedSymptomLabels,
+  getRelativeCheckAge,
+} from '@/components/dashboard/patient/patient-dashboard-utils'
 
 // ============================================================================
 // CONSTANTS & TARGET CLINICAL THRESHOLDS
 // ============================================================================
 const TARGET_GLUCOSE_MIN = 80
 const TARGET_GLUCOSE_MAX = 130
-
-const DEFAULT_SCHEDULE = [
-  {
-    id: 'sched_glucose_am',
-    time: '08:00',
-    timeEnd: '08:15',
-    category: 'Glucose',
-    badgeTone: 'amber',
-    title: 'Morning Fasting Glucose',
-    subtitle: 'Fasting reading before breakfast • Target: 80–130 mg/dL',
-    location: 'Home Test Device',
-    icon: Droplets,
-  },
-  {
-    id: 'sched_meds_am',
-    time: '08:30',
-    timeEnd: '08:45',
-    category: 'Medication',
-    badgeTone: 'sky',
-    title: 'Metformin 500mg',
-    subtitle: 'Take 1 tablet with full glass of water after breakfast',
-    location: 'Daily Prescription',
-    icon: Pill,
-  },
-  {
-    id: 'sched_walk_pm',
-    time: '12:30',
-    timeEnd: '13:00',
-    category: 'Activity',
-    badgeTone: 'emerald',
-    title: '30-Min Post-Meal Walk',
-    subtitle: 'Light aerobic cardio to improve muscle glucose uptake',
-    location: 'Outdoor / Treadmill',
-    icon: Footprints,
-  },
-  {
-    id: 'sched_doctor_pm',
-    time: '15:00',
-    timeEnd: '15:30',
-    category: 'Consultation',
-    badgeTone: 'purple',
-    title: 'Endocrinology Check-in',
-    subtitle: 'Dr. Lina • Diabetes Care Team Review',
-    location: 'Clinic Wing B, Room 204',
-    icon: Stethoscope,
-  },
-  {
-    id: 'sched_glucose_pm',
-    time: '19:30',
-    timeEnd: '19:45',
-    category: 'Glucose',
-    badgeTone: 'amber',
-    title: 'Post-Dinner Glucose Log',
-    subtitle: 'Check 2-hour postprandial blood sugar',
-    location: 'Home Test Device',
-    icon: Activity,
-  },
-  {
-    id: 'sched_night_routine',
-    time: '21:30',
-    timeEnd: '22:00',
-    category: 'Routine',
-    badgeTone: 'slate',
-    title: 'Evening Hydration & Meds',
-    subtitle: 'Review daily diary and prepare for sleep',
-    location: 'Care Regimen',
-    icon: CheckCircle2,
-  },
-]
 
 // ============================================================================
 // HELPER UTILITIES
@@ -133,18 +69,159 @@ function getGreeting(name) {
   return name ? `${greeting}, ${name}` : greeting
 }
 
-/** Generates smooth, organic biometric trend series */
-function generateSmoothTrend(baseVal, variancePercent = 0.04, numPoints = 8) {
-  const pts = []
-  for (let i = 0; i < numPoints; i++) {
-    const t = i / (numPoints - 1)
-    const sin1 = Math.sin(t * Math.PI * 1.6) * variancePercent * baseVal
-    const sin2 = Math.cos(t * Math.PI * 2.2) * (variancePercent * 0.3) * baseVal
-    const val = baseVal + sin1 + sin2
-    pts.push(Number(val.toFixed(2)))
+/** Extracts all historical records for given keys (sorted newest first) */
+function extractMetricHistory(results, keys) {
+  const keyList = Array.isArray(keys) ? keys : [keys]
+  const history = []
+
+  for (const r of results || []) {
+    const f = r?.facts || {}
+    for (const k of keyList) {
+      const val = toNumber(f[k])
+      if (val !== null) {
+        history.push({
+          value: val,
+          date: r.created_at,
+          diagnosis: r.diagnosis,
+          id: r.id,
+        })
+        break
+      }
+    }
   }
-  pts[numPoints - 1] = baseVal
-  return pts
+  return history
+}
+
+/** Builds real dynamic daily schedule from patient's treatment plan and assessments */
+function buildPatientDailySchedule(patientPlan, latestResult) {
+  const items = []
+
+  // 1. Morning Fasting Glucose Test
+  items.push({
+    id: 'sched_glucose_am',
+    time: '08:00',
+    timeEnd: '08:15',
+    category: 'Glucose',
+    badgeTone: 'amber',
+    title: 'Morning Fasting Glucose',
+    subtitle: `Fasting test before breakfast • Target: ${patientPlan?.targetGlucose || '80–130 mg/dL'}`,
+    location: 'Home Test Device',
+    icon: Droplets,
+  })
+
+  // 2. Prescribed Pharmacotherapy from Treatment Plan
+  if (patientPlan?.medications?.length) {
+    patientPlan.medications.forEach((med, idx) => {
+      const isBedtime =
+        (med.frequency || '').toLowerCase().includes('bedtime') ||
+        (med.frequency || '').toLowerCase().includes('night') ||
+        (med.frequency || '').toLowerCase().includes('dinner')
+
+      items.push({
+        id: `sched_med_${idx}`,
+        time: isBedtime ? '20:30' : idx === 0 ? '08:30' : '09:00',
+        timeEnd: isBedtime ? '20:45' : idx === 0 ? '08:45' : '09:15',
+        category: 'Medication',
+        badgeTone: 'sky',
+        title: `${med.name} ${med.dosage || ''}`.trim(),
+        subtitle: `${med.frequency || 'Take with water'} • ${med.status || 'Active Rx'}`,
+        location: 'Daily Prescription',
+        icon: Pill,
+      })
+    })
+  } else {
+    items.push({
+      id: 'sched_med_default',
+      time: '08:30',
+      timeEnd: '08:45',
+      category: 'Medication',
+      badgeTone: 'sky',
+      title: 'Daily Medication & Water',
+      subtitle: 'Take prescribed morning medication with a full glass of water',
+      location: 'Daily Prescription',
+      icon: Pill,
+    })
+  }
+
+  // 3. Physical Activity & Exercise
+  const activityProc = patientPlan?.procedures?.find(
+    (p) =>
+      (p.category || '').toLowerCase().includes('physical') ||
+      (p.category || '').toLowerCase().includes('lifestyle') ||
+      (p.title || '').toLowerCase().includes('walk') ||
+      (p.title || '').toLowerCase().includes('exercise')
+  )
+
+  if (activityProc) {
+    items.push({
+      id: 'sched_activity',
+      time: '12:30',
+      timeEnd: '13:00',
+      category: 'Activity',
+      badgeTone: 'emerald',
+      title: activityProc.title,
+      subtitle: activityProc.description ? `${activityProc.description.slice(0, 80)}…` : 'Postprandial physical exercise',
+      location: 'Post-Meal Walk',
+      icon: Footprints,
+    })
+  } else {
+    items.push({
+      id: 'sched_activity',
+      time: '12:30',
+      timeEnd: '13:00',
+      category: 'Activity',
+      badgeTone: 'emerald',
+      title: '30-Min Post-Meal Walk',
+      subtitle: 'Light aerobic cardio to improve muscle glucose uptake',
+      location: 'Outdoor / Treadmill',
+      icon: Footprints,
+    })
+  }
+
+  // 4. Clinical Consultation / Physician Review Follow-up
+  const docName = latestResult?.reviewed_by_name
+    ? (latestResult.reviewed_by_name.startsWith('Dr.') ? latestResult.reviewed_by_name : `Dr. ${latestResult.reviewed_by_name}`)
+    : (patientPlan?.doctorName || 'Dr. Lina')
+
+  items.push({
+    id: 'sched_doctor_pm',
+    time: '15:00',
+    timeEnd: '15:30',
+    category: 'Consultation',
+    badgeTone: 'purple',
+    title: latestResult?.review_note ? 'Clinical Review Follow-up' : 'Endocrinology Check-in',
+    subtitle: `${docName} • Diabetes Care Team Review`,
+    location: 'Clinical Care Portal',
+    icon: Stethoscope,
+  })
+
+  // 5. Post-Dinner Glucose Log
+  items.push({
+    id: 'sched_glucose_pm',
+    time: '19:30',
+    timeEnd: '19:45',
+    category: 'Glucose',
+    badgeTone: 'amber',
+    title: 'Post-Dinner Glucose Log',
+    subtitle: 'Check 2-hour postprandial blood sugar',
+    location: 'Home Test Device',
+    icon: Activity,
+  })
+
+  // 6. Evening Routine
+  items.push({
+    id: 'sched_night_routine',
+    time: '21:30',
+    timeEnd: '22:00',
+    category: 'Routine',
+    badgeTone: 'slate',
+    title: 'Evening Hydration & Meds',
+    subtitle: 'Review daily diary and prepare for sleep',
+    location: 'Care Regimen',
+    icon: CheckCircle2,
+  })
+
+  return items.sort((a, b) => a.time.localeCompare(b.time))
 }
 
 /** SVG Sparkline: Ultra-smooth cubic Bezier spline with subpixel precision */
@@ -154,16 +231,19 @@ function MiniSparkline({ points = [], strokeColor = '#3b82f6', fillColor = '#3b8
   const padX = 2
   const padY = 4
 
-  if (!points || points.length < 2) {
+  if (!points || points.length === 0) {
     return <div className="h-[30px] w-full" />
   }
 
-  const min = Math.min(...points)
-  const max = Math.max(...points)
+  // If only 1 point, create a baseline
+  const activePoints = points.length === 1 ? [points[0], points[0]] : points
+
+  const min = Math.min(...activePoints)
+  const max = Math.max(...activePoints)
   const range = max - min || 1
 
-  const coords = points.map((val, idx) => {
-    const x = padX + (idx / (points.length - 1)) * (width - padX * 2)
+  const coords = activePoints.map((val, idx) => {
+    const x = padX + (idx / (activePoints.length - 1)) * (width - padX * 2)
     const y = height - padY - ((val - min) / range) * (height - padY * 2)
     return [x, y]
   })
@@ -244,6 +324,9 @@ function ChartCustomTooltip({ active, payload }) {
         <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{val}</span>
         <span className="text-xs font-medium text-slate-400">mg/dL</span>
       </div>
+      {data.diagnosis && (
+        <p className="mt-1 text-[11px] text-slate-400 truncate max-w-[200px]">{data.diagnosis}</p>
+      )}
     </div>
   )
 }
@@ -255,7 +338,8 @@ export function PatientDashboardPage() {
   const { user } = useAuth()
   const { t } = useLanguage()
   const [patientResults, setPatientResults] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [patientProfile, setPatientProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   // Calendar week offset (0 = current week)
@@ -268,17 +352,47 @@ export function PatientDashboardPage() {
   // Timeline category filter
   const [timelineFilter, setTimelineFilter] = useState('all')
 
-  // Load patient clinical records
+  // Real-time clock for the vertical time indicator on the timeline
+  const [liveTime, setLiveTime] = useState(() => {
+    const d = new Date()
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  })
+
+  useEffect(() => {
+    const updateTime = () => {
+      const d = new Date()
+      setLiveTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
+    }
+    updateTime()
+    const interval = setInterval(updateTime, 10000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Load real patient clinical records & profile
   useEffect(() => {
     let cancelled = false
 
-    async function loadPatientResults() {
+    async function loadData() {
       setLoading(true)
       setError('')
       try {
-        const response = await api.get('/diagnosis/mine')
+        const [resultsRes, profileRes] = await Promise.allSettled([
+          api.get('/diagnosis/mine'),
+          api.get('/patients/mine'),
+        ])
+
         if (!cancelled) {
-          setPatientResults(getApiData(response) || [])
+          if (resultsRes.status === 'fulfilled') {
+            setPatientResults(getApiData(resultsRes.value) || [])
+          } else {
+            console.error('Failed to load diagnosis records:', resultsRes.reason)
+          }
+
+          if (profileRes.status === 'fulfilled') {
+            setPatientProfile(getApiData(profileRes.value) || null)
+          } else {
+            console.warn('Patient profile endpoint returned:', profileRes.reason)
+          }
         }
       } catch (err) {
         if (!cancelled) {
@@ -291,42 +405,233 @@ export function PatientDashboardPage() {
       }
     }
 
-    loadPatientResults()
+    loadData()
     return () => {
       cancelled = true
     }
   }, [t])
 
+  // Personalized Care Plan
+  const patientPlan = useMemo(() => {
+    return getTreatmentPlanForUser(user?.name, user?.email)
+  }, [user])
+
   // Extract latest clinical facts
   const latestResult = patientResults[0]
   const facts = latestResult?.facts || {}
 
-  // Parse key biometrics
-  const rawA1c = toNumber(facts.hba1c)
-  const a1c = rawA1c !== null ? rawA1c : 6.4
+  // ============================================================================
+  // REAL BIOMETRICS EXTRACTION ACROSS CLINICAL HISTORY
+  // ============================================================================
+  // 1. Fasting Glucose history
+  const glucoseHistory = useMemo(() => {
+    return extractMetricHistory(patientResults, [
+      'fasting_glucose',
+      'fasting_plasma_glucose',
+      'random_blood_glucose',
+      'blood_glucose',
+    ])
+  }, [patientResults])
 
-  const rawGlucose = toNumber(facts.fasting_glucose ?? facts.fasting_plasma_glucose)
-  const glucose = rawGlucose !== null ? Math.round(rawGlucose) : 118
+  const latestGlucoseRecord = glucoseHistory[0]
+  const prevGlucoseRecord = glucoseHistory.find(
+    (item, idx) => idx > 0 && Math.abs(item.value - latestGlucoseRecord.value) > 0.01
+  ) || glucoseHistory[1]
 
-  const rawBmi = toNumber(facts.bmi)
-  const bmi = rawBmi !== null ? Number(rawBmi.toFixed(1)) : 23.5
+  const currentGlucose = latestGlucoseRecord ? Math.round(latestGlucoseRecord.value) : null
+  const prevGlucose = prevGlucoseRecord ? Math.round(prevGlucoseRecord.value) : null
+  const glucoseDelta = currentGlucose !== null && prevGlucose !== null ? currentGlucose - prevGlucose : null
+
+  const glucoseDeltaText =
+    glucoseDelta !== null
+      ? glucoseDelta > 0
+        ? `+${glucoseDelta}`
+        : `${glucoseDelta}`
+      : currentGlucose !== null
+      ? 'Baseline'
+      : 'Pending'
+
+  const glucoseDeltaTone =
+    glucoseDelta !== null
+      ? glucoseDelta > 0
+        ? 'rose'
+        : glucoseDelta < 0
+        ? 'emerald'
+        : 'slate'
+      : 'slate'
+
+  const glucoseStatus =
+    currentGlucose !== null
+      ? currentGlucose >= 126
+        ? { label: 'High', color: 'rose' }
+        : currentGlucose >= 100
+        ? { label: 'Impaired / Pre-meal', color: 'amber' }
+        : { label: 'In Range', color: 'emerald' }
+      : { label: 'Not Tested', color: 'slate' }
+
+  // 2. HbA1c history
+  const a1cHistory = useMemo(() => {
+    return extractMetricHistory(patientResults, ['hba1c', 'a1c'])
+  }, [patientResults])
+
+  const latestA1cRecord = a1cHistory[0]
+  const prevA1cRecord = a1cHistory.find(
+    (item, idx) => idx > 0 && Math.abs(item.value - latestA1cRecord.value) > 0.01
+  ) || a1cHistory[1]
+
+  const currentA1c = latestA1cRecord ? Number(latestA1cRecord.value.toFixed(1)) : null
+  const prevA1c = prevA1cRecord ? Number(prevA1cRecord.value.toFixed(1)) : null
+  const a1cDelta = currentA1c !== null && prevA1c !== null ? Number((currentA1c - prevA1c).toFixed(1)) : null
+
+  const a1cDeltaText =
+    a1cDelta !== null
+      ? a1cDelta > 0
+        ? `+${a1cDelta}%`
+        : `${a1cDelta}%`
+      : currentA1c !== null
+      ? 'Baseline'
+      : 'Pending'
+
+  const a1cDeltaTone =
+    a1cDelta !== null
+      ? a1cDelta > 0
+        ? 'rose'
+        : a1cDelta < 0
+        ? 'emerald'
+        : 'slate'
+      : 'slate'
+
+  const a1cStatus =
+    currentA1c !== null
+      ? currentA1c >= 6.5
+        ? { label: 'Elevated', color: 'rose' }
+        : currentA1c >= 5.7
+        ? { label: 'Borderline', color: 'amber' }
+        : { label: 'Optimal', color: 'emerald' }
+      : { label: 'Not Tested', color: 'slate' }
+
+  // 3. BMI history & profile calculation
+  const bmiHistory = useMemo(() => {
+    return extractMetricHistory(patientResults, ['bmi'])
+  }, [patientResults])
+
+  const calculatedProfileBmi = useMemo(() => {
+    if (patientProfile?.height_cm && patientProfile?.weight_kg) {
+      const hMeters = patientProfile.height_cm / 100
+      return Number((patientProfile.weight_kg / (hMeters * hMeters)).toFixed(1))
+    }
+    return null
+  }, [patientProfile])
+
+  const latestBmiRecord = bmiHistory[0]
+  const prevBmiRecord = bmiHistory.find(
+    (item, idx) => idx > 0 && Math.abs(item.value - latestBmiRecord.value) > 0.01
+  ) || bmiHistory[1]
+
+  const currentBmi = latestBmiRecord
+    ? Number(latestBmiRecord.value.toFixed(1))
+    : calculatedProfileBmi
+  const prevBmi = prevBmiRecord ? Number(prevBmiRecord.value.toFixed(1)) : null
+  const bmiDelta = currentBmi !== null && prevBmi !== null ? Number((currentBmi - prevBmi).toFixed(1)) : null
+
+  const bmiDeltaText =
+    bmiDelta !== null
+      ? bmiDelta > 0
+        ? `+${bmiDelta}`
+        : `${bmiDelta}`
+      : currentBmi !== null
+      ? 'Baseline'
+      : 'Pending'
+
+  const bmiDeltaTone =
+    bmiDelta !== null
+      ? bmiDelta > 0
+        ? currentBmi >= 25
+          ? 'rose'
+          : 'slate'
+        : 'emerald'
+      : 'slate'
+
+  const bmiStatus =
+    currentBmi !== null
+      ? currentBmi >= 30
+        ? { label: 'Obese', color: 'rose' }
+        : currentBmi >= 25
+        ? { label: 'Overweight', color: 'amber' }
+        : currentBmi < 18.5
+        ? { label: 'Underweight', color: 'amber' }
+        : { label: 'Normal', color: 'emerald' }
+      : { label: 'Not Provided', color: 'slate' }
+
+  // Real Sparkline Points from clinical history
+  const a1cTrendPoints = useMemo(() => {
+    if (!a1cHistory.length) return []
+    const pts = [...a1cHistory].reverse().map((h) => h.value)
+    return pts.length === 1 ? [pts[0], pts[0]] : pts
+  }, [a1cHistory])
+
+  const glucoseTrendPoints = useMemo(() => {
+    if (!glucoseHistory.length) return []
+    const pts = [...glucoseHistory].reverse().map((h) => h.value)
+    return pts.length === 1 ? [pts[0], pts[0]] : pts
+  }, [glucoseHistory])
+
+  const bmiTrendPoints = useMemo(() => {
+    if (!bmiHistory.length && currentBmi) return [currentBmi, currentBmi]
+    const pts = [...bmiHistory].reverse().map((h) => h.value)
+    return pts.length === 1 ? [pts[0], pts[0]] : pts
+  }, [bmiHistory, currentBmi])
 
   // High-risk assessment evaluation
-  const isUrgent = Boolean(latestResult?.is_urgent) || a1c >= 8.0 || glucose >= 180
+  const isUrgent =
+    Boolean(latestResult?.is_urgent) ||
+    (currentA1c !== null && currentA1c >= 8.0) ||
+    (currentGlucose !== null && currentGlucose >= 180)
 
-  // User Greeting
-  const firstName = (user?.name || '').trim().split(/\s+/)[0] || 'Patient'
+  // Patient Greeting & Name
+  const patientDisplayName = patientProfile?.full_name || user?.name || ''
+  const firstName = patientDisplayName.trim().split(/\s+/)[0] || 'Patient'
   const greeting = getGreeting(firstName)
+
+  // Patient Demographics (Age & Gender)
+  const patientAge = useMemo(() => {
+    if (patientProfile?.date_of_birth) {
+      try {
+        const dob = new Date(patientProfile.date_of_birth)
+        const diffMs = Date.now() - dob.getTime()
+        const ageYears = Math.floor(diffMs / (365.25 * 24 * 3600 * 1000))
+        if (ageYears > 0 && ageYears < 125) return ageYears
+      } catch {
+        // ignore
+      }
+    }
+    return facts.age ? Math.round(Number(facts.age)) : null
+  }, [patientProfile, facts.age])
+
+  const patientGender = useMemo(() => {
+    const raw = patientProfile?.gender || facts.gender
+    if (!raw) return 'Adult'
+    return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
+  }, [patientProfile, facts.gender])
 
   // 1-Sentence Diagnostic Note
   const diagnosticNote = useMemo(() => {
     if (!latestResult) {
       return 'Complete your initial health assessment to establish your personal metabolic baseline and target metrics.'
     }
-    if (isUrgent) {
-      return 'Your recent metabolic indicators exceed standard target thresholds. Prioritizing medication adherence and checking in with your doctor is recommended.'
+    if (latestResult.review_note) {
+      return latestResult.review_note
     }
-    return 'Your latest metabolic indicators and fasting blood sugar levels remain stable within your personal target zones.'
+    if (isUrgent) {
+      return (
+        latestResult.urgent_reason ||
+        'Your recent metabolic indicators exceed standard target thresholds. Clinical check-in and medication adherence are recommended.'
+      )
+    }
+    return (
+      latestResult.recommendation?.split('.')[0] + '.' ||
+      'Your latest metabolic indicators and fasting blood sugar levels remain stable within your personal target zones.'
+    )
   }, [latestResult, isUrgent])
 
   // Relative / formatted last assessment date
@@ -354,35 +659,55 @@ export function PatientDashboardPage() {
     }).format(new Date())
   }, [])
 
-  // 7-day glucose trend data
+  // ============================================================================
+  // REAL HISTORICAL GLUCOSE TREND DATA
+  // ============================================================================
   const trendData = useMemo(() => {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    const today = new Date()
-    const variance = [-6, 8, -4, 12, -2, 5, 0]
+    if (!glucoseHistory.length) return []
 
-    return days.map((dayName, idx) => {
-      const d = new Date()
-      d.setDate(today.getDate() - (6 - idx))
-      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      const val = Math.max(70, Math.round(glucose + variance[idx]))
+    // Take up to 10 most recent records and sort chronologically (oldest to newest)
+    const recent = [...glucoseHistory.slice(0, 10)].reverse()
+
+    // Deduplicate or label with time if on the same day
+    const dayCounts = {}
+    recent.forEach((item) => {
+      const d = new Date(item.date)
+      const dayKey = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      dayCounts[dayKey] = (dayCounts[dayKey] || 0) + 1
+    })
+
+    const daySeen = {}
+    return recent.map((item) => {
+      const d = new Date(item.date)
+      const dayKey = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      const hasMultiple = dayCounts[dayKey] > 1
+      daySeen[dayKey] = (daySeen[dayKey] || 0) + 1
+
+      const label = hasMultiple
+        ? `${dayKey} (#${daySeen[dayKey]})`
+        : dayKey
+
+      const fullDate = d.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      })
 
       return {
-        day: dayName,
-        fullDate: `${dayName}, ${dateStr}`,
-        glucose: val,
+        day: label,
+        fullDate,
+        glucose: Math.round(item.value),
+        diagnosis: item.diagnosis,
       }
     })
-  }, [glucose])
+  }, [glucoseHistory])
 
   const avgGlucose = useMemo(() => {
-    if (!trendData.length) return glucose
+    if (!trendData.length) return currentGlucose ?? '--'
     return Math.round(trendData.reduce((acc, curr) => acc + curr.glucose, 0) / trendData.length)
-  }, [trendData, glucose])
-
-  // Smooth sparkline series for vitals cards
-  const a1cTrendPoints = useMemo(() => generateSmoothTrend(a1c, 0.03, 8), [a1c])
-  const glucoseTrendPoints = useMemo(() => generateSmoothTrend(glucose, 0.05, 8), [glucose])
-  const bmiTrendPoints = useMemo(() => generateSmoothTrend(bmi, 0.015, 8), [bmi])
+  }, [trendData, currentGlucose])
 
   // Dynamic 7-day calendar strip
   const calendarWeek = useMemo(() => {
@@ -428,21 +753,10 @@ export function PatientDashboardPage() {
     return selectedObj ? Boolean(selectedObj.isToday) : true
   }, [calendarWeek, selectedDayIndex])
 
-  // Real-time clock for the vertical time indicator on the timeline
-  const [liveTime, setLiveTime] = useState(() => {
-    const d = new Date()
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  })
-
-  useEffect(() => {
-    const updateTime = () => {
-      const d = new Date()
-      setLiveTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
-    }
-    updateTime()
-    const interval = setInterval(updateTime, 10000)
-    return () => clearInterval(interval)
-  }, [])
+  // Real Dynamic Daily Care Schedule
+  const dailySchedule = useMemo(() => {
+    return buildPatientDailySchedule(patientPlan, latestResult)
+  }, [patientPlan, latestResult])
 
   // Task checklist state (stored in localStorage)
   const dateKey = new Date().toISOString().slice(0, 10)
@@ -471,12 +785,12 @@ export function PatientDashboardPage() {
 
   // Filtered timeline items
   const filteredSchedule = useMemo(() => {
-    if (timelineFilter === 'all') return DEFAULT_SCHEDULE
-    if (timelineFilter === 'glucose') return DEFAULT_SCHEDULE.filter((i) => i.category === 'Glucose')
-    if (timelineFilter === 'meds') return DEFAULT_SCHEDULE.filter((i) => i.category === 'Medication')
-    if (timelineFilter === 'activity') return DEFAULT_SCHEDULE.filter((i) => i.category === 'Activity')
-    return DEFAULT_SCHEDULE
-  }, [timelineFilter])
+    if (timelineFilter === 'all') return dailySchedule
+    if (timelineFilter === 'glucose') return dailySchedule.filter((i) => i.category === 'Glucose')
+    if (timelineFilter === 'meds') return dailySchedule.filter((i) => i.category === 'Medication')
+    if (timelineFilter === 'activity') return dailySchedule.filter((i) => i.category === 'Activity')
+    return dailySchedule
+  }, [dailySchedule, timelineFilter])
 
   // Dynamic chronological insertion index for the live current time marker
   const liveTimeInsertionIndex = useMemo(() => {
@@ -485,21 +799,85 @@ export function PatientDashboardPage() {
     return idx === -1 ? filteredSchedule.length : idx
   }, [filteredSchedule, liveTime, isViewingToday])
 
-  // Metabolic Balance Radar Chart Data
-  const radarData = useMemo(() => [
-    { metric: 'Glucose Control', value: isUrgent ? 68 : 88, fullMark: 100 },
-    { metric: 'Diet Balance', value: 82, fullMark: 100 },
-    { metric: 'Activity', value: 74, fullMark: 100 },
-    { metric: 'Medication', value: 95, fullMark: 100 },
-    { metric: 'Sleep Quality', value: 80, fullMark: 100 },
-    { metric: 'Hydration', value: 85, fullMark: 100 },
-  ], [isUrgent])
+  // ============================================================================
+  // REAL METABOLIC BALANCE RADAR CHART (COMPUTED DYNAMICALLY)
+  // ============================================================================
+  const radarMetrics = useMemo(() => {
+    // 1. Glucose Control Score (0 - 100)
+    let glucoseScore = 80
+    if (currentA1c !== null || currentGlucose !== null) {
+      if ((currentA1c !== null && currentA1c < 5.7) && (currentGlucose !== null && currentGlucose < 100)) {
+        glucoseScore = 95
+      } else if ((currentA1c !== null && currentA1c <= 6.4) || (currentGlucose !== null && currentGlucose <= 125)) {
+        glucoseScore = 82
+      } else if ((currentA1c !== null && currentA1c <= 7.9) || (currentGlucose !== null && currentGlucose <= 160)) {
+        glucoseScore = 65
+      } else {
+        glucoseScore = 48
+      }
+    } else if (isUrgent) {
+      glucoseScore = 55
+    }
 
-  // Vitals status pills
-  const a1cStatus = a1c >= 6.5 ? { label: 'Elevated', color: 'rose', trend: '+0.2%' } : a1c >= 5.7 ? { label: 'Borderline', color: 'amber', trend: '+0.1%' } : { label: 'Optimal', color: 'emerald', trend: '-0.3%' }
-  const glucoseStatus = glucose >= 126 ? { label: 'High', color: 'rose', trend: '+14' } : glucose >= 100 ? { label: 'Pre-meal', color: 'amber', trend: '+6' } : { label: 'In Range', color: 'emerald', trend: '-8' }
-  const bmiStatus = bmi >= 30 ? { label: 'Obese', color: 'rose', trend: '+0.5' } : bmi >= 25 ? { label: 'Overweight', color: 'amber', trend: '+0.1' } : { label: 'Normal', color: 'emerald', trend: '-0.2' }
-  if (loading && !patientResults.length) {
+    // 2. Diet Balance Score
+    let dietScore = 85
+    if (currentBmi && currentBmi >= 30) dietScore -= 18
+    else if (currentBmi && currentBmi >= 25) dietScore -= 10
+    if (facts.high_cholesterol || patientProfile?.high_cholesterol) dietScore -= 10
+    if (facts.excessive_hunger || facts.symptom_excessive_hunger) dietScore -= 8
+    dietScore = Math.max(40, Math.min(98, dietScore))
+
+    // 3. Physical Activity Score
+    let activityScore = 85
+    if (facts.sedentary_lifestyle || facts.physical_activity_low || patientProfile?.sedentary_lifestyle) {
+      activityScore = 52
+    }
+
+    // 4. Medication Adherence Score
+    let medScore = 92
+    if (patientPlan?.adherenceRate) {
+      const parsed = parseInt(patientPlan.adherenceRate, 10)
+      if (!Number.isNaN(parsed)) medScore = parsed
+    }
+
+    // 5. Sleep & Energy Score
+    let sleepScore = 84
+    if (facts.fatigue || facts.symptom_fatigue) sleepScore -= 14
+    if (facts.dizziness || facts.symptom_dizziness) sleepScore -= 8
+    sleepScore = Math.max(45, Math.min(95, sleepScore))
+
+    // 6. Cardiovascular & Prevention Score
+    let cardioScore = 90
+    if (facts.hypertension || patientProfile?.hypertension) cardioScore -= 20
+    if (facts.smoking || patientProfile?.smoking) cardioScore -= 15
+    cardioScore = Math.max(45, Math.min(98, cardioScore))
+
+    const overall = Math.round(
+      (glucoseScore + dietScore + activityScore + medScore + sleepScore + cardioScore) / 6
+    )
+
+    return {
+      data: [
+        { metric: 'Glucose Control', value: glucoseScore, fullMark: 100 },
+        { metric: 'Diet Balance', value: dietScore, fullMark: 100 },
+        { metric: 'Activity', value: activityScore, fullMark: 100 },
+        { metric: 'Medication', value: medScore, fullMark: 100 },
+        { metric: 'Sleep Quality', value: sleepScore, fullMark: 100 },
+        { metric: 'Cardiovascular', value: cardioScore, fullMark: 100 },
+      ],
+      overall,
+      glucoseScore,
+      dietScore,
+      medScore,
+    }
+  }, [currentA1c, currentGlucose, currentBmi, isUrgent, facts, patientProfile, patientPlan])
+
+  // Reported symptoms for the latest assessment details card
+  const reportedSymptoms = useMemo(() => {
+    return getReportedSymptomLabels(latestResult, t)
+  }, [latestResult, t])
+
+  if (loading && !patientResults.length && !patientProfile) {
     return <DashboardSkeleton />
   }
 
@@ -511,16 +889,12 @@ export function PatientDashboardPage() {
       {/* 2-COLUMN MASTER LAYOUT: Left Content (72%) + Right Calendar Rail (28%) */}
       {/* ==================================================================== */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-        
         {/* ================================================================== */}
         {/* LEFT COLUMN: Main Dashboard (Metrics, Charts, Clinical Summary)    */}
         {/* ================================================================== */}
         <div className="xl:col-span-8 space-y-6 min-w-0">
-
           {/* 1. TOP HERO: Clean Status Banner (Pure White, Crisp Border, Brand Buttons) */}
-          <div
-            className="relative flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 transition-all duration-200 shadow-[0_2px_12px_rgba(0,0,0,0.02)] dark:border-slate-800 dark:bg-slate-900"
-          >
+          <div className="relative flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 transition-all duration-200 shadow-[0_2px_12px_rgba(0,0,0,0.02)] dark:border-slate-800 dark:bg-slate-900">
             <div>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
@@ -581,7 +955,7 @@ export function PatientDashboardPage() {
             </div>
           </div>
 
-          {/* 2. TOP METRICS ROW: 3 Modern Vitals Cards (Inspired by top metric cards in reference) */}
+          {/* 2. TOP METRICS ROW: 3 Modern Vitals Cards (Connected to real clinical records) */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Metric 1: HbA1c */}
             <div className="flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all duration-150 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
@@ -590,20 +964,21 @@ export function PatientDashboardPage() {
                 <span
                   className={cn(
                     'rounded-full px-2 py-0.5 text-[11px] font-semibold',
-                    a1cStatus.color === 'rose' && 'bg-rose-50 text-rose-700 border border-rose-200/70 dark:bg-rose-950/60 dark:text-rose-300',
-                    a1cStatus.color === 'amber' && 'bg-amber-50 text-amber-700 border border-amber-200/70 dark:bg-amber-950/60 dark:text-amber-300',
-                    a1cStatus.color === 'emerald' && 'bg-emerald-50 text-emerald-700 border border-emerald-200/70 dark:bg-emerald-950/60 dark:text-emerald-300'
+                    a1cDeltaTone === 'rose' && 'bg-rose-50 text-rose-700 border border-rose-200/70 dark:bg-rose-950/60 dark:text-rose-300',
+                    a1cDeltaTone === 'amber' && 'bg-amber-50 text-amber-700 border border-amber-200/70 dark:bg-amber-950/60 dark:text-amber-300',
+                    a1cDeltaTone === 'emerald' && 'bg-emerald-50 text-emerald-700 border border-emerald-200/70 dark:bg-emerald-950/60 dark:text-emerald-300',
+                    a1cDeltaTone === 'slate' && 'bg-slate-50 text-slate-600 border border-slate-200/70 dark:bg-slate-800 dark:text-slate-400'
                   )}
                 >
-                  {a1cStatus.trend}
+                  {a1cDeltaText}
                 </span>
               </div>
 
               <div className="mt-3 flex items-baseline gap-1">
                 <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                  {a1c.toFixed(1)}
+                  {currentA1c !== null ? currentA1c.toFixed(1) : '--'}
                 </span>
-                <span className="text-sm font-medium text-slate-400">%</span>
+                {currentA1c !== null && <span className="text-sm font-medium text-slate-400">%</span>}
               </div>
 
               <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
@@ -627,20 +1002,21 @@ export function PatientDashboardPage() {
                 <span
                   className={cn(
                     'rounded-full px-2 py-0.5 text-[11px] font-semibold',
-                    glucoseStatus.color === 'rose' && 'bg-rose-50 text-rose-700 border border-rose-200/70 dark:bg-rose-950/60 dark:text-rose-300',
-                    glucoseStatus.color === 'amber' && 'bg-amber-50 text-amber-700 border border-amber-200/70 dark:bg-amber-950/60 dark:text-amber-300',
-                    glucoseStatus.color === 'emerald' && 'bg-emerald-50 text-emerald-700 border border-emerald-200/70 dark:bg-emerald-950/60 dark:text-emerald-300'
+                    glucoseDeltaTone === 'rose' && 'bg-rose-50 text-rose-700 border border-rose-200/70 dark:bg-rose-950/60 dark:text-rose-300',
+                    glucoseDeltaTone === 'amber' && 'bg-amber-50 text-amber-700 border border-amber-200/70 dark:bg-amber-950/60 dark:text-amber-300',
+                    glucoseDeltaTone === 'emerald' && 'bg-emerald-50 text-emerald-700 border border-emerald-200/70 dark:bg-emerald-950/60 dark:text-emerald-300',
+                    glucoseDeltaTone === 'slate' && 'bg-slate-50 text-slate-600 border border-slate-200/70 dark:bg-slate-800 dark:text-slate-400'
                   )}
                 >
-                  {glucoseStatus.trend}
+                  {glucoseDeltaText}
                 </span>
               </div>
 
               <div className="mt-3 flex items-baseline gap-1">
                 <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                  {glucose}
+                  {currentGlucose !== null ? currentGlucose : '--'}
                 </span>
-                <span className="text-xs font-medium text-slate-400">mg/dL</span>
+                {currentGlucose !== null && <span className="text-xs font-medium text-slate-400">mg/dL</span>}
               </div>
 
               <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
@@ -664,20 +1040,21 @@ export function PatientDashboardPage() {
                 <span
                   className={cn(
                     'rounded-full px-2 py-0.5 text-[11px] font-semibold',
-                    bmiStatus.color === 'rose' && 'bg-rose-50 text-rose-700 border border-rose-200/70 dark:bg-rose-950/60 dark:text-rose-300',
-                    bmiStatus.color === 'amber' && 'bg-amber-50 text-amber-700 border border-amber-200/70 dark:bg-amber-950/60 dark:text-amber-300',
-                    bmiStatus.color === 'emerald' && 'bg-emerald-50 text-emerald-700 border border-emerald-200/70 dark:bg-emerald-950/60 dark:text-emerald-300'
+                    bmiDeltaTone === 'rose' && 'bg-rose-50 text-rose-700 border border-rose-200/70 dark:bg-rose-950/60 dark:text-rose-300',
+                    bmiDeltaTone === 'amber' && 'bg-amber-50 text-amber-700 border border-amber-200/70 dark:bg-amber-950/60 dark:text-amber-300',
+                    bmiDeltaTone === 'emerald' && 'bg-emerald-50 text-emerald-700 border border-emerald-200/70 dark:bg-emerald-950/60 dark:text-emerald-300',
+                    bmiDeltaTone === 'slate' && 'bg-slate-50 text-slate-600 border border-slate-200/70 dark:bg-slate-800 dark:text-slate-400'
                   )}
                 >
-                  {bmiStatus.trend}
+                  {bmiDeltaText}
                 </span>
               </div>
 
               <div className="mt-3 flex items-baseline gap-1">
                 <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                  {bmi.toFixed(1)}
+                  {currentBmi !== null ? currentBmi.toFixed(1) : '--'}
                 </span>
-                <span className="text-xs font-medium text-slate-400">kg/m²</span>
+                {currentBmi !== null && <span className="text-xs font-medium text-slate-400">kg/m²</span>}
               </div>
 
               <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
@@ -695,16 +1072,15 @@ export function PatientDashboardPage() {
             </div>
           </div>
 
-          {/* 3. CHARTS ROW: 7-Day Glucose Trend + Metabolic Balance Radar (Matching the reference layout) */}
+          {/* 3. CHARTS ROW: Real Glucose Trend + Metabolic Balance Radar */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-            
-            {/* 7-Day Blood Glucose Trend (7 cols) */}
+            {/* Blood Glucose Trend (7 cols) */}
             <div className="lg:col-span-7 min-w-0 rounded-2xl border border-slate-200/70 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3.5 dark:border-slate-800">
                   <div>
                     <h2 className="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-                      7-Day Glucose Trend
+                      Glucose Trend History
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
                       Fasting readings vs ADA target range
@@ -722,87 +1098,112 @@ export function PatientDashboardPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 h-56 sm:h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={trendData} margin={{ top: 12, right: 8, left: -22, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="glucoseMainGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.18} />
-                          <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.0} />
-                        </linearGradient>
-                      </defs>
+                {trendData.length > 0 ? (
+                  <div className="mt-4 h-56 sm:h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={trendData} margin={{ top: 12, right: 8, left: -22, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="glucoseMainGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.18} />
+                            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.0} />
+                          </linearGradient>
+                        </defs>
 
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" className="dark:stroke-slate-800/60" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" className="dark:stroke-slate-800/60" />
 
-                      <XAxis
-                        dataKey="day"
-                        tickLine={false}
-                        axisLine={{ stroke: '#e2e8f0' }}
-                        tick={{ fontSize: 11, fill: '#94a3b8' }}
-                        dy={4}
-                      />
+                        <XAxis
+                          dataKey="day"
+                          tickLine={false}
+                          axisLine={{ stroke: '#e2e8f0' }}
+                          tick={{ fontSize: 11, fill: '#94a3b8' }}
+                          dy={4}
+                        />
 
-                      <YAxis
-                        domain={[60, 180]}
-                        ticks={[80, 100, 130, 160]}
-                        tickLine={false}
-                        axisLine={false}
-                        tick={{ fontSize: 11, fill: '#94a3b8' }}
-                      />
+                        <YAxis
+                          domain={[60, 200]}
+                          ticks={[80, 100, 130, 160]}
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 11, fill: '#94a3b8' }}
+                        />
 
-                      <Tooltip content={<ChartCustomTooltip />} />
+                        <Tooltip content={<ChartCustomTooltip />} />
 
-                      {/* Green Shaded Target Zone (80–130 mg/dL) */}
-                      <ReferenceArea
-                        y1={TARGET_GLUCOSE_MIN}
-                        y2={TARGET_GLUCOSE_MAX}
-                        fill="#10b981"
-                        fillOpacity={0.08}
-                        stroke="#10b981"
-                        strokeOpacity={0.25}
-                        strokeDasharray="3 3"
-                      />
+                        {/* Green Shaded Target Zone (80–130 mg/dL) */}
+                        <ReferenceArea
+                          y1={TARGET_GLUCOSE_MIN}
+                          y2={TARGET_GLUCOSE_MAX}
+                          fill="#10b981"
+                          fillOpacity={0.08}
+                          stroke="#10b981"
+                          strokeOpacity={0.25}
+                          strokeDasharray="3 3"
+                        />
 
-                      <ReferenceLine
-                        y={TARGET_GLUCOSE_MAX}
-                        stroke="#10b981"
-                        strokeDasharray="3 3"
-                        strokeOpacity={0.4}
-                      />
+                        <ReferenceLine
+                          y={TARGET_GLUCOSE_MAX}
+                          stroke="#10b981"
+                          strokeDasharray="3 3"
+                          strokeOpacity={0.4}
+                        />
 
-                      <ReferenceLine
-                        y={TARGET_GLUCOSE_MIN}
-                        stroke="#10b981"
-                        strokeDasharray="3 3"
-                        strokeOpacity={0.4}
-                      />
+                        <ReferenceLine
+                          y={TARGET_GLUCOSE_MIN}
+                          stroke="#10b981"
+                          strokeDasharray="3 3"
+                          strokeOpacity={0.4}
+                        />
 
-                      <Area
-                        type="monotone"
-                        dataKey="glucose"
-                        stroke="#3b82f6"
-                        strokeWidth={2}
-                        fill="url(#glucoseMainGradient)"
-                        dot={{
-                          r: 3.5,
-                          fill: '#3b82f6',
-                          strokeWidth: 2,
-                          stroke: '#ffffff',
-                        }}
-                        activeDot={{
-                          r: 5.5,
-                          fill: '#2563eb',
-                          stroke: '#ffffff',
-                          strokeWidth: 2,
-                        }}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
+                        <Area
+                          type="monotone"
+                          dataKey="glucose"
+                          stroke="#3b82f6"
+                          strokeWidth={2}
+                          fill="url(#glucoseMainGradient)"
+                          dot={{
+                            r: 3.5,
+                            fill: '#3b82f6',
+                            strokeWidth: 2,
+                            stroke: '#ffffff',
+                          }}
+                          activeDot={{
+                            r: 5.5,
+                            fill: '#2563eb',
+                            stroke: '#ffffff',
+                            strokeWidth: 2,
+                          }}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="flex h-56 sm:h-64 w-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50 mt-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-50 text-primary-600 dark:bg-primary-950/50 dark:text-primary-400 mb-3">
+                      <Droplets className="h-6 w-6" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                      No Glucose Tests Logged Yet
+                    </h4>
+                    <p className="mt-1 text-xs text-slate-500 max-w-xs leading-relaxed">
+                      Complete your first clinical assessment to start plotting real fasting glucose trends against the target zone.
+                    </p>
+                    <Link
+                      to="/diagnosis"
+                      className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-primary-700 shadow-xs transition-colors"
+                    >
+                      <PlusCircle className="h-3.5 w-3.5" />
+                      <span>Start Assessment</span>
+                    </Link>
+                  </div>
+                )}
               </div>
 
               <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px] text-slate-400 dark:border-slate-800">
-                <span>Daily morning fasting log</span>
+                <span>
+                  {trendData.length > 0
+                    ? `Showing ${trendData.length} recorded lab readings`
+                    : 'Awaiting lab log'}
+                </span>
                 <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
                   <span className="inline-block h-2 w-2 rounded-xs bg-emerald-500/20 border border-emerald-500/50" />
                   Target zone (80–130)
@@ -810,7 +1211,7 @@ export function PatientDashboardPage() {
               </div>
             </div>
 
-            {/* Metabolic Health Radar (5 cols - Inspired by Diagnoses Radar in reference) */}
+            {/* Metabolic Health Radar (5 cols - Dynamic from Real Facts) */}
             <div className="lg:col-span-5 min-w-0 rounded-2xl border border-slate-200/70 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3.5 dark:border-slate-800">
@@ -823,14 +1224,14 @@ export function PatientDashboardPage() {
                     </p>
                   </div>
                   <span className="text-xs font-bold text-primary-600 bg-primary-50 dark:bg-primary-950/50 px-2 py-0.5 rounded-md">
-                    84 / 100
+                    {radarMetrics.overall} / 100
                   </span>
                 </div>
 
                 {/* Radar Chart */}
                 <div className="h-52 w-full mt-2">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarMetrics.data}>
                       <PolarGrid stroke="#e2e8f0" strokeOpacity={0.6} />
                       <PolarAngleAxis
                         dataKey="metric"
@@ -853,21 +1254,27 @@ export function PatientDashboardPage() {
               <div className="mt-2 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 text-center dark:border-slate-800">
                 <div className="rounded-lg bg-slate-50/70 dark:bg-slate-800/40 p-1.5">
                   <p className="text-[10px] text-slate-400 uppercase font-bold">Glucose</p>
-                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{radarData[0].value}%</p>
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    {radarMetrics.glucoseScore}%
+                  </p>
                 </div>
                 <div className="rounded-lg bg-slate-50/70 dark:bg-slate-800/40 p-1.5">
                   <p className="text-[10px] text-slate-400 uppercase font-bold">Diet</p>
-                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{radarData[1].value}%</p>
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    {radarMetrics.dietScore}%
+                  </p>
                 </div>
                 <div className="rounded-lg bg-slate-50/70 dark:bg-slate-800/40 p-1.5">
                   <p className="text-[10px] text-slate-400 uppercase font-bold">Meds</p>
-                  <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{radarData[3].value}%</p>
+                  <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                    {radarMetrics.medScore}%
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 4. BOTTOM SECTION: Latest Assessment & Clinical Summary (Inspired by "Last visit details" card in reference image) */}
+          {/* 4. BOTTOM SECTION: Latest Assessment & Clinical Summary (Real Data) */}
           <div className="rounded-2xl border border-slate-200/70 bg-white p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] dark:border-slate-800 dark:bg-slate-900">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
               <div>
@@ -881,10 +1288,12 @@ export function PatientDashboardPage() {
 
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono font-semibold text-slate-400 dark:text-slate-500">
-                  {latestResult?.id ? `#DIAG-${String(latestResult.id).slice(0, 8).toUpperCase()}` : '#DIAG-BASELINE'}
+                  {latestResult?.id
+                    ? `#DIAG-${String(latestResult.id).padStart(4, '0')}`
+                    : '#DIAG-BASELINE'}
                 </span>
                 <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
-                  Complete
+                  {latestResult?.reviewed_at ? 'Physician Verified' : 'Complete'}
                 </span>
               </div>
             </div>
@@ -893,28 +1302,36 @@ export function PatientDashboardPage() {
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  {user?.name || 'Patient Profile'}
+                  {patientDisplayName || 'Patient Profile'}
                 </h4>
                 <p className="text-xs text-slate-500">
-                  {facts.age ? `${facts.age} years` : 'Adult'} • {facts.gender === 'female' ? 'Female' : 'Male'}
+                  {patientAge ? `${patientAge} years` : 'Adult'} • {patientGender}
                 </p>
               </div>
 
               {/* Symptom Tags */}
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                  Fasting Glucose
-                </span>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                  HbA1c Screening
-                </span>
+                {reportedSymptoms.length > 0 ? (
+                  reportedSymptoms.map((label) => (
+                    <span
+                      key={label}
+                      className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                    >
+                      {label}
+                    </span>
+                  ))
+                ) : (
+                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    Routine Check
+                  </span>
+                )}
                 {isUrgent ? (
                   <span className="rounded-full bg-rose-100 text-rose-700 px-2.5 py-0.5 text-xs font-semibold dark:bg-rose-950/60 dark:text-rose-300">
                     High Risk
                   </span>
                 ) : (
                   <span className="rounded-full bg-emerald-100 text-emerald-700 px-2.5 py-0.5 text-xs font-semibold dark:bg-emerald-950/60 dark:text-emerald-300">
-                    Routine Check
+                    Stable
                   </span>
                 )}
               </div>
@@ -925,36 +1342,60 @@ export function PatientDashboardPage() {
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 py-1">
                 <span className="sm:col-span-3 font-semibold text-slate-400">Last Checked</span>
                 <span className="sm:col-span-9 font-medium text-slate-800 dark:text-slate-200">
-                  Dr. Lina (Endocrinologist) on {lastAssessmentDate || 'Recent Baseline'}
+                  {latestResult?.reviewed_by_name
+                    ? (latestResult.reviewed_by_name.startsWith('Dr.')
+                        ? latestResult.reviewed_by_name
+                        : `Dr. ${latestResult.reviewed_by_name}`)
+                    : latestResult?.diagnosed_by_name
+                    ? `Evaluated by ${latestResult.diagnosed_by_name}`
+                    : 'Diabetes Expert Clinical System'}{' '}
+                  on {lastAssessmentDate || 'Recent Baseline'}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 py-1 border-t border-slate-100 dark:border-slate-800/60">
                 <span className="sm:col-span-3 font-semibold text-slate-400">Observation</span>
                 <span className="sm:col-span-9 font-medium text-slate-800 dark:text-slate-200 leading-relaxed">
-                  Fasting plasma glucose recorded at {glucose} mg/dL. Recent HbA1c at {a1c}%. Calculated BMI is {bmi} kg/m².
+                  Fasting plasma glucose recorded at{' '}
+                  {currentGlucose !== null ? `${currentGlucose} mg/dL` : 'pending test'}. Recent HbA1c at{' '}
+                  {currentA1c !== null ? `${currentA1c}%` : 'pending lab'}. Calculated BMI is{' '}
+                  {currentBmi !== null ? `${currentBmi} kg/m²` : 'unspecified'}.
+                  {reportedSymptoms.length > 0 &&
+                    ` Patient reported symptoms including: ${reportedSymptoms.slice(0, 3).join(', ')}.`}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 py-1 border-t border-slate-100 dark:border-slate-800/60">
                 <span className="sm:col-span-3 font-semibold text-slate-400">Diagnosis</span>
                 <span className="sm:col-span-9 font-semibold text-slate-900 dark:text-slate-100">
-                  {latestResult?.diagnosis || 'Type 2 Diabetes Screening — Lifestyle Guidance Recommended'}
+                  {latestResult?.diagnosis || 'Initial screening recommended'}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 py-1 border-t border-slate-100 dark:border-slate-800/60">
-                <span className="sm:col-span-3 font-semibold text-slate-400">Prescription</span>
+                <span className="sm:col-span-3 font-semibold text-slate-400">Prescription / Protocol</span>
                 <div className="sm:col-span-9 space-y-0.5 font-medium text-slate-800 dark:text-slate-200">
-                  <p>Metformin — 500mg daily with breakfast</p>
-                  <p className="text-slate-500">Lifestyle: 30-min brisk walk after lunch • Target 80–130 mg/dL glucose</p>
+                  <p>
+                    {patientPlan?.pharmacotherapy ||
+                      (latestResult?.recommendation
+                        ? latestResult.recommendation.split('.')[0] + '.'
+                        : 'Routine dietary and physical activity maintenance.')}
+                  </p>
+                  <p className="text-slate-500">
+                    Lifestyle: 30-min brisk walk daily • Target fasting glucose{' '}
+                    {patientPlan?.targetGlucose || '80–130 mg/dL'}
+                  </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 py-1 border-t border-slate-100 dark:border-slate-800/60">
-                <span className="sm:col-span-3 font-semibold text-slate-400">Notes</span>
+                <span className="sm:col-span-3 font-semibold text-slate-400">Doctor Notes</span>
                 <span className="sm:col-span-9 text-slate-600 dark:text-slate-300 leading-relaxed">
-                  Patient shows consistent compliance with morning logs. Maintain balanced low-glycemic meals and record weekly weight progress.
+                  {latestResult?.review_note
+                    ? `“${latestResult.review_note}”`
+                    : latestResult?.explanation_trace?.evidence_summary ||
+                      latestResult?.recommendation ||
+                      'Assessment logged in clinical review queue. Official physician sign-off will appear upon review.'}
                 </span>
               </div>
             </div>
@@ -970,15 +1411,13 @@ export function PatientDashboardPage() {
               </Link>
             </div>
           </div>
-
         </div>
 
         {/* ================================================================== */}
         {/* RIGHT COLUMN: Interactive Calendar & Care Schedule Timeline        */}
         {/* ================================================================== */}
         <div className="xl:col-span-4 min-w-0 rounded-2xl border border-slate-200/70 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] dark:border-slate-800 dark:bg-slate-900">
-          
-          {/* 1. CALENDAR STRIP (Exact reference design: month with prev/next & 7 days) */}
+          {/* 1. CALENDAR STRIP */}
           <div>
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
@@ -1093,9 +1532,7 @@ export function PatientDashboardPage() {
 
                 return (
                   <Fragment key={item.id}>
-                    <div
-                      className="grid grid-cols-[48px_20px_1fr] gap-3 pb-4 last:pb-0 relative group"
-                    >
+                    <div className="grid grid-cols-[48px_20px_1fr] gap-3 pb-4 last:pb-0 relative group">
                       {/* 1. Left Time Column (Fixed 48px, right-aligned) */}
                       <div className="text-right pt-3">
                         <span className="font-mono text-xs font-semibold text-slate-400 dark:text-slate-500 tabular-nums select-none">
@@ -1105,7 +1542,6 @@ export function PatientDashboardPage() {
 
                       {/* 2. Timeline Center Track & Node Dot (Exact Center Aligned) */}
                       <div className="relative flex justify-center h-full pt-3.5">
-                        {/* Vertical Dashed Line centered via left-1/2 -translate-x-1/2 */}
                         <div
                           className={cn(
                             'absolute left-1/2 -translate-x-1/2 w-0 border-l-2 border-dashed border-slate-200 dark:border-slate-800 pointer-events-none',
@@ -1224,7 +1660,7 @@ export function PatientDashboardPage() {
           {/* Timeline Bottom CTA */}
           <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
             <span className="text-slate-400">
-              {completedTasks.length} of {DEFAULT_SCHEDULE.length} completed
+              {completedTasks.length} of {dailySchedule.length} completed
             </span>
             <Link
               to="/care-plan"
@@ -1234,9 +1670,7 @@ export function PatientDashboardPage() {
               <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
-
         </div>
-
       </div>
     </div>
   )

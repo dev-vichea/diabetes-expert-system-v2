@@ -2,9 +2,57 @@ import { useState } from 'react'
 import { ChevronDown, Code2, Info } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 
-export function TechnicalDetailsSection({ children }) {
+export function TechnicalDetailsSection({ children, embedded = false }) {
   const { t } = useLanguage()
   const [open, setOpen] = useState(false)
+
+  if (embedded) {
+    return (
+      <div className="overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          className="flex w-full items-center justify-between py-3 text-left transition hover:opacity-90"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <Code2 className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-slate-900 dark:text-white sm:text-base">
+                  {t('diagnosisResult.technical.title', 'Technical details — how the engine decided')}
+                </span>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                  Clinician / EMR
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                {t('diagnosisResult.technical.subtitle', 'The behind-the-scenes rules and data the expert system used.')}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 shrink-0">
+            <span>{open ? 'Hide details' : 'View details'}</span>
+            <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
+
+        {open ? (
+          <div className="mt-3 space-y-5 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-5 dark:border-slate-800/80 dark:bg-slate-900/30 sm:p-6">
+            <div className="flex items-start gap-2.5 border-b border-slate-200/60 pb-4 dark:border-slate-800">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
+              <p className="text-xs sm:text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                {t('diagnosisResult.technical.plainNote', 'In simple words: the system compared the answers with known medical rules. Every rule that matched adds a small piece of evidence, and complete lab results make the conclusion more certain. Your doctor can read this section to double-check exactly why the system reached its conclusion.')}
+              </p>
+            </div>
+            {children}
+          </div>
+        ) : null}
+      </div>
+    )
+  }
 
   return (
     <section className="space-y-3">
