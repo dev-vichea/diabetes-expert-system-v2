@@ -38,14 +38,8 @@ export function TreatmentPlanningPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'Approved' | 'In Progress' | 'Pending'
 
-  const isStaff = user?.role === 'doctor' || user?.role === 'admin' || user?.role === 'nurse'
-  const canCreatePlan =
-    user?.role === 'doctor' ||
-    user?.role === 'admin' ||
-    user?.role === 'super_admin' ||
-    user?.role === 'knowledge_manager' ||
-    user?.permissions?.includes('diagnosis.review_any') ||
-    user?.permissions?.includes('rule.manage')
+  const isStaff = user?.permissions?.includes('treatment_plan.view')
+  const canCreatePlan = user?.permissions?.includes('treatment_plan.manage')
 
   // If patient, default to their own treatment plan
   const myPlan = useMemo(() => {

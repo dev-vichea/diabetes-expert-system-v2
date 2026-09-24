@@ -110,6 +110,7 @@ export function Topbar({
 }) {
   const { language, setLanguage, t } = useLanguage()
   const { unreadCount } = useNotifications()
+  const canViewNotifications = Boolean(user?.permissions?.includes('notification.view'))
   const navigate = useNavigate()
   const location = useLocation()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -311,7 +312,7 @@ export function Topbar({
           </button>
 
           {/* Notifications Dropdown */}
-          <NotificationDropdown />
+          {canViewNotifications && <NotificationDropdown />}
 
           {/* ======================================================== */}
           {/* User Profile Pill & Dropdown                            */}
@@ -387,19 +388,21 @@ export function Topbar({
                     <span>{t('topbar.profile', 'Profile')}</span>
                   </button>
 
-                  <div className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-xs font-medium text-slate-700 dark:text-slate-200">
-                    <span className="inline-flex items-center gap-2.5">
-                      <Bell className="h-3.5 w-3.5 text-slate-400" />
-                      <span>{t('topbar.notifications')}</span>
-                    </span>
-                    {unreadCount > 0 ? (
-                      <span className="inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-rose-100 px-1.5 text-[10px] font-bold text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
-                        {unreadCount}
+                  {canViewNotifications && (
+                    <div className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-xs font-medium text-slate-700 dark:text-slate-200">
+                      <span className="inline-flex items-center gap-2.5">
+                        <Bell className="h-3.5 w-3.5 text-slate-400" />
+                        <span>{t('topbar.notifications')}</span>
                       </span>
-                    ) : (
-                      <span className="text-[11px] text-slate-400">0</span>
-                    )}
-                  </div>
+                      {unreadCount > 0 ? (
+                        <span className="inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-rose-100 px-1.5 text-[10px] font-bold text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
+                          {unreadCount}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-slate-400">0</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="my-0.5 h-px bg-slate-100 dark:bg-slate-800/80" />
@@ -423,4 +426,3 @@ export function Topbar({
     </header>
   )
 }
-

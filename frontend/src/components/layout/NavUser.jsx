@@ -25,9 +25,9 @@ function getRoleMeta(role, t) {
       avatarGradient: 'from-cyan-600 to-blue-600',
     }
   }
-  if (normalized === 'admin' || normalized === 'super_admin') {
+  if (normalized === 'admin') {
     return {
-      label: normalized === 'super_admin' ? t('roles.super_admin', 'Super Admin') : t('roles.admin', 'Admin'),
+      label: t('roles.admin', 'Admin'),
       specialty: 'System Admin',
       icon: ShieldCheck,
       badgeClass: 'bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-600/20 dark:bg-purple-950/40 dark:text-purple-300 dark:ring-purple-500/30',
@@ -250,4 +250,3 @@ export function NavUser({ user: propUser, collapsed = false, onLogout }) {
     </>
   )
 }
-

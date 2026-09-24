@@ -67,6 +67,7 @@ function getRiskTextColor(percent) {
 export function ReviewPage() {
   const { t, tExact, isKhmer } = useLanguage()
   const { user } = useAuth()
+  const canManageTreatmentPlans = user?.permissions?.includes('treatment_plan.manage')
   const navigate = useNavigate()
   const [results, setResults] = useState([])
   const [selectedResultId, setSelectedResultId] = useState(null)
@@ -1079,6 +1080,7 @@ export function ReviewPage() {
                 </form>
 
                 {/* Direct Treatment Plan formulation */}
+                {canManageTreatmentPlans && (
                 <div className="mt-4 rounded-2xl border border-primary-200/80 bg-primary-50/50 p-4 dark:border-primary-900/50 dark:bg-primary-950/20">
                   <div className="flex items-center gap-2">
                     <Stethoscope className="h-4 w-4 text-primary-600 dark:text-primary-400" />
@@ -1135,6 +1137,7 @@ export function ReviewPage() {
                     <span>Create Custom Treatment Plan</span>
                   </button>
                 </div>
+                )}
               </div>
             </div>
           </div>

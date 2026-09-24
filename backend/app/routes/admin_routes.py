@@ -107,8 +107,14 @@ def update_role(role_id: int):
 @admin_bp.delete('/roles/<int:role_id>')
 @require_auth(permissions=['permission.manage'])
 def delete_role(role_id: int):
+    payload = request.get_json(silent=True) or {}
     actor_user_id = _current_actor_user_id()
-    get_admin_service().delete_role(role_id=role_id, actor_user_id=actor_user_id)
+    get_admin_service().delete_role(
+        role_id=role_id,
+        replacement_role_name=str(payload.get('replacement_role') or '').strip() or None,
+        actor_user_id=actor_user_id,
+        actor_claims=_current_actor_claims(),
+    )
     return success_response(message='Role deleted.')
 
 

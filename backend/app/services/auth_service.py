@@ -235,7 +235,7 @@ class AuthService:
             if user:
                 # Reject if existing account is not a patient
                 user_roles = [r.name.lower() for r in user.roles]
-                staff_roles = {"admin", "doctor", "nurse", "super_admin"}
+                staff_roles = {"admin", "doctor"}
                 if any(role in staff_roles for role in user_roles) or (user_roles and "patient" not in user_roles):
                     raise ForbiddenError("Google login is restricted to patient accounts and cannot be linked to staff accounts.")
 
@@ -571,4 +571,3 @@ class AuthService:
                 file_path.unlink()
         except OSError:
             pass
-

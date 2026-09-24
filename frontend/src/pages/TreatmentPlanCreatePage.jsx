@@ -213,28 +213,23 @@ export function TreatmentPlanCreatePage() {
 
   const initialData = location.state?.initialData || {}
 
-  // Verify doctor or staff authorization
-  const isDoctorOrStaff =
-    user?.role === 'doctor' ||
-    user?.role === 'admin' ||
-    user?.role === 'super_admin' ||
-    user?.role === 'knowledge_manager' ||
-    user?.permissions?.includes('diagnosis.review_any') ||
-    user?.permissions?.includes('rule.manage')
+  // Authorization is capability-based. Custom roles should work exactly like
+  // built-in roles when the administrator grants this permission.
+  const canManageTreatmentPlans = user?.permissions?.includes('treatment_plan.manage')
 
   useEffect(() => {
-    if (user && !isDoctorOrStaff) {
+    if (user && !canManageTreatmentPlans) {
       notify.error('Access restricted: Treatment plans can only be created by attending doctors or knowledge base staff.')
       navigate('/unauthorized', { replace: true })
     }
-  }, [user, isDoctorOrStaff, navigate])
+  }, [user, canManageTreatmentPlans, navigate])
 
   const getDefaultDoctorName = () => {
     if (initialData.doctorName) return initialData.doctorName
-    if (user?.role === 'doctor') {
+    if (user?.permissions?.includes('diagnosis.review_any')) {
       return user.name?.startsWith('Dr.') ? user.name : `Dr. ${user.name}`
     }
-    if (user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'knowledge_manager') {
+    if (user?.permissions?.includes('treatment_plan.manage')) {
       return user.name || 'Dr. Marco Rossi'
     }
     return 'Dr. Marco Rossi'
@@ -248,7 +243,7 @@ export function TreatmentPlanCreatePage() {
     patientName: initialData.patientName || '',
     patientId: initialData.patientId || `P-${Math.floor(1000 + Math.random() * 9000)}`,
     doctorName: getDefaultDoctorName(),
-    doctorRole: initialData.doctorRole || (user?.role === 'doctor' ? 'Attending Physician' : 'Lead Endocrinologist'),
+    doctorRole: initialData.doctorRole || (user?.permissions?.includes('diagnosis.review_any') ? 'Attending Physician' : 'Lead Endocrinologist'),
     protocolName: initialData.protocolName || 'Targeted Glycemic Stabilization Protocol',
     diagnosis: initialData.diagnosis || 'Type 2 Diabetes Mellitus',
     targetGlucose: initialData.targetGlucose || '80–130 mg/dL',

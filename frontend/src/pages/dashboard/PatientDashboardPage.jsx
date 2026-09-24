@@ -253,6 +253,7 @@ function ChartCustomTooltip({ active, payload }) {
 // ============================================================================
 export function PatientDashboardPage() {
   const { user } = useAuth()
+  const canViewOwnCarePlan = user?.permissions?.includes('care_plan.view_own')
   const { t } = useLanguage()
   const [patientResults, setPatientResults] = useState([])
   const [loading, setLoading] = useState(false)
@@ -1226,13 +1227,15 @@ export function PatientDashboardPage() {
             <span className="text-slate-400">
               {completedTasks.length} of {DEFAULT_SCHEDULE.length} completed
             </span>
-            <Link
-              to="/care-plan"
-              className="font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white inline-flex items-center gap-1 transition-colors"
-            >
-              <span>Full Care Plan</span>
-              <ArrowRight className="h-3 w-3" />
-            </Link>
+            {canViewOwnCarePlan && (
+              <Link
+                to="/care-plan"
+                className="font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white inline-flex items-center gap-1 transition-colors"
+              >
+                <span>Full Care Plan</span>
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            )}
           </div>
 
         </div>

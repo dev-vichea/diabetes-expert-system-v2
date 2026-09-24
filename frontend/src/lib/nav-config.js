@@ -14,17 +14,20 @@ import {
 import { translate } from '@/lib/i18n'
 
 export const NAV_ITEMS = [
-  { to: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, section: 'workspace' },
+  { to: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, section: 'workspace', permissions: ['analytics.view', 'patient.view', 'patient.view_own'], permissionMode: 'any' },
   { to: '/diagnosis', labelKey: 'nav.assessment', icon: Microscope, section: 'workspace', permissions: ['diagnosis.run'] },
-  { to: '/treatment-plans', labelKey: 'nav.treatmentPlans', icon: Stethoscope, section: 'workspace', notRoles: ['patient'], permissions: ['diagnosis.review_any', 'rule.view', 'patient.view'], permissionMode: 'any' },
+  { to: '/treatment-plans', labelKey: 'nav.treatmentPlans', icon: Stethoscope, section: 'workspace', permissions: ['treatment_plan.view'] },
   { to: '/patients', labelKey: 'nav.patients', icon: Users, section: 'workspace', permissions: ['patient.view'] },
   { to: '/rules', labelKey: 'nav.knowledgeBase', icon: BookOpen, section: 'documents', permissions: ['rule.view'] },
   { to: '/review', labelKey: 'nav.patientReview', icon: ClipboardCheck, section: 'documents', permissions: ['diagnosis.review_any'] },
   { to: '/my-results', labelKey: 'nav.myResults', icon: FileSpreadsheet, section: 'documents', roles: ['patient'], permissions: ['diagnosis.view_own'] },
   { to: '/my-results', labelKey: 'nav.patientResults', icon: FileSpreadsheet, section: 'documents', notRoles: ['patient'], permissions: ['diagnosis.view_own'] },
-  { to: '/care-plan', labelKey: 'nav.carePlan', icon: HeartPulse, section: 'workspace', roles: ['patient'], permissions: ['diagnosis.view_own'] },
-  { to: '/guide', labelKey: 'nav.diabetesGuide', icon: GraduationCap, section: 'documents' },
-  { to: '/users', labelKey: 'nav.users', icon: UserCog, section: 'system', permissions: ['user.view', 'permission.view'], permissionMode: 'any' },
+  { to: '/care-plan', labelKey: 'nav.carePlan', icon: HeartPulse, section: 'workspace', permissions: ['care_plan.view_own'] },
+  { to: '/guide', labelKey: 'nav.diabetesGuide', icon: GraduationCap, section: 'documents', permissions: ['guide.view'] },
+  // The users dashboard combines user, role, and permission data. Keep its
+  // navigation gate aligned with the API calls the page makes so a partially
+  // privileged account is not sent to a page that can only render errors.
+  { to: '/users', labelKey: 'nav.users', icon: UserCog, section: 'system', permissions: ['user.view', 'permission.view'] },
   { to: '/roles-permissions', labelKey: 'nav.roles', icon: ShieldCheck, section: 'system', permissions: ['permission.view'] },
 ]
 
@@ -70,7 +73,7 @@ export function getPageInfo(pathname, language = 'en', user = null) {
 
 /**
  * Staff = signed-in user with at least one non-patient role (doctor, admin,
- * super_admin, knowledge_manager, …). Patients (and role-less users) are not staff.
+ * knowledge_manager, …). Patients (and role-less users) are not staff.
  */
 export function userHasStaffRole(user) {
   const roles = user?.roles || (user?.role ? [user.role] : [])

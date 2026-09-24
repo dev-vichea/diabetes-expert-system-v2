@@ -8,13 +8,13 @@ import { useRoleAccess } from '@/hooks/useRoleAccess'
 
 function App() {
   const { user } = useAuth()
-  const { isPatient, canViewPatients } = useRoleAccess(user)
-  const showPatientAssistant = Boolean(user) && isPatient && !canViewPatients
+  const { canUseAssistant } = useRoleAccess(user)
+  const showAssistant = Boolean(user) && canUseAssistant
 
   return (
     <>
       <AppRouter />
-      {showPatientAssistant && <DiabetesAssistant />}
+      {showAssistant && <DiabetesAssistant />}
       <Toaster richColors />
     </>
   )

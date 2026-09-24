@@ -496,6 +496,7 @@ function CustomRangePopover({ isActive, value, onApply, onReset, triggerRef, t }
 export function ClinicalDashboard({ activeRole }) {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const canViewTreatmentPlans = user?.permissions?.includes('treatment_plan.view')
   const { language, t, tExact } = useLanguage()
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -698,8 +699,8 @@ export function ClinicalDashboard({ activeRole }) {
         href: '/patients',
         tone: 'blue',
       },
-    ]
-  }, [stats, t])
+    ].filter((metric) => metric.key !== 'plans' || canViewTreatmentPlans)
+  }, [canViewTreatmentPlans, stats, t])
 
   const priorityCases = useMemo(() => {
     const cases = [...(stats?.recent_cases || [])]

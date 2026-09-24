@@ -24,7 +24,7 @@ from .routes.patient_routes import patient_bp
 from .routes.rule_routes import rule_bp
 from .routes.dashboard_routes import dashboard_bp
 from .utils.api_response import success_response
-from .utils.seed import seed_demo_data
+from .utils.seed import seed_demo_data, sync_default_access_control
 
 
 def _configure_logging(app: Flask):
@@ -209,6 +209,19 @@ def create_app(config_object=Config):
         _ensure_user_profile_columns()
         _ensure_fact_columns()
         _ensure_patient_profile_columns()
+
+        # Permissions are application capabilities rather than demo-only data.
+        # Keep the built-in catalog current for existing installations while
+        # preserving every custom role and any extra permission assignments.
+        try:
+            table_names = set(inspect(db.engine).get_table_names())
+            access_control_tables = {"roles", "permissions", "role_permissions"}
+            if access_control_tables.issubset(table_names):
+                sync_default_access_control()
+                db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            app.logger.warning("Could not synchronize access-control defaults: %s", e)
 
         if app.config.get("SEED_DEMO_DATA", True):
             # Only run automatic seed if database has not been seeded yet

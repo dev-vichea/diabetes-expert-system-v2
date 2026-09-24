@@ -24,19 +24,30 @@ export function AuthProvider({ children }) {
   }, [user])
 
   // Keep the cached user in sync (e.g. profile_completed flips after onboarding,
-  // or the cached copy predates that field existing).
+  // or an administrator changes this user's role permissions in another tab).
   useEffect(() => {
-    if (!getAccessToken()) return
+    if (!user?.id || !getAccessToken()) return
     let cancelled = false
-    api.get('/auth/me')
-      .then((response) => {
-        const data = getApiData(response)
-        const nextUser = data?.user || data
-        if (!cancelled && nextUser?.email) setUser((current) => ({ ...current, ...nextUser }))
-      })
-      .catch(() => { /* offline or token refresh in flight — cached user stays */ })
-    return () => { cancelled = true }
-  }, [])
+
+    const syncUser = () => {
+      api.get('/auth/me')
+        .then((response) => {
+          const data = getApiData(response)
+          const nextUser = data?.user || data
+          if (!cancelled && nextUser?.email) setUser((current) => ({ ...current, ...nextUser }))
+        })
+        .catch(() => { /* offline or token refresh in flight — cached user stays */ })
+    }
+
+    syncUser()
+    const interval = window.setInterval(syncUser, 30000)
+    window.addEventListener('focus', syncUser)
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+      window.removeEventListener('focus', syncUser)
+    }
+  }, [user?.id])
 
   const loginWithGoogle = async (credential) => {
     const response = await api.post('/auth/google', { credential })

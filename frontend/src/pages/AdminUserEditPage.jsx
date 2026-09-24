@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { ArrowLeft, Save, Shield, Users } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
@@ -143,7 +142,6 @@ function RoleCombobox({ value, options, disabled, onValueChange, t }) {
 }
 
 export function AdminUserEditPage() {
-  const { user: currentUser } = useAuth()
   const { t } = useLanguage()
   const { userId } = useParams()
   const navigate = useNavigate()
@@ -156,16 +154,7 @@ export function AdminUserEditPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const currentActorRoles = useMemo(
-    () => new Set(currentUser?.roles || (currentUser?.role ? [currentUser.role] : [])),
-    [currentUser]
-  )
-  const actorIsSuperAdmin = currentActorRoles.has('super_admin')
-
-  const visibleRoles = useMemo(
-    () => roles.filter((role) => actorIsSuperAdmin || role.name !== 'super_admin'),
-    [actorIsSuperAdmin, roles]
-  )
+  const visibleRoles = roles
 
   const roleMap = useMemo(
     () => new Map(visibleRoles.map((role) => [role.name, role])),

@@ -16,8 +16,79 @@ def test_login_success(client):
     assert body["success"] is True
     assert body["data"]["user"]["role"] == "doctor"
     assert "rule.manage" in body["data"]["user"]["permissions"]
+    assert "treatment_plan.view" in body["data"]["user"]["permissions"]
+    assert "treatment_plan.manage" in body["data"]["user"]["permissions"]
+    assert "guide.view" in body["data"]["user"]["permissions"]
+    assert "notification.view" in body["data"]["user"]["permissions"]
     assert "access_token" in body["data"]
     assert "refresh_token" in body["data"]
+
+
+def test_legacy_super_admin_role_is_consolidated_into_admin(app):
+    with app.app_context():
+        from app.extensions import db
+        from app.utils.seed import sync_default_access_control
+
+        legacy_role = Role(name="super_admin", description="Legacy super administrator")
+        legacy_user = User.query.filter_by(email="doctor@example.com").first()
+        db.session.add(legacy_role)
+        db.session.flush()
+        legacy_user.roles = [legacy_role]
+        db.session.commit()
+
+        sync_default_access_control()
+        db.session.commit()
+
+        migrated_user = User.query.filter_by(email="doctor@example.com").first()
+        assert Role.query.filter_by(name="super_admin").first() is None
+        assert {role.name for role in migrated_user.roles} == {"admin"}
+
+
+def test_legacy_nurse_role_is_consolidated_into_doctor(app):
+    with app.app_context():
+        from app.extensions import db
+        from app.utils.seed import sync_default_access_control
+
+        legacy_role = Role(name="nurse", description="Clinical care and triage nurse")
+        legacy_user = User.query.filter_by(email="patient@example.com").first()
+        db.session.add(legacy_role)
+        db.session.flush()
+        legacy_user.roles = [legacy_role]
+        db.session.commit()
+
+        sync_default_access_control()
+        db.session.commit()
+
+        migrated_user = User.query.filter_by(email="patient@example.com").first()
+        assert Role.query.filter_by(name="nurse").first() is None
+        assert {role.name for role in migrated_user.roles} == {"doctor"}
+
+
+def test_admin_can_create_custom_nurse_role(client, admin_auth, app):
+    response = client.post(
+        "/api/admin/roles",
+        headers=_auth_header(admin_auth["access_token"]),
+        json={
+            "name": "Nurse",
+            "description": "Custom nursing team access",
+            "permissions": ["patient.view", "treatment_plan.view"],
+        },
+    )
+    assert response.status_code == 201
+    created_role = response.get_json()["data"]
+    assert created_role["name"] == "nurse"
+    assert created_role["is_builtin"] is False
+
+    # Startup synchronization must preserve a custom Nurse role.
+    with app.app_context():
+        from app.extensions import db
+        from app.utils.seed import sync_default_access_control
+
+        sync_default_access_control()
+        db.session.commit()
+        custom_nurse = Role.query.filter_by(name="nurse").first()
+        assert custom_nurse is not None
+        assert custom_nurse.description == "Custom nursing team access"
 
 
 def test_register_self_service_creates_patient_user(client, app):
@@ -768,7 +839,59 @@ def test_admin_can_manage_users_and_permissions(client, admin_auth, doctor_auth,
         headers=_auth_header(admin_auth["access_token"]),
     )
     assert roles_response.status_code == 200
-    assert len(roles_response.get_json()["data"]) >= 3
+    role_rows = roles_response.get_json()["data"]
+    assert {role["name"] for role in role_rows} == {"admin", "doctor", "patient"}
+
+    doctor_role = next(role for role in role_rows if role["name"] == "doctor")
+    assert doctor_role["is_builtin"] is True
+    assert doctor_role["is_protected"] is False
+    assert "treatment_plan.manage" in doctor_role["recommended_permissions"]
+
+    doctor_permissions = sorted(
+        (set(doctor_role["permissions"]) | {"assistant.use", "permission.view"}) - {"rule.manage"}
+    )
+    update_doctor_role_response = client.patch(
+        f"/api/admin/roles/{doctor_role['id']}",
+        headers=_auth_header(admin_auth["access_token"]),
+        json={"permissions": doctor_permissions},
+    )
+    assert update_doctor_role_response.status_code == 200
+    updated_doctor_permissions = update_doctor_role_response.get_json()["data"]["permissions"]
+    assert "assistant.use" in updated_doctor_permissions
+    assert "permission.view" in updated_doctor_permissions
+    assert "rule.manage" not in updated_doctor_permissions
+
+    # Existing sessions must use the role's current permissions instead of
+    # stale permissions embedded when the access token was issued.
+    stale_token_rule_response = client.post(
+        "/api/rules/",
+        headers=_auth_header(doctor_auth["access_token"]),
+        json={},
+    )
+    assert stale_token_rule_response.status_code == 403
+    stale_token_roles_response = client.get(
+        "/api/admin/roles",
+        headers=_auth_header(doctor_auth["access_token"]),
+    )
+    assert stale_token_roles_response.status_code == 200
+
+    # Startup catalog synchronization adds only newly introduced permissions;
+    # it must not undo an administrator's changes to a built-in role.
+    with app.app_context():
+        from app.extensions import db
+        from app.utils.seed import sync_default_access_control
+
+        sync_default_access_control()
+        db.session.commit()
+        persisted_doctor = Role.query.filter_by(name="doctor").first()
+        assert "rule.manage" not in {permission.code for permission in persisted_doctor.permissions}
+
+    rename_doctor_role_response = client.patch(
+        f"/api/admin/roles/{doctor_role['id']}",
+        headers=_auth_header(admin_auth["access_token"]),
+        json={"name": "renamed_doctor"},
+    )
+    assert rename_doctor_role_response.status_code == 403
 
     permissions_response = client.get(
         "/api/admin/permissions",
@@ -777,6 +900,16 @@ def test_admin_can_manage_users_and_permissions(client, admin_auth, doctor_auth,
     assert permissions_response.status_code == 200
     permission_codes = {row["code"] for row in permissions_response.get_json()["data"]}
     assert "user.manage" in permission_codes
+    assert {
+        "assistant.use",
+        "treatment_plan.view",
+        "treatment_plan.manage",
+        "care_plan.view_own",
+        "guide.view",
+        "notification.view",
+    }.issubset(permission_codes)
+    admin_role = next(role for role in role_rows if role["name"] == "admin")
+    assert permission_codes.issubset(set(admin_role["permissions"]))
 
     create_role_response = client.post(
         "/api/admin/roles",
@@ -887,6 +1020,26 @@ def test_admin_can_manage_users_and_permissions(client, admin_auth, doctor_auth,
     assert audit_response.status_code == 200
     audit_rows = audit_response.get_json()["data"]
     assert any(row["action"] == "user.status.update" for row in audit_rows)
+
+    delete_assigned_role_without_replacement = client.delete(
+        f"/api/admin/roles/{role_id}",
+        headers=_auth_header(admin_auth["access_token"]),
+    )
+    assert delete_assigned_role_without_replacement.status_code == 400
+
+    delete_assigned_role_response = client.delete(
+        f"/api/admin/roles/{role_id}",
+        headers=_auth_header(admin_auth["access_token"]),
+        json={"replacement_role": "patient"},
+    )
+    assert delete_assigned_role_response.status_code == 200
+
+    reassigned_user_response = client.get(
+        f"/api/admin/users/{created_user_id}",
+        headers=_auth_header(admin_auth["access_token"]),
+    )
+    assert reassigned_user_response.status_code == 200
+    assert reassigned_user_response.get_json()["data"]["roles"] == ["patient"]
 
     with app.app_context():
         assert Role.query.count() >= 3
@@ -1031,4 +1184,3 @@ def test_draft_evaluation_does_not_save_and_submit_to_care_team_persists(client,
     reviewed_item = next((r for r in review_rows if r["id"] == res_id), None)
     assert reviewed_item is not None
     assert reviewed_item["patient_note"] == note_text
-
