@@ -217,14 +217,24 @@ export function getTreatmentPlanForUser(userName, userEmail) {
   const cleanName = (userName || '').toLowerCase().trim()
   const cleanEmail = (userEmail || '').toLowerCase().trim()
 
-  return (
-    plans.find(
-      (p) =>
-        p.patientName.toLowerCase().includes(cleanName) ||
-        (cleanName && cleanName.includes(p.patientName.toLowerCase())) ||
-        p.patientId === 'P-1042'
-    ) || plans[2]
+  if (!cleanName && !cleanEmail) return null
+
+  // 1. Direct or partial match with patient name or email
+  const matched = plans.find(
+    (p) =>
+      (cleanName && p.patientName.toLowerCase().includes(cleanName)) ||
+      (cleanName && cleanName.includes(p.patientName.toLowerCase())) ||
+      (cleanEmail && p.patientEmail && p.patientEmail.toLowerCase() === cleanEmail)
   )
+  if (matched) return matched
+
+  // 2. Demo fallback only for demo/john accounts
+  if (cleanName.includes('john') || cleanName.includes('demo') || cleanName === 'patient') {
+    return plans.find((p) => p.patientId === 'P-1042') || plans[2]
+  }
+
+  // 3. New user without a prescribed plan
+  return null
 }
 
 export function createTreatmentPlan(planData) {

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import math
 from typing import Any
 
@@ -26,6 +27,8 @@ from app.utils.i18n import SUPPORTED_LANGUAGES, bilingual, join_bilingual, pick,
 
 # Bilingual generated-text catalogs ({en, km} entries under app/locales/).
 DT = "diagnosis_texts"
+
+logger = logging.getLogger(__name__)
 
 
 class DiagnosisService:
@@ -97,6 +100,8 @@ class DiagnosisService:
             if submitted_to_care_team and save_to_db:
                 trace["submitted_to_care_team"] = True
                 trace["submitted_to_care_team_at"] = utc_now().isoformat()
+            if result.get("care_plan"):
+                trace["care_plan"] = result.get("care_plan")
             result["explanation_trace"] = trace
 
             is_urgent, urgent_reasons = self._derive_urgency(normalized_payload, result)
@@ -364,6 +369,8 @@ class DiagnosisService:
             enriched["context_note"] = confidence_trace["context_note"]
         if confidence_trace.get("conclusion_scores"):
             enriched["all_conclusions"] = confidence_trace["conclusion_scores"]
+        if trace.get("care_plan"):
+            enriched["care_plan"] = trace["care_plan"]
 
         # Row metadata (ids, names, review state, session, timestamps…).
         enriched["diagnosis_result_id"] = data.get("id")
@@ -1300,6 +1307,26 @@ class DiagnosisService:
         enriched["differential_diagnoses"] = enriched.get("differential_diagnoses") or []
         enriched["triggered_rules"] = self._enrich_triggered_rules_with_db(enriched.get("triggered_rules") or [])
         enriched["explanation"] = self._build_explanation_payload(enriched, normalized_payload)
+
+        # ── Structured AI Reasoning ──
+        # Builds the explainable reasoning report from the expert-system result.
+        # Does NOT replace or alter the diagnosis — explains and summarizes it.
+        try:
+            from app.services.reasoning_service import ReasoningService
+            enriched["reasoning_report"] = ReasoningService().build_reasoning(enriched, normalized_payload)
+        except Exception:
+            logger.warning("Failed to build reasoning report", exc_info=True)
+            enriched["reasoning_report"] = None
+
+        # ── Structured AI Care Plan ──
+        # Generates personalized multi-pillar care plan (diet, activity, lifestyle, monitoring, follow-up).
+        # Does NOT make new diagnosis or prescribe medications.
+        try:
+            from app.services.care_plan_service import CarePlanService
+            enriched["care_plan"] = CarePlanService().generate_care_plan(enriched, normalized_payload)
+        except Exception:
+            logger.warning("Failed to generate personalized care plan", exc_info=True)
+            enriched["care_plan"] = None
 
         return enriched
 

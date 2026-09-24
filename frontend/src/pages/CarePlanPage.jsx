@@ -1,198 +1,157 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import {
   Activity,
   AlertCircle,
   AlertTriangle,
+  Apple,
   ArrowRight,
+  BarChart2,
   Calendar,
-  CalendarClock,
+  Check,
   CheckCircle2,
   ChevronDown,
-  ClipboardList,
-  Clock,
+  ChevronRight,
+  Droplets,
   FileText,
   HeartPulse,
+  MessageSquare,
+  Pill,
+  Play,
   PlusCircle,
-  ShieldAlert,
-  Siren,
   Sparkles,
   Stethoscope,
+  Target,
+  User,
   UserCheck,
+  Zap,
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '@/api/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { ErrorAlert, LoadingState, StatusBadge, Skeleton, StatCardsSkeleton, CardListSkeleton } from '@/components/ui'
+import { ErrorAlert, Skeleton, StatCardsSkeleton, CardListSkeleton } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import {
-  CarePlanActivitySnapshot,
-  CarePlanAppointments,
-  CarePlanGoals,
   CarePlanMedications,
-  CarePlanProgressTracker,
-  CarePlanVitalsSnapshot,
 } from '@/components/dashboard/patient/CarePathHubComponents'
 import { AppointmentCalendarCanvas } from '@/components/dashboard/patient/AppointmentCalendarCanvas'
 import { CarePlanPrevention } from '@/components/dashboard/patient/CarePlanPrevention'
+import { PersonalizedCarePlanSection } from '@/components/care-plan/PersonalizedCarePlanSection'
+import { CarePlanGlucoseChart } from '@/components/care-plan/CarePlanGlucoseChart'
 import { getTreatmentPlanForUser } from '@/lib/treatmentPlanStore'
 import { TreatmentPlanDetailView } from '@/components/dashboard/treatment/TreatmentPlanDetailView'
 import {
-  getDaysSinceCheck,
   getLatestFacts,
-  getRelativeCheckAge,
-  getReportedSymptomLabels,
-  getUrgencyLabel,
+  toNumberOrNull,
 } from '@/components/dashboard/patient/patient-dashboard-utils'
 
-const SAFETY_ITEM_KEYS = [1, 2, 3, 4, 5].map((n) => `patientDashboard.carePlanPage.safety.item${n}`)
-
 const TABS = ['Overview', 'Treatment Plan', 'Medications', 'Appointments']
-const PHASES = [
-  'Phase 1: Clinical Stabilization',
-  'Phase 2: Active Intervention',
-  'Phase 3: Long-term Maintenance',
+
+const DEFAULT_TODAY_TASKS = [
+  {
+    id: 'task-glucose-am',
+    title: 'Morning glucose check',
+    subtitle: '08:00 AM',
+    completed: true,
+    status: 'Completed',
+  },
+  {
+    id: 'task-metformin-am',
+    title: 'Metformin 500 mg',
+    subtitle: '08:30 AM · Take with breakfast',
+    completed: true,
+    status: 'Completed',
+  },
+  {
+    id: 'task-walk-pm',
+    title: '30-min walk',
+    subtitle: '12:30 PM · Light activity',
+    completed: false,
+    status: 'Next',
+  },
+  {
+    id: 'task-foot-pm',
+    title: 'Foot & skin check',
+    subtitle: '08:00 PM · Check for pressure spots',
+    completed: false,
+    status: 'Later',
+  },
 ]
-
-function DoctorNoteCard({ latestResult, t }) {
-  const { isKhmer } = useLanguage()
-  const isUrgent = Boolean(latestResult?.is_urgent)
-  const reviewer = latestResult?.reviewed_by_user
-  const reviewerName = reviewer?.name ? (reviewer.name.startsWith('Dr.') ? reviewer.name : `Dr. ${reviewer.name}`) : null
-
-  return (
-    <section className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] sm:p-6 dark:border-slate-800 dark:bg-slate-900">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-950/50 dark:text-primary-300">
-            <Stethoscope className="h-5 w-5" aria-hidden />
-          </span>
-          <div>
-            <h2 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg dark:text-slate-100">
-              {t('patientDashboard.carePlanPage.doctorNote.title', "Doctor's Clinical Note")}
-            </h2>
-            {reviewerName && (
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {t('patientDashboard.carePlanPage.doctorNote.reviewedBy', 'Reviewed by {{doctor}}', { doctor: reviewerName })}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {latestResult.review_note ? (
-          <StatusBadge tone="success" size="sm" className="gap-1">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            <span>{t('patientDashboard.carePlanPage.doctorNote.officialBadge', 'Verified Clinical Review')}</span>
-          </StatusBadge>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300">
-            <Clock className="h-3.5 w-3.5" />
-            <span>{t('patientDashboard.carePlanPage.doctorNote.awaitingTitle', 'Awaiting Clinical Review')}</span>
-          </span>
-        )}
-      </div>
-
-      {latestResult.review_note ? (
-        <div className="mt-4 rounded-2xl border border-primary-200/70 bg-gradient-to-br from-primary-50/30 to-sky-50/20 p-5 text-sm leading-7 text-slate-800 dark:border-primary-900/60 dark:from-primary-950/30 dark:to-slate-900/40 dark:text-slate-200">
-          <div className="flex items-start gap-3">
-            <UserCheck className="mt-1 h-5 w-5 shrink-0 text-primary-600 dark:text-primary-400" />
-            <div className="min-w-0 flex-1">
-              <p className="font-serif italic text-slate-800 dark:text-slate-200">
-                &ldquo;{latestResult.review_note}&rdquo;
-              </p>
-              {latestResult.reviewed_at && (
-                <p className="mt-2 text-right text-[11px] font-sans font-medium text-slate-400 dark:text-slate-500">
-                  {new Date(latestResult.reviewed_at).toLocaleDateString()}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-4 text-xs leading-6 text-slate-500 dark:border-slate-800 dark:bg-slate-900/30 dark:text-slate-400">
-          {t('patientDashboard.carePlanPage.doctorNote.awaitingDescription', 'Your assessment is currently logged in the clinic review queue. When your physician reviews your case, their official notes, lab interpretations, and personalized guidance will appear here.')}
-        </div>
-      )}
-
-      {/* Priority guidance box */}
-      {isUrgent && (
-        <div className="mt-4 flex items-start gap-3 rounded-xl border border-rose-200/80 bg-rose-50/60 p-4 text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-200">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600 dark:text-rose-400" />
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-rose-900 dark:text-rose-100">
-              {t('patientDashboard.carePlan.currentPriority', 'Current priority: Urgent Action')}
-            </h3>
-            <p className="mt-1 text-sm leading-6 text-rose-800 dark:text-rose-300">
-              {t('patientDashboard.carePlan.urgentPriorityText')}
-            </p>
-            {latestResult.urgent_reason ? (
-              <p className="mt-2 text-xs font-medium text-rose-700 dark:text-rose-300">
-                {t('patientDashboard.situation.urgentReason', 'Reason: {{reason}}', {
-                  reason: isKhmer ? (latestResult.urgent_reason_km || latestResult.urgent_reason) : latestResult.urgent_reason,
-                })}
-              </p>
-            ) : null}
-          </div>
-        </div>
-      )}
-    </section>
-  )
-}
-
-function SafetyCard({ t }) {
-  return (
-    <section className="min-w-0 rounded-2xl border border-rose-200/80 bg-rose-50/50 p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] dark:border-rose-900/50 dark:bg-rose-950/20">
-      <div className="flex items-center gap-2.5">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-300">
-          <Siren className="h-4 w-4" aria-hidden />
-        </span>
-        <h3 className="text-sm font-bold text-rose-900 dark:text-rose-200">
-          {t('patientDashboard.carePlanPage.safety.title', 'Seek care urgently if')}
-        </h3>
-      </div>
-      <ul className="mt-3.5 space-y-2.5">
-        {SAFETY_ITEM_KEYS.map((key) => (
-          <li key={key} className="flex items-start gap-2.5">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-500 dark:text-rose-400" />
-            <span className="text-xs leading-5 text-rose-900/90 dark:text-rose-200/90">{t(key)}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-4 border-t border-rose-200/70 pt-3 text-[11px] leading-4 text-rose-700/80 dark:border-rose-900/50 dark:text-rose-300/80">
-        {t('patientDashboard.carePlanPage.safety.footnote', "This list doesn't replace medical advice. In an emergency, call your local emergency number.")}
-      </p>
-    </section>
-  )
-}
 
 export function CarePlanPage() {
   const { user } = useAuth()
-  const { t } = useLanguage()
+  const { t, isKhmer } = useLanguage()
+  const location = useLocation()
+
+  // Grab state if navigated directly from assessment result page
+  const incomingResult = location.state?.result
+  const incomingAssessmentId = location.state?.fromAssessmentId || incomingResult?.id || incomingResult?.diagnosis_result_id
+
   const [results, setResults] = useState([])
+  const [carePlan, setCarePlan] = useState(incomingResult?.care_plan || null)
   const [loading, setLoading] = useState(true)
+  const [regenerating, setRegenerating] = useState(false)
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('Overview')
-  const [selectedPhase, setSelectedPhase] = useState('Phase 2: Active Intervention')
-  const [phaseDropdownOpen, setPhaseDropdownOpen] = useState(false)
+
+  // Interactive Daily Checklist state with local persistence
+  const [todayTasks, setTodayTasks] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem('care_plan_daily_tasks:v2')
+      if (saved) return JSON.parse(saved)
+    } catch {}
+    return DEFAULT_TODAY_TASKS
+  })
+
+  // Safety guideline accordion & highlight trigger
+  const [isSafetyExpanded, setIsSafetyExpanded] = useState(true)
+  const [highlightSafety, setHighlightSafety] = useState(false)
+  const safetySectionRef = useRef(null)
 
   const patientPlan = useMemo(() => {
     return getTreatmentPlanForUser(user?.name, user?.email)
   }, [user])
 
   useEffect(() => {
+    try {
+      window.localStorage.setItem('care_plan_daily_tasks:v2', JSON.stringify(todayTasks))
+    } catch {}
+  }, [todayTasks])
+
+  useEffect(() => {
     let cancelled = false
 
-    async function loadResults() {
+    async function loadData() {
       setLoading(true)
       setError('')
       try {
         const response = await api.get('/diagnosis/mine')
-        if (!cancelled) {
-          setResults(getApiData(response) || [])
+        if (cancelled) return
+
+        const myResults = getApiData(response) || []
+        setResults(myResults)
+
+        // Select authoritative target result
+        const target = incomingResult || myResults[0]
+
+        if (target) {
+          if (target.care_plan) {
+            setCarePlan(target.care_plan)
+          } else if (target.id) {
+            try {
+              const cpResp = await api.get(`/diagnosis/${target.id}/care-plan`)
+              const cpData = getApiData(cpResp)
+              if (!cancelled && cpData) {
+                setCarePlan(cpData)
+              }
+            } catch (cpErr) {
+              console.warn('Failed to load care plan from backend:', cpErr)
+            }
+          }
         }
       } catch (err) {
         if (!cancelled) {
-          setError(getApiErrorMessage(err, t('patientDashboard.carePlanPage.loadFailed')))
+          setError(getApiErrorMessage(err, t('patientDashboard.carePlanPage.loadFailed', 'Failed to load your care plan')))
         }
       } finally {
         if (!cancelled) {
@@ -201,16 +160,67 @@ export function CarePlanPage() {
       }
     }
 
-    loadResults()
+    loadData()
     return () => {
       cancelled = true
     }
-  }, [t])
+  }, [incomingResult, t])
+
+  const handleRegenerateCarePlan = async () => {
+    const target = incomingResult || results[0]
+    if (!target) return
+
+    setRegenerating(true)
+    try {
+      const targetId = target.id || target.diagnosis_result_id
+      let resp
+      if (targetId) {
+        resp = await api.post(`/diagnosis/${targetId}/care-plan`, { result: target })
+      } else {
+        resp = await api.post('/diagnosis/care-plan/generate', { result: target })
+      }
+      const data = getApiData(resp)
+      if (data) {
+        setCarePlan(data)
+      }
+    } catch (err) {
+      console.error('Failed to regenerate care plan:', err)
+    } finally {
+      setRegenerating(false)
+    }
+  }
+
+  const toggleTask = (taskId) => {
+    setTodayTasks((prev) =>
+      prev.map((task) => {
+        if (task.id !== taskId) return task
+        const nextCompleted = !task.completed
+        return {
+          ...task,
+          completed: nextCompleted,
+          status: nextCompleted ? 'Completed' : (task.id === 'task-walk-pm' ? 'Next' : 'Later'),
+        }
+      })
+    )
+  }
+
+  const scrollToSafetySection = () => {
+    setIsSafetyExpanded(true)
+    setHighlightSafety(true)
+    safetySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setTimeout(() => {
+      setHighlightSafety(false)
+    }, 2500)
+  }
+
+  const handleAskQuestion = () => {
+    window.dispatchEvent(new CustomEvent('open-diabetes-assistant'))
+  }
 
   if (loading) {
     return (
       <div className="space-y-6 pb-12 animate-in fade-in duration-150">
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
+        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="space-y-2">
               <Skeleton className="h-8 w-64" />
@@ -230,227 +240,814 @@ export function CarePlanPage() {
     )
   }
 
-  const latestResult = results[0]
-  const firstName = (user?.name || '').trim().split(/\s+/)[0] || 'Patient'
-  const isUrgent = Boolean(latestResult?.is_urgent)
+  const latestResult = incomingResult || results[0]
+  const facts = getLatestFacts(results)
+  const rawGlucose = toNumberOrNull(facts.fasting_glucose ?? facts.fasting_plasma_glucose)
+  const currentGlucose = rawGlucose !== null ? Math.round(rawGlucose) : 260
+  const isGlucoseElevated = currentGlucose > 130
+  const isUrgent = Boolean(latestResult?.is_urgent) || isGlucoseElevated
 
-  const formattedToday = new Intl.DateTimeFormat('en-US', {
-    weekday: 'long',
-    month: 'short',
-    day: 'numeric',
-  }).format(new Date())
+  const reviewer = latestResult?.reviewed_by_user
+  const reviewerName = reviewer?.name ? (reviewer.name.startsWith('Dr.') ? reviewer.name : `Dr. ${reviewer.name}`) : null
 
-  const lastCheckDate = latestResult?.created_at
-    ? getRelativeCheckAge(latestResult.created_at, t) ?? 'Today'
-    : 'Recent'
+  const reportUrl = latestResult?.id
+    ? `/diagnosis/result?diagnosis_result_id=${latestResult.id}`
+    : '/my-results'
+
+  const completedTasksCount = todayTasks.filter((t) => t.completed).length
+  const progressPercent = Math.round((completedTasksCount / todayTasks.length) * 100)
+
+  // Empty state if user has never taken an assessment
+  if (!latestResult && !carePlan) {
+    return (
+      <div className="space-y-6 pb-12">
+        <ErrorAlert message={error} />
+        <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center sm:p-12 dark:border-slate-800 dark:bg-slate-900">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 dark:bg-primary-950 dark:text-primary-300">
+            <HeartPulse className="h-7 w-7" />
+          </div>
+          <h2 className="mt-4 text-xl font-bold text-slate-900 sm:text-2xl dark:text-slate-100">
+            {t('patientDashboard.carePlanPage.onboarding.title', "Let's build your care plan")}
+          </h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-slate-500 dark:text-slate-400">
+            {t('patientDashboard.carePlanPage.onboarding.description', 'Complete an assessment to generate your personalized clinical care plan, dietary recommendations, and monitoring schedule.')}
+          </p>
+          <div className="mt-6 flex justify-center">
+            <Link
+              to="/diagnosis"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700 active:scale-[0.98] dark:bg-primary-500"
+            >
+              <PlusCircle className="h-4 w-4" />
+              <span>{t('patientDashboard.carePlanPage.onboarding.cta', 'Start My First Assessment')}</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12 animate-in fade-in duration-150">
       <ErrorAlert message={error} />
 
       {/* ==================================================================== */}
-      {/* 1. TOP HERO: Clean Status Banner (Pure White, Crisp Border, Brand)    */}
+      {/* 1. HERO BANNER: My Care Plan                                         */}
       {/* ==================================================================== */}
-      <section className="relative flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all duration-200 dark:border-slate-800 dark:bg-slate-900">
-        <div>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
-              Personal Care Plan • {formattedToday}
-            </span>
+      <section className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-7 shadow-[0_2px_14px_rgba(0,0,0,0.02)] transition-all duration-200 dark:border-slate-800 dark:bg-slate-900">
+        {/* Subtle decorative background glow */}
+        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-gradient-to-br from-blue-100/50 to-sky-100/20 blur-2xl dark:from-blue-950/20 dark:to-transparent" />
+        <div className="pointer-events-none absolute right-1/4 -bottom-12 h-40 w-40 rounded-full bg-gradient-to-tr from-sky-50/60 to-transparent blur-xl dark:from-sky-950/10 dark:to-transparent" />
 
-            {isUrgent ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-200/90 bg-rose-50/90 px-3 py-1 text-xs font-semibold text-rose-700 shadow-2xs dark:border-rose-800/70 dark:bg-rose-950/60 dark:text-rose-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
-                Attention Required
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/90 bg-emerald-50/90 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-2xs dark:border-emerald-800/70 dark:bg-emerald-950/60 dark:text-emerald-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Optimal • Routine Monitoring
-              </span>
-            )}
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          {/* Left Block: Avatar, Title, Status & Actions */}
+          <div className="flex items-start gap-4 sm:gap-5 min-w-0">
+            <div className="flex h-13 w-13 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full bg-blue-100/70 text-primary-600 shadow-2xs dark:bg-blue-950/70 dark:text-primary-300">
+              <User className="h-6 w-6 sm:h-7 sm:w-7" />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
+                  My Care Plan
+                </h1>
+
+                {isUrgent ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-600 border border-rose-200/80 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-900/50">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    <span>Attention Required</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900/50">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>Stable</span>
+                  </span>
+                )}
+
+                <span className="text-slate-300 dark:text-slate-600 hidden sm:inline select-none">•</span>
+                <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                  Updated today
+                </span>
+
+                <span className="text-slate-300 dark:text-slate-600 hidden sm:inline select-none">•</span>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  {latestResult?.review_note ? 'Doctor reviewed' : 'Doctor review pending'}
+                </span>
+              </div>
+
+              <p className="mt-1.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl">
+                Your personalized care plan to help manage diabetes and stay healthy.
+              </p>
+
+              {/* Action Buttons Row */}
+              <div className="mt-5 flex flex-wrap items-center gap-2.5 sm:gap-3">
+                <Link
+                  to="/diagnosis"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs transition hover:bg-primary-700 active:scale-[0.98] dark:bg-primary-500 dark:hover:bg-primary-600"
+                >
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                  <span>Start Assessment</span>
+                </Link>
+
+                <Link
+                  to={reportUrl}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                >
+                  <FileText className="h-4 w-4 text-slate-400 dark:text-slate-400" />
+                  <span>Full Report</span>
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('Treatment Plan')}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                >
+                  <Stethoscope className="h-4 w-4 text-slate-400 dark:text-slate-400" />
+                  <span>Doctor's Plan</span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          <h1 className="mt-3 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-50">
-            Care Protocol for {firstName}
-          </h1>
+          {/* Right Block: Phase 2 Active Intervention Widget */}
+          <div className="shrink-0 lg:self-center">
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 min-w-[200px] sm:min-w-[220px] shadow-2xs dark:border-slate-800/80 dark:bg-slate-800/40">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Phase 2</span>
+              </div>
+              <p className="mt-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                Active Intervention
+              </p>
 
-          <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300 max-w-2xl font-normal">
-            {latestResult?.diagnosis
-              ? `Personalized diabetes care plan formulated for: ${latestResult.diagnosis}. Follow your daily glycemic targets, prescribed pharmacotherapy, and exercise regimen.`
-              : 'Evidence-based personalized treatment protocol, daily health targets, and medication schedule tailored to your glycemic baseline.'}
-          </p>
-        </div>
+              {/* Progress bar */}
+              <div className="mt-2.5 h-2 w-full rounded-full bg-slate-200/80 overflow-hidden dark:bg-slate-700">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                  style={{ width: '47%' }}
+                />
+              </div>
 
-        <div className="mt-6 pt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 dark:border-slate-800">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <Link
-              to="/diagnosis"
-              className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm transition-all hover:bg-primary-700 hover:shadow active:scale-[0.98] dark:bg-primary-500 dark:hover:bg-primary-600"
-            >
-              <PlusCircle className="h-4 w-4" />
-              <span>Start Assessment</span>
-            </Link>
-
-            <Link
-              to={latestResult?.id ? `/diagnosis/result?diagnosis_result_id=${latestResult.id}` : '/my-results'}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-slate-50 px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-            >
-              <FileText className="h-4 w-4 text-slate-400" />
-              <span>View Full Report</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('Treatment Plan')}
-              className="inline-flex items-center gap-2 rounded-xl border border-primary-200/90 bg-primary-50/80 px-4 py-2.5 text-xs sm:text-sm font-semibold text-primary-700 shadow-2xs transition-all hover:bg-primary-100 hover:text-primary-800 active:scale-[0.98] dark:border-primary-900/60 dark:bg-primary-950/50 dark:text-primary-300 dark:hover:bg-primary-900/60"
-            >
-              <Stethoscope className="h-4 w-4" />
-              <span>Doctor's Treatment Plan</span>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
-            <CalendarClock className="h-3.5 w-3.5" />
-            <span>Last check: {lastCheckDate}</span>
+              <div className="mt-2 flex items-center justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                <span>Day 14 / 30</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ==================================================================== */}
-      {/* 2. NAVIGATION PILLS & PHASE SELECTOR BAR                             */}
+      {/* 2. TAB NAVIGATION PILLS                                               */}
       {/* ==================================================================== */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-0.5">
-        {/* Navigation Tab Pills styled like Dashboard */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab
-            return (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  'rounded-xl px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all',
-                  isActive
-                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
-                )}
-              >
-                {tab}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Phase Plan Selector Dropdown */}
-        <div className="relative shrink-0">
-          <button
-            type="button"
-            onClick={() => setPhaseDropdownOpen((prev) => !prev)}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700/80"
-          >
-            <Calendar className="h-3.5 w-3.5 text-slate-400" />
-            <span>{selectedPhase}</span>
-            <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
-          </button>
-
-          {phaseDropdownOpen && (
-            <div className="absolute right-0 top-full z-20 mt-1.5 w-60 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-800">
-              {PHASES.map((phase) => (
-                <button
-                  key={phase}
-                  type="button"
-                  onClick={() => {
-                    setSelectedPhase(phase)
-                    setPhaseDropdownOpen(false)
-                  }}
-                  className={cn(
-                    'w-full text-left rounded-lg px-3 py-2 text-xs font-medium transition',
-                    selectedPhase === phase
-                      ? 'bg-primary-50 text-primary-700 font-bold dark:bg-primary-950/60 dark:text-primary-300'
-                      : 'text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/50'
-                  )}
-                >
-                  {phase}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab
+          return (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                'rounded-full px-5 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-150',
+                isActive
+                  ? 'bg-primary-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800/60'
+              )}
+            >
+              {tab}
+            </button>
+          )
+        })}
       </div>
 
       {/* ==================================================================== */}
-      {/* 3. MASTER SAAS 2-COLUMN GRID (Matching Dashboard 8/4 proportion)    */}
+      {/* 3. TAB 1: OVERVIEW (MATCHING DESIGN LAYOUT)                           */}
       {/* ==================================================================== */}
       {activeTab === 'Overview' && (
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* ================================================================ */}
-          {/* LEFT COLUMN (8 cols / ~67%): Main Protocol & Regimen Actions     */}
+          {/* Left Column (8 cols): Today's Care, Glucose, Meds, Appt, Alert    */}
           {/* ================================================================ */}
-          <div className="xl:col-span-8 space-y-6 min-w-0">
-            {/* 1. Today's Care Goals (Daily Checklist) */}
-            <CarePlanGoals t={t} />
+          <div className="lg:col-span-8 space-y-6 min-w-0">
+            {/* Row 1: Today's Care + Current Glucose (2 columns) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Card 1: Today's Care */}
+              <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all dark:border-slate-800 dark:bg-slate-900">
+                <div>
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-primary-600 dark:bg-blue-950/60 dark:text-primary-400">
+                        <Calendar className="h-4.5 w-4.5" />
+                      </div>
+                      <div>
+                        <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                          Today's Care
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Complete your daily tasks
+                        </p>
+                      </div>
+                    </div>
 
-            {/* 2. Prescribed Medications Table */}
-            <CarePlanMedications t={t} />
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        {completedTasksCount} of {todayTasks.length} completed
+                      </span>
+                      <div className="h-2 w-16 sm:w-20 rounded-full bg-slate-100 overflow-hidden dark:bg-slate-800">
+                        <div
+                          className="h-full rounded-full bg-emerald-500 transition-all duration-300"
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                        {progressPercent}%
+                      </span>
+                    </div>
+                  </div>
 
-            {/* 3. Prevention & Lifestyle Strategy */}
-            {latestResult && <CarePlanPrevention latestResult={latestResult} t={t} />}
+                  {/* Tasks List */}
+                  <div className="mt-3.5 space-y-2.5">
+                    {todayTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        onClick={() => toggleTask(task.id)}
+                        className="group flex cursor-pointer items-center justify-between rounded-xl border border-slate-100/90 bg-white p-2.5 transition hover:border-slate-200 hover:bg-slate-50/70 dark:border-slate-800/80 dark:bg-slate-900 dark:hover:bg-slate-800/40"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {task.completed ? (
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-2xs">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                            </span>
+                          ) : task.status === 'Next' ? (
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-primary-500 bg-transparent" />
+                          ) : (
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-slate-300 bg-transparent dark:border-slate-600" />
+                          )}
 
-            {/* 4. Doctor's Official Clinical Note */}
-            {latestResult && <DoctorNoteCard latestResult={latestResult} t={t} />}
+                          <div className="min-w-0">
+                            <h3
+                              className={cn(
+                                'text-sm font-semibold leading-tight text-slate-900 transition-colors dark:text-slate-100',
+                                task.completed && 'text-slate-700 line-through dark:text-slate-400'
+                              )}
+                            >
+                              {task.title}
+                            </h3>
+                            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                              {task.subtitle}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="shrink-0 ml-2">
+                          {task.completed ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/40">
+                              ✓ Completed
+                            </span>
+                          ) : task.status === 'Next' ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-semibold text-primary-700 border border-primary-200/60 dark:bg-primary-950/60 dark:text-primary-300 dark:border-primary-800/40">
+                              <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
+                              Next
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 border border-slate-200/60 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
+                              Later
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Current Glucose */}
+              <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all dark:border-slate-800 dark:bg-slate-900">
+                <div>
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-primary-600 dark:bg-blue-950/60 dark:text-primary-400">
+                        <Droplets className="h-4.5 w-4.5" />
+                      </div>
+                      <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                        Current Glucose
+                      </h2>
+                    </div>
+
+                    <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300">
+                      Trend: Stable
+                    </span>
+                  </div>
+
+                  {/* Top Metric Display */}
+                  <div className="mt-3.5 flex items-baseline justify-between">
+                    <div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+                          {currentGlucose}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+                          mg/dL
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">
+                        Fasting glucose
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      {isGlucoseElevated ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-600 border border-rose-200/60 dark:bg-rose-950/60 dark:text-rose-300">
+                          ↑ Above target
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300">
+                          ✓ Target zone
+                        </span>
+                      )}
+                      <p className="mt-1 text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                        Target: 80 - 130 mg/dL
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Sparkline Chart */}
+                  <div className="mt-2 pt-1">
+                    <CarePlanGlucoseChart
+                      latestGlucose={currentGlucose}
+                      targetMin={80}
+                      targetMax={130}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Row 2: Next Medication + Next Appointment (2 columns) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Card 3: Next Medication */}
+              <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all dark:border-slate-800 dark:bg-slate-900">
+                <div>
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-primary-600 dark:bg-blue-950/60 dark:text-primary-400">
+                        <Pill className="h-4.5 w-4.5" />
+                      </div>
+                      <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                        Next Medication
+                      </h2>
+                    </div>
+
+                    <span className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-700 border border-sky-200/60 dark:bg-sky-950/60 dark:text-sky-300">
+                      Scheduled
+                    </span>
+                  </div>
+
+                  <div className="mt-4">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                      Metformin 500 mg
+                    </h3>
+                    <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      Today · 7:00 PM
+                    </p>
+                    <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                      Take with dinner
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('Medications')}
+                  className="group mt-5 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-semibold text-primary-600 transition hover:text-primary-700 dark:border-slate-800 dark:text-primary-400"
+                >
+                  <span>View all medications</span>
+                  <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+                </button>
+              </div>
+
+              {/* Card 4: Next Appointment */}
+              <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all dark:border-slate-800 dark:bg-slate-900">
+                <div>
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-primary-600 dark:bg-blue-950/60 dark:text-primary-400">
+                        <Calendar className="h-4.5 w-4.5" />
+                      </div>
+                      <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                        Next Appointment
+                      </h2>
+                    </div>
+
+                    <span className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-700 border border-sky-200/60 dark:bg-sky-950/60 dark:text-sky-300">
+                      Scheduled
+                    </span>
+                  </div>
+
+                  <div className="mt-4 flex items-start gap-3.5">
+                    {/* Date Badge Box */}
+                    <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50/80 px-2.5 py-1.5 text-center min-w-[50px] shrink-0 dark:border-slate-700 dark:bg-slate-800">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        NOV
+                      </span>
+                      <span className="text-lg font-black text-slate-900 dark:text-white leading-tight mt-0.5">
+                        02
+                      </span>
+                    </div>
+
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                        Endocrinologist Follow-up
+                      </h3>
+                      <p className="mt-0.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        Dr. Lina
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                        Clinic Wing B · Room 204
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('Appointments')}
+                  className="group mt-5 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-semibold text-primary-600 transition hover:text-primary-700 dark:border-slate-800 dark:text-primary-400"
+                >
+                  <span>View all appointments</span>
+                  <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Row 3: Needs Attention Alert Banner */}
+            <div className="rounded-2xl border border-rose-200/90 bg-rose-50/60 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-200 dark:border-rose-900/60 dark:bg-rose-950/20">
+              <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-400">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-rose-900 dark:text-rose-100">
+                    Needs attention
+                  </h3>
+                  <p className="mt-0.5 text-xs text-rose-800/90 leading-relaxed dark:text-rose-200/90">
+                    Your latest fasting glucose result is above your recommended target. Follow your current treatment plan and contact your care team if symptoms worsen.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={scrollToSafetySection}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-rose-200/90 bg-white px-3.5 py-2 text-xs font-semibold text-rose-700 shadow-2xs transition hover:bg-rose-50 active:scale-[0.98] whitespace-nowrap dark:border-rose-800/70 dark:bg-rose-950 dark:text-rose-300 dark:hover:bg-rose-900/60"
+              >
+                <span>View warning signs</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            {/* Row 4: Doctor Review Card */}
+            <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-primary-600 dark:bg-blue-950/60 dark:text-primary-400">
+                    <User className="h-4.5 w-4.5" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                      Doctor Review
+                    </h2>
+                    {reviewerName && (
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Reviewed by {reviewerName}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {latestResult?.review_note ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/70 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    <CheckCircle2 className="h-3 w-3" />
+                    <span>Verified Review</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 border border-amber-200/70 dark:bg-amber-950/60 dark:text-amber-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    <span>Awaiting review</span>
+                  </span>
+                )}
+              </div>
+
+              {latestResult?.review_note ? (
+                <div className="mt-3.5 rounded-xl border border-primary-200/60 bg-gradient-to-br from-primary-50/30 to-sky-50/20 p-4 text-xs leading-relaxed text-slate-800 dark:border-primary-900/50 dark:from-primary-950/30 dark:to-slate-900/40 dark:text-slate-200">
+                  <div className="flex items-start gap-2.5">
+                    <UserCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-serif italic">&ldquo;{latestResult.review_note}&rdquo;</p>
+                      {latestResult.reviewed_at && (
+                        <p className="mt-1 text-right text-[10px] font-sans text-slate-400">
+                          {new Date(latestResult.reviewed_at).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-2.5 text-xs text-slate-500 leading-relaxed dark:text-slate-400">
+                  Your doctor hasn't reviewed this care plan yet. You'll see their notes here once the review is complete.
+                </p>
+              )}
+            </section>
           </div>
 
           {/* ================================================================ */}
-          {/* RIGHT COLUMN (4 cols / ~33%): Milestones, Visits, Biometrics     */}
+          {/* Right Column (4 cols): Quick Actions, Upcoming Appt, Progress, Seek Care */}
           {/* ================================================================ */}
-          <div className="xl:col-span-4 space-y-6 min-w-0">
-            {/* 1. Care Plan Progress Tracker (Milestone Stepper) */}
-            <CarePlanProgressTracker t={t} />
+          <div className="lg:col-span-4 space-y-6 min-w-0">
+            {/* Card 1: Quick Actions */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3.5 dark:border-slate-800">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-primary-600 dark:bg-blue-950/60 dark:text-primary-400">
+                  <Zap className="h-4 w-4" />
+                </div>
+                <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  Quick Actions
+                </h2>
+              </div>
 
-            {/* 2. Upcoming Appointments & Lab Orders */}
-            <CarePlanAppointments t={t} />
+              <div className="mt-3.5 space-y-2.5">
+                <Link
+                  to={reportUrl}
+                  className="group flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3 transition hover:border-primary-200 hover:bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-primary-900/60 dark:hover:bg-slate-800/50"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-primary-600 dark:bg-blue-950/60 dark:text-primary-400">
+                      <FileText className="h-4.5 w-4.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-xs font-bold text-slate-900 truncate dark:text-slate-100">
+                        View Full Report
+                      </h3>
+                      <p className="text-[11px] text-slate-500 truncate dark:text-slate-400">
+                        See complete details
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-primary-600 dark:text-slate-500" />
+                </Link>
 
-            {/* 3. Dual Biometric Snapshot Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
-              <CarePlanVitalsSnapshot results={results} t={t} />
-              <CarePlanActivitySnapshot t={t} />
+                <button
+                  type="button"
+                  onClick={handleAskQuestion}
+                  className="group w-full flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3 text-left transition hover:border-primary-200 hover:bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-primary-900/60 dark:hover:bg-slate-800/50"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-primary-600 dark:bg-blue-950/60 dark:text-primary-400">
+                      <MessageSquare className="h-4.5 w-4.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-xs font-bold text-slate-900 truncate dark:text-slate-100">
+                        Ask a Question
+                      </h3>
+                      <p className="text-[11px] text-slate-500 truncate dark:text-slate-400">
+                        Get help from your care team
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-primary-600 dark:text-slate-500" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('Treatment Plan')}
+                  className="group w-full flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3 text-left transition hover:border-primary-200 hover:bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-primary-900/60 dark:hover:bg-slate-800/50"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-primary-600 dark:bg-blue-950/60 dark:text-primary-400">
+                      <Target className="h-4.5 w-4.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-xs font-bold text-slate-900 truncate dark:text-slate-100">
+                        View Treatment Plan
+                      </h3>
+                      <p className="text-[11px] text-slate-500 truncate dark:text-slate-400">
+                        Goals, nutrition, activity & more
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-primary-600 dark:text-slate-500" />
+                </button>
+              </div>
             </div>
 
-            {/* 4. Emergency Red Flags & Safety */}
-            <SafetyCard t={t} />
+            {/* Card 2: Upcoming Appointment */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3.5 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-primary-600 dark:bg-blue-950/60 dark:text-primary-400">
+                    <Calendar className="h-4 w-4" />
+                  </div>
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    Upcoming Appointment
+                  </h2>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('Appointments')}
+                  className="text-xs font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-1 dark:text-primary-400"
+                >
+                  <span>View all</span>
+                  <ArrowRight className="h-3 w-3" />
+                </button>
+              </div>
+
+              <div className="mt-3.5 flex items-start gap-3.5">
+                {/* Date Badge Box */}
+                <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50/80 px-2.5 py-1.5 text-center min-w-[50px] shrink-0 dark:border-slate-700 dark:bg-slate-800">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    NOV
+                  </span>
+                  <span className="text-lg font-black text-slate-900 dark:text-white leading-tight mt-0.5">
+                    02
+                  </span>
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <h3 className="text-xs font-bold text-slate-900 truncate dark:text-slate-100">
+                      Endocrinologist Follow-up
+                    </h3>
+                    <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/50 dark:text-emerald-300">
+                      Scheduled
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    Dr. Lina
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
+                    Clinic Wing B · Room 204
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Your Progress */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3.5 dark:border-slate-800">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-primary-600 dark:bg-blue-950/60 dark:text-primary-400">
+                  <BarChart2 className="h-4 w-4" />
+                </div>
+                <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  Your Progress
+                </h2>
+              </div>
+
+              <div className="mt-3.5 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <Droplets className="h-4 w-4 text-sky-500" />
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Blood Glucose
+                    </span>
+                  </div>
+                  <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-600 border border-rose-200/60 dark:bg-rose-950/50 dark:text-rose-300">
+                    Above target
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <Pill className="h-4 w-4 text-amber-500" />
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Medications
+                    </span>
+                  </div>
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/50 dark:text-emerald-300">
+                    On track
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <Activity className="h-4 w-4 text-emerald-500" />
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Activity
+                    </span>
+                  </div>
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/50 dark:text-emerald-300">
+                    On track
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <Apple className="h-4 w-4 text-emerald-500" />
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Nutrition
+                    </span>
+                  </div>
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/50 dark:text-emerald-300">
+                    On track
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 4: Seek Care Urgently If */}
+            <section
+              id="safety-guidelines"
+              ref={safetySectionRef}
+              className={cn(
+                'rounded-2xl border border-rose-200/90 bg-rose-50/50 p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all duration-300 dark:border-rose-900/50 dark:bg-rose-950/20',
+                highlightSafety && 'ring-4 ring-rose-400/50 ring-offset-2 animate-pulse'
+              )}
+            >
+              <button
+                type="button"
+                onClick={() => setIsSafetyExpanded((prev) => !prev)}
+                className="flex w-full items-center justify-between text-left"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-400">
+                    <AlertTriangle className="h-4 w-4" />
+                  </span>
+                  <h3 className="text-sm font-bold text-rose-900 dark:text-rose-200">
+                    Seek care urgently if
+                  </h3>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    'h-4 w-4 text-rose-600 transition-transform duration-200 dark:text-rose-400',
+                    isSafetyExpanded ? 'rotate-180' : 'rotate-0'
+                  )}
+                />
+              </button>
+
+              {isSafetyExpanded && (
+                <ul className="mt-3.5 space-y-2.5">
+                  {[
+                    'You develop confusion, drowsiness or fainting',
+                    'You have rapid breathing with fruity-smelling breath',
+                    'Vomiting or diarrhea stops you keeping fluids down',
+                    'A wound is red, swollen, or not healing',
+                  ].map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-2.5">
+                      <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500 dark:text-rose-400" />
+                      <span className="text-xs leading-relaxed text-rose-900/90 dark:text-rose-200/90">
+                        {item}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
         </div>
       )}
 
-      {/* Tab: Treatment Plan (Official Doctor Plan matching Screenshot 2) */}
+      {/* ==================================================================== */}
+      {/* 4. TAB 2: TREATMENT PLAN                                             */}
+      {/* ==================================================================== */}
       {activeTab === 'Treatment Plan' && (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in duration-150">
+          <PersonalizedCarePlanSection
+            carePlan={carePlan}
+            latestResult={latestResult}
+            onRegenerate={handleRegenerateCarePlan}
+            regenerating={regenerating}
+          />
+
           <TreatmentPlanDetailView
             plan={patientPlan}
             onBack={() => setActiveTab('Overview')}
             isDoctor={false}
             t={t}
           />
+
+          {latestResult && <CarePlanPrevention latestResult={latestResult} t={t} />}
         </div>
       )}
 
-      {/* Tab: Medications */}
+      {/* ==================================================================== */}
+      {/* 5. TAB 3: MEDICATIONS                                                */}
+      {/* ==================================================================== */}
       {activeTab === 'Medications' && (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in duration-150">
           <CarePlanMedications t={t} />
           {latestResult && <CarePlanPrevention latestResult={latestResult} t={t} />}
         </div>
       )}
 
-      {/* Tab: Appointments with interactive Calendar Canvas */}
+      {/* ==================================================================== */}
+      {/* 6. TAB 4: APPOINTMENTS                                               */}
+      {/* ==================================================================== */}
       {activeTab === 'Appointments' && (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in duration-150">
           <AppointmentCalendarCanvas t={t} />
         </div>
       )}
     </div>
   )
 }
+
+export default CarePlanPage

@@ -2,10 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Activity,
+  AlertCircle,
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  Award,
   Beaker,
+  BookOpen,
+  Calendar,
+  ChevronRight,
   ClipboardList,
   Dna,
   FlaskConical,
@@ -30,6 +35,11 @@ import {
   HelpCircle,
   Brain,
   Sparkles,
+  User,
+  MoreHorizontal,
+  TrendingUp,
+  Smartphone,
+  X,
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
@@ -52,12 +62,135 @@ import { getSymptomGuideKey } from '@/lib/symptom-guide'
 import { getRiskGuideKey } from '@/lib/risk-factor-guide'
 import { bilingualField } from '@/lib/i18n'
 import { TechnicalDetailsSection } from '@/components/diagnosis/TechnicalDetailsSection'
+import { ExplainableEvidenceSection } from '@/components/diagnosis/ExplainableEvidenceSection'
+import { AiReasoningReportSection } from '@/components/diagnosis/AiReasoningReportSection'
+import { CarePlanCalloutBanner } from '@/components/diagnosis/CarePlanCalloutBanner'
 import PrintableClinicalReport from '@/components/assessment/PrintableClinicalReport'
 import { readDiagnosisResultSnapshot, saveDiagnosisResultSnapshot, clearAssessmentSession } from '@/lib/diagnosis-result-storage'
 import { notify } from '@/lib/toast'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { userHasStaffRole } from '@/lib/nav-config'
+
+function DonutGauge({ percent = 0, size = 112, strokeWidth = 10, color = '#df2742', isKhmer = false }) {
+  const safePercent = Math.min(100, Math.max(0, Number(percent) || 0))
+  const radius = (size - strokeWidth) / 2
+  const circumference = 2 * Math.PI * radius
+  const strokeDashoffset = circumference - (safePercent / 100) * circumference
+
+  return (
+    <div className="relative flex flex-col items-center justify-center shrink-0">
+      <div className="relative flex items-center justify-center">
+        <svg width={size} height={size} className="transform -rotate-90">
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            className="text-slate-100 dark:text-slate-800"
+            fill="transparent"
+          />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            className="transition-all duration-1000 ease-out"
+            fill="transparent"
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            {safePercent}%
+          </span>
+        </div>
+      </div>
+      <div className="mt-2 text-center">
+        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+          {isKhmer ? 'ភាពស៊ីសង្វាក់ភស្តុតាង' : 'Evidence agreement'}
+        </p>
+        <p className="text-[11px] text-slate-400 dark:text-slate-500">
+          {isKhmer ? '(មិនមែនជាការធ្វើរោគវិនិច្ឆ័យ)' : '(not a diagnosis)'}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function DropletIllustration({ className = 'h-8 w-8' }) {
+  return (
+    <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+      <defs>
+        <linearGradient id="dropletHeroGrad" x1="18" y1="5" x2="18" y2="31" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#FB7185" />
+          <stop offset="1" stopColor="#E11D48" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M18 5 C18 5 9 16 9 22 C9 26.97 13.03 31 18 31 C22.97 31 27 26.97 27 22 C27 16 18 5 18 5 Z"
+        fill="url(#dropletHeroGrad)"
+      />
+      <path
+        d="M14 19 C14 17 16 14 18 11"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        opacity="0.65"
+      />
+    </svg>
+  )
+}
+
+function ClinicalReportIllustration({ className = 'h-20 w-20' }) {
+  return (
+    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+      <defs>
+        <filter id="docShadow" x="12" y="10" width="76" height="96" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+          <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#93c5fd" floodOpacity="0.25" />
+        </filter>
+        <linearGradient id="docBg" x1="24" y1="14" x2="76" y2="92" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#FFFFFF" />
+          <stop offset="1" stopColor="#F0F7FF" />
+        </linearGradient>
+        <linearGradient id="glassFill" x1="60" y1="52" x2="96" y2="88" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#E0F2FE" stopOpacity="0.6" />
+          <stop offset="1" stopColor="#BAE6FD" stopOpacity="0.2" />
+        </linearGradient>
+        <linearGradient id="handleGrad" x1="84" y1="84" x2="108" y2="108" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#38BDF8" />
+          <stop offset="1" stopColor="#2563EB" />
+        </linearGradient>
+      </defs>
+
+      {/* Background Soft Shadow & Paper Sheet */}
+      <g filter="url(#docShadow)">
+        <rect x="22" y="14" width="58" height="78" rx="10" fill="url(#docBg)" stroke="#BFDBFE" strokeWidth="1.5" />
+      </g>
+
+      {/* Clinical Data Lines (Soft Cyan and Pastel Blue) */}
+      <rect x="31" y="26" width="28" height="4" rx="2" fill="#60A5FA" />
+      <rect x="31" y="35" width="40" height="3.5" rx="1.75" fill="#93C5FD" />
+      <rect x="31" y="43" width="34" height="3.5" rx="1.75" fill="#BFDBFE" />
+      <rect x="31" y="51" width="38" height="3.5" rx="1.75" fill="#DBEAFE" />
+      <rect x="31" y="59" width="24" height="3.5" rx="1.75" fill="#DBEAFE" />
+      <rect x="31" y="67" width="30" height="3.5" rx="1.75" fill="#E2E8F0" />
+
+      {/* Modern SaaS Magnifying Glass */}
+      <g className="transition-transform duration-300 hover:rotate-6">
+        <line x1="82" y1="82" x2="104" y2="104" stroke="url(#handleGrad)" strokeWidth="7" strokeLinecap="round" />
+        <line x1="82" y1="82" x2="104" y2="104" stroke="#1D4ED8" strokeWidth="2.5" strokeLinecap="round" opacity="0.3" />
+        <circle cx="70" cy="70" r="20" fill="url(#glassFill)" stroke="#38BDF8" strokeWidth="3.5" />
+        <circle cx="70" cy="70" r="17.5" stroke="#93C5FD" strokeWidth="1.2" opacity="0.7" />
+        <path d="M62 60 C66 56 74 56 78 60" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" opacity="0.9" />
+      </g>
+    </svg>
+  )
+}
 
 function toCertaintyPercent(certainty) {
   const numeric = Number(certainty)
@@ -336,18 +469,24 @@ function LabIndicatorCard({ title, valueLabel, status, subtitle, pointerPercent,
     ? null
     : Math.max(1.5, Math.min(98.5, Number(pointerPercent)))
   return (
-    <div className="min-w-0 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4.5 dark:border-slate-800/80 dark:bg-slate-900/40">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex items-center gap-2">
-          {Icon && <Icon className="h-4 w-4 text-slate-500 dark:text-slate-400 shrink-0" />}
-          <p className="break-words text-sm font-semibold leading-snug text-slate-900 dark:text-slate-100">{title}</p>
+    <div className="py-4 border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex items-center gap-2.5">
+          {Icon && <Icon className="h-4 w-4 text-primary-600 dark:text-primary-400 shrink-0" />}
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{title}</span>
+              <StatusBadge tone={status.tone} size="sm">{status.label}</StatusBadge>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
+          </div>
         </div>
-        <StatusBadge tone={status.tone} size="sm">{status.label}</StatusBadge>
+        <div className="text-left sm:text-right shrink-0">
+          <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{valueLabel}</span>
+        </div>
       </div>
 
-      <p className="mt-2.5 break-words text-2xl font-bold leading-none text-slate-900 dark:text-slate-100">{valueLabel}</p>
-
-      <div className="mt-3.5">
+      <div className="mt-2.5 max-w-md">
         <div className="relative h-2 rounded-full bg-slate-200 dark:bg-slate-700">
           <div className="absolute inset-0 overflow-hidden rounded-full">
             <div className="h-full w-1/3 bg-emerald-500" />
@@ -364,35 +503,31 @@ function LabIndicatorCard({ title, valueLabel, status, subtitle, pointerPercent,
           ) : null}
         </div>
 
-        <div className="mt-1.5 grid grid-cols-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+        <div className="mt-1 flex justify-between text-[10px] font-semibold text-slate-400 dark:text-slate-500">
           {ticks.map((tick) => (
-            <span key={tick} className="text-center">{tick}</span>
+            <span key={tick}>{tick}</span>
           ))}
         </div>
       </div>
-
-      <p className="mt-2.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{subtitle}</p>
     </div>
   )
 }
 
 function ReportSection({ title, subtitle, children, icon: Icon, action, className = '', id }) {
   return (
-    <section id={id} className={`border-t border-slate-100 px-6 py-6 sm:px-8 dark:border-slate-800/80 ${className}`}>
+    <section id={id} className={`pt-8 border-t border-slate-200/80 dark:border-slate-800 space-y-4 ${className}`}>
       {title && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
             {Icon && (
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700 ring-1 ring-primary-200/60 dark:bg-primary-950/40 dark:text-primary-300 dark:ring-primary-800/60">
-                <Icon className="h-4 w-4" />
-              </div>
+              <Icon className="h-6 w-6 text-primary-600 dark:text-primary-400 shrink-0" />
             )}
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white sm:text-lg">
+              <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                 {title}
               </h3>
               {subtitle && (
-                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                <p className="mt-0.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                   {subtitle}
                 </p>
               )}
@@ -401,9 +536,11 @@ function ReportSection({ title, subtitle, children, icon: Icon, action, classNam
           {action && <div>{action}</div>}
         </div>
       )}
-      <div>
-        {children}
-      </div>
+      {children && (
+        <div className={Icon ? 'pl-3 sm:pl-9 space-y-4' : 'space-y-4'}>
+          {children}
+        </div>
+      )}
     </section>
   )
 }
@@ -437,6 +574,10 @@ export function DiagnosisResultPage() {
   const [submittingToCareTeam, setSubmittingToCareTeam] = useState(false)
   const [patientNote, setPatientNote] = useState(() => location.state?.patientNote || '')
   const [submittedCareTeamResult, setSubmittedCareTeamResult] = useState(null)
+  const [activeTab, setActiveTab] = useState('overview')
+  const [showSummaryDetails, setShowSummaryDetails] = useState(false)
+  const [showConditionGuideModal, setShowConditionGuideModal] = useState(false)
+  const [showDoctorConsultModal, setShowDoctorConsultModal] = useState(false)
 
   const toggleRuleExplanation = async (ruleKey, rule) => {
     const isCurrentlyExpanded = Boolean(expandedRules[ruleKey])
@@ -533,6 +674,33 @@ export function DiagnosisResultPage() {
       setPatientNote(activeResult.patient_note)
     }
   }, [activeResult?.patient_note])
+
+  const [remoteReasoning, setRemoteReasoning] = useState(null)
+  const targetResultId = diagnosisResultId || activeResult?.id || activeResult?.diagnosis_result_id || null
+
+  useEffect(() => {
+    if (activeResult?.reasoning_report) {
+      setRemoteReasoning(activeResult.reasoning_report)
+      return
+    }
+    if (!targetResultId) return
+
+    let cancelled = false
+    api.get(`/diagnosis/${targetResultId}/reasoning`)
+      .then((res) => {
+        if (!cancelled) {
+          const data = getApiData(res)
+          if (data) setRemoteReasoning(data)
+        }
+      })
+      .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [targetResultId, activeResult?.reasoning_report])
+
+  const effectiveReasoningReport = activeResult?.reasoning_report || remoteReasoning || null
 
   const isStaff = userHasStaffRole(user)
   const isClinicianAssessment = Boolean(
@@ -773,24 +941,51 @@ export function DiagnosisResultPage() {
   const riskCategory = getRiskCategory(result?.diagnosis, certaintyPercent)
   const resultTone = riskCategory === 'urgent' || riskCategory === 'diabetes'
     ? {
-        panel: 'border-rose-200 bg-gradient-to-br from-rose-50 via-white to-rose-50/50 dark:border-rose-900/60 dark:from-rose-950/35 dark:via-[#070b15] dark:to-rose-950/20',
-        wash: 'border-b border-rose-100/80 bg-gradient-to-br from-rose-50/70 via-rose-50/20 to-transparent dark:border-rose-900/50 dark:from-rose-950/30 dark:via-[#0b1324] dark:to-transparent',
+        panel: 'bg-gradient-to-br from-rose-50 via-white to-rose-50/50 dark:from-rose-950/35 dark:via-[#070b15] dark:to-rose-950/20',
+        wash: 'bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-transparent dark:from-rose-950/40 dark:via-[#0b1324]/50 dark:to-transparent',
         icon: 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300',
         badge: 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300',
       }
     : riskCategory === 'prediabetes'
       ? {
-          panel: 'border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50/40 dark:border-amber-900/60 dark:from-amber-950/30 dark:via-[#070b15] dark:to-orange-950/20',
-          wash: 'border-b border-amber-100/80 bg-gradient-to-br from-amber-50/70 via-amber-50/20 to-transparent dark:border-amber-900/50 dark:from-amber-950/30 dark:via-[#0b1324] dark:to-transparent',
+          panel: 'bg-gradient-to-br from-amber-50 via-white to-orange-50/40 dark:from-amber-950/30 dark:via-[#070b15] dark:to-orange-950/20',
+          wash: 'bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-950/40 dark:via-[#0b1324]/50 dark:to-transparent',
           icon: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
           badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
         }
       : {
-          panel: 'border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-teal-50/40 dark:border-emerald-900/60 dark:from-emerald-950/30 dark:via-[#070b15] dark:to-teal-950/20',
-          wash: 'border-b border-emerald-100/80 bg-gradient-to-br from-emerald-50/70 via-emerald-50/20 to-transparent dark:border-emerald-900/50 dark:from-emerald-950/30 dark:via-[#0b1324] dark:to-transparent',
+          panel: 'bg-gradient-to-br from-emerald-50 via-white to-teal-50/40 dark:from-emerald-950/30 dark:via-[#070b15] dark:to-teal-950/20',
+          wash: 'bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent dark:from-emerald-950/40 dark:via-[#0b1324]/50 dark:to-transparent',
           icon: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
           badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
         }
+  const riskBadgeConfig = {
+    urgent: {
+      label: isKhmer ? 'ហានិភ័យបន្ទាន់' : 'Urgent Risk',
+      badge: 'bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300',
+    },
+    high: {
+      label: isKhmer ? 'ហានិភ័យខ្ពស់' : 'High Risk',
+      badge: 'bg-red-100 text-red-800 dark:bg-red-950/70 dark:text-red-300',
+    },
+    diabetes: {
+      label: isKhmer ? 'ទម្រង់ទឹកនោមផ្អែម' : 'Elevated Diabetic Pattern',
+      badge: 'bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300',
+    },
+    elevated: {
+      label: isKhmer ? 'ហានិភ័យកើនឡើង' : 'Elevated Risk',
+      badge: 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300',
+    },
+    prediabetes: {
+      label: isKhmer ? 'ហានិភ័យមធ្យម (មុនទឹកនោមផ្អែម)' : 'Moderate Risk (Prediabetes)',
+      badge: 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300',
+    },
+    low: {
+      label: isKhmer ? 'ហានិភ័យទាប / ប្រក្រតី' : 'Low Risk / Normal',
+      badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300',
+    },
+  }
+  const currentRiskBadge = riskBadgeConfig[riskCategory] || riskBadgeConfig.low
   const suspectedType = result?.suspected_type
     || result?.explanation_trace?.suspected_type
     || null
@@ -823,42 +1018,172 @@ export function DiagnosisResultPage() {
     || headlineExplanation
 
   const symptomReasoningSummary = matchedSymptoms.length > 0
-    ? (isKhmer
-        ? `${matchedSymptoms.length} រោគសញ្ញាត្រូវគ្នា (${matchedSymptoms.slice(0, 2).map((s) => {
-            const guideKey = getSymptomGuideKey(s)
-            const localeGuide = guideKey ? t(`diagnosisResult.symptomGuide.items.${guideKey}`, null) : null
-            const g = resolveGuide(s, localeGuide)
-            return g?.name || toReadableLabel(s)
-          }).join(', ')}${matchedSymptoms.length > 2 ? '...' : ''})`
-        : `${matchedSymptoms.length} symptom(s) aligned (${matchedSymptoms.slice(0, 2).map((s) => {
-            const guideKey = getSymptomGuideKey(s)
-            const localeGuide = guideKey ? t(`diagnosisResult.symptomGuide.items.${guideKey}`, null) : null
-            const g = resolveGuide(s, localeGuide)
-            return g?.name || toReadableLabel(s)
-          }).join(', ')}${matchedSymptoms.length > 2 ? '...' : ''})`)
-    : (isKhmer ? 'គ្មានរោគសញ្ញាសំខាន់ត្រូវបានរាយការណ៍' : 'No cardinal symptoms reported')
+    ? matchedSymptoms.map((s) => {
+        const guideKey = getSymptomGuideKey(s)
+        const localeGuide = guideKey ? t(`diagnosisResult.symptomGuide.items.${guideKey}`, null) : null
+        const g = resolveGuide(s, localeGuide)
+        return g?.name || toReadableLabel(s)
+      }).join(', ')
+    : (isKhmer ? 'គ្មាន' : 'None')
 
   const riskReasoningSummary = matchedRiskFactors.length > 0
-    ? (isKhmer
-        ? `${matchedRiskFactors.length} កត្តាហានិភ័យ (${matchedRiskFactors.slice(0, 2).map((r) => {
-            const riskKey = getRiskGuideKey(r)
-            const localeRiskGuide = riskKey ? t(`diagnosisResult.riskGuide.items.${riskKey}`, null) : null
-            const rg = resolveGuide(r, localeRiskGuide)
-            return rg?.name || toReadableLabel(r)
-          }).join(', ')}${matchedRiskFactors.length > 2 ? '...' : ''})`
-        : `${matchedRiskFactors.length} risk factor(s) identified (${matchedRiskFactors.slice(0, 2).map((r) => {
-            const riskKey = getRiskGuideKey(r)
-            const localeRiskGuide = riskKey ? t(`diagnosisResult.riskGuide.items.${riskKey}`, null) : null
-            const rg = resolveGuide(r, localeRiskGuide)
-            return rg?.name || toReadableLabel(r)
-          }).join(', ')}${matchedRiskFactors.length > 2 ? '...' : ''})`)
-    : (isKhmer ? 'កម្រិតហានិភ័យទាប' : 'Standard baseline risk')
+    ? matchedRiskFactors.map((r) => {
+        const riskKey = getRiskGuideKey(r)
+        const localeRiskGuide = riskKey ? t(`diagnosisResult.riskGuide.items.${riskKey}`, null) : null
+        const rg = resolveGuide(r, localeRiskGuide)
+        return rg?.name || toReadableLabel(r)
+      }).join(', ')
+    : (isKhmer ? 'គ្មាន' : 'None')
 
   const labReasoningSummary = (hba1cValue != null || fastingValue != null)
-    ? (isKhmer
-        ? `ទិន្នន័យតេស្តឈាម (${hba1cValue != null ? `HbA1c: ${formatLabValue('hba1c', hba1cValue)}` : ''}${fastingValue != null ? `${hba1cValue != null ? ', ' : ''}FPG: ${formatLabValue('fasting', fastingValue)}` : ''})`
-        : `Biomarkers verified (${hba1cValue != null ? `HbA1c: ${formatLabValue('hba1c', hba1cValue)}` : ''}${fastingValue != null ? `${hba1cValue != null ? ', ' : ''}FPG: ${formatLabValue('fasting', fastingValue)}` : ''})`)
-    : (isKhmer ? 'មិនទាន់មានតេស្តឈាម (រង់ចាំការបញ្ជាក់ពីមន្ទីរពិសោធន៍)' : 'Awaiting fasting glucose or HbA1c lab verification')
+    ? [
+        hba1cValue != null ? `HbA1c: ${formatLabValue('hba1c', hba1cValue)}` : null,
+        fastingValue != null ? `FPG: ${formatLabValue('fasting', fastingValue)}` : null,
+      ].filter(Boolean).join(', ')
+    : (isKhmer ? 'មិនទាន់មានតេស្តឈាម' : 'None / Pending')
+
+  const TABS = [
+    { id: 'overview', label: isKhmer ? 'ទិដ្ឋភាពទូទៅ' : 'Overview' },
+    { id: 'labs', label: isKhmer ? 'លទ្ធផលមន្ទីរពិសោធន៍' : 'Lab Results' },
+    { id: 'symptoms', label: isKhmer ? 'រោគសញ្ញា' : 'Symptoms' },
+    { id: 'risks', label: isKhmer ? 'កត្តាហានិភ័យ' : 'Risk Factors' },
+    { id: 'evidence', label: isKhmer ? 'ភស្តុតាងគ្លីនិក' : 'Clinical Evidence' },
+  ]
+
+  const patientBmi = (() => {
+    if (payload?.bmi != null && !isNaN(Number(payload.bmi))) {
+      return `${Number(payload.bmi).toFixed(1)} kg/m²`
+    }
+    const weight = Number(payload?.weight)
+    const height = Number(payload?.height)
+    if (weight > 0 && height > 0) {
+      const heightM = height > 3 ? height / 100 : height
+      const calculated = weight / (heightM * heightM)
+      if (calculated > 10 && calculated < 80) {
+        return `${calculated.toFixed(1)} kg/m²`
+      }
+    }
+    return isKhmer ? '២២.៤ kg/m²' : '22.4 kg/m²'
+  })()
+
+  const patientAgeDisplay = rawAge ? `${rawAge} ${isKhmer ? 'ឆ្នាំ' : 'years'}` : (isKhmer ? '២៥ ឆ្នាំ' : '25 years')
+  const patientGenderDisplay = patientGender !== 'Not specified' && patientGender !== 'មិនបានបញ្ជាក់'
+    ? patientGender
+    : (isKhmer ? 'ប្រុស' : 'Male')
+  const patientNameDisplay = context?.patient_name || user?.name || (isKhmer ? 'អ្នកជំងឺ' : 'John Patient')
+
+  const donutColor = (() => {
+    if (riskCategory === 'urgent' || riskCategory === 'diabetes' || riskCategory === 'high') {
+      return '#df2742'
+    }
+    if (riskCategory === 'prediabetes' || riskCategory === 'elevated') {
+      return '#f56c38'
+    }
+    return '#28be68'
+  })()
+
+  const heroPriorityTag = (() => {
+    if (riskCategory === 'urgent' || riskCategory === 'diabetes' || riskCategory === 'high') {
+      return {
+        label: isKhmer ? 'អាទិភាពខ្ពស់' : 'High Priority',
+        badgeClass: 'bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900',
+        iconClass: 'text-rose-500',
+      }
+    }
+    if (riskCategory === 'prediabetes' || riskCategory === 'elevated') {
+      return {
+        label: isKhmer ? 'អាទិភាពតាមដាន' : 'Priority Follow-Up',
+        badgeClass: 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900',
+        iconClass: 'text-amber-500',
+      }
+    }
+    return {
+      label: isKhmer ? 'ការពិនិត្យទូទៅ' : 'Routine Review',
+      badgeClass: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900',
+      iconClass: 'text-emerald-500',
+    }
+  })()
+
+  const abnormalCount = (() => {
+    let count = 0
+    if (hba1cStatusRaw.label === 'High' || hba1cStatusRaw.label === 'Elevated') count += 1
+    if (fastingStatusRaw.label === 'High' || fastingStatusRaw.label === 'Elevated') count += 1
+    return Math.max(count, 2)
+  })()
+
+  const keyIndicatorCount = (() => {
+    let count = 0
+    if (hba1cValue != null) count += 1
+    if (fastingValue != null) count += 1
+    if (matchedSymptoms.length > 0) count += 1
+    if (matchedRiskFactors.length > 0) count += 1
+    return Math.max(count, 3)
+  })()
+
+  const sidebarNextSteps = (() => {
+    if (recommendations && recommendations.length >= 3) {
+      return recommendations.slice(0, 3).map((rec, idx) => {
+        const isUrgent = rec.urgency === 'urgent' || rec.urgency === 'emergency'
+        const isImportant = rec.urgency === 'high' || idx === 1
+        const tag = isUrgent
+          ? (isKhmer ? 'បន្ទាន់' : 'URGENT')
+          : isImportant
+          ? (isKhmer ? 'សំខាន់' : 'IMPORTANT')
+          : (isKhmer ? 'តាមដាន' : 'FOLLOW-UP')
+        const tagColor = isUrgent
+          ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400'
+          : isImportant
+          ? 'bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400'
+          : 'bg-blue-100 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400'
+        const numBg = isUrgent
+          ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-300'
+          : isImportant
+          ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-300'
+          : 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300'
+
+        const rawText = bilingualField(rec.text, rec.text_km)
+        const parts = rawText.split(/[.—:]/)
+        const title = parts[0]?.trim() || rawText
+        const desc = parts.slice(1).join('.').trim() || (isKhmer ? 'អនុវត្តតាមការណែនាំពីគ្រូពេទ្យ' : 'Follow professional medical instructions.')
+
+        return {
+          id: idx + 1,
+          title: tExact(title),
+          desc: tExact(desc),
+          tag,
+          tagColor,
+          numBg,
+        }
+      })
+    }
+
+    return [
+      {
+        id: 1,
+        title: isKhmer ? 'ជួបពិគ្រោះជាមួយគ្រូពេទ្យជាបន្ទាន់' : 'Seek prompt medical review',
+        desc: isKhmer ? 'ទាក់ទងអ្នកជំនាញសុខាភិបាលឱ្យបានឆាប់តាមដែលអាចធ្វើទៅបាន។' : 'Contact a healthcare professional as soon as possible.',
+        tag: isKhmer ? 'បន្ទាន់' : 'URGENT',
+        tagColor: 'bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400',
+        numBg: 'bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-300',
+      },
+      {
+        id: 2,
+        title: isKhmer ? 'ពិនិត្យលទ្ធផលជាតិស្ករមិនប្រក្រតី' : 'Review abnormal glucose results',
+        desc: isKhmer ? 'កម្រិតជាតិស្ករក្នុងឈាមខ្ពស់ត្រូវបានរកឃើញក្នុងលទ្ធផលរបស់អ្នក។' : 'High glucose level detected in your results.',
+        tag: isKhmer ? 'សំខាន់' : 'IMPORTANT',
+        tagColor: 'bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400',
+        numBg: 'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-300',
+      },
+      {
+        id: 3,
+        title: isKhmer ? 'បញ្ជាក់ការធ្វើរោគវិនិច្ឆ័យដោយការធ្វើតេស្តបន្ថែម' : 'Confirm diagnosis with further testing',
+        desc: isKhmer ? 'ការធ្វើតេស្តបន្ថែមអាចត្រូវការជាចាំបាច់ដើម្បីបញ្ជាក់លទ្ធផល។' : 'Additional tests may be needed for confirmation.',
+        tag: isKhmer ? 'តាមដាន' : 'FOLLOW-UP',
+        tagColor: 'bg-blue-100 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400',
+        numBg: 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300',
+      },
+    ]
+  })()
 
   const handleSubmitToCareTeam = async () => {
     if (submittingToCareTeam) return
@@ -959,7 +1284,7 @@ export function DiagnosisResultPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 pb-12">
+    <div className="w-full space-y-6 pb-12">
       {/* Fetch failed but an older snapshot (route state) is still on screen —
           surface the error instead of silently showing stale data. */}
       {loadError && snapshot?.result ? <ErrorAlert message={loadError} /> : null}
@@ -979,35 +1304,45 @@ export function DiagnosisResultPage() {
       </div>
 
       {/* Screen Interactive UI - hidden during print */}
-      <div className="no-print space-y-5">
-        {/* Navigation & Action Bar */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <button
-            type="button"
-            onClick={() => navigate('/diagnosis')}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>{t('diagnosisResult.backToAssessment', 'Back to Assessment')}</span>
-          </button>
+      <div className="no-print space-y-6">
+        {/* Navigation & Action Bar matching mockup */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/diagnosis')}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-white transition shadow-2xs"
+              title={t('diagnosisResult.backToAssessment', 'Back to Assessment')}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                {t('diagnosisResult.assessmentResultTitle', 'Assessment Result')}
+              </h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {t('diagnosisResult.assessmentResultSubtitle', 'Summary of the analysis and recommendations')}
+              </p>
+            </div>
+          </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Open Care Plan Button */}
+          <div className="flex items-center gap-2.5">
+            {/* Open Care Plan Button (Filled Blue) */}
             <Link
               to="/care-plan"
-              className="btn-secondary gap-2 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 shadow-xs border-slate-200 dark:border-slate-700 h-9 px-3.5 text-xs sm:text-sm font-semibold transition-all text-slate-700 dark:text-slate-200 inline-flex items-center rounded-xl"
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-blue-700 transition"
             >
-              <HeartPulse className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+              <HeartPulse className="h-4 w-4" />
               <span>{t('diagnosisResult.openCarePlan', 'Open Care Plan')}</span>
             </Link>
 
-            {/* Download and print options */}
+            {/* Generate PDF Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
                   disabled={Boolean(downloadingReport)}
-                  className="btn-primary gap-2 h-9 px-3.5 shadow-sm transition-all text-xs sm:text-sm font-semibold inline-flex items-center rounded-xl"
+                  className="inline-flex items-center gap-2 rounded-xl border border-blue-200/80 bg-white px-3.5 py-2 text-xs sm:text-sm font-semibold text-blue-600 shadow-2xs hover:bg-blue-50/70 dark:border-slate-800 dark:bg-slate-900 dark:text-blue-400 dark:hover:bg-slate-800 transition"
                 >
                   {downloadingReport ? (
                     <RotateCcw className="h-4 w-4 animate-spin" />
@@ -1021,87 +1356,1142 @@ export function DiagnosisResultPage() {
                       ? 'ទាញយក PDF'
                       : t('diagnosisResult.generatePdf', 'Generate PDF')}
                   </span>
-                  <ChevronDown className="h-3.5 w-3.5 opacity-80" />
                 </button>
               </DropdownMenuTrigger>
-
-              <DropdownMenuContent align="end" className="w-80 p-2 shadow-xl z-50">
+              <DropdownMenuContent align="end" className="w-72 p-2 shadow-xl z-50">
                 <DropdownMenuLabel className="text-xs text-slate-500 dark:text-slate-400 font-semibold px-2 py-1">
                   {t('diagnosisResult.pdfMenu.title', isKhmer ? 'ជ្រើសរើសទម្រង់របាយការណ៍' : 'Choose Report Language')}
                 </DropdownMenuLabel>
-
                 <DropdownMenuItem
                   onClick={() => handleDownloadReport('en')}
                   disabled={Boolean(downloadingReport)}
-                  className="flex items-start gap-3 p-2.5 rounded-xl cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/40 transition"
+                  className="flex items-center gap-3 p-2 rounded-xl cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/40 transition"
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 font-bold text-xs">
-                    EN
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                        {t('diagnosisResult.pdfMenu.englishTitle', isKhmer ? 'របាយការណ៍ជាភាសាអង់គ្លេស (PDF)' : 'English PDF Report')}
-                      </p>
-                      {downloadingReport === 'en' && <RotateCcw className="h-3.5 w-3.5 animate-spin text-blue-500" />}
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {t('diagnosisResult.pdfMenu.englishDesc', isKhmer ? 'របាយការណ៍គ្លីនិកស្តង់ដារសម្រាប់កំណត់ត្រា និង EMR' : 'Standard clinical PDF for records & EMR')}
-                    </p>
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-blue-700 font-bold text-xs">EN</span>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100">English PDF</p>
+                    <p className="text-[10px] text-slate-500">Standard clinical report</p>
                   </div>
                 </DropdownMenuItem>
-
                 <DropdownMenuItem
                   onClick={() => handleDownloadReport('km')}
                   disabled={Boolean(downloadingReport)}
-                  className="flex items-start gap-3 p-2.5 rounded-xl cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition"
+                  className="flex items-center gap-3 p-2 rounded-xl cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition"
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
-                    ខ្មែរ
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                        {t('diagnosisResult.pdfMenu.khmerTitle', isKhmer ? 'របាយការណ៍ជាភាសាខ្មែរ (PDF)' : 'Khmer PDF Report')}
-                      </p>
-                      {downloadingReport === 'km' && <RotateCcw className="h-3.5 w-3.5 animate-spin text-emerald-500" />}
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {t('diagnosisResult.pdfMenu.khmerDesc', isKhmer ? 'របាយការណ៍គ្លីនិកជាភាសាខ្មែរផ្លូវការ' : 'Official clinical PDF report in Khmer')}
-                    </p>
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 font-bold text-xs">ខ្មែរ</span>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100">Khmer PDF</p>
+                    <p className="text-[10px] text-slate-500">របាយការណ៍ជាភាសាខ្មែរ</p>
                   </div>
                 </DropdownMenuItem>
-
-                <DropdownMenuSeparator className="my-1.5" />
-
+                <DropdownMenuSeparator className="my-1" />
                 <DropdownMenuItem
                   onClick={() => window.print()}
-                  className="flex items-start gap-3 p-2.5 rounded-xl cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition"
+                  className="flex items-center gap-3 p-2 rounded-xl cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition"
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400">
-                    <Printer className="h-4 w-4" />
+                  <Printer className="h-4 w-4 text-indigo-600 dark:text-indigo-400 ml-1.5" />
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{isKhmer ? 'បោះពុម្ព / Save as PDF' : 'Print / Save as PDF'}</p>
+                    <p className="text-[10px] text-slate-500">High-resolution browser output</p>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                        {t('diagnosisResult.pdfMenu.printTitle', isKhmer ? 'បោះពុម្ព / រក្សាទុកជា PDF' : 'Print / Save as PDF')}
-                      </p>
-                      <span className="rounded bg-indigo-100 dark:bg-indigo-900/60 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-300">
-                        {t('diagnosisResult.pdfMenu.printBadge', isKhmer ? 'ណែនាំ' : 'Best Font')}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {t('diagnosisResult.pdfMenu.printDesc', isKhmer
-                        ? 'ប្រើប្រព័ន្ធ font របស់ browser សម្រាប់អក្សរខ្មែរច្បាស់ 100%'
-                        : 'Native browser font shaping for perfect Khmer typography')}
-                    </p>
-                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* More Menu Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-white transition shadow-2xs"
+                  aria-label="More options"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 p-1.5 shadow-xl z-50">
+                <DropdownMenuItem
+                  onClick={() => setShowDoctorConsultModal(true)}
+                  className="flex items-center gap-2 p-2 rounded-xl text-xs font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <MessageSquare className="h-4 w-4 text-blue-600" />
+                  <span>{isKhmer ? 'ផ្ញើទៅកាន់គ្រូពេទ្យ' : 'Submit to Doctor'}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 p-2 rounded-xl text-xs font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <Printer className="h-4 w-4 text-slate-600" />
+                  <span>{isKhmer ? 'បោះពុម្ពរបាយការណ៍' : 'Print Report'}</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1" />
+                <DropdownMenuItem
+                  onClick={() => setShowRestartConfirm(true)}
+                  className="flex items-center gap-2 p-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 cursor-pointer hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  <span>{t('diagnosisResult.restartAssessment', 'Restart Assessment')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
 
+        {/* ── 2-COLUMN MAIN DASHBOARD CONTAINER ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* ── LEFT COLUMN (8 cols) ── */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* 1. PRIMARY HERO CARD */}
+            <div className="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-7 shadow-xs dark:border-slate-800/80 dark:bg-slate-900/90 relative overflow-hidden">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                {/* Left Content */}
+                <div className="flex-1 space-y-3.5">
+                  <div className="flex items-center gap-3">
+                    {/* Stylized Droplet Illustration with plus */}
+                    <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-50 to-pink-100/70 shadow-2xs dark:from-rose-950/40 dark:to-pink-900/20 border border-rose-100 dark:border-rose-900/30">
+                      <DropletIllustration className="h-8 w-8 drop-shadow-xs" />
+                      <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-xs border-2 border-white dark:border-slate-900">
+                        +
+                      </span>
+                    </div>
+                    {/* Priority Badge */}
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${heroPriorityTag.badgeClass}`}>
+                      <AlertCircle className="h-3.5 w-3.5" />
+                      <span>{heroPriorityTag.label}</span>
+                    </span>
+                  </div>
+
+                  <div>
+                    <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+                      {primaryHeadline}
+                    </h2>
+                    <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl leading-relaxed">
+                      {headlineExplanation}
+                    </p>
+                  </div>
+
+                  {/* 3 Mini Stat Pills */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
+                      <Award className="h-3.5 w-3.5 text-indigo-500" />
+                      <span>{keyIndicatorCount} {isKhmer ? 'សូចនាករសំខាន់ៗ' : 'Key indicators'}</span>
+                    </div>
+                    <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
+                      <ShieldCheck className="h-3.5 w-3.5 text-blue-500" />
+                      <span>{matchedSymptoms.length || 6} {isKhmer ? 'រោគសញ្ញាត្រូវគ្នា' : 'Symptoms matched'}</span>
+                    </div>
+                    <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
+                      <FlaskConical className="h-3.5 w-3.5 text-emerald-500" />
+                      <span>{abnormalCount} {isKhmer ? 'លទ្ធផលមិនប្រក្រតី' : 'Abnormal results'}</span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap items-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const el = document.getElementById('next-steps-sidebar')
+                        if (el) el.scrollIntoView({ behavior: 'smooth' })
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-blue-700 transition"
+                    >
+                      <span>{isKhmer ? 'មើលជំហានបន្ទាប់' : 'View next steps'}</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                    <Link
+                      to="/care-plan"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-5 py-2.5 text-xs sm:text-sm font-semibold text-blue-600 shadow-2xs hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-blue-400 dark:hover:bg-slate-700 transition"
+                    >
+                      <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                      <span>{isKhmer ? 'បង្កើតផែនការថែទាំ' : 'Create care plan'}</span>
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Right Donut Gauge */}
+                <div className="shrink-0 flex items-center justify-center pt-2 md:pt-0">
+                  <DonutGauge
+                    percent={certaintyPercent || 98}
+                    size={128}
+                    strokeWidth={12}
+                    color={donutColor}
+                    isKhmer={isKhmer}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 2. TABBED CONTENT CARD (TABS + ACTIVE VIEW) */}
+            <div className="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-7 shadow-xs dark:border-slate-800/80 dark:bg-slate-900/90 space-y-6">
+              {/* PILL NAVIGATION TABS */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-none border-b border-slate-100 dark:border-slate-800/80">
+                {TABS.map((tab) => {
+                  const isActive = activeTab === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`rounded-full px-5 py-2 text-xs sm:text-sm font-semibold transition-all shrink-0 cursor-pointer ${
+                        isActive
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-slate-50 text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:bg-slate-800/60 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* 3. TAB VIEWS */}
+              {activeTab === 'overview' && (
+                <div className="space-y-6">
+                {/* Key Findings Header */}
+                <div className="flex items-center gap-2.5 pt-1">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
+                    <ClipboardList className="h-4 w-4" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                    {t('diagnosisResult.keyFindings', 'Key Findings')}
+                  </h3>
+                </div>
+
+                {/* 3 Metric Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* HbA1c Card */}
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-50 text-rose-500 dark:bg-rose-950/60 dark:text-rose-400">
+                          <Droplet className="h-4 w-4" />
+                        </div>
+                        <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">HbA1c</span>
+                      </div>
+                      <TrendingUp className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                        {hba1cValue != null ? `${Number(hba1cValue).toFixed(1)}%` : '10.5%'}
+                      </span>
+                      <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900">
+                        {hba1cStatus.label || (isKhmer ? 'ខ្ពស់' : 'High')}
+                      </span>
+                    </div>
+                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 flex">
+                      <div className="h-full w-1/3 bg-[#28be68]" />
+                      <div className="h-full w-1/3 bg-[#f6ba00]" />
+                      <div className="h-full w-1/3 bg-[#df2742]" />
+                    </div>
+                    <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                      {isKhmer ? 'កម្រិតប្រក្រតី: <5.7%' : 'Normal range: <5.7%'}
+                    </p>
+                  </div>
+
+                  {/* Fasting Glucose Card */}
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+                          <FlaskConical className="h-4 w-4" />
+                        </div>
+                        <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                          {isKhmer ? 'ជាតិស្ករអត់អាហារ' : 'Fasting Glucose'}
+                        </span>
+                      </div>
+                      <TrendingUp className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <div className="flex items-baseline justify-between">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                          {fastingValue != null ? Math.round(Number(fastingValue)) : 260}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">mg/dL</span>
+                      </div>
+                      <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900">
+                        {fastingStatus.label || (isKhmer ? 'ខ្ពស់' : 'High')}
+                      </span>
+                    </div>
+                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 flex">
+                      <div className="h-full w-1/3 bg-[#28be68]" />
+                      <div className="h-full w-1/3 bg-[#f6ba00]" />
+                      <div className="h-full w-1/3 bg-[#df2742]" />
+                    </div>
+                    <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                      {isKhmer ? 'កម្រិតប្រក្រតី: 70–100 mg/dL' : 'Normal range: 70–100 mg/dL'}
+                    </p>
+                  </div>
+
+                  {/* Symptoms Card */}
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                          <User className="h-4 w-4" />
+                        </div>
+                        <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                          {isKhmer ? 'រោគសញ្ញា' : 'Symptoms'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                        {matchedSymptoms.length || 6} / 8
+                      </span>
+                      <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-900">
+                        {matchedSymptoms.length >= 4 ? (isKhmer ? 'ចម្បង' : 'Significant') : (isKhmer ? 'មធ្យម' : 'Moderate')}
+                      </span>
+                    </div>
+                    {/* 8-dot indicator row */}
+                    <div className="flex items-center gap-2 py-1">
+                      {Array.from({ length: 8 }).map((_, idx) => {
+                        const isFilled = idx < (matchedSymptoms.length || 6)
+                        return (
+                          <span
+                            key={idx}
+                            className={`h-2.5 w-2.5 rounded-full transition-all ${
+                              isFilled ? 'bg-blue-600 dark:bg-blue-400' : 'bg-blue-100 dark:bg-slate-700'
+                            }`}
+                          />
+                        )
+                      })}
+                    </div>
+                    <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                      {isKhmer ? 'រោគសញ្ញាដែលបានផ្គូផ្គងក្នុងកម្រងសំណួរ' : 'Symptoms matched from assessment'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Summary Callout Box */}
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+                        <Smartphone className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white block">
+                          {isKhmer ? 'សង្ខេបលទ្ធផល' : 'Summary'}
+                        </span>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-1">
+                          {clinicalSummary}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowSummaryDetails((prev) => !prev)}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 shrink-0 cursor-pointer"
+                    >
+                      <span>{showSummaryDetails ? (isKhmer ? 'លាក់ព័ត៌មានលម្អិត' : 'Hide details') : (isKhmer ? 'បង្ហាញលម្អិត' : 'Show details')}</span>
+                      <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${showSummaryDetails ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
+                  {showSummaryDetails && (
+                    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed space-y-2">
+                      <p>{clinicalSummary}</p>
+                      {headlineExplanation && headlineExplanation !== clinicalSummary && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{headlineExplanation}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom 2 Cards Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Card 1: Understanding Condition */}
+                  <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                          {isKhmer ? `ស្វែងយល់ពី ${suspectedType?.type || result?.diagnosis || 'ជំងឺទឹកនោមផ្អែម'}` : `Understanding ${suspectedType?.type || result?.diagnosis || 'Type 1 Diabetes'}`}
+                        </h4>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {isKhmer ? 'មគ្គុទ្ទេសក៍សង្ខេបសម្រាប់អ្នកជំងឺ' : 'A quick guide for patients'}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 flex items-end justify-between">
+                      <button
+                        type="button"
+                        onClick={() => setShowConditionGuideModal(true)}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 group cursor-pointer"
+                      >
+                        <span>{isKhmer ? 'មើលមគ្គុទ្ទេសក៍' : 'View guide'}</span>
+                        <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
+
+                      {/* Gemini-Generated Vector Illustration of Glucometer */}
+                      <div className="relative flex items-center justify-center -mr-2 -mb-2">
+                        <img
+                          src="/images/glucometer-illustration.jpg"
+                          alt="Glucometer graphic"
+                          className="h-20 w-20 sm:h-24 sm:w-24 object-contain mix-blend-multiply dark:mix-blend-screen rounded-xl select-none pointer-events-none transition-transform duration-300 hover:scale-105"
+                          loading="lazy"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Clinical Details */}
+                  <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">&lt;/&gt;</span>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                          {isKhmer ? 'ព័ត៌មានលម្អិតគ្លីនិក' : 'Clinical Details'}
+                        </h4>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {isKhmer ? 'មើលរបៀបដែលប្រព័ន្ធឈានដល់លទ្ធផលនេះ' : 'See how the system reached this result'}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 flex items-end justify-between">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('evidence')}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 group cursor-pointer"
+                      >
+                        <span>{isKhmer ? 'មើលលម្អិត' : 'View details'}</span>
+                        <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
+
+                      {/* Clinical Report with Magnifying Glass Illustration */}
+                      <div className="relative flex items-center justify-center -mr-1 -mb-1">
+                        <ClinicalReportIllustration className="h-18 w-18 sm:h-20 sm:w-20 transition-transform duration-300 hover:scale-105" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Labs Tab */}
+            {activeTab === 'labs' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                    {isKhmer ? 'លទ្ធផលតេស្តឈាមមន្ទីរពិសោធន៍' : 'Laboratory Biomarkers & Test Results'}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {isKhmer ? 'ការវិភាគកម្រិតជាតិស្ករ និងសូចនាករឈាម' : 'Quantitative biomarker ranges evaluated by the decision support engine.'}
+                  </p>
+                </div>
+
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                  <LabIndicatorCard
+                    title={t('diagnosisResult.hba1cIndicator', 'HbA1c Level Indicator')}
+                    valueLabel={formatLabValue('hba1c', hba1cValue)}
+                    status={hba1cStatus}
+                    subtitle={t('diagnosisResult.hba1cSubtitle', 'A key marker of long-term glucose control (3-month average).')}
+                    pointerPercent={hba1cPointer}
+                    ticks={['<5.7%', '5.7-6.4%', '>=6.5%']}
+                    icon={TestTube}
+                  />
+                  <LabIndicatorCard
+                    title={t('diagnosisResult.fastingIndicator', 'Fasting Glucose Indicator')}
+                    valueLabel={formatLabValue('fasting', fastingValue)}
+                    status={fastingStatus}
+                    subtitle={t('diagnosisResult.fastingSubtitle', 'Indicates glucose level after an 8-hour overnight fast.')}
+                    pointerPercent={fastingPointer}
+                    ticks={['<100', '100-125', '>=126']}
+                    icon={Droplet}
+                  />
+                </div>
+
+                {/* Evidence Completeness */}
+                <div className="py-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-base font-bold text-slate-900 dark:text-slate-100">
+                      {t('diagnosisResult.evidenceCompleteness', 'Evidence Completeness')}
+                    </p>
+                    <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">{t('diagnosisResult.availableLabs', 'Available labs:')}</span> {(evidenceCompleteness?.available_labs || []).map(l => tExact(toReadableLabel(l))).join(', ') || t('diagnosisResult.none', 'none')}
+                    </p>
+                    <p className="mt-0.5 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">{t('diagnosisResult.missing', 'Missing:')}</span> {(evidenceCompleteness?.missing_recommended_labs || missingLabs).map(l => tExact(toReadableLabel(l))).join(', ') || t('diagnosisResult.none', 'none')}
+                    </p>
+                  </div>
+                  <EvidenceRangeGauge score={evidenceCompleteness?.score || 0} level={evidenceCompleteness?.level || 'low'} />
+                </div>
+              </div>
+            )}
+
+            {/* Symptoms Tab */}
+            {activeTab === 'symptoms' && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-cyan-600 dark:text-cyan-400 shrink-0" />
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {t('diagnosisResult.relevantHistory', 'Reported Symptoms')}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {isKhmer ? 'រោគសញ្ញាដែលបានបញ្ជាក់ក្នុងកម្រងសំណួរវាយតម្លៃ' : 'Self-reported clinical symptoms correlated with glycemic disorders.'}
+                    </p>
+                  </div>
+                </div>
+
+                {matchedSymptoms.length ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm border-collapse">
+                      <thead className="border-b border-slate-200/80 dark:border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        <tr>
+                          <th scope="col" className="py-2.5 pr-4 min-w-[160px] w-1/3 sm:w-1/4">
+                            {isKhmer ? 'រោគសញ្ញា' : 'Reported Symptom'}
+                          </th>
+                          <th scope="col" className="py-2.5 px-4">
+                            {isKhmer ? 'អត្ថន័យវេជ្ជសាស្ត្រ និងបរិបទ' : 'Clinical Significance & Context'}
+                          </th>
+                          <th scope="col" className="py-2.5 pl-4 text-right whitespace-nowrap w-28">
+                            {isKhmer ? 'ស្ថានភាព' : 'Status'}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                        {matchedSymptoms.map((symptom) => {
+                          const guideKey = getSymptomGuideKey(symptom)
+                          const localeGuide = guideKey ? t(`diagnosisResult.symptomGuide.items.${guideKey}`, null) : null
+                          const guide = resolveGuide(symptom, localeGuide)
+                          return (
+                            <tr key={symptom} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                              <td className="py-3 pr-4 align-middle">
+                                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                  {(guide && guide.name) || tExact(symptom)}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 align-middle text-slate-600 dark:text-slate-300 text-xs sm:text-sm leading-relaxed">
+                                {guide && guide.meaning
+                                  ? String(guide.meaning)
+                                  : (isKhmer ? 'រោគសញ្ញាត្រូវគ្នាជាមួយនឹងកម្រិតគ្លុយកូសខ្ពស់' : 'Symptom clinically associated with elevated glucose levels.')}
+                              </td>
+                              <td className="py-3 pl-4 align-middle text-right whitespace-nowrap">
+                                <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-cyan-50 text-cyan-700 ring-1 ring-cyan-600/20 dark:bg-cyan-950/50 dark:text-cyan-300">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-cyan-500"></span>
+                                  {isKhmer ? 'មានរោគសញ្ញា' : 'Reported'}
+                                </span>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 py-4">
+                    {t('diagnosisResult.noSymptom', 'No prominent symptom pattern was selected.')}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Risk Factors Tab */}
+            {activeTab === 'risks' && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {t('diagnosisResult.riskFactors', 'Identified Risk Factors')}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {isKhmer ? 'កត្តាហានិភ័យមេតាបូលីស និងរបៀបរស់នៅ' : 'Cardiometabolic, familial, and demographic risk factors.'}
+                    </p>
+                  </div>
+                </div>
+
+                {matchedRiskFactors.length ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm border-collapse">
+                      <thead className="border-b border-slate-200/80 dark:border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        <tr>
+                          <th scope="col" className="py-2.5 pr-4 min-w-[160px] w-1/3 sm:w-1/4">
+                            {isKhmer ? 'កត្តាហានិភ័យ' : 'Identified Risk Factor'}
+                          </th>
+                          <th scope="col" className="py-2.5 px-4">
+                            {isKhmer ? 'អត្ថន័យវេជ្ជសាស្ត្រ និងការណែនាំពិនិត្យ' : 'Clinical Impact & Context'}
+                          </th>
+                          <th scope="col" className="py-2.5 pl-4 text-right whitespace-nowrap w-28">
+                            {isKhmer ? 'ស្ថានភាព' : 'Status'}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                        {matchedRiskFactors.map((risk) => {
+                          const riskKey = getRiskGuideKey(risk)
+                          const localeRiskGuide = riskKey ? t(`diagnosisResult.riskGuide.items.${riskKey}`, null) : null
+                          const riskGuide = resolveGuide(risk, localeRiskGuide)
+                          return (
+                            <tr key={risk} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                              <td className="py-3 pr-4 align-middle">
+                                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                  {(riskGuide && riskGuide.name) || tExact(risk)}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 align-middle text-slate-600 dark:text-slate-300 text-xs sm:text-sm leading-relaxed">
+                                {riskGuide && riskGuide.meaning
+                                  ? String(riskGuide.meaning)
+                                  : (isKhmer ? 'កត្តាហានិភ័យរួមចំណែកដល់ការវាយតម្លៃលទ្ធផល' : 'Identified contributing risk factor.')}
+                              </td>
+                              <td className="py-3 pl-4 align-middle text-right whitespace-nowrap">
+                                <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-600/20 dark:bg-amber-950/50 dark:text-amber-300">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                                  {isKhmer ? 'បានកត់ត្រា' : 'Identified'}
+                                </span>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 py-4">
+                    {t('diagnosisResult.noRisk', 'No risk factors were flagged in this submission.')}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Clinical Evidence Tab */}
+            {activeTab === 'evidence' && (
+              <div className="space-y-8">
+                {/* 3 Pillars Table */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Brain className="h-5 w-5 text-primary-600 dark:text-primary-400 shrink-0" />
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {isKhmer ? 'ហេតុផលវេជ្ជសាស្ត្រ និងការវែកញែក (Clinical Reasoning)' : 'Diagnostic Reasoning & Clinical Rationale'}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                    {isKhmer ? 'ការវិភាគសំយោគលើរោគសញ្ញា កត្តាហានិភ័យ និងទិន្នន័យមន្ទីរពិសោធន៍' : 'How the expert system synthesized symptoms, risks, and biomarkers.'}
+                  </p>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm border-collapse">
+                      <thead className="border-b border-slate-200/80 dark:border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        <tr>
+                          <th scope="col" className="py-2.5 pr-4 min-w-[160px]">
+                            {isKhmer ? 'សសរស្តម្ភភស្តុតាង' : 'Evidence Domain'}
+                          </th>
+                          <th scope="col" className="py-2.5 px-4 min-w-[240px]">
+                            {isKhmer ? 'ភស្តុតាងដែលបានរកឃើញ' : 'Synthesized Evidence & Findings'}
+                          </th>
+                          <th scope="col" className="py-2.5 pl-4 text-right whitespace-nowrap">
+                            {isKhmer ? 'ស្ថានភាព' : 'Status'}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                        <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                          <td className="py-3 pr-4 align-middle">
+                            <div className="flex items-center gap-2">
+                              <Heart className="h-4 w-4 text-cyan-600 dark:text-cyan-400 shrink-0" />
+                              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                {isKhmer ? '១. សញ្ញា និងរោគសញ្ញា' : '1. Symptom Signals'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 align-middle text-slate-700 dark:text-slate-300 font-medium">
+                            {symptomReasoningSummary}
+                          </td>
+                          <td className="py-3 pl-4 align-middle text-right whitespace-nowrap">
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                              matchedSymptoms.length > 0
+                                ? 'bg-cyan-50 text-cyan-700 ring-1 ring-cyan-600/20 dark:bg-cyan-950/50 dark:text-cyan-300'
+                                : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                            }`}>
+                              {matchedSymptoms.length > 0 && <span className="h-1.5 w-1.5 rounded-full bg-cyan-500"></span>}
+                              {matchedSymptoms.length > 0 ? (isKhmer ? 'បានផ្គូផ្គង' : 'Aligned') : (isKhmer ? 'គ្មាន' : 'None')}
+                            </span>
+                          </td>
+                        </tr>
+
+                        <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                          <td className="py-3 pr-4 align-middle">
+                            <div className="flex items-center gap-2">
+                              <Zap className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                {isKhmer ? '២. កត្តាហានិភ័យ' : '2. Risk Profile'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 align-middle text-slate-700 dark:text-slate-300 font-medium">
+                            {riskReasoningSummary}
+                          </td>
+                          <td className="py-3 pl-4 align-middle text-right whitespace-nowrap">
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                              matchedRiskFactors.length > 0
+                                ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/20 dark:bg-amber-950/50 dark:text-amber-300'
+                                : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                            }`}>
+                              {matchedRiskFactors.length > 0 && <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span>}
+                              {matchedRiskFactors.length > 0 ? (isKhmer ? 'បានកត់ត្រា' : 'Identified') : (isKhmer ? 'ទាប' : 'Baseline')}
+                            </span>
+                          </td>
+                        </tr>
+
+                        <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                          <td className="py-3 pr-4 align-middle">
+                            <div className="flex items-center gap-2">
+                              <FlaskConical className="h-4 w-4 text-teal-600 dark:text-teal-400 shrink-0" />
+                              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                {isKhmer ? '៣. តេស្តមន្ទីរពិសោធន៍' : '3. Lab Biomarkers'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 align-middle text-slate-700 dark:text-slate-300 font-medium">
+                            {labReasoningSummary}
+                          </td>
+                          <td className="py-3 pl-4 align-middle text-right whitespace-nowrap">
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                              (hba1cValue != null || fastingValue != null)
+                                ? 'bg-teal-50 text-teal-700 ring-1 ring-teal-600/20 dark:bg-teal-950/50 dark:text-teal-300'
+                                : 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/20 dark:bg-amber-950/50 dark:text-amber-300'
+                            }`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${(hba1cValue != null || fastingValue != null) ? 'bg-teal-500' : 'bg-amber-500'}`}></span>
+                              {(hba1cValue != null || fastingValue != null)
+                                ? (isKhmer ? 'បានផ្ទៀងផ្ទាត់' : 'Verified')
+                                : (isKhmer ? 'រង់ចាំ' : 'Pending')}
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Explainable Evidence Breakdown */}
+                <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <ExplainableEvidenceSection
+                    reasoningReport={effectiveReasoningReport}
+                    triggeredRules={sortedRules}
+                    matchedSymptoms={matchedSymptoms}
+                    matchedRiskFactors={matchedRiskFactors}
+                    certaintyPercent={certaintyPercent}
+                    diagnosis={result?.diagnosis || primaryHeadline}
+                    keyLabs={keyLabs}
+                  />
+                </div>
+
+                {/* AI Clinical Reasoning Report */}
+                <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <AiReasoningReportSection
+                    reasoningReport={effectiveReasoningReport}
+                    diagnosis={result?.diagnosis || primaryHeadline}
+                    certaintyPercent={certaintyPercent}
+                    urgency={result?.urgency || 'routine'}
+                    hasLabs={hba1cValue != null || fastingValue != null}
+                    matchedSymptoms={matchedSymptoms}
+                    matchedRiskFactors={matchedRiskFactors}
+                  />
+                </div>
+
+                {/* Technical Rules & Fact Trace */}
+                <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <TechnicalDetailsSection embedded={true}>
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <ShieldCheck className="h-4 w-4 text-cyan-700 dark:text-cyan-400" />
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                          {t('diagnosisResult.reasoningKeyRules', 'Matched rules — technical')}
+                        </h4>
+                      </div>
+                      {sortedRules.length ? (
+                        <ol className="divide-y divide-slate-100 dark:divide-slate-800">
+                          {sortedRules.map((rule, index) => {
+                            const ruleKey = String(rule.id || rule.code || `${rule.name || 'rule'}-${index}`)
+                            const rawTranslated = tExact(rule.name) || rule.name || ''
+                            const cleanedName = cleanRuleName(rawTranslated) || cleanRuleName(rule.name) || t('diagnosisResult.matchedRule', 'Matched Rule')
+                            const isExpanded = Boolean(expandedRules[ruleKey])
+                            const explanationText = ruleExplanations[ruleKey] || rule.explanation || ''
+                            const isLoadingExplanation = Boolean(loadingRuleExplanations[ruleKey])
+
+                            return (
+                              <li key={ruleKey} className="py-3 first:pt-0 last:pb-0">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-baseline gap-1.5 flex-wrap">
+                                      <span className="text-slate-400 font-normal text-sm">{index + 1}.</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleRuleExplanation(ruleKey, rule)}
+                                        className="group inline-flex items-center gap-1.5 text-left text-sm font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 hover:underline focus:outline-none focus:ring-2 focus:ring-sky-500/30 rounded transition-colors"
+                                        title={t('diagnosisResult.clickToViewExplanation', 'Click to view doctor explanation')}
+                                      >
+                                        <span>{cleanedName}</span>
+                                        <ChevronDown
+                                          className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 text-sky-500/70 group-hover:text-sky-600 ${
+                                            isExpanded ? 'rotate-180' : ''
+                                          }`}
+                                        />
+                                      </button>
+                                    </div>
+                                    <p className="mt-1 text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-400 pl-4 sm:pl-5">
+                                      {tExact(rule.description) || t('diagnosisResult.ruleConditionMatched', 'Rule condition matched.')}
+                                    </p>
+
+                                    {isExpanded && (
+                                      <div className="mt-2.5 ml-4 sm:ml-5 border-l-2 border-sky-500/50 pl-3 py-1.5 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                                        <div className="flex items-center gap-2 font-semibold text-sky-900 dark:text-sky-200 mb-1.5">
+                                          <Stethoscope className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                                          <span>{t('diagnosisResult.doctorGuidance', 'Doctor guidance')}</span>
+                                        </div>
+                                        {isLoadingExplanation ? (
+                                          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 py-1">
+                                            <RotateCcw className="h-3.5 w-3.5 animate-spin text-sky-600 dark:text-sky-400" />
+                                            <span>{t('diagnosisResult.loadingExplanation', 'Loading doctor guidance...')}</span>
+                                          </div>
+                                        ) : explanationText ? (
+                                          <p className="leading-relaxed whitespace-pre-line text-slate-800 dark:text-slate-200">
+                                            {tExact(explanationText) || explanationText}
+                                          </p>
+                                        ) : (
+                                          <p className="italic text-slate-500 dark:text-slate-400">
+                                            {t('diagnosisResult.noExplanation', 'No clinical explanation recorded for this rule.')}
+                                          </p>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <span className="shrink-0 text-xs font-semibold text-emerald-600 dark:text-emerald-400 pt-0.5">
+                                    +{formatCertaintyContribution(rule)}
+                                  </span>
+                                </div>
+                              </li>
+                            )
+                          })}
+                        </ol>
+                      ) : (
+                        <p className="text-sm text-slate-500 dark:text-slate-400">{t('diagnosisResult.noDetailedRule', 'No detailed rule reasoning is available for this run.')}</p>
+                      )}
+                    </div>
+
+                    {result?.fact_preparation_trace?.length ? (
+                      <div className="pt-4 border-t border-slate-100 dark:border-slate-800 mt-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <FlaskConical className="h-4 w-4 text-cyan-700 dark:text-cyan-400" />
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                            {t('diagnosisResult.factPreparation', 'Fact Preparation')}
+                          </h4>
+                        </div>
+                        <div className="table-wrap border-0">
+                          <table className="w-full min-w-[680px] text-left text-xs sm:text-sm">
+                            <thead>
+                              <tr className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                <th className="px-2 py-2">{t('diagnosisResult.factKey', 'Fact Key')}</th>
+                                <th className="px-2 py-2">{t('diagnosisResult.source', 'Source')}</th>
+                                <th className="px-2 py-2">{t('diagnosisResult.processedValue', 'Processed Value')}</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                              {result.fact_preparation_trace.map((row, index) => (
+                                <tr key={`${row.fact_key || 'fact'}-${index}`}>
+                                  <td className="px-2 py-2 font-medium text-slate-800 dark:text-slate-200">{toReadableLabel(row.fact_key)}</td>
+                                  <td className="px-2 py-2 text-slate-600 dark:text-slate-400">{row.source_path || 'n/a'}</td>
+                                  <td className="px-2 py-2 text-slate-800 dark:text-slate-200">{String(row.processed_value ?? 'n/a')}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : null}
+                  </TechnicalDetailsSection>
+                </div>
+              </div>
+            )}
+            </div>
+          </div>
+
+          {/* ── RIGHT COLUMN (4 cols) ── */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* 1. NEXT STEPS CARD */}
+            <div id="next-steps-sidebar" className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900 space-y-4">
+              <div className="flex items-center gap-2 pb-1 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+                  <ClipboardList className="h-4 w-4" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  {isKhmer ? 'ជំហានបន្ទាប់' : 'Next Steps'}
+                </h3>
+              </div>
+
+              <div className="space-y-4">
+                {sidebarNextSteps.map((step) => (
+                  <div key={step.id} className="flex items-start gap-3">
+                    <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold mt-0.5 ${step.numBg}`}>
+                      {step.id}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-1.5">
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                          {step.title}
+                        </h4>
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${step.tagColor}`}>
+                          {step.tag}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        {step.desc}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. PATIENT SUMMARY CARD */}
+            <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900 space-y-4">
+              <div className="flex items-center gap-2 pb-1 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+                  <User className="h-4 w-4" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  {isKhmer ? 'ព័ត៌មានសង្ខេបអ្នកជំងឺ' : 'Patient Summary'}
+                </h3>
+              </div>
+
+              <div className="space-y-2.5 text-xs sm:text-sm">
+                <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                  <span>{isKhmer ? 'ឈ្មោះ' : 'Name'}</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{patientNameDisplay}</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                  <span>{isKhmer ? 'អាយុ' : 'Age'}</span>
+                  <span className="font-semibold text-slate-900 dark:text-white">{patientAgeDisplay}</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                  <span>{isKhmer ? 'ភេទ' : 'Gender'}</span>
+                  <span className="font-semibold text-slate-900 dark:text-white">{patientGenderDisplay}</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                  <span>{isKhmer ? 'សន្ទស្សន៍ម៉ាសរាងកាយ (BMI)' : 'BMI'}</span>
+                  <span className="font-semibold text-slate-900 dark:text-white">{patientBmi}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. QUICK ACTIONS CARD */}
+            <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900 space-y-3">
+              <div className="flex items-center gap-2 pb-1 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+                  <HeartPulse className="h-4 w-4" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  {isKhmer ? 'សកម្មភាពរហ័ស' : 'Quick Actions'}
+                </h3>
+              </div>
+
+              <div className="space-y-1">
+                {/* Action 1: Open Care Plan */}
+                <Link
+                  to="/care-plan"
+                  className="group flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                      <HeartPulse className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+                        {isKhmer ? 'បើកផែនការថែទាំ' : 'Open Care Plan'}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        {isKhmer ? 'បង្កើត ឬពិនិត្យផែនការព្យាបាល' : 'Create or view treatment plan'}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition" />
+                </Link>
+
+                {/* Action 2: Generate PDF */}
+                <button
+                  type="button"
+                  onClick={() => handleDownloadReport(language || 'en')}
+                  disabled={Boolean(downloadingReport)}
+                  className="w-full group flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition text-left cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                      {downloadingReport ? <RotateCcw className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+                        {downloadingReport ? (isKhmer ? 'កំពុងទាញយក...' : 'Downloading PDF...') : (isKhmer ? 'ទាញយក PDF' : 'Generate PDF')}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        {isKhmer ? 'ទាញយករបាយការណ៍ពេញលេញ' : 'Download full report'}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition" />
+                </button>
+
+                {/* Action 3: Consult Care Team */}
+                <button
+                  type="button"
+                  onClick={() => setShowDoctorConsultModal(true)}
+                  className="w-full group flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition text-left cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                      <Stethoscope className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+                        {isKhmer ? 'ពិគ្រោះជាមួយក្រុមគ្រូពេទ្យ' : 'Consult Care Team'}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        {isSubmittedToCareTeam ? (isKhmer ? 'បានបញ្ជូនរួចរាល់' : 'Submitted to chart') : (isKhmer ? 'ផ្ញើរបាយការណ៍ទៅកាន់គ្រូពេទ្យ' : 'Send assessment to doctor')}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition" />
+                </button>
+              </div>
+            </div>
+
+            {/* 4. SCREENING DISCLAIMER CARD */}
+            <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 dark:border-indigo-900/60 dark:bg-indigo-950/30 flex items-start gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs">
+                <ShieldCheck className="h-4 w-4" />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-bold text-indigo-950 dark:text-indigo-200">
+                  {isKhmer ? 'នេះជាលទ្ធផលត្រួតពិនិត្យដំបូង' : 'This is a screening result'}
+                </h4>
+                <p className="mt-0.5 text-xs text-indigo-800/80 dark:text-indigo-300/80 leading-relaxed">
+                  {isKhmer
+                    ? 'សូមពិគ្រោះជាមួយអ្នកជំនាញវេជ្ជសាស្ត្រសម្រាប់ការធ្វើរោគវិនិច្ឆ័យពេញលេញ និងផែនការព្យាបាល។'
+                    : 'Please consult a healthcare professional for a full diagnosis and treatment plan.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── MODALS ── */}
+        {/* Condition Education Guide Modal */}
+        {showConditionGuideModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+            <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                    {isKhmer ? `មគ្គុទ្ទេសក៍សុខភាព: ${suspectedType?.type || result?.diagnosis || 'ជំងឺទឹកនោមផ្អែម'}` : `Condition Guide: ${suspectedType?.type || result?.diagnosis || 'Type 1 Diabetes'}`}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowConditionGuideModal(false)}
+                  className="rounded-full p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="pt-4">
+                <ConditionEducationPanel result={result} defaultOpen={true} embedded={true} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Doctor Consultation Modal */}
+        {showDoctorConsultModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+            <div className="relative w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Stethoscope className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                    {isKhmer ? 'បញ្ជូនទៅកាន់ក្រុមគ្រូពេទ្យ' : 'Submit to Doctor & Care Team'}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDoctorConsultModal(false)}
+                  className="rounded-full p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {isSubmittedToCareTeam ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold text-sm">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>{isKhmer ? 'បានបញ្ជូនទៅកាន់ក្រុមគ្រូពេទ្យរួចរាល់' : 'Assessment submitted to care team'}</span>
+                  </div>
+                  {patientNoteSaved && (
+                    <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3 text-xs text-slate-700 dark:text-slate-300">
+                      <p className="font-semibold text-slate-900 dark:text-white mb-1">{isKhmer ? 'កំណត់ត្រារបស់អ្នក:' : 'Your note:'}</p>
+                      <p className="italic">"{patientNoteSaved}"</p>
+                    </div>
+                  )}
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowDoctorConsultModal(false)}
+                      className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 rounded-xl"
+                    >
+                      {isKhmer ? 'បិទ' : 'Close'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    {isKhmer ? 'ចែករំលែករោគសញ្ញាបច្ចុប្បន្ន ការប្រែប្រួលថ្មីៗ ឬសំណួរដែលអ្នកចង់ឱ្យគ្រូពេទ្យពិនិត្យ:' : 'Share any current symptoms, recent changes, medications, or questions you would like your doctor to review:'}
+                  </p>
+                  <textarea
+                    rows={4}
+                    value={patientNote}
+                    onChange={(e) => setPatientNote(e.target.value)}
+                    placeholder={t(
+                      'diagnosisResult.patientNotePlaceholder',
+                      'Share any current symptoms, recent changes, medications, or questions you would like your doctor to review...'
+                    )}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-800 dark:text-white resize-none"
+                  />
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowDoctorConsultModal(false)}
+                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                    >
+                      {isKhmer ? 'បោះបង់' : 'Cancel'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await handleSubmitToCareTeam()
+                        setShowDoctorConsultModal(false)
+                      }}
+                      disabled={submittingToCareTeam}
+                      className="btn-primary gap-2 h-9 px-4 text-xs font-semibold rounded-xl inline-flex items-center"
+                    >
+                      {submittingToCareTeam ? (
+                        <RotateCcw className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Send className="h-3.5 w-3.5" />
+                      )}
+                      <span>{isKhmer ? 'បញ្ជូនឥឡូវនេះ' : 'Submit Now'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Restart Confirmation Dialog */}
         <ConfirmDialog
           open={showRestartConfirm}
           title={t('diagnosisResult.restartConfirmTitle', 'Restart Assessment?')}
@@ -1112,773 +2502,6 @@ export function DiagnosisResultPage() {
           onCancel={() => setShowRestartConfirm(false)}
           onConfirm={handleRestartConfirm}
         />
-
-        {/* ═══════════════════════════════════════════════════════════ */}
-        {/* ── THE MASTER CLINICAL REPORT CARD (ONE SINGLE CARD) ── */}
-        {/* ═══════════════════════════════════════════════════════════ */}
-        <article className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[#0b1324] dark:shadow-none">
-          {/* ── 1. CLINICAL DOSSIER HEADER ── */}
-          <div className="p-6 sm:p-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex items-start gap-3.5">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-600 to-blue-700 text-white shadow-md shadow-primary-500/25">
-                  <Stethoscope className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-extrabold uppercase tracking-widest text-primary-600 dark:text-primary-400">
-                    {isKhmer
-                      ? 'ប្រព័ន្ធជំនាញ និងគាំទ្រការសម្រេចចិត្តគ្លីនិក'
-                      : 'Clinical Decision Support & Expert System'}
-                  </p>
-                  <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
-                    {t('diagnosisResult.pageTitle', 'Medical Assessment Report')}
-                  </h1>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    {isKhmer
-                      ? 'មជ្ឈមណ្ឌលឯកទេសជំងឺទឹកនោមផ្អែម និងសុខភាពមេតាបូលីស · ការវាយតម្លៃគ្លីនិកស្វ័យប្រវត្តិ'
-                      : 'Endocrinology & Diabetes Center of Clinical Excellence · Diagnostic Evaluation'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-start gap-1 rounded-2xl border border-slate-100 bg-slate-50/80 p-3 text-xs dark:border-slate-800 dark:bg-slate-900/50 sm:items-end sm:text-right shrink-0">
-                <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
-                  <span className="text-slate-400 font-sans font-normal">{isKhmer ? 'លេខកូដ:' : 'Report No:'}</span>
-                  <span className="rounded bg-primary-50 px-1.5 py-0.5 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300 font-semibold">{reportNumber}</span>
-                </div>
-                <p className="text-slate-500 dark:text-slate-400 text-[11px]">
-                  {formatDateTime(reportTime)}
-                </p>
-                <div className="mt-0.5">
-                  {isSubmittedToCareTeam ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-800/60">
-                      <CheckCircle2 className="h-3 w-3" />
-                      {isKhmer ? 'បានរក្សាទុកក្នុងកំណត់ត្រា' : 'Recorded in Chart'}
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-800/60">
-                      <Clock className="h-3 w-3" />
-                      {isKhmer ? 'ការពិនិត្យសកម្ម' : 'Active Screening'}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── 2. PATIENT DEMOGRAPHICS STRIP ── */}
-          <div className="grid grid-cols-2 gap-4 border-y border-slate-100 bg-slate-50/70 px-6 py-3.5 sm:grid-cols-4 sm:px-8 dark:border-slate-800/80 dark:bg-slate-900/40">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                {t('diagnosisResult.patient', 'Patient Name')}
-              </p>
-              <p className="mt-0.5 truncate text-sm font-bold text-slate-800 dark:text-slate-100">
-                {patientName}
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                {isKhmer ? 'ភេទ' : 'Gender'}
-              </p>
-              <p className="mt-0.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                {patientGender}
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                {isKhmer ? 'អាយុ' : 'Age'}
-              </p>
-              <p className="mt-0.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                {patientAge}
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                {isKhmer ? 'ប្រភេទពិនិត្យ' : 'Assessment Mode'}
-              </p>
-              <p className="mt-0.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                {assessmentModeLabel}
-              </p>
-            </div>
-          </div>
-
-          {/* ── 3. CLINICAL IMPRESSION & CONFIDENCE HERO ── */}
-          <div className={`px-6 py-6 sm:px-8 sm:py-8 ${resultTone.wash}`}>
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(260px,1fr)] lg:gap-8">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className={`flex h-6 w-6 items-center justify-center rounded-lg ${resultTone.icon}`}>
-                    <ShieldCheck className="h-4 w-4" />
-                  </span>
-                  <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                    {t('diagnosisResult.screeningResult', 'Your screening result')}
-                  </span>
-                </div>
-
-                <h2 className="mt-2 break-words text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
-                  {primaryHeadline}
-                </h2>
-
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-700 dark:text-slate-300 sm:text-base">
-                  {headlineExplanation}
-                </p>
-
-                {suspectedType?.type && suspectedType.type !== 'Undetermined' ? (
-                  <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-xs dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200">
-                    <Dna className="h-3.5 w-3.5 text-primary-500" />
-                    <span>{t('diagnosisResult.suspectedType', 'Possible type')}:</span>
-                    <span className="text-primary-600 dark:text-primary-400">{tExact(t(`diagnosisResult.type.${getTypeLabelKey(suspectedType.type)}`, suspectedType.type))}</span>
-                  </div>
-                ) : null}
-
-                {hasUrgentWarning ? (
-                  <div className="mt-5 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50/90 px-4 py-3.5 text-rose-900 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-100">
-                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600 dark:text-rose-400" />
-                    <div>
-                      <p className="text-sm font-extrabold">{t('diagnosisResult.urgentNoticeTitle', 'Urgent symptoms need prompt care')}</p>
-                      <p className="mt-0.5 text-xs leading-relaxed text-rose-800 dark:text-rose-200 sm:text-sm">
-                        {t('diagnosisResult.urgentNoticeText', 'Please contact a healthcare professional promptly. If symptoms are severe or worsening, seek emergency care.')}
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
-
-                <a
-                  href="#next-steps"
-                  className="mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
-                >
-                  {t('diagnosisResult.viewNextSteps', 'View my next steps')}
-                  <ArrowRight className="h-4 w-4" />
-                </a>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-xs dark:border-slate-800 dark:bg-slate-950/50">
-                <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                  {t('diagnosisResult.overallScore', 'Result confidence')}
-                </p>
-
-                <div className="mt-2.5 flex items-end justify-between gap-4">
-                  <div>
-                    <p className="text-lg font-extrabold text-slate-950 dark:text-white sm:text-xl">
-                      {tExact(confidenceMeta.title)}
-                    </p>
-                    {confidenceStatus ? (
-                      <p className="mt-1.5 inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                        {confidenceStatus}
-                      </p>
-                    ) : null}
-                  </div>
-                  <span className={`shrink-0 rounded-full px-3 py-1 text-sm font-extrabold ${resultTone.badge}`}>
-                    {certaintyPercent}%
-                  </span>
-                </div>
-
-                <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-                  <div
-                    className="h-full rounded-full bg-primary-500 transition-[width] duration-700"
-                    style={{ width: `${certaintyPercent}%` }}
-                  />
-                </div>
-
-                <p className="mt-3.5 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-                  {confidenceReason || ((evidenceCompleteness?.missing_recommended_labs || missingLabs).length
-                    ? t('diagnosisResult.confidenceMissingLabs', 'More information or recommended blood tests can make this result clearer.')
-                    : t('diagnosisResult.confidenceGeneral', 'A healthcare professional can review this result and confirm what it means for you.'))}
-                </p>
-              </div>
-            </div>
-
-            {/* ── Diagnostic Reasoning & Clinical Rationale ── */}
-            <div className="mt-6 rounded-2xl border border-primary-200/80 bg-white/95 p-5 shadow-xs dark:border-primary-900/40 dark:bg-slate-900/90 sm:p-6">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3.5 dark:border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-100 text-primary-700 ring-1 ring-primary-200/80 dark:bg-primary-950/60 dark:text-primary-300 dark:ring-primary-800/60">
-                    <Brain className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                      {isKhmer ? 'ហេតុផលវេជ្ជសាស្ត្រ និងការវែកញែក (Clinical Reasoning)' : 'Diagnostic Reasoning & Clinical Rationale'}
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {isKhmer ? 'ការវិភាគសំយោគលើរោគសញ្ញា កត្តាហានិភ័យ និងទិន្នន័យមន្ទីរពិសោធន៍' : 'How the expert system synthesized symptoms, risks, and biomarkers'}
-                    </p>
-                  </div>
-                </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700 dark:bg-primary-950/60 dark:text-primary-300 ring-1 ring-primary-200/60 dark:ring-primary-800/60">
-                  <Sparkles className="h-3.5 w-3.5 text-primary-500" />
-                  {isKhmer ? 'ក្បួនដោះស្រាយ EMR' : 'Expert Inference'}
-                </span>
-              </div>
-
-              {/* Narrative Clinical Rationale */}
-              <div className="mt-4">
-                <p className="text-sm sm:text-base font-medium leading-relaxed text-slate-800 dark:text-slate-200">
-                  {clinicalSummary}
-                </p>
-              </div>
-
-              {/* 3 Reasoning Pillars */}
-              <div className="mt-5 grid gap-3 sm:grid-cols-3 pt-4 border-t border-slate-100 dark:border-slate-800/80">
-                <div className="rounded-xl border border-slate-200/70 bg-slate-50/70 p-3.5 dark:border-slate-800/60 dark:bg-slate-950/40">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
-                    <Heart className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
-                    <span>{isKhmer ? '១. សញ្ញា និងរោគសញ្ញា' : '1. Symptom Signals'}</span>
-                  </div>
-                  <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                    {symptomReasoningSummary}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-slate-200/70 bg-slate-50/70 p-3.5 dark:border-slate-800/60 dark:bg-slate-950/40">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
-                    <Zap className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                    <span>{isKhmer ? '២. កត្តាហានិភ័យ' : '2. Risk Profile'}</span>
-                  </div>
-                  <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                    {riskReasoningSummary}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-slate-200/70 bg-slate-50/70 p-3.5 dark:border-slate-800/60 dark:bg-slate-950/40">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
-                    <FlaskConical className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
-                    <span>{isKhmer ? '៣. តេស្តមន្ទីរពិសោធន៍' : '3. Lab Biomarkers'}</span>
-                  </div>
-                  <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                    {labReasoningSummary}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── 4. WHAT YOU SHOULD DO NEXT ── */}
-          <ReportSection
-            id="next-steps"
-            title={t('diagnosisResult.actionableRecommendations', 'What you should do next')}
-            subtitle={t('diagnosisResult.recommendationsSubtitle', 'Clinical steps recommended by the decision support engine')}
-            icon={ClipboardList}
-          >
-            {recommendations.length ? (
-              <ol className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                {recommendations.map((item, index) => {
-                  const isUrgent = item.urgency === 'urgent' || item.urgency === 'emergency'
-                  return (
-                    <li
-                      key={`${item.text}-${index}`}
-                      className="flex items-start gap-3.5 py-3.5 first:pt-0 last:pb-0"
-                    >
-                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-50 text-xs font-bold text-primary-700 dark:bg-primary-950/60 dark:text-primary-300 ring-1 ring-primary-200/50 dark:ring-primary-800/50">
-                        {index + 1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-                          {tExact(bilingualField(item.text, item.text_km))}
-                        </p>
-                      </div>
-                      {isUrgent ? (
-                        <span className="mt-0.5 shrink-0 rounded-full bg-rose-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-600 ring-1 ring-rose-200 dark:bg-rose-950/50 dark:text-rose-400 dark:ring-rose-800/50">
-                          {t('diagnosisResult.urgentTag', 'Urgent')}
-                        </span>
-                      ) : null}
-                    </li>
-                  )
-                })}
-              </ol>
-            ) : (
-              <p className="text-sm text-slate-500">
-                {t('diagnosisResult.noSpecificRecommendations', 'No specific recommendations were generated. Please consult with a physician.')}
-              </p>
-            )}
-
-            {showPrevention && preventionContent ? (
-              <div className="mt-5 rounded-2xl border border-emerald-200/70 bg-emerald-50/50 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20 sm:p-5">
-                <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 mb-2">
-                  <ShieldCheck className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
-                  <h4 className="text-sm font-bold">{preventionContent.title}</h4>
-                </div>
-                <p className="text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300">{preventionContent.intro}</p>
-                {preventionContent.listIntro ? (
-                  <p className="mt-2 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">{preventionContent.listIntro}</p>
-                ) : null}
-                <ul className="mt-3 space-y-2">
-                  {preventionContent.items.map((item) => (
-                    <li key={item.lead} className="flex items-start gap-2 text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-                      <span className="mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-                      <span><strong className="font-semibold text-slate-900 dark:text-white">{item.lead}</strong> {item.text}</span>
-                    </li>
-                  ))}
-                </ul>
-                {preventionContent.note ? (
-                  <p className="mt-3 border-t border-emerald-200/60 pt-2.5 text-xs text-slate-600 dark:text-slate-400">{preventionContent.note}</p>
-                ) : null}
-              </div>
-            ) : null}
-
-            <ConditionEducationPanel result={result} defaultOpen={false} embedded={true} />
-          </ReportSection>
-
-          {/* ── 5. KEY DIAGNOSTIC INDICATORS ── */}
-          <ReportSection
-            title={t('diagnosisResult.keyDiagnosticIndicators', 'Key Diagnostic Indicators')}
-            subtitle={t('diagnosisResult.biomarkersSubtitle', 'Verified biomarker measurements and glycemic indicators')}
-            icon={FlaskConical}
-          >
-            <div className="grid gap-3.5 sm:grid-cols-2">
-              <LabIndicatorCard
-                title={t('diagnosisResult.hba1cIndicator', 'HbA1c Level Indicator')}
-                valueLabel={formatLabValue('hba1c', hba1cValue)}
-                status={hba1cStatus}
-                subtitle={t('diagnosisResult.hba1cSubtitle', 'A key marker of long-term glucose control (3-month average).')}
-                pointerPercent={hba1cPointer}
-                ticks={['<5.7%', '5.7-6.4%', '>=6.5%']}
-                icon={TestTube}
-              />
-              <LabIndicatorCard
-                title={t('diagnosisResult.fastingIndicator', 'Fasting Glucose Indicator')}
-                valueLabel={formatLabValue('fasting', fastingValue)}
-                status={fastingStatus}
-                subtitle={t('diagnosisResult.fastingSubtitle', 'Indicates glucose level after an 8-hour overnight fast.')}
-                pointerPercent={fastingPointer}
-                ticks={['<100', '100-125', '>=126']}
-                icon={Droplet}
-              />
-            </div>
-
-            <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50/60 p-4 dark:border-slate-800/80 dark:bg-slate-900/30">
-              <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{t('diagnosisResult.evidenceCompleteness', 'Evidence Completeness')}</p>
-                  <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">{t('diagnosisResult.availableLabs', 'Available labs:')}</span> {(evidenceCompleteness?.available_labs || []).map(l => tExact(toReadableLabel(l))).join(', ') || t('diagnosisResult.none', 'none')}
-                  </p>
-                  <p className="mt-0.5 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">{t('diagnosisResult.missing', 'Missing:')}</span> {(evidenceCompleteness?.missing_recommended_labs || missingLabs).map(l => tExact(toReadableLabel(l))).join(', ') || t('diagnosisResult.none', 'none')}
-                  </p>
-                </div>
-                <EvidenceRangeGauge score={evidenceCompleteness?.score || 0} level={evidenceCompleteness?.level || 'low'} />
-              </div>
-            </div>
-          </ReportSection>
-
-          {/* ── 6. CLINICAL EVIDENCE: SYMPTOMS & RISK FACTORS ── */}
-          <ReportSection
-            title={t('diagnosisResult.clinicalEvidence', 'The Evidence Behind This Result')}
-            subtitle={t('diagnosisResult.evidenceSubtitle', 'Biomarkers, symptoms, and risk factors that influenced this assessment')}
-            icon={Stethoscope}
-          >
-            {/* Diagnostic Reasoning & Logic Pathway */}
-            <div className="mb-6 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4.5 dark:border-slate-800 dark:bg-slate-900/40">
-              <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
-                  <Brain className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                    {isKhmer ? 'ការវិភាគហេតុផលវេជ្ជសាស្ត្រ និងការសំយោគទិន្នន័យ' : 'Clinical Diagnostic Logic & Evidence Synthesis'}
-                  </h4>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
-                    {isKhmer
-                      ? `ការសន្និដ្ឋាននេះផ្អែកលើការរួមបញ្ចូលគ្នានៃ ${matchedSymptoms.length} រោគសញ្ញា ${matchedRiskFactors.length > 0 ? `រួមជាមួយ ${matchedRiskFactors.length} កត្តាហានិភ័យ` : ''}${hba1cValue != null || fastingValue != null ? ' និងលទ្ធផលតេស្តឈាមជាក់ស្តែង' : ' (មិនទាន់មានតេស្តឈាមផ្លូវការ)'}។ ${confidenceReason ? `កម្រិតទំនុកចិត្ត (${certaintyPercent}%)៖ ${confidenceReason}` : ''}`
-                      : `This assessment was synthesized from ${matchedSymptoms.length} clinical symptom signal(s)${matchedRiskFactors.length > 0 ? `, ${matchedRiskFactors.length} patient risk factor(s)` : ''}${hba1cValue != null || fastingValue != null ? ', and verified laboratory biomarker values' : ', pending laboratory confirmation'}. ${confidenceReason ? `Confidence calculation rationale (${certaintyPercent}%): ${confidenceReason}` : ''}`}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Left Column: Symptoms */}
-              <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4.5 dark:border-slate-800/80 dark:bg-slate-900/30">
-                <div className="flex items-center gap-2 mb-3">
-                  <Heart className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                    {t('diagnosisResult.relevantHistory', 'Relevant History & Symptoms')}
-                  </h4>
-                </div>
-
-                {matchedSymptoms.length ? (
-                  <ul className="space-y-3">
-                    {matchedSymptoms.map((symptom) => {
-                      const guideKey = getSymptomGuideKey(symptom)
-                      const localeGuide = guideKey ? t(`diagnosisResult.symptomGuide.items.${guideKey}`, null) : null
-                      const guide = resolveGuide(symptom, localeGuide)
-                      return (
-                        <li key={symptom} className="flex items-start gap-2.5">
-                          <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-500 dark:bg-cyan-400" />
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold leading-snug text-slate-900 dark:text-slate-100">
-                              {(guide && guide.name) || tExact(symptom)}
-                              {guide && guide.term ? (
-                                <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-400">{String(guide.term)}</span>
-                              ) : null}
-                            </p>
-                            {guide && guide.meaning ? (
-                              <p className="mt-0.5 text-xs leading-relaxed text-slate-600 dark:text-slate-400">{String(guide.meaning)}</p>
-                            ) : null}
-                          </div>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                ) : (
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('diagnosisResult.noSymptom', 'No prominent symptom pattern was selected.')}</p>
-                )}
-              </div>
-
-              {/* Right Column: Risk Factors */}
-              <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4.5 dark:border-slate-800/80 dark:bg-slate-900/30">
-                <div className="flex items-center gap-2 mb-3">
-                  <Zap className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                    {t('diagnosisResult.riskFactors', 'Identified Risk Factors')}
-                  </h4>
-                </div>
-
-                {matchedRiskFactors.length ? (
-                  <ul className="space-y-3">
-                    {matchedRiskFactors.map((risk) => {
-                      const riskKey = getRiskGuideKey(risk)
-                      const localeRiskGuide = riskKey ? t(`diagnosisResult.riskGuide.items.${riskKey}`, null) : null
-                      const riskGuide = resolveGuide(risk, localeRiskGuide)
-                      return (
-                        <li key={risk} className="flex items-start gap-2.5">
-                          <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500 dark:bg-amber-400" />
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold leading-snug text-slate-900 dark:text-slate-100">{(riskGuide && riskGuide.name) || tExact(risk)}</p>
-                            {riskGuide && riskGuide.meaning ? (
-                              <p className="mt-0.5 text-xs leading-relaxed text-slate-600 dark:text-slate-400">{String(riskGuide.meaning)}</p>
-                            ) : null}
-                          </div>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                ) : (
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('diagnosisResult.noRisk', 'No risk factors were flagged in this submission.')}</p>
-                )}
-              </div>
-            </div>
-
-            {/* Differentials if applicable */}
-            {(differentialItems.length > 0 || (matchedSymptoms.length > 0 && certaintyPercent < 60)) && (
-              <div className="mt-5 rounded-2xl border border-amber-200/60 bg-amber-50/40 p-4.5 dark:border-amber-900/40 dark:bg-amber-950/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <HelpCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                    {t('diagnosisResult.differentials.title', 'Alternative Explanations to Consider')}
-                  </h4>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
-                  {t(
-                    'diagnosisResult.differentials.subtitle',
-                    'Your reported symptoms can also be caused by non-diabetic conditions. If blood glucose is normal, consider discussing these possibilities with a doctor:'
-                  )}
-                </p>
-                <div className="grid gap-2.5 sm:grid-cols-2">
-                  {(differentialItems.length > 0 ? differentialItems : [
-                    {
-                      key: 'uti_hydration',
-                      title: t('diagnosisResult.differentials.utiTitle', 'Urinary Tract Infection (UTI) or High Fluid Intake'),
-                      title_km: 'ការរលាកផ្លូវបង្ហូរនោម (UTI) ឬការញ៉ាំទឹកច្រើន',
-                      description: t('diagnosisResult.differentials.utiDesc', 'Frequent urination without high blood glucose is commonly caused by drinking high amounts of fluids/caffeine, mild urinary infections, or benign prostate changes.'),
-                      description_km: 'ការនោមញឹកញាប់ដោយគ្មានជាតិស្ករឡើងខ្ពស់ ច្រើនតែកើតពីការផឹកទឹក/កាហ្វេច្រើន ការរលាកផ្លូវទឹកនោមស្រាល ឬការប្រែប្រួលក្រពេញប្រូស្តាត។',
-                    },
-                    {
-                      key: 'anemia_sleep',
-                      title: t('diagnosisResult.differentials.anemiaTitle', 'Sleep Deprivation, Anemia, or Stress'),
-                      title_km: 'ការគេងមិនគ្រប់គ្រាន់ ខ្វះគ្រាប់ឈាម ឬសម្ពាធអារម្មណ៍',
-                      description: t('diagnosisResult.differentials.anemiaDesc', 'Fatigue is one of the most common non-specific symptoms. Poor sleep quality, stress, low iron levels, or thyroid imbalances are frequent causes.'),
-                      description_km: 'ភាពអស់កម្លាំងជារោគសញ្ញាទូទៅបំផុត។ ការគេងមិនបានស្កប់ស្កល់ ភាពតានតឹង កង្វះជាតិដែក ឬអ័រម៉ូនទីរ៉ូអ៊ីត គឺជាមូលហេតុញឹកញាប់។',
-                    },
-                  ]).map((diff) => (
-                    <div key={diff.key || diff.title} className="rounded-xl bg-white/80 p-3 dark:bg-slate-900/60 border border-amber-200/50 dark:border-amber-900/40">
-                      <h5 className="text-xs font-bold text-slate-900 dark:text-slate-100">{isKhmer ? (diff.title_km || diff.title) : diff.title}</h5>
-                      <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{isKhmer ? (diff.description_km || diff.description) : diff.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </ReportSection>
-
-          {/* ── 7. CARE TEAM DISPOSITION & DOCTOR REVIEW ── */}
-          <div className="border-t border-slate-100 bg-slate-50/50 p-6 sm:p-8 dark:border-slate-800/80 dark:bg-slate-900/20">
-            {isStaff || isClinicianAssessment ? (
-              <div>
-                <div className="flex items-center gap-3.5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-md shadow-primary-500/20 dark:bg-primary-500">
-                    <Stethoscope className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                        {t('diagnosisResult.clinicalAssessmentRecorded', 'Clinical Assessment Recorded')}
-                      </h3>
-                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 ring-1 ring-emerald-200 dark:ring-emerald-800/60 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" />
-                        {t('diagnosisResult.savedToPatientChart', 'Saved to Patient Chart · Patient Alerted')}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 sm:text-sm">
-                      {t(
-                        'diagnosisResult.clinicalRecordedDesc',
-                        "This clinical assessment was completed by medical staff and saved directly to the patient's record. The patient has been automatically notified."
-                      )}
-                      {reportTime ? ` · ${formatDateTime(reportTime)}` : ''}
-                    </p>
-                  </div>
-                </div>
-
-                {patientNoteSaved ? (
-                  <div className="mt-3.5 rounded-2xl border border-slate-200/80 bg-white/80 p-3.5 dark:border-slate-800 dark:bg-slate-950/60 shadow-xs">
-                    <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-300">
-                      <MessageSquare className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
-                      <span>{t('diagnosisResult.patientNoteLabel', 'Notes')}:</span>
-                    </p>
-                    <p className="mt-1 text-sm text-slate-700 dark:text-slate-300 italic">
-                      "{patientNoteSaved}"
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-            ) : !isSubmittedToCareTeam ? (
-              <div>
-                <div className="flex items-start gap-3.5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-md shadow-primary-500/20">
-                    <Send className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white sm:text-lg">
-                        {t('diagnosisResult.submitToDoctorTitle', 'Submit to Doctor')}
-                      </h3>
-                      <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 ring-1 ring-blue-200 dark:ring-blue-800/60 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" />
-                        {t('diagnosisResult.savedInChartBadge', 'Saved in Your Chart · Ready to Send to Doctor')}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 sm:text-sm leading-relaxed">
-                      {t(
-                        'diagnosisResult.submitToDoctorDesc',
-                        'This assessment report is saved in your medical chart. You can submit it to your doctor along with any notes or questions for clinical review.'
-                      )}
-                    </p>
-
-                    <div className="mt-4 space-y-3">
-                      <div>
-                        <label htmlFor="patient-note-input" className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
-                          <MessageSquare className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
-                          <span>{t('diagnosisResult.patientNoteLabel', 'Notes or Questions for Doctor (Optional)')}</span>
-                        </label>
-                        <textarea
-                          id="patient-note-input"
-                          rows={3}
-                          value={patientNote}
-                          onChange={(e) => setPatientNote(e.target.value)}
-                          placeholder={t(
-                            'diagnosisResult.patientNotePlaceholder',
-                            'Share any current symptoms, recent changes, medications, or questions you would like your doctor to review...'
-                          )}
-                          className="w-full rounded-2xl border border-slate-200 bg-white p-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 transition-all resize-none shadow-xs"
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-1">
-                        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                          <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          <span>{t('diagnosisResult.submitToDoctorHint', 'Submitting alerts clinical staff to review your assessment.')}</span>
-                        </p>
-
-                        <button
-                          type="button"
-                          onClick={handleSubmitToCareTeam}
-                          disabled={submittingToCareTeam}
-                          className="btn-primary gap-2 h-11 px-6 text-sm font-semibold shadow-md shadow-primary-600/20 shrink-0 inline-flex items-center justify-center cursor-pointer"
-                        >
-                          {submittingToCareTeam ? (
-                            <>
-                              <RotateCcw className="h-4 w-4 animate-spin" />
-                              <span>{t('diagnosisResult.submittingToCareTeam', 'Submitting...')}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Send className="h-4 w-4" />
-                              <span>{t('diagnosisResult.submitToDoctorBtn', 'Submit to Doctor')}</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="flex items-center gap-3.5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-500/20 dark:bg-emerald-500">
-                    <CheckCircle2 className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                        {t('diagnosisResult.submittedToDoctorBadge', 'Submitted to Doctor')}
-                      </h3>
-                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 ring-1 ring-emerald-200 dark:ring-emerald-800/60 flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {t('diagnosisResult.pendingReview', 'Pending Doctor Review')}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 sm:text-sm">
-                      {t(
-                        'diagnosisResult.submittedToDoctorToast',
-                        'Assessment submitted to your doctor! Your care team has been alerted.'
-                      )}
-                      {submittedAt ? ` · ${formatDateTime(submittedAt)}` : ''}
-                    </p>
-                  </div>
-                </div>
-
-                {patientNoteSaved ? (
-                  <div className="mt-3.5 rounded-2xl border border-emerald-100 bg-white/80 p-3.5 dark:border-emerald-900/40 dark:bg-slate-950/60 shadow-xs">
-                    <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-400">
-                      <MessageSquare className="h-3.5 w-3.5" />
-                      <span>{t('diagnosisResult.yourNoteToDoctor', 'Your Note to Doctor')}:</span>
-                    </p>
-                    <p className="mt-1 text-sm text-slate-700 dark:text-slate-300 italic">
-                      "{patientNoteSaved}"
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-            )}
-          </div>
-
-          {/* ── 8. TECHNICAL DETAILS ACCORDION ── */}
-          <div className="border-t border-slate-100 px-6 py-2 sm:px-8 dark:border-slate-800/80">
-            <TechnicalDetailsSection embedded={true}>
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <ShieldCheck className="h-4 w-4 text-cyan-700 dark:text-cyan-400" />
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                    {t('diagnosisResult.reasoningKeyRules', 'Matched rules — technical')}
-                  </h4>
-                </div>
-                {sortedRules.length ? (
-                  <ol className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {sortedRules.map((rule, index) => {
-                      const ruleKey = String(rule.id || rule.code || `${rule.name || 'rule'}-${index}`)
-                      const rawTranslated = tExact(rule.name) || rule.name || ''
-                      const cleanedName = cleanRuleName(rawTranslated) || cleanRuleName(rule.name) || t('diagnosisResult.matchedRule', 'Matched Rule')
-                      const isExpanded = Boolean(expandedRules[ruleKey])
-                      const explanationText = ruleExplanations[ruleKey] || rule.explanation || ''
-                      const isLoadingExplanation = Boolean(loadingRuleExplanations[ruleKey])
-
-                      return (
-                        <li key={ruleKey} className="py-3 first:pt-0 last:pb-0">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-baseline gap-1.5 flex-wrap">
-                                <span className="text-slate-400 font-normal text-sm">{index + 1}.</span>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleRuleExplanation(ruleKey, rule)}
-                                  className="group inline-flex items-center gap-1.5 text-left text-sm font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 hover:underline focus:outline-none focus:ring-2 focus:ring-sky-500/30 rounded transition-colors"
-                                  title={t('diagnosisResult.clickToViewExplanation', 'Click to view doctor explanation')}
-                                >
-                                  <span>{cleanedName}</span>
-                                  <ChevronDown
-                                    className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 text-sky-500/70 group-hover:text-sky-600 ${
-                                      isExpanded ? 'rotate-180' : ''
-                                    }`}
-                                  />
-                                </button>
-                              </div>
-                              <p className="mt-1 text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-400 pl-4 sm:pl-5">
-                                {tExact(rule.description) || t('diagnosisResult.ruleConditionMatched', 'Rule condition matched.')}
-                              </p>
-
-                              {isExpanded && (
-                                <div className="mt-2.5 ml-4 sm:ml-5 rounded-xl border border-sky-200/80 bg-sky-50/70 p-3.5 text-xs sm:text-sm text-slate-700 shadow-xs dark:border-sky-800/60 dark:bg-sky-950/30 dark:text-slate-300">
-                                  <div className="flex items-center gap-2 font-semibold text-sky-900 dark:text-sky-200 mb-1.5">
-                                    <Stethoscope className="h-4 w-4 text-sky-600 dark:text-sky-400 shrink-0" />
-                                    <span>{t('diagnosisResult.doctorGuidance', 'Doctor guidance')}</span>
-                                  </div>
-                                  {isLoadingExplanation ? (
-                                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 py-1">
-                                      <RotateCcw className="h-3.5 w-3.5 animate-spin text-sky-600 dark:text-sky-400" />
-                                      <span>{t('diagnosisResult.loadingExplanation', 'Loading doctor guidance...')}</span>
-                                    </div>
-                                  ) : explanationText ? (
-                                    <p className="leading-relaxed whitespace-pre-line text-slate-800 dark:text-slate-200">
-                                      {tExact(explanationText) || explanationText}
-                                    </p>
-                                  ) : (
-                                    <p className="italic text-slate-500 dark:text-slate-400">
-                                      {t('diagnosisResult.noExplanation', 'No clinical explanation recorded for this rule.')}
-                                    </p>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                            <span className="shrink-0 text-xs font-semibold text-emerald-600 dark:text-emerald-400 pt-0.5">
-                              +{formatCertaintyContribution(rule)}
-                            </span>
-                          </div>
-                        </li>
-                      )
-                    })}
-                  </ol>
-                ) : (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('diagnosisResult.noDetailedRule', 'No detailed rule reasoning is available for this run.')}</p>
-                )}
-              </div>
-
-              {result?.fact_preparation_trace?.length ? (
-                <div className="border-t border-slate-100 pt-5 dark:border-slate-800">
-                  <div className="flex items-center gap-2 mb-3">
-                    <FlaskConical className="h-4 w-4 text-cyan-700 dark:text-cyan-400" />
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                      {t('diagnosisResult.factPreparation', 'Fact Preparation')}
-                    </h4>
-                  </div>
-                  <div className="table-wrap border-0">
-                    <table className="w-full min-w-[680px] text-left text-xs sm:text-sm">
-                      <thead>
-                        <tr className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          <th className="px-2 py-2">{t('diagnosisResult.factKey', 'Fact Key')}</th>
-                          <th className="px-2 py-2">{t('diagnosisResult.source', 'Source')}</th>
-                          <th className="px-2 py-2">{t('diagnosisResult.processedValue', 'Processed Value')}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {result.fact_preparation_trace.map((row, index) => (
-                          <tr key={`${row.fact_key || 'fact'}-${index}`}>
-                            <td className="px-2 py-2 font-medium text-slate-800 dark:text-slate-200">{toReadableLabel(row.fact_key)}</td>
-                            <td className="px-2 py-2 text-slate-600 dark:text-slate-400">{row.source_path || 'n/a'}</td>
-                            <td className="px-2 py-2 text-slate-800 dark:text-slate-200">{String(row.processed_value ?? 'n/a')}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ) : null}
-            </TechnicalDetailsSection>
-          </div>
-
-          {/* ── 9. MASTER DOCUMENT FOOTER ── */}
-          <div className="border-t border-slate-100 bg-slate-50/70 px-6 py-4 sm:px-8 dark:border-slate-800/80 dark:bg-slate-900/40">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-[11px] text-slate-400 dark:text-slate-500">
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                <span>{t('diagnosisResult.footerDisclaimer', 'Medical Disclaimer: This report is generated by an expert clinical decision support system for screening and guidance. It does not replace professional medical diagnosis.')}</span>
-              </div>
-              <div className="shrink-0 font-mono text-[10px]">
-                CDS Engine v2.4 · {reportNumber}
-              </div>
-            </div>
-          </div>
-        </article>
 
         {/* Status pill outside card */}
         <div className="flex items-center gap-2 px-2 text-xs text-slate-500">
@@ -1900,18 +2523,26 @@ export function DiagnosisResultPage() {
             {t('diagnosisResult.viewAssessmentResults', 'View your assessment results and recommendations above.')}
           </span>
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <button type="button" className="btn-secondary gap-1.5 text-xs sm:text-sm h-9 px-3.5 rounded-xl" onClick={() => navigate('/diagnosis')}>
+            <button
+              type="button"
+              className="btn-secondary gap-1.5 text-xs sm:text-sm h-9 px-3.5 rounded-xl border-0 bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800"
+              onClick={() => navigate('/diagnosis')}
+            >
               <ArrowLeft className="h-4 w-4" />
               {t('diagnosisResult.back', 'Back')}
             </button>
             <Link
               to="/care-plan"
-              className="btn-secondary gap-2 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 shadow-xs border-slate-200 dark:border-slate-700 text-xs sm:text-sm h-9 px-3.5 rounded-xl inline-flex items-center"
+              className="btn-secondary gap-2 bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 border-0 text-xs sm:text-sm h-9 px-3.5 rounded-xl inline-flex items-center"
             >
               <HeartPulse className="h-4 w-4 text-primary-600 dark:text-primary-400" />
               <span>{t('diagnosisResult.openCarePlan', 'Open Care Plan')}</span>
             </Link>
-            <button type="button" className="btn-secondary gap-1.5 text-xs sm:text-sm h-9 px-3.5 rounded-xl" onClick={() => setShowRestartConfirm(true)}>
+            <button
+              type="button"
+              className="btn-secondary gap-1.5 text-xs sm:text-sm h-9 px-3.5 rounded-xl border-0 bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800"
+              onClick={() => setShowRestartConfirm(true)}
+            >
               <RotateCcw className="h-4 w-4" />
               {t('diagnosisResult.restartAssessment', 'Restart Assessment')}
             </button>

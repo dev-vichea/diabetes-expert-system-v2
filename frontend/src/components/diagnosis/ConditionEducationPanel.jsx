@@ -101,12 +101,12 @@ export function ConditionEducationPanel({ result, defaultOpen = false, embedded 
 
   if (embedded) {
     return (
-      <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50/60 dark:border-slate-800/80 dark:bg-slate-900/40">
+      <div className="mt-6 pt-5 border-t border-slate-200/80 dark:border-slate-800">
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
-          className="flex w-full items-center justify-between p-4 text-left transition hover:bg-slate-100/50 dark:hover:bg-slate-800/50"
+          className="flex w-full items-center justify-between py-2 text-left transition hover:opacity-80"
         >
           <div className="flex items-center gap-3">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cyan-100/80 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300">
@@ -135,8 +135,8 @@ export function ConditionEducationPanel({ result, defaultOpen = false, embedded 
         </button>
 
         {open ? (
-          <div className="border-t border-slate-200/80 p-5 dark:border-slate-800 bg-white/70 dark:bg-slate-950/60 sm:p-6">
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="pt-4 pb-2">
+            <div className="space-y-4">
               <EducationSection
                 icon={HelpCircle}
                 title={t('diagnosisResult.education.whatTitle', 'What is it?')}
@@ -159,7 +159,7 @@ export function ConditionEducationPanel({ result, defaultOpen = false, embedded 
               />
             </div>
 
-            <div className="mt-5 flex flex-col gap-2.5 border-t border-slate-100 pt-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-5 flex flex-col gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
                 {t('diagnosisResult.education.disclaimer', 'Educational background only — always follow your healthcare provider’s advice.')}
               </p>
@@ -183,7 +183,7 @@ export function ConditionEducationPanel({ result, defaultOpen = false, embedded 
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3 px-1">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-cyan-100/70 text-cyan-700 ring-1 ring-cyan-200/60 dark:bg-cyan-900/40 dark:text-cyan-300 dark:ring-cyan-800/60">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-cyan-100/70 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
             <BookOpen className="h-4 w-4" />
           </div>
           <div>
@@ -191,7 +191,7 @@ export function ConditionEducationPanel({ result, defaultOpen = false, embedded 
               <h3 className="text-base font-bold text-slate-900 dark:text-white sm:text-lg">
                 {t('diagnosisResult.education.titlePrefix', 'Understanding')} {name}
               </h3>
-              <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] font-semibold text-cyan-700 ring-1 ring-cyan-200/60 dark:bg-cyan-950/60 dark:text-cyan-300 dark:ring-cyan-800/60">
+              <span className="rounded-full bg-cyan-100/80 px-2 py-0.5 text-[10px] font-semibold text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300">
                 Patient Guide
               </span>
             </div>
@@ -207,7 +207,7 @@ export function ConditionEducationPanel({ result, defaultOpen = false, embedded 
           type="button"
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
         >
           <span>{open ? 'Collapse guide' : 'Expand guide'}</span>
           <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
@@ -215,8 +215,8 @@ export function ConditionEducationPanel({ result, defaultOpen = false, embedded 
       </div>
 
       {open ? (
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800/70 dark:bg-[#070b15] sm:p-6">
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+        <div className="overflow-hidden rounded-3xl bg-slate-100/70 p-5 dark:bg-slate-900/40 sm:p-6">
+          <div className="space-y-4">
             <EducationSection
               icon={HelpCircle}
               title={t('diagnosisResult.education.whatTitle', 'What is it?')}
@@ -239,7 +239,7 @@ export function ConditionEducationPanel({ result, defaultOpen = false, embedded 
             />
           </div>
 
-          <div className="mt-6 flex flex-col gap-2.5 border-t border-slate-100 pt-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-6 flex flex-col gap-2.5 pt-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
               {t('diagnosisResult.education.disclaimer', 'Educational background only — always follow your healthcare provider’s advice.')}
             </p>

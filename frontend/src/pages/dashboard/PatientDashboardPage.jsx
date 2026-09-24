@@ -19,12 +19,14 @@ import {
   Activity,
   AlertCircle,
   ArrowRight,
+  BookOpen,
   Calendar,
   Check,
   CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   Clock,
   Droplets,
   FileText,
@@ -93,7 +95,91 @@ function extractMetricHistory(results, keys) {
 }
 
 /** Builds real dynamic daily schedule from patient's treatment plan and assessments */
-function buildPatientDailySchedule(patientPlan, latestResult) {
+function buildPatientDailySchedule(patientPlan, latestResult, isNewUser = false, isKhmer = false) {
+  // ========================================================================
+  // CASE A: NEW USER (No clinical assessment yet, or first day onboarding)
+  // ========================================================================
+  if (isNewUser) {
+    return [
+      {
+        id: 'new_sched_screening',
+        time: '09:00',
+        timeEnd: '09:30',
+        category: isKhmer ? 'ការវាយតម្លៃ' : 'Assessment',
+        badgeTone: 'purple',
+        title: isKhmer ? 'បំពេញការវាយតម្លៃហានិភ័យទឹកនោមផ្អែម' : 'Complete Diabetes Risk Screening',
+        subtitle: isKhmer
+          ? 'ឆ្លើយសំណួរអំពី រោគសញ្ញា និងប្រវត្តិគ្រួសារ ដើម្បីទទួលបានការវិភាគ AI ភ្លាមៗ'
+          : 'Answer quick questions about symptoms and family history for instant AI analysis',
+        location: isKhmer ? 'ប្រព័ន្ធវិភាគរោគវិនិច្ឆ័យ' : 'AI Diagnostic Engine',
+        icon: ClipboardList,
+        actionLink: '/diagnosis',
+        actionLabel: isKhmer ? 'ចាប់ផ្តើមឥឡូវនេះ' : 'Start Screening',
+      },
+      {
+        id: 'new_sched_profile',
+        time: '10:30',
+        timeEnd: '11:00',
+        category: isKhmer ? 'ប្រវត្តិរូប' : 'Profile',
+        badgeTone: 'sky',
+        title: isKhmer ? 'បំពេញប្រវត្តិរូបអ្នកជំងឺ និងទិន្នន័យសុខភាព' : 'Complete Health Profile & Vitals',
+        subtitle: isKhmer
+          ? 'បញ្ចូលអាយុ ទម្ងន់ កម្ពស់ ដើម្បីគណនាសន្ទស្សន៍ BMI និងកម្រិតហានិភ័យមូលដ្ឋាន'
+          : 'Record age, height, and weight to establish your baseline BMI and risk category',
+        location: isKhmer ? 'ការកំណត់ប្រវត្តិរូប' : 'Patient Profile Setup',
+        icon: User,
+        actionLink: '/profile-setup',
+        actionLabel: isKhmer ? 'កំណត់ប្រវត្តិរូប' : 'Set Up Profile',
+      },
+      {
+        id: 'new_sched_glucose',
+        time: '12:00',
+        timeEnd: '12:20',
+        category: isKhmer ? 'កម្រិតជាតិស្ករ' : 'Biomarkers',
+        badgeTone: 'amber',
+        title: isKhmer ? 'កត់ត្រាកម្រិតជាតិស្ករក្នុងឈាមដំបូង' : 'Log Baseline Fasting Glucose',
+        subtitle: isKhmer
+          ? 'ប្រសិនបើមានលទ្ធផលតេស្តជាតិស្ករ ឬ HbA1c ថ្មីៗ សូមបញ្ចូលដើម្បីបង្កើនភាពជាក់លាក់'
+          : 'Enter your recent fasting glucose or HbA1c lab result if available to sharpen results',
+        location: isKhmer ? 'ឧបករណ៍តាមដានសុខភាព' : 'Biomarker Tracker',
+        icon: Droplets,
+        actionLink: '/diagnosis',
+        actionLabel: isKhmer ? 'បញ្ចូលទិន្នន័យ' : 'Log Reading',
+      },
+      {
+        id: 'new_sched_drbot',
+        time: '15:00',
+        timeEnd: '15:30',
+        category: isKhmer ? 'ជំនួយការ AI' : 'Orientation',
+        badgeTone: 'emerald',
+        title: isKhmer ? 'ជជែកជាមួយ Dr. Bot AI Health Assistant' : 'Consult Dr. Bot AI Health Assistant',
+        subtitle: isKhmer
+          ? 'ស្វែងយល់ពីរបៀបរស់នៅដែលមានសុខភាពល្អ អាហារូបត្ថម្ភ និងការការពារជំងឺទឹកនោមផ្អែម'
+          : 'Ask questions about diabetes prevention, nutrition tips, and symptom signs',
+        location: isKhmer ? 'ជំនួយការ Dr. Bot' : 'Dr. Bot Assistant',
+        icon: Sparkles,
+      },
+      {
+        id: 'new_sched_guide',
+        time: '18:30',
+        timeEnd: '19:00',
+        category: isKhmer ? 'របៀបរស់នៅ' : 'Lifestyle',
+        badgeTone: 'slate',
+        title: isKhmer ? 'អានមគ្គុទ្ទេសក៍អប់រំអំពីជំងឺទឹកនោមផ្អែម' : 'Review Diabetes Education Guide',
+        subtitle: isKhmer
+          ? 'ស្វែងយល់ពីសន្ទស្សន៍ Glycemic ការទទួលទានទឹក និងការធ្វើលំហាត់ប្រាណស្រាលៗ'
+          : 'Learn foundational concepts on glycemic index, healthy hydration, and light cardio',
+        location: isKhmer ? 'បណ្ណាល័យសុខភាព' : 'Care Library',
+        icon: BookOpen,
+        actionLink: '/diabetes-guide',
+        actionLabel: isKhmer ? 'អានមគ្គុទ្ទេសក៍' : 'View Guide',
+      },
+    ]
+  }
+
+  // ========================================================================
+  // CASE B: PATIENT WITH CLINICAL ASSESSMENT / ACTIVE CARE PLAN
+  // ========================================================================
   const items = []
 
   // 1. Morning Fasting Glucose Test
@@ -101,15 +187,17 @@ function buildPatientDailySchedule(patientPlan, latestResult) {
     id: 'sched_glucose_am',
     time: '08:00',
     timeEnd: '08:15',
-    category: 'Glucose',
+    category: isKhmer ? 'កម្រិតជាតិស្ករ' : 'Glucose',
     badgeTone: 'amber',
-    title: 'Morning Fasting Glucose',
-    subtitle: `Fasting test before breakfast • Target: ${patientPlan?.targetGlucose || '80–130 mg/dL'}`,
-    location: 'Home Test Device',
+    title: isKhmer ? 'តេស្តជាតិស្ករពេលព្រឹកមុនអាហារ' : 'Morning Fasting Glucose',
+    subtitle: isKhmer
+      ? `តេស្តមុនអាហារពេលព្រឹក • គោលដៅ: ${patientPlan?.targetGlucose || '80–130 mg/dL'}`
+      : `Fasting test before breakfast • Target: ${patientPlan?.targetGlucose || '80–130 mg/dL'}`,
+    location: isKhmer ? 'ឧបករណ៍តេស្តតាមផ្ទះ' : 'Home Test Device',
     icon: Droplets,
   })
 
-  // 2. Prescribed Pharmacotherapy from Treatment Plan
+  // 2. Prescribed Pharmacotherapy or Morning Nutrition
   if (patientPlan?.medications?.length) {
     patientPlan.medications.forEach((med, idx) => {
       const isBedtime =
@@ -121,25 +209,27 @@ function buildPatientDailySchedule(patientPlan, latestResult) {
         id: `sched_med_${idx}`,
         time: isBedtime ? '20:30' : idx === 0 ? '08:30' : '09:00',
         timeEnd: isBedtime ? '20:45' : idx === 0 ? '08:45' : '09:15',
-        category: 'Medication',
+        category: isKhmer ? 'ថ្នាំពេទ្យ' : 'Medication',
         badgeTone: 'sky',
         title: `${med.name} ${med.dosage || ''}`.trim(),
-        subtitle: `${med.frequency || 'Take with water'} • ${med.status || 'Active Rx'}`,
-        location: 'Daily Prescription',
+        subtitle: `${med.frequency || (isKhmer ? 'ពិសារជាមួយទឹក' : 'Take with water')} • ${med.status || 'Active Rx'}`,
+        location: isKhmer ? 'វេជ្ជបញ្ជាប្រចាំថ្ងៃ' : 'Daily Prescription',
         icon: Pill,
       })
     })
   } else {
     items.push({
-      id: 'sched_med_default',
+      id: 'sched_nutrition_am',
       time: '08:30',
       timeEnd: '08:45',
-      category: 'Medication',
+      category: isKhmer ? 'អាហារូបត្ថម្ភ' : 'Nutrition',
       badgeTone: 'sky',
-      title: 'Daily Medication & Water',
-      subtitle: 'Take prescribed morning medication with a full glass of water',
-      location: 'Daily Prescription',
-      icon: Pill,
+      title: isKhmer ? 'ការទទួលទានទឹក និងអាហារពេលព្រឹកមានតុល្យភាព' : 'Morning Hydration & Balanced Breakfast',
+      subtitle: isKhmer
+        ? 'ទទួលទានទឹកមួយកែវពេញ និងអាហារសន្ទស្សន៍ Glycemic ទាប ដើម្បីរក្សាជាតិស្ករមានលំនឹង'
+        : 'Start your day with a tall glass of water and balanced low-glycemic nutrients',
+      location: isKhmer ? 'ទម្លាប់ប្រចាំថ្ងៃ' : 'Morning Routine',
+      icon: HeartPulse,
     })
   }
 
@@ -157,11 +247,11 @@ function buildPatientDailySchedule(patientPlan, latestResult) {
       id: 'sched_activity',
       time: '12:30',
       timeEnd: '13:00',
-      category: 'Activity',
+      category: isKhmer ? 'សកម្មភាព' : 'Activity',
       badgeTone: 'emerald',
       title: activityProc.title,
-      subtitle: activityProc.description ? `${activityProc.description.slice(0, 80)}…` : 'Postprandial physical exercise',
-      location: 'Post-Meal Walk',
+      subtitle: activityProc.description ? `${activityProc.description.slice(0, 80)}…` : (isKhmer ? 'ការដើរបន្ទាប់ពីអាហារ' : 'Postprandial physical exercise'),
+      location: isKhmer ? 'ដើរបន្ទាប់ពីអាហារ' : 'Post-Meal Walk',
       icon: Footprints,
     })
   } else {
@@ -169,11 +259,11 @@ function buildPatientDailySchedule(patientPlan, latestResult) {
       id: 'sched_activity',
       time: '12:30',
       timeEnd: '13:00',
-      category: 'Activity',
+      category: isKhmer ? 'សកម្មភាព' : 'Activity',
       badgeTone: 'emerald',
-      title: '30-Min Post-Meal Walk',
-      subtitle: 'Light aerobic cardio to improve muscle glucose uptake',
-      location: 'Outdoor / Treadmill',
+      title: isKhmer ? 'ការដើរ ៣០ នាទីក្រោយអាហារ' : '30-Min Post-Meal Walk',
+      subtitle: isKhmer ? 'ការហាត់ប្រាណស្រាលៗ ដើម្បីជួយកោសិកាប្រើប្រាស់ជាតិស្ករកាន់តែប្រសើរ' : 'Light aerobic cardio to improve muscle glucose uptake',
+      location: isKhmer ? 'ខាងក្រៅ / ម៉ាស៊ីនដើរ' : 'Outdoor / Treadmill',
       icon: Footprints,
     })
   }
@@ -187,11 +277,13 @@ function buildPatientDailySchedule(patientPlan, latestResult) {
     id: 'sched_doctor_pm',
     time: '15:00',
     timeEnd: '15:30',
-    category: 'Consultation',
+    category: isKhmer ? 'ការពិគ្រោះ' : 'Consultation',
     badgeTone: 'purple',
-    title: latestResult?.review_note ? 'Clinical Review Follow-up' : 'Endocrinology Check-in',
-    subtitle: `${docName} • Diabetes Care Team Review`,
-    location: 'Clinical Care Portal',
+    title: latestResult?.review_note
+      ? (isKhmer ? 'ការតាមដានការត្រួតពិនិត្យគ្លីនិក' : 'Clinical Review Follow-up')
+      : (isKhmer ? 'ការពិនិត្យតាមដាន Endocrinology' : 'Endocrinology Check-in'),
+    subtitle: `${docName} • ${isKhmer ? 'ក្រុមថែទាំជំងឺទឹកនោមផ្អែម' : 'Diabetes Care Team Review'}`,
+    location: isKhmer ? 'វិបផតថលថែទាំគ្លីនិក' : 'Clinical Care Portal',
     icon: Stethoscope,
   })
 
@@ -200,11 +292,11 @@ function buildPatientDailySchedule(patientPlan, latestResult) {
     id: 'sched_glucose_pm',
     time: '19:30',
     timeEnd: '19:45',
-    category: 'Glucose',
+    category: isKhmer ? 'កម្រិតជាតិស្ករ' : 'Glucose',
     badgeTone: 'amber',
-    title: 'Post-Dinner Glucose Log',
-    subtitle: 'Check 2-hour postprandial blood sugar',
-    location: 'Home Test Device',
+    title: isKhmer ? 'កត់ត្រាជាតិស្ករក្រោយអាហារពេលល្ងាច' : 'Post-Dinner Glucose Log',
+    subtitle: isKhmer ? 'ពិនិត្យកម្រិតជាតិស្ករ ២ ម៉ោងក្រោយអាហារពេលល្ងាច' : 'Check 2-hour postprandial blood sugar',
+    location: isKhmer ? 'ឧបករណ៍តេស្តតាមផ្ទះ' : 'Home Test Device',
     icon: Activity,
   })
 
@@ -213,11 +305,11 @@ function buildPatientDailySchedule(patientPlan, latestResult) {
     id: 'sched_night_routine',
     time: '21:30',
     timeEnd: '22:00',
-    category: 'Routine',
+    category: isKhmer ? 'ទម្លាប់រាត្រី' : 'Routine',
     badgeTone: 'slate',
-    title: 'Evening Hydration & Meds',
-    subtitle: 'Review daily diary and prepare for sleep',
-    location: 'Care Regimen',
+    title: isKhmer ? 'ការទទួលទានទឹក និងការសម្រាក' : 'Evening Hydration & Meds',
+    subtitle: isKhmer ? 'ពិនិត្យសៀវភៅតាមដានប្រចាំថ្ងៃ និងរៀបចំចូលគេង' : 'Review daily diary and prepare for sleep',
+    location: isKhmer ? 'ទម្លាប់ថែទាំសុខភាព' : 'Care Regimen',
     icon: CheckCircle2,
   })
 
@@ -336,7 +428,7 @@ function ChartCustomTooltip({ active, payload }) {
 // ============================================================================
 export function PatientDashboardPage() {
   const { user } = useAuth()
-  const { t } = useLanguage()
+  const { t, language, isKhmer } = useLanguage()
   const [patientResults, setPatientResults] = useState([])
   const [patientProfile, setPatientProfile] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -753,21 +845,31 @@ export function PatientDashboardPage() {
     return selectedObj ? Boolean(selectedObj.isToday) : true
   }, [calendarWeek, selectedDayIndex])
 
+  // Is this user a brand-new patient (no diagnosis results or assigned plan)
+  const isNewUser = useMemo(() => {
+    if (patientResults && patientResults.length > 0) return false
+    if (patientPlan && patientPlan.patientName && user?.name &&
+        patientPlan.patientName.toLowerCase().trim() === user.name.toLowerCase().trim()) {
+      return false
+    }
+    return true
+  }, [patientResults, patientPlan, user])
+
   // Real Dynamic Daily Care Schedule
   const dailySchedule = useMemo(() => {
-    return buildPatientDailySchedule(patientPlan, latestResult)
-  }, [patientPlan, latestResult])
+    return buildPatientDailySchedule(patientPlan, latestResult, isNewUser, isKhmer)
+  }, [patientPlan, latestResult, isNewUser, isKhmer])
 
-  // Task checklist state (stored in localStorage)
+  // Task checklist state (stored in localStorage keyed per user & date)
   const dateKey = new Date().toISOString().slice(0, 10)
-  const storageKey = `saas_schedule_plan_${dateKey}`
+  const storageKey = `saas_schedule_plan_${dateKey}_${user?.id || user?.email || 'guest'}`
 
   const [completedTasks, setCompletedTasks] = useState(() => {
     try {
       const saved = localStorage.getItem(storageKey)
-      return saved ? JSON.parse(saved) : ['sched_glucose_am']
+      return saved ? JSON.parse(saved) : []
     } catch {
-      return ['sched_glucose_am']
+      return []
     }
   })
 
@@ -786,9 +888,24 @@ export function PatientDashboardPage() {
   // Filtered timeline items
   const filteredSchedule = useMemo(() => {
     if (timelineFilter === 'all') return dailySchedule
-    if (timelineFilter === 'glucose') return dailySchedule.filter((i) => i.category === 'Glucose')
-    if (timelineFilter === 'meds') return dailySchedule.filter((i) => i.category === 'Medication')
-    if (timelineFilter === 'activity') return dailySchedule.filter((i) => i.category === 'Activity')
+    if (timelineFilter === 'glucose') {
+      return dailySchedule.filter((i) => {
+        const cat = (i.category || '').toLowerCase()
+        return cat.includes('glucose') || cat.includes('biomarker') || cat.includes('ជាតិស្ករ')
+      })
+    }
+    if (timelineFilter === 'meds') {
+      return dailySchedule.filter((i) => {
+        const cat = (i.category || '').toLowerCase()
+        return cat.includes('med') || cat.includes('ថ្នាំ') || cat.includes('profile') || cat.includes('ប្រវត្តិរូប')
+      })
+    }
+    if (timelineFilter === 'activity') {
+      return dailySchedule.filter((i) => {
+        const cat = (i.category || '').toLowerCase()
+        return cat.includes('activity') || cat.includes('lifestyle') || cat.includes('របៀបរស់នៅ') || cat.includes('assessment') || cat.includes('ការវាយតម្លៃ')
+      })
+    }
     return dailySchedule
   }, [dailySchedule, timelineFilter])
 
@@ -1481,22 +1598,36 @@ export function PatientDashboardPage() {
           </div>
 
           {/* 2. TIMELINE HEADER: Selected Date & Category Filter */}
-          <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-              {selectedDateLabel}
-            </h3>
+          <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  {selectedDateLabel}
+                </h3>
+                {isNewUser && (
+                  <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800">
+                    {isKhmer ? 'ផែនការចាប់ផ្តើមដំបូង' : 'Onboarding Plan'}
+                  </span>
+                )}
+              </div>
+              {isNewUser && (
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                  {isKhmer ? 'បំពេញការពិនិត្យដំបូង ដើម្បីបើកកាលវិភាគថែទាំគ្លីនិកផ្ទាល់ខ្លួន' : 'Complete your initial screening to unlock personalized clinical care.'}
+                </p>
+              )}
+            </div>
 
             {/* Filter Dropdown */}
-            <div className="relative">
+            <div className="relative shrink-0">
               <select
                 value={timelineFilter}
                 onChange={(e) => setTimelineFilter(e.target.value)}
                 className="appearance-none rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-1 pr-6 text-xs font-semibold text-slate-700 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
               >
-                <option value="all">All</option>
-                <option value="glucose">Glucose</option>
-                <option value="meds">Meds</option>
-                <option value="activity">Activity</option>
+                <option value="all">{isKhmer ? 'ទាំងអស់' : 'All'}</option>
+                <option value="glucose">{isKhmer ? 'ជាតិស្ករ' : 'Glucose'}</option>
+                <option value="meds">{isKhmer ? 'ថ្នាំ/ប្រវត្តិរូប' : 'Meds'}</option>
+                <option value="activity">{isKhmer ? 'សកម្មភាព' : 'Activity'}</option>
               </select>
               <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
             </div>
@@ -1623,7 +1754,18 @@ export function PatientDashboardPage() {
 
                         {/* Card Footer Info */}
                         <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] text-slate-400 dark:border-slate-800">
-                          <span className="truncate max-w-[170px]">{item.location}</span>
+                          {item.actionLink && !isCompleted ? (
+                            <Link
+                              to={item.actionLink}
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline cursor-pointer"
+                            >
+                              <span>{item.actionLabel || (isKhmer ? 'ចាប់ផ្តើម' : 'Start now')}</span>
+                              <ArrowRight className="h-3 w-3" />
+                            </Link>
+                          ) : (
+                            <span className="truncate max-w-[170px]">{item.location}</span>
+                          )}
                           <span className="font-mono text-[10px] font-medium text-slate-500 dark:text-slate-400 shrink-0">
                             {item.time} – {item.timeEnd}
                           </span>
@@ -1663,10 +1805,10 @@ export function PatientDashboardPage() {
               {completedTasks.length} of {dailySchedule.length} completed
             </span>
             <Link
-              to="/care-plan"
+              to={isNewUser ? '/diagnosis' : '/care-plan'}
               className="font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white inline-flex items-center gap-1 transition-colors"
             >
-              <span>Full Care Plan</span>
+              <span>{isNewUser ? (isKhmer ? 'ចាប់ផ្តើមវាយតម្លៃ' : 'Start Assessment') : (isKhmer ? 'ផែនការថែទាំពេញលេញ' : 'Full Care Plan')}</span>
               <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
