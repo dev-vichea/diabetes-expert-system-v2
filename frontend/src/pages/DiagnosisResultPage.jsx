@@ -547,6 +547,7 @@ function ReportSection({ title, subtitle, children, icon: Icon, action, classNam
 
 export function DiagnosisResultPage() {
   const { user } = useAuth()
+  const canViewOwnCarePlan = user?.permissions?.includes('care_plan.view_own')
   const { t, tExact, isKhmer, language } = useLanguage()
   const location = useLocation()
   const navigate = useNavigate()
@@ -1351,13 +1352,15 @@ export function DiagnosisResultPage() {
 
           <div className="flex items-center gap-2.5">
             {/* Open Care Plan Button (Filled Blue) */}
-            <Link
-              to="/care-plan"
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-blue-700 transition"
-            >
-              <HeartPulse className="h-4 w-4" />
-              <span>{t('diagnosisResult.openCarePlan', 'Open Care Plan')}</span>
-            </Link>
+            {canViewOwnCarePlan && (
+              <Link
+                to="/care-plan"
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-blue-700 transition"
+              >
+                <HeartPulse className="h-4 w-4" />
+                <span>{t('diagnosisResult.openCarePlan', 'Open Care Plan')}</span>
+              </Link>
+            )}
 
             {/* Generate PDF Dropdown */}
             <DropdownMenu>
@@ -2575,13 +2578,15 @@ export function DiagnosisResultPage() {
               <ArrowLeft className="h-4 w-4" />
               {t('diagnosisResult.back', 'Back')}
             </button>
-            <Link
-              to="/care-plan"
-              className="btn-secondary gap-2 bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 border-0 text-xs sm:text-sm h-9 px-3.5 rounded-xl inline-flex items-center"
-            >
-              <HeartPulse className="h-4 w-4 text-primary-600 dark:text-primary-400" />
-              <span>{t('diagnosisResult.openCarePlan', 'Open Care Plan')}</span>
-            </Link>
+            {canViewOwnCarePlan && (
+              <Link
+                to="/care-plan"
+                className="btn-secondary gap-2 bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 border-0 text-xs sm:text-sm h-9 px-3.5 rounded-xl inline-flex items-center"
+              >
+                <HeartPulse className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                <span>{t('diagnosisResult.openCarePlan', 'Open Care Plan')}</span>
+              </Link>
+            )}
             <button
               type="button"
               className="btn-secondary gap-1.5 text-xs sm:text-sm h-9 px-3.5 rounded-xl border-0 bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800"

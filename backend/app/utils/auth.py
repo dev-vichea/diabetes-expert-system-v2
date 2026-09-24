@@ -21,7 +21,11 @@ def require_auth(roles=None, permissions=None, permission_mode="all"):
             if not token:
                 raise UnauthorizedError("Missing bearer token.")
 
-            user = get_auth_service().decode_access_token(token)
+            auth_service = get_auth_service()
+            user = auth_service.decode_access_token(token)
+            fresh_user = auth_service.get_fresh_user(user.get("sub"))
+            if fresh_user:
+                user = {**user, **fresh_user, "sub": str(fresh_user["id"])}
             token_roles = set(user.get("roles") or [user.get("role")])
             token_permissions = set(user.get("permissions") or [])
 
@@ -58,7 +62,11 @@ def optional_auth(fn):
             token = auth_header.split(" ", 1)[1].strip()
             if token:
                 try:
-                    user = get_auth_service().decode_access_token(token)
+                    auth_service = get_auth_service()
+                    user = auth_service.decode_access_token(token)
+                    fresh_user = auth_service.get_fresh_user(user.get("sub"))
+                    if fresh_user:
+                        user = {**user, **fresh_user, "sub": str(fresh_user["id"])}
                     g.current_user = user
                 except Exception:
                     # Token invalid, continue without auth
@@ -71,4 +79,3 @@ def optional_auth(fn):
         return fn(*args, **kwargs)
     
     return wrapper
-

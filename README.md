@@ -168,7 +168,6 @@ If you enabled `SEED_DEMO_DATA=true` in your backend environment, the following 
 
 | Role        | Email                  | Password     |
 |-------------|------------------------|--------------|
-| Superadmin  | superadmin@example.com | `superadmin123` |
 | Admin       | admin@example.com      | `admin123`   |
 | Doctor      | doctor@example.com     | `doctor123`  |
 | Patient     | patient@example.com    | `patient123` |

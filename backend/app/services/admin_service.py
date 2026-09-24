@@ -1,10 +1,12 @@
 from werkzeug.security import generate_password_hash
 
 from app.errors import ForbiddenError, NotFoundError, ValidationError
+from app.utils.seed import DEFAULT_ROLES
 
 
 class AdminService:
-    BUILT_IN_ROLE_NAMES = {'patient', 'doctor', 'nurse', 'admin', 'super_admin'}
+    BUILT_IN_ROLE_NAMES = {'patient', 'doctor', 'admin'}
+    RETIRED_ROLE_NAMES = {'super_admin'}
 
     def __init__(
         self,
@@ -141,11 +143,19 @@ class AdminService:
 
     def list_roles(self) -> list[dict]:
         roles = self.user_repository.list_roles()
-        return [self.user_repository.to_role_dict(role) for role in roles]
+        return [self._to_role_dict(role) for role in roles]
 
     def list_permissions(self) -> list[dict]:
         permissions = self.user_repository.list_permissions()
         return [self.user_repository.to_permission_dict(permission) for permission in permissions]
+
+    def _to_role_dict(self, role) -> dict:
+        data = self.user_repository.to_role_dict(role)
+        defaults = DEFAULT_ROLES.get(role.name)
+        data["is_builtin"] = role.name in self.BUILT_IN_ROLE_NAMES
+        data["is_protected"] = False
+        data["recommended_permissions"] = sorted(defaults["permissions"]) if defaults else []
+        return data
 
     def create_role(self, payload: dict, actor_user_id: int | None = None) -> dict:
         if not isinstance(payload, dict):
@@ -159,7 +169,7 @@ class AdminService:
             raise ValidationError('name is required.')
         if not description:
             raise ValidationError('description is required.')
-        if name in self.BUILT_IN_ROLE_NAMES:
+        if name in self.BUILT_IN_ROLE_NAMES or name in self.RETIRED_ROLE_NAMES:
             raise ValidationError('Built-in role names are reserved.')
 
         existing = self.user_repository.get_role_by_name(name)
@@ -182,7 +192,7 @@ class AdminService:
                 metadata={'permissions': permission_codes},
             )
 
-        return self.user_repository.to_role_dict(role)
+        return self._to_role_dict(role)
 
     def update_role(self, role_id: int, payload: dict, actor_user_id: int | None = None) -> dict:
         if not isinstance(payload, dict):
@@ -191,9 +201,6 @@ class AdminService:
         role = self.user_repository.get_role_by_id(role_id)
         if not role:
             raise NotFoundError('Role not found.')
-        if role.name in self.BUILT_IN_ROLE_NAMES:
-            raise ForbiddenError('Built-in roles cannot be edited.')
-
         name = None
         description = None
         permission_codes = None
@@ -202,9 +209,13 @@ class AdminService:
             name = str(payload.get('name') or '').strip().lower()
             if not name:
                 raise ValidationError('name is required.')
+            if role.name in self.BUILT_IN_ROLE_NAMES and name != role.name:
+                raise ForbiddenError('Built-in role names cannot be changed.')
             existing = self.user_repository.get_role_by_name(name)
             if existing and existing.id != role_id:
                 raise ValidationError('Role name already exists.')
+            if role.name in self.BUILT_IN_ROLE_NAMES:
+                name = None
 
         if 'description' in payload:
             description = str(payload.get('description') or '').strip()
@@ -232,25 +243,43 @@ class AdminService:
                 entity_id=str(role_id),
                 actor_user_id=actor_user_id,
                 metadata={
+                    'built_in_role': role.name in self.BUILT_IN_ROLE_NAMES,
                     'name_updated': name is not None,
                     'description_updated': description is not None,
                     'permissions_updated': permission_codes is not None,
                 },
             )
 
-        return self.user_repository.to_role_dict(updated)
+        return self._to_role_dict(updated)
 
-    def delete_role(self, role_id: int, actor_user_id: int | None = None) -> None:
+    def delete_role(
+        self,
+        role_id: int,
+        replacement_role_name: str | None = None,
+        actor_user_id: int | None = None,
+        actor_claims: dict | None = None,
+    ) -> None:
         role = self.user_repository.get_role_by_id(role_id)
         if not role:
             raise NotFoundError('Role not found.')
         if role.name in self.BUILT_IN_ROLE_NAMES:
             raise ForbiddenError('Built-in roles cannot be deleted.')
-        if len(role.users) > 0:
-            raise ValidationError(f"Cannot delete role '{role.name}' because {len(role.users)} user(s) are assigned to it.")
+
+        assigned_user_count = len(role.users)
+        replacement_role = None
+        if assigned_user_count > 0:
+            normalized_replacement = str(replacement_role_name or '').strip().lower()
+            if not normalized_replacement:
+                raise ValidationError(
+                    f"Select a replacement role for the {assigned_user_count} user(s) assigned to '{role.name}'."
+                )
+            replacement_role = self.user_repository.get_role_by_name(normalized_replacement)
+            if not replacement_role or replacement_role.id == role.id:
+                raise ValidationError('A valid replacement role is required.')
+            self._validate_assignable_role_names([replacement_role.name], actor_claims)
 
         role_name = role.name
-        self.user_repository.delete_role(role)
+        self.user_repository.delete_role(role, replacement_role=replacement_role)
 
         if self.audit_log_repository:
             self.audit_log_repository.create(
@@ -258,7 +287,11 @@ class AdminService:
                 entity_type='role',
                 entity_id=str(role_id),
                 actor_user_id=actor_user_id,
-                metadata={'name': role_name},
+                metadata={
+                    'name': role_name,
+                    'users_reassigned': assigned_user_count,
+                    'replacement_role': replacement_role.name if replacement_role else None,
+                },
             )
 
     def update_user_roles(
@@ -552,27 +585,10 @@ class AdminService:
             return value.strip().lower() in {'1', 'true', 'yes', 'y', 'on'}
         return bool(value)
 
-    @staticmethod
-    def _get_actor_roles(actor_claims: dict | None) -> set[str]:
-        if not actor_claims:
-            return set()
-
-        roles = actor_claims.get('roles')
-        if isinstance(roles, list):
-            return {str(role or '').strip().lower() for role in roles if str(role or '').strip()}
-
-        role = str(actor_claims.get('role') or '').strip().lower()
-        return {role} if role else set()
-
-    def _is_super_admin(self, actor_claims: dict | None) -> bool:
-        return 'super_admin' in self._get_actor_roles(actor_claims)
-
     def _ensure_target_editable(self, user, actor_claims: dict | None) -> None:
-        target_roles = {role.name for role in user.roles}
-        if 'super_admin' in target_roles and not self._is_super_admin(actor_claims):
-            raise ForbiddenError('Only super admins can edit super admin accounts.')
+        return None
 
     def _validate_assignable_role_names(self, role_names: list[str], actor_claims: dict | None) -> None:
-        role_set = set(role_names)
-        if 'super_admin' in role_set and not self._is_super_admin(actor_claims):
-            raise ForbiddenError('Only super admins can assign the super_admin role.')
+        retired_roles = sorted(self.RETIRED_ROLE_NAMES.intersection(role_names))
+        if retired_roles:
+            raise ValidationError(f"The {retired_roles[0]} role has been retired.")

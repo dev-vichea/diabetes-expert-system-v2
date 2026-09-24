@@ -428,6 +428,7 @@ function ChartCustomTooltip({ active, payload }) {
 // ============================================================================
 export function PatientDashboardPage() {
   const { user } = useAuth()
+  const canViewOwnCarePlan = user?.permissions?.includes('care_plan.view_own')
   const { t, language, isKhmer } = useLanguage()
   const [patientResults, setPatientResults] = useState([])
   const [patientProfile, setPatientProfile] = useState(null)
@@ -1804,13 +1805,15 @@ export function PatientDashboardPage() {
             <span className="text-slate-400">
               {completedTasks.length} of {dailySchedule.length} completed
             </span>
-            <Link
-              to={isNewUser ? '/diagnosis' : '/care-plan'}
-              className="font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white inline-flex items-center gap-1 transition-colors"
-            >
-              <span>{isNewUser ? (isKhmer ? 'ចាប់ផ្តើមវាយតម្លៃ' : 'Start Assessment') : (isKhmer ? 'ផែនការថែទាំពេញលេញ' : 'Full Care Plan')}</span>
-              <ArrowRight className="h-3 w-3" />
-            </Link>
+            {(isNewUser || canViewOwnCarePlan) && (
+              <Link
+                to={isNewUser ? '/diagnosis' : '/care-plan'}
+                className="font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white inline-flex items-center gap-1 transition-colors"
+              >
+                <span>{isNewUser ? (isKhmer ? 'ចាប់ផ្តើមវាយតម្លៃ' : 'Start Assessment') : (isKhmer ? 'ផែនការថែទាំពេញលេញ' : 'Full Care Plan')}</span>
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            )}
           </div>
         </div>
       </div>

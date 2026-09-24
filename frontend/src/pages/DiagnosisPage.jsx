@@ -372,11 +372,13 @@ export function DiagnosisPage() {
   const handledRestartRef = useRef(null)
   const profilePrefilledRef = useRef(false)
 
-  const userRoles = useMemo(() => new Set(user?.roles || (user?.role ? [user.role] : [])), [user])
-  /* Staff accounts (doctor, admin, super_admin, knowledge manager, …) must pick
-     the patient they assess; patient accounts assess themselves or someone else. */
-  const isPatientAccount = userRoles.size > 0 && [...userRoles].every((role) => String(role).toLowerCase() === 'patient')
-  const needsPatient = userRoles.size > 0 && !isPatientAccount
+  const userPermissions = useMemo(() => new Set(user?.permissions || []), [user])
+  /* A role with only own-record access assesses itself. Any role granted
+     patient-wide or review access must select the patient being assessed. */
+  const isPatientAccount = userPermissions.has('patient.view_own') &&
+    !userPermissions.has('patient.view') &&
+    !userPermissions.has('diagnosis.review_any')
+  const needsPatient = userPermissions.has('diagnosis.run') && !isPatientAccount
   /* Patient accounts only — "self" prefills from the saved profile, "other" asks every question. */
   /* Patient accounts answer "Who is this assessment for?" as the FIRST
      interview question. null = unanswered (the question is on screen). */

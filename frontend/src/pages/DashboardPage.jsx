@@ -11,11 +11,13 @@ const AdminPage = lazyWithRetry(() => import('@/pages/AdminPage').then((m) => ({
 
 export function DashboardPage() {
   const { user } = useAuth()
-  const userRoles = useMemo(() => new Set(user?.roles || (user?.role ? [user.role] : [])), [user])
   const userPermissions = useMemo(() => new Set(user?.permissions || []), [user])
-  const isAdminExperience = userRoles.has('admin') || userRoles.has('super_admin')
-  const hasClinicalAccess = userRoles.has('doctor') || userRoles.has('admin') || userRoles.has('super_admin') || userPermissions.has('patient.view')
-  const isPatientExperience = userRoles.has('patient') && !hasClinicalAccess
+  const isAdminExperience =
+    userPermissions.has('analytics.view') &&
+    userPermissions.has('user.view') &&
+    userPermissions.has('permission.view')
+  const hasClinicalAccess = userPermissions.has('analytics.view') || userPermissions.has('patient.view')
+  const isPatientExperience = userPermissions.has('patient.view_own') && !hasClinicalAccess
   const activeRole = user?.roles?.[0] || user?.role || 'user'
 
   if (isPatientExperience) {

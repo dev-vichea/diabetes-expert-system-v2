@@ -50,8 +50,8 @@ function roleLabel(role) {
 
 function roleClasses(role) {
   const normalized = String(role || '').toLowerCase()
-  if (normalized === 'admin' || normalized === 'super_admin') return 'bg-violet-50 text-violet-700 ring-violet-200'
-  if (normalized === 'doctor' || normalized === 'nurse') return 'bg-sky-50 text-sky-700 ring-sky-200'
+  if (normalized === 'admin') return 'bg-violet-50 text-violet-700 ring-violet-200'
+  if (normalized === 'doctor') return 'bg-sky-50 text-sky-700 ring-sky-200'
   return 'bg-emerald-50 text-emerald-700 ring-emerald-200'
 }
 
@@ -154,7 +154,7 @@ export function AdminPage() {
   const byRole = userCounts.by_role || {}
   const totalUsers = Number(userCounts.total || users.length || 0)
   const doctors = Number(byRole.doctor || 0)
-  const admins = Number((byRole.admin || 0) + (byRole.super_admin || 0))
+  const admins = Number(byRole.admin || 0)
   const patients = Number(stats?.patients?.total || byRole.patient || 0)
   const assessments = Number(stats?.assessments?.total ?? stats?.diagnosis?.total ?? 0)
   const treatmentPlans = Number(stats?.treatment_plans?.total ?? stats?.diagnosis?.treatment_plans ?? 0)

@@ -41,8 +41,8 @@ def test_patients_pagination_and_query_count(client, doctor_auth, app):
             event.remove(db.engine, "before_cursor_execute", before_cursor_execute)
 
     # In N+1 scenario with 20 patients, queries would be 20 * 3 + 1 = 61+ queries.
-    # With batching and eager loading, query count must be <= 6:
-    assert len(queries) <= 6, f"Expected <= 6 queries, got {len(queries)} queries: {queries}"
+    # With batching and eager loading plus auth session permission resolution, query count must be <= 10:
+    assert len(queries) <= 10, f"Expected <= 10 queries, got {len(queries)} queries: {queries}"
 
 
 def test_admin_users_pagination(client, admin_auth):
@@ -139,7 +139,7 @@ def test_patient_history_query_efficiency(client, doctor_auth, app):
     assert "symptoms" in data
     assert "lab_results" in data
     assert "diagnosis_history" in data
-    assert len(queries) <= 8, f"Expected <= 8 queries, got {len(queries)} queries: {queries}"
+    assert len(queries) <= 12, f"Expected <= 12 queries, got {len(queries)} queries: {queries}"
 
 
 def test_rules_and_facts_limits(client, doctor_auth):

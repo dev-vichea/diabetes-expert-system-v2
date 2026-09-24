@@ -46,16 +46,20 @@ class DiagnosisService:
             raise ValidationError("A JSON object is required.")
 
         user_id = int(current_user.get("sub")) if current_user and current_user.get("sub") else None
-        user_roles = set(current_user.get("roles") or [current_user.get("role")])
+        user_permissions = set(current_user.get("permissions") or [])
 
         normalized_payload = self._normalize_assessment_payload(payload)
         questionnaire_answers = self._extract_questionnaire_answers(payload)
-        patient_id = self._resolve_patient_id(payload=payload, current_user=current_user, user_roles=user_roles)
+        patient_id = self._resolve_patient_id(
+            payload=payload,
+            current_user=current_user,
+            user_permissions=user_permissions,
+        )
         mode = self._resolve_assessment_mode(payload.get("mode"), normalized_payload)
 
         save_to_db = bool(payload.get("save", True)) and not bool(payload.get("preview", False))
         patient_note = str(payload.get("patient_note") or "").strip()
-        is_clinician = any(r in user_roles for r in ["doctor", "nurse", "admin", "superadmin", "super_admin"])
+        is_clinician = bool(user_permissions.intersection({"diagnosis.review_any", "patient.view", "patient.manage"}))
         
         # Clinician assessments are inherently recorded/submitted by the care team.
         # Patient assessments auto-save to their chart, but submitted_to_care_team is False until explicitly sent to doctor.
@@ -167,11 +171,10 @@ class DiagnosisService:
                             metadata={"diagnosis_id": diagnosis_record.id, "patient_id": patient_id},
                         )
 
-                # 2. Urgent triage alerts to doctors/nurses
+                # 2. Urgent triage alerts to doctors
                 if is_urgent:
                     doctor_role = Role.query.filter_by(name="doctor").first()
-                    nurse_role = Role.query.filter_by(name="nurse").first()
-                    clinician_users = set((doctor_role.users if doctor_role else []) + (nurse_role.users if nurse_role else []))
+                    clinician_users = set(doctor_role.users if doctor_role else [])
                     for cl_user in clinician_users:
                         notif_repo.create(
                             user_id=cl_user.id,
@@ -184,8 +187,7 @@ class DiagnosisService:
                 # 3. Patient explicitly submitted assessment to doctors
                 elif not is_clinician and submitted_to_care_team:
                     doctor_role = Role.query.filter_by(name="doctor").first()
-                    nurse_role = Role.query.filter_by(name="nurse").first()
-                    clinician_users = set((doctor_role.users if doctor_role else []) + (nurse_role.users if nurse_role else []))
+                    clinician_users = set(doctor_role.users if doctor_role else [])
                     for cl_user in clinician_users:
                         notif_repo.create(
                             user_id=cl_user.id,
@@ -261,8 +263,7 @@ class DiagnosisService:
                 patient_name = result.patient.full_name if result.patient else f"Patient #{result.patient_id}"
 
                 doctor_role = Role.query.filter_by(name="doctor").first()
-                nurse_role = Role.query.filter_by(name="nurse").first()
-                clinician_users = set((doctor_role.users if doctor_role else []) + (nurse_role.users if nurse_role else []))
+                clinician_users = set(doctor_role.users if doctor_role else [])
                 for cl_user in clinician_users:
                     notif_repo.create(
                         user_id=cl_user.id,
@@ -288,7 +289,13 @@ class DiagnosisService:
         return self.evaluate(eval_payload, current_user=current_user)
 
     def list_my_results(self, current_user: dict, limit: int = 100) -> list[dict]:
-        patient_id = self._resolve_patient_id(payload={}, current_user=current_user, user_roles={"patient"})
+        # This endpoint is explicitly scoped to the caller's own results even
+        # when their role also has broader clinical permissions.
+        patient_id = self._resolve_patient_id(
+            payload={},
+            current_user=current_user,
+            user_permissions={"patient.view_own"},
+        )
         safe_limit = min(max(1, int(limit or 100)), 200)
         return [
             self._normalize_persisted_texts(row)
@@ -580,8 +587,12 @@ class DiagnosisService:
 
         return self.diagnosis_repository.serialize_result(updated)
 
-    def _resolve_patient_id(self, payload: dict, current_user: dict, user_roles: set[str]) -> int:
-        if "patient" in user_roles:
+    def _resolve_patient_id(self, payload: dict, current_user: dict, user_permissions: set[str]) -> int:
+        has_own_patient_scope = "patient.view_own" in user_permissions
+        has_clinical_patient_scope = bool(
+            user_permissions.intersection({"patient.view", "patient.manage", "diagnosis.review_any"})
+        )
+        if has_own_patient_scope and not has_clinical_patient_scope:
             patient_id = self._as_optional_int(current_user.get("patient_id"), field_name="patient_id")
             if not patient_id and current_user.get("sub"):
                 patient = self.patient_repository.get_patient_by_user_id(int(current_user["sub"]))

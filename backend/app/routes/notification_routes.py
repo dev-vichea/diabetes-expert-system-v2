@@ -19,7 +19,7 @@ def _current_user_id() -> int:
 
 @notification_bp.get("")
 @notification_bp.get("/")
-@require_auth()
+@require_auth(permissions=["notification.view"])
 def list_notifications():
     user_id = _current_user_id()
     unread_only = request.args.get("unread_only", default="false", type=str).strip().lower() in ("true", "1", "yes")
@@ -48,7 +48,7 @@ def list_notifications():
 
 
 @notification_bp.get("/unread-count")
-@require_auth()
+@require_auth(permissions=["notification.view"])
 def get_unread_count():
     user_id = _current_user_id()
     repo = get_notification_repository()
@@ -57,7 +57,7 @@ def get_unread_count():
 
 
 @notification_bp.patch("/<int:notification_id>/read")
-@require_auth()
+@require_auth(permissions=["notification.view"])
 def mark_notification_as_read(notification_id: int):
     user_id = _current_user_id()
     repo = get_notification_repository()
@@ -76,7 +76,7 @@ def mark_notification_as_read(notification_id: int):
 
 
 @notification_bp.post("/mark-all-read")
-@require_auth()
+@require_auth(permissions=["notification.view"])
 def mark_all_notifications_as_read():
     user_id = _current_user_id()
     repo = get_notification_repository()
@@ -88,7 +88,7 @@ def mark_all_notifications_as_read():
 
 
 @notification_bp.delete("/<int:notification_id>")
-@require_auth()
+@require_auth(permissions=["notification.view"])
 def delete_notification(notification_id: int):
     user_id = _current_user_id()
     repo = get_notification_repository()
@@ -104,7 +104,7 @@ def delete_notification(notification_id: int):
 
 
 @notification_bp.delete("/clear-read")
-@require_auth()
+@require_auth(permissions=["notification.view"])
 def clear_read_notifications():
     user_id = _current_user_id()
     repo = get_notification_repository()

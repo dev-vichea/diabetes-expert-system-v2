@@ -137,7 +137,7 @@ class DiagnosisRepository:
         session = row.assessment_session
         is_clinician = bool(
             row.diagnosed_by_user and any(
-                r.name in ["doctor", "nurse", "admin", "superadmin", "super_admin"]
+                r.name in ["doctor", "admin"]
                 for r in (row.diagnosed_by_user.roles or [])
             )
         )

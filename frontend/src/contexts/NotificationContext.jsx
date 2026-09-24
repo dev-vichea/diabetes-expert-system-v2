@@ -6,13 +6,14 @@ const NotificationContext = createContext(null)
 
 export function NotificationProvider({ children }) {
   const { user } = useAuth()
+  const canViewNotifications = Boolean(user?.permissions?.includes('notification.view'))
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(false)
 
   const fetchNotifications = useCallback(async (options = {}) => {
-    if (!user) {
+    if (!user || !canViewNotifications) {
       setNotifications([])
       setUnreadCount(0)
       setTotalCount(0)
@@ -34,11 +35,14 @@ export function NotificationProvider({ children }) {
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [user, canViewNotifications])
 
   // Periodic polling when window is active
   useEffect(() => {
-    if (!user) return
+    if (!user || !canViewNotifications) {
+      fetchNotifications()
+      return
+    }
 
     fetchNotifications()
 
@@ -57,7 +61,7 @@ export function NotificationProvider({ children }) {
       clearInterval(interval)
       window.removeEventListener('focus', onFocus)
     }
-  }, [user, fetchNotifications])
+  }, [user, canViewNotifications, fetchNotifications])
 
   const markAsRead = useCallback(async (id) => {
     // Optimistic update

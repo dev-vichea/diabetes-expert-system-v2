@@ -37,38 +37,20 @@ DEFAULT_PERMISSIONS = [
     {"code": "diagnosis.run", "description": "Run diagnosis"},
     {"code": "diagnosis.review_any", "description": "Review all diagnosis results"},
     {"code": "diagnosis.view_own", "description": "View own diagnosis results"},
+    {"code": "assistant.use", "description": "Use AI diabetes assistant"},
+    {"code": "treatment_plan.view", "description": "View treatment plans"},
+    {"code": "treatment_plan.manage", "description": "Create and update treatment plans"},
+    {"code": "care_plan.view_own", "description": "View own care plan"},
+    {"code": "guide.view", "description": "View diabetes education guide"},
+    {"code": "notification.view", "description": "View personal notifications"},
     {"code": "report.export", "description": "Export clinical reports and data"},
     {"code": "analytics.view", "description": "View clinic analytics and dashboards"},
 ]
 
 DEFAULT_ROLES = {
-    "super_admin": {
-        "description": "Platform super administrator",
-        "permissions": [item["code"] for item in DEFAULT_PERMISSIONS],
-    },
     "admin": {
         "description": "System administrator",
-        "permissions": [
-            "user.view",
-            "user.manage",
-            "permission.view",
-            "permission.manage",
-            "audit.view",
-            "patient.view",
-            "patient.manage",
-            "patient.view_own",
-            "symptom.view",
-            "symptom.manage",
-            "lab.view",
-            "lab.manage",
-            "rule.view",
-            "rule.manage",
-            "diagnosis.run",
-            "diagnosis.review_any",
-            "diagnosis.view_own",
-            "report.export",
-            "analytics.view",
-        ],
+        "permissions": [item["code"] for item in DEFAULT_PERMISSIONS],
     },
     "doctor": {
         "description": "Medical practitioner",
@@ -84,22 +66,12 @@ DEFAULT_ROLES = {
             "diagnosis.run",
             "diagnosis.review_any",
             "diagnosis.view_own",
+            "treatment_plan.view",
+            "treatment_plan.manage",
+            "guide.view",
+            "notification.view",
             "report.export",
             "analytics.view",
-        ],
-    },
-    "nurse": {
-        "description": "Clinical care and triage nurse",
-        "permissions": [
-            "patient.view",
-            "patient.manage",
-            "symptom.view",
-            "symptom.manage",
-            "lab.view",
-            "lab.manage",
-            "diagnosis.run",
-            "diagnosis.view_own",
-            "report.export",
         ],
     },
     "patient": {
@@ -108,28 +80,20 @@ DEFAULT_ROLES = {
             "patient.view_own",
             "diagnosis.run",
             "diagnosis.view_own",
+            "assistant.use",
+            "care_plan.view_own",
+            "guide.view",
+            "notification.view",
         ],
     },
 }
 
 DEMO_USERS = [
     {
-        "email": "superadmin@example.com",
-        "password": "superadmin123",
-        "name": "Super Admin",
-        "roles": ["super_admin"],
-    },
-    {
         "email": "doctor@example.com",
         "password": "doctor123",
         "name": "Dr. Lina",
         "roles": ["doctor"],
-    },
-    {
-        "email": "nurse@example.com",
-        "password": "nurse123",
-        "name": "Nurse Sarah",
-        "roles": ["nurse"],
     },
     {
         "email": "admin@example.com",
@@ -153,6 +117,67 @@ DEFAULT_RULE_CATEGORIES = {
 }
 
 LEGACY_DEMO_RULE_CODES = {"triage-classic-symptoms"}
+
+
+def sync_default_access_control() -> None:
+    """Sync core access control and consolidate retired roles."""
+    permission_by_code = {}
+    newly_created_codes = set()
+    for permission_data in DEFAULT_PERMISSIONS:
+        permission = Permission.query.filter_by(code=permission_data["code"]).first()
+        if not permission:
+            permission = Permission(**permission_data)
+            db.session.add(permission)
+            newly_created_codes.add(permission_data["code"])
+        permission.description = permission_data["description"]
+        permission_by_code[permission_data["code"]] = permission
+
+    db.session.flush()
+
+    for role_name, role_data in DEFAULT_ROLES.items():
+        role = Role.query.filter_by(name=role_name).first()
+        role_was_created = role is None
+        if not role:
+            role = Role(name=role_name, description=role_data["description"])
+            db.session.add(role)
+
+        existing_codes = {permission.code for permission in role.permissions}
+        codes_to_add = role_data["permissions"] if role_was_created else newly_created_codes
+        role.permissions.extend(
+            permission_by_code[code]
+            for code in codes_to_add
+            if code in role_data["permissions"] and code not in existing_codes
+        )
+
+    # Consolidate legacy built-in roles without deleting their user accounts.
+    # Nurse is identified by the original built-in description so an admin can
+    # still create a new custom role named "nurse" after this migration.
+    for retired_name, replacement_name, legacy_description in (
+        ("super_admin", "admin", None),
+        ("nurse", "doctor", "Clinical care and triage nurse"),
+    ):
+        retired_role = Role.query.filter_by(name=retired_name).first()
+        replacement_role = Role.query.filter_by(name=replacement_name).first()
+        if not retired_role or not replacement_role:
+            continue
+        if legacy_description and retired_role.description != legacy_description:
+            continue
+
+        replacement_permission_ids = {permission.id for permission in replacement_role.permissions}
+        replacement_role.permissions.extend(
+            permission
+            for permission in retired_role.permissions
+            if permission.id not in replacement_permission_ids
+        )
+        for user in list(retired_role.users):
+            remaining_roles = [role for role in user.roles if role.id != retired_role.id]
+            if all(role.id != replacement_role.id for role in remaining_roles):
+                remaining_roles.append(replacement_role)
+            user.roles = remaining_roles
+        retired_role.permissions = []
+        db.session.delete(retired_role)
+
+    db.session.flush()
 
 
 def seed_demo_data():
@@ -213,28 +238,6 @@ def _seed_notifications() -> None:
             },
         ])
 
-    # Nurse alerts
-    nurse = users_by_email.get("nurse@example.com")
-    if nurse:
-        notifications_data.extend([
-            {
-                "user_id": nurse.id,
-                "title": "New Assessment Pending Vitals",
-                "message": "Patient John Patient submitted self-assessment. Fasting glucose verification needed.",
-                "type": "diagnosis",
-                "link": "/patients",
-                "is_read": False,
-            },
-            {
-                "user_id": nurse.id,
-                "title": "Lab Schedule Reminder",
-                "message": "Follow-up OGTT test scheduled for 2 patients tomorrow morning at 08:30 AM.",
-                "type": "lab",
-                "link": "/patients",
-                "is_read": False,
-            },
-        ])
-
     # Patient alerts
     patient = users_by_email.get("patient@example.com")
     if patient:
@@ -271,8 +274,8 @@ def _seed_notifications() -> None:
         notifications_data.extend([
             {
                 "user_id": admin.id,
-                "title": "New Staff Member Registered",
-                "message": "Nurse Sarah joined the clinic workspace with role 'nurse'.",
+                "title": "Core Roles Synchronized",
+                "message": "Admin, Doctor, and Patient roles are ready for access management.",
                 "type": "system",
                 "link": "/users",
                 "is_read": False,
@@ -284,28 +287,6 @@ def _seed_notifications() -> None:
                 "type": "system",
                 "link": "/roles-permissions",
                 "is_read": False,
-            },
-        ])
-
-    # Super Admin alerts
-    super_admin = users_by_email.get("superadmin@example.com")
-    if super_admin:
-        notifications_data.extend([
-            {
-                "user_id": super_admin.id,
-                "title": "Platform Health Status: Optimal",
-                "message": "Rule engine, database connections, and PDF export worker operating normally.",
-                "type": "system",
-                "link": "/admin/dashboard",
-                "is_read": False,
-            },
-            {
-                "user_id": super_admin.id,
-                "title": "Security Audit Log Entry",
-                "message": "Role permissions updated by administrator. 0 unauthorized attempts.",
-                "type": "system",
-                "link": "/roles-permissions",
-                "is_read": True,
             },
         ])
 

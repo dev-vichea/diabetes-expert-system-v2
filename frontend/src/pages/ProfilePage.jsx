@@ -98,9 +98,9 @@ function getRoleMeta(role, t) {
       avatarGradient: 'from-cyan-600 to-blue-600',
     }
   }
-  if (normalized === 'admin' || normalized === 'super_admin') {
+  if (normalized === 'admin') {
     return {
-      label: normalized === 'super_admin' ? t('roles.super_admin', 'Super Admin') : t('roles.admin', 'Admin'),
+      label: t('roles.admin', 'Admin'),
       badgeClass: 'bg-purple-100 text-purple-800 ring-1 ring-purple-600/20 dark:bg-purple-950/50 dark:text-purple-300 dark:ring-purple-500/30',
       avatarGradient: 'from-purple-600 to-indigo-600',
     }

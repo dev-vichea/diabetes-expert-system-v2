@@ -169,7 +169,14 @@ class UserRepository:
         db.session.commit()
         return role
 
-    def delete_role(self, role: Role) -> None:
+    def delete_role(self, role: Role, replacement_role: Role | None = None) -> None:
+        if replacement_role:
+            for user in list(role.users):
+                remaining_roles = [assigned_role for assigned_role in user.roles if assigned_role.id != role.id]
+                if all(assigned_role.id != replacement_role.id for assigned_role in remaining_roles):
+                    remaining_roles.append(replacement_role)
+                user.roles = remaining_roles
+
         db.session.delete(role)
         db.session.commit()
 

@@ -2,19 +2,23 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Activity,
   BarChart3,
+  Bell,
   BookOpen,
+  Bot,
   CheckCheck,
+  ClipboardList,
   Copy,
-  Crown,
   FileSpreadsheet,
   FileText,
   FlaskConical,
-  HeartHandshake,
+  GraduationCap,
+  HeartPulse,
   History,
   Info,
   KeyRound,
   Lock,
   Plus,
+  RotateCcw,
   Save,
   Search,
   Shield,
@@ -42,18 +46,19 @@ import {
 import { notify } from '@/lib/toast'
 import { useLanguage } from '@/contexts/LanguageContext'
 
-const BUILT_IN_ROLE_NAMES = new Set(['patient', 'doctor', 'nurse', 'admin', 'super_admin'])
+const BUILT_IN_ROLE_NAMES = new Set(['patient', 'doctor', 'admin'])
+const ROLE_SORT_ORDER = new Map([
+  ['admin', 0],
+  ['doctor', 1],
+  ['patient', 2],
+])
 
 function getRoleIcon(roleName) {
   switch (roleName) {
-    case 'super_admin':
-      return Crown
     case 'admin':
       return ShieldAlert
     case 'doctor':
       return Stethoscope
-    case 'nurse':
-      return HeartHandshake
     case 'patient':
       return User
     default:
@@ -63,12 +68,6 @@ function getRoleIcon(roleName) {
 
 function getRoleColorClasses(roleName) {
   switch (roleName) {
-    case 'super_admin':
-      return {
-        iconBg: 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400',
-        badge: 'bg-amber-50 text-amber-800 ring-1 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-900/60',
-        activeIndicator: 'bg-amber-500',
-      }
     case 'admin':
       return {
         iconBg: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-400',
@@ -80,12 +79,6 @@ function getRoleColorClasses(roleName) {
         iconBg: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-400',
         badge: 'bg-cyan-50 text-cyan-800 ring-1 ring-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-300 dark:ring-cyan-900/60',
         activeIndicator: 'bg-cyan-500',
-      }
-    case 'nurse':
-      return {
-        iconBg: 'bg-teal-100 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400',
-        badge: 'bg-teal-50 text-teal-800 ring-1 ring-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:ring-teal-900/60',
-        activeIndicator: 'bg-teal-500',
       }
     case 'patient':
       return {
@@ -118,6 +111,16 @@ function getGroupIcon(group) {
       return BookOpen
     case 'diagnosis':
       return Stethoscope
+    case 'assistant':
+      return Bot
+    case 'treatment_plan':
+      return ClipboardList
+    case 'care_plan':
+      return HeartPulse
+    case 'guide':
+      return GraduationCap
+    case 'notification':
+      return Bell
     case 'audit':
       return History
     case 'report':
@@ -138,6 +141,11 @@ function getPermissionGroupLabels(t) {
     lab: t('rolesPage.groups.lab'),
     rule: t('rolesPage.groups.rule'),
     diagnosis: t('rolesPage.groups.diagnosis'),
+    assistant: t('rolesPage.groups.assistant'),
+    treatment_plan: t('rolesPage.groups.treatment_plan'),
+    care_plan: t('rolesPage.groups.care_plan'),
+    guide: t('rolesPage.groups.guide'),
+    notification: t('rolesPage.groups.notification'),
     audit: t('rolesPage.groups.audit'),
     report: t('rolesPage.groups.report'),
     analytics: t('rolesPage.groups.analytics'),
@@ -177,7 +185,7 @@ function normalizeRoleName(value) {
 
 export function RolePermissionsPage() {
   const { t } = useLanguage()
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const [roles, setRoles] = useState([])
   const [permissions, setPermissions] = useState([])
   const [selectedRoleId, setSelectedRoleId] = useState('new')
@@ -190,29 +198,49 @@ export function RolePermissionsPage() {
   const [roleFilter, setRoleFilter] = useState('')
   const [activeCategoryFilter, setActiveCategoryFilter] = useState('all')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [replacementRoleName, setReplacementRoleName] = useState('')
   const [showMembers, setShowMembers] = useState(false)
 
   const userPermissions = useMemo(() => new Set(user?.permissions || []), [user])
   const canManage = userPermissions.has('permission.manage')
-
+  const actorRoleNames = useMemo(
+    () => new Set(user?.roles || (user?.role ? [user.role] : [])),
+    [user]
+  )
   const selectedRole = useMemo(
     () => roles.find((role) => String(role.id) === String(selectedRoleId)) || null,
     [roles, selectedRoleId]
   )
 
-  const isBuiltInRole = BUILT_IN_ROLE_NAMES.has(selectedRole?.name || '')
-  const isReadOnly = !canManage || Boolean(selectedRole && isBuiltInRole)
+  const isBuiltInRole = selectedRole?.is_builtin ?? BUILT_IN_ROLE_NAMES.has(selectedRole?.name || '')
+  const isReadOnly = !canManage
+  const isEditableBuiltInRole = Boolean(selectedRole && isBuiltInRole)
+  const replacementRoleOptions = useMemo(
+    () => roles.filter((role) => role.id !== selectedRole?.id),
+    [roles, selectedRole?.id]
+  )
+  const savedRolePermissionSet = useMemo(
+    () => new Set(selectedRole?.permissions || []),
+    [selectedRole]
+  )
 
   // Filtered roles for left sidebar
   const filteredRoles = useMemo(() => {
-    if (!roleFilter.trim()) return roles
     const term = roleFilter.toLowerCase().trim()
-    return roles.filter(
-      (role) =>
-        role.name.toLowerCase().includes(term) ||
-        (role.description || '').toLowerCase().includes(term) ||
-        t(`roles.${role.name}`, { defaultValue: role.name }).toLowerCase().includes(term)
-    )
+    const matchingRoles = !term
+      ? roles
+      : roles.filter(
+          (role) =>
+            role.name.toLowerCase().includes(term) ||
+            (role.description || '').toLowerCase().includes(term) ||
+            t(`roles.${role.name}`, { defaultValue: role.name }).toLowerCase().includes(term)
+        )
+
+    return [...matchingRoles].sort((left, right) => {
+      const leftOrder = ROLE_SORT_ORDER.get(left.name) ?? 100
+      const rightOrder = ROLE_SORT_ORDER.get(right.name) ?? 100
+      return leftOrder - rightOrder || left.name.localeCompare(right.name)
+    })
   }, [roles, roleFilter, t])
 
   // All category keys for filter pills
@@ -252,16 +280,21 @@ export function RolePermissionsPage() {
     })
 
     return Array.from(groups.entries())
-      .sort(([left], [right]) =>
-        getPermissionGroupLabel(left, t).localeCompare(getPermissionGroupLabel(right, t), undefined, { sensitivity: 'base' })
-      )
       .map(([group, items]) => ({
         key: group,
         label: getPermissionGroupLabel(group, t),
         icon: getGroupIcon(group),
-        items: items.sort((a, b) => a.code.localeCompare(b.code)),
+        assignedCount: items.filter((item) => savedRolePermissionSet.has(item.code)).length,
+        items: items.sort((a, b) => {
+          const assignedDifference = Number(savedRolePermissionSet.has(b.code)) - Number(savedRolePermissionSet.has(a.code))
+          return assignedDifference || a.code.localeCompare(b.code)
+        }),
       }))
-  }, [permissions, permissionSearch, activeCategoryFilter, t])
+      .sort((left, right) => {
+        const assignedDifference = Number(right.assignedCount > 0) - Number(left.assignedCount > 0)
+        return assignedDifference || left.label.localeCompare(right.label, undefined, { sensitivity: 'base' })
+      })
+  }, [permissions, permissionSearch, activeCategoryFilter, savedRolePermissionSet, t])
 
   async function loadPage() {
     setLoading(true)
@@ -311,6 +344,7 @@ export function RolePermissionsPage() {
     })
     setError('')
     setShowDeleteModal(false)
+    setReplacementRoleName('')
   }
 
   function createNewRole() {
@@ -318,6 +352,7 @@ export function RolePermissionsPage() {
     setForm(EMPTY_FORM)
     setError('')
     setShowDeleteModal(false)
+    setReplacementRoleName('')
   }
 
   function handleDuplicateRole(roleToCopy) {
@@ -380,14 +415,29 @@ export function RolePermissionsPage() {
     }))
   }
 
+  function handleRestoreRecommended() {
+    if (isReadOnly || !selectedRole?.recommended_permissions?.length) return
+    setForm((current) => ({
+      ...current,
+      permissions: normalizePermissionList(selectedRole.recommended_permissions),
+    }))
+    notify.info(t('rolesPage.notifications.recommendedRestored', { role: t(`roles.${selectedRole.name}`, { defaultValue: selectedRole.name }) }))
+  }
+
   async function handleDeleteRole() {
     if (!form.id || isBuiltInRole) return
+    if (selectedRole?.user_count > 0 && !replacementRoleName) {
+      notify.warning(t('rolesPage.notifications.replacementRequired'))
+      return
+    }
 
     setDeleting(true)
     const loadingToast = notify.loading(t('rolesPage.notifications.deleting'))
 
     try {
-      await api.delete(`/admin/roles/${form.id}`)
+      await api.delete(`/admin/roles/${form.id}`, {
+        data: replacementRoleName ? { replacement_role: replacementRoleName } : {},
+      })
       notify.dismiss(loadingToast)
       notify.success(t('rolesPage.notifications.deleteSuccess'))
       setShowDeleteModal(false)
@@ -415,6 +465,16 @@ export function RolePermissionsPage() {
       return
     }
 
+    const removesOwnPermissionManagement =
+      selectedRole &&
+      actorRoleNames.has(selectedRole.name) &&
+      (selectedRole.permissions?.includes('permission.manage') || selectedRole.permissions?.includes('permission.view')) &&
+      (!form.permissions.includes('permission.manage') || !form.permissions.includes('permission.view'))
+
+    if (removesOwnPermissionManagement && !window.confirm(t('rolesPage.form.selfLockoutWarning'))) {
+      return
+    }
+
     setSaving(true)
     setError('')
     const loadingToast = notify.loading(form.id ? t('rolesPage.notifications.saving') : t('rolesPage.notifications.creating'))
@@ -426,16 +486,25 @@ export function RolePermissionsPage() {
         permissions: normalizePermissionList(form.permissions),
       }
 
-      if (form.id) {
+      const isUpdating = Boolean(form.id)
+      if (isUpdating) {
         await api.patch(`/admin/roles/${form.id}`, payload)
       } else {
         await api.post('/admin/roles', payload)
       }
 
-      await loadPage()
+      let refreshedActor = null
+      if (isUpdating && actorRoleNames.has(roleName)) {
+        refreshedActor = await refreshUser()
+      }
+      // If this save removed the current user's permission.view, the role
+      // editor is no longer readable; avoid a misleading second 403 toast.
+      if (!refreshedActor || refreshedActor.permissions?.includes('permission.view')) {
+        await loadPage()
+      }
       notify.dismiss(loadingToast)
-      notify.success(form.id ? t('rolesPage.notifications.saveSuccess') : t('rolesPage.notifications.createSuccess'))
-      createNewRole()
+      notify.success(isUpdating ? t('rolesPage.notifications.saveSuccess') : t('rolesPage.notifications.createSuccess'))
+      if (!isUpdating) createNewRole()
     } catch (err) {
       notify.dismiss(loadingToast)
       notify.error(getApiErrorMessage(err, form.id ? t('rolesPage.notifications.saveError') : t('rolesPage.notifications.createError')))
@@ -651,6 +720,19 @@ export function RolePermissionsPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {/* Restore the safe role template without locking role editing. */}
+                  {isEditableBuiltInRole && canManage && (
+                    <button
+                      type="button"
+                      onClick={handleRestoreRecommended}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
+                      title={t('rolesPage.form.restoreRecommended')}
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">{t('rolesPage.form.restoreRecommended')}</span>
+                    </button>
+                  )}
+
                   {/* Clone / Duplicate action */}
                   {selectedRole && canManage && (
                     <button
@@ -668,11 +750,26 @@ export function RolePermissionsPage() {
                   {form.id && !isBuiltInRole && canManage && (
                     <button
                       type="button"
-                      onClick={() => setShowDeleteModal(true)}
+                      onClick={() => {
+                        setReplacementRoleName('')
+                        setShowDeleteModal(true)
+                      }}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-900/50 transition"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">{t('rolesPage.form.deleteRole')}</span>
+                      <span>{t('rolesPage.form.deleteRole')}</span>
+                    </button>
+                  )}
+
+                  {form.id && isBuiltInRole && (
+                    <button
+                      type="button"
+                      disabled
+                      className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-400 dark:bg-slate-800/70 dark:text-slate-500"
+                      title={t('rolesPage.form.coreRoleDeleteNotice')}
+                    >
+                      <Lock className="h-3.5 w-3.5" />
+                      <span>{t('rolesPage.form.protectedDelete')}</span>
                     </button>
                   )}
 
@@ -695,15 +792,15 @@ export function RolePermissionsPage() {
                 </div>
               </div>
             }
-            description={isBuiltInRole ? t('rolesPage.form.builtInNotice') : t('rolesPage.form.newRoleDesc')}
+            description={isEditableBuiltInRole ? t('rolesPage.form.editableBuiltInNotice') : t('rolesPage.form.newRoleDesc')}
           >
-            {/* Built-in role subtle alert banner */}
+            {/* Built-in role status and safety guidance */}
             {isBuiltInRole && (
-              <div className="mb-5 flex items-center gap-3 rounded-xl border-l-4 border-amber-500 bg-amber-50/70 p-3.5 text-xs text-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
-                <Lock className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div className="mb-5 flex items-center gap-3 rounded-xl border-l-4 border-emerald-500 bg-emerald-50/70 p-3.5 text-xs text-emerald-900 dark:bg-emerald-950/20 dark:text-emerald-200">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                 <div className="min-w-0 flex-1">
                   <span className="font-semibold">{t('rolesPage.form.builtInBadge')}: </span>
-                  <span className="text-amber-800 dark:text-amber-300/90">{t('rolesPage.form.builtInNotice')}</span>
+                  <span>{t('rolesPage.form.editableBuiltInNotice')}</span>
                 </div>
               </div>
             )}
@@ -721,7 +818,7 @@ export function RolePermissionsPage() {
                     value={form.name}
                     onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
                     placeholder={t('rolesPage.form.roleNamePlaceholder')}
-                    disabled={loading || saving || isReadOnly}
+                    disabled={loading || saving || isReadOnly || isBuiltInRole}
                     required
                   />
                   {form.name && (
@@ -812,6 +909,13 @@ export function RolePermissionsPage() {
                       <p className="text-[11px] text-slate-500 dark:text-slate-400">
                         {t('rolesPage.form.permissionsCounter', { selected: selectedCount, total: totalCount })}
                       </p>
+                      {selectedRole && (
+                        <p className="mt-0.5 text-[10px] font-medium text-primary-600 dark:text-primary-400">
+                          {t('rolesPage.form.assignedFirstHint', {
+                            role: t(`roles.${selectedRole.name}`, { defaultValue: selectedRole.name }),
+                          })}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -1028,15 +1132,30 @@ export function RolePermissionsPage() {
             </p>
 
             {selectedRole?.user_count > 0 && (
-              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
                 <div className="flex items-center gap-1.5 font-semibold">
                   <Info className="h-4 w-4" />
-                  Warning: Active Users Assigned
+                  {t('rolesPage.form.activeUsersWarning')}
                 </div>
                 <p className="mt-1">
-                  This role currently has {selectedRole.user_count} assigned user(s). You must reassign those users
-                  before deleting this role.
+                  {t('rolesPage.form.reassignBeforeDelete', { count: selectedRole.user_count })}
                 </p>
+                <label className="mt-3 block font-semibold" htmlFor="replacement-role">
+                  {t('rolesPage.form.replacementRole')}
+                </label>
+                <select
+                  id="replacement-role"
+                  value={replacementRoleName}
+                  onChange={(event) => setReplacementRoleName(event.target.value)}
+                  className="mt-1.5 w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-amber-900/70 dark:bg-slate-900 dark:text-slate-100"
+                >
+                  <option value="">{t('rolesPage.form.selectReplacementRole')}</option>
+                  {replacementRoleOptions.map((role) => (
+                    <option key={role.id} value={role.name}>
+                      {t(`roles.${role.name}`, { defaultValue: role.name })}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
 
@@ -1047,15 +1166,15 @@ export function RolePermissionsPage() {
                 className="btn-secondary px-4 py-2 text-xs"
                 disabled={deleting}
               >
-                Cancel
+                {t('rolesPage.form.cancelDelete')}
               </button>
               <button
                 type="button"
                 onClick={handleDeleteRole}
-                disabled={deleting || selectedRole?.user_count > 0}
+                disabled={deleting || (selectedRole?.user_count > 0 && !replacementRoleName)}
                 className="btn-primary bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 px-4 py-2 text-xs"
               >
-                {deleting ? 'Deleting...' : t('rolesPage.form.deleteConfirmAction')}
+                {deleting ? t('rolesPage.form.deletingRole') : t('rolesPage.form.deleteConfirmAction')}
               </button>
             </div>
           </div>

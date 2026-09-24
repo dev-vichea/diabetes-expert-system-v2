@@ -68,8 +68,22 @@ function AuthenticatedRoutes() {
         {/* App shell (sidebar + topbar) around every other authenticated page */}
         <Route element={<AppLayout />}>
         {/* Dashboard is no longer at root, but at /dashboard */}
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/guide" element={<DiabetesGuidePage />} />
+        <Route
+          path="/dashboard"
+          element={(
+            <RoleGuard user={user} permissions={['analytics.view', 'patient.view', 'patient.view_own']} permissionMode="any">
+              <DashboardPage />
+            </RoleGuard>
+          )}
+        />
+        <Route
+          path="/guide"
+          element={(
+            <RoleGuard user={user} permissions={['guide.view']}>
+              <DiabetesGuidePage />
+            </RoleGuard>
+          )}
+        />
         
         {/* If user tries to access / direct to dashboard (managed by AppRouter mostly) */}
         {/* But we'll keep this as a fallback redirect */}
@@ -150,7 +164,7 @@ function AuthenticatedRoutes() {
         <Route
           path="/treatment-plans"
           element={(
-            <RoleGuard user={user} notRoles={['patient']} permissions={['diagnosis.review_any', 'patient.view', 'rule.view']} permissionMode="any">
+            <RoleGuard user={user} permissions={['treatment_plan.view']}>
               <TreatmentPlanningPage />
             </RoleGuard>
           )}
@@ -158,7 +172,7 @@ function AuthenticatedRoutes() {
         <Route
           path="/treatment-plans/create"
           element={(
-            <RoleGuard user={user} notRoles={['patient', 'nurse']} permissions={['diagnosis.review_any', 'rule.manage']} permissionMode="any">
+            <RoleGuard user={user} permissions={['treatment_plan.manage']}>
               <TreatmentPlanCreatePage />
             </RoleGuard>
           )}
@@ -167,7 +181,7 @@ function AuthenticatedRoutes() {
         <Route
           path="/care-plan"
           element={
-            <RoleGuard user={user} roles={['patient']} permissions={['diagnosis.view_own']}>
+            <RoleGuard user={user} permissions={['care_plan.view_own']}>
               <CarePlanPage />
             </RoleGuard>
           }
@@ -180,7 +194,7 @@ function AuthenticatedRoutes() {
         <Route
           path="/users"
           element={(
-            <RoleGuard user={user} permissions={['user.view', 'permission.view']} permissionMode="any">
+            <RoleGuard user={user} permissions={['user.view', 'permission.view']}>
               <AdminPage />
             </RoleGuard>
           )}

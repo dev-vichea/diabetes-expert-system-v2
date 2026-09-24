@@ -2,16 +2,53 @@ from app.extensions import db
 from app.models import DiagnosisResult, Patient
 
 
-def test_clinical_dashboard_requires_clinical_permission(client, patient_auth, doctor_auth):
+def test_clinical_dashboard_requires_clinical_permission(client, patient_auth, doctor_auth, admin_auth):
     patient_headers = {"Authorization": f"Bearer {patient_auth['access_token']}"}
     doctor_headers = {"Authorization": f"Bearer {doctor_auth['access_token']}"}
     assert client.get("/api/dashboard/clinical").status_code == 401
     assert client.get("/api/dashboard/clinical", headers=patient_headers).status_code == 403
     assert client.get("/api/dashboard/clinical", headers=doctor_headers).status_code == 200
-    nurse = client.post("/api/auth/login", json={"email": "nurse@example.com", "password": "nurse123"})
-    assert nurse.status_code == 200
-    nurse_headers = {"Authorization": f"Bearer {nurse.get_json()['data']['access_token']}"}
-    assert client.get("/api/dashboard/clinical", headers=nurse_headers).status_code == 200
+    admin_headers = {"Authorization": f"Bearer {admin_auth['access_token']}"}
+    assert client.get("/api/dashboard/clinical", headers=admin_headers).status_code == 200
+
+
+def test_custom_role_permissions_work_without_a_builtin_role_name(client, patient_auth, admin_auth):
+    admin_headers = {"Authorization": f"Bearer {admin_auth['access_token']}"}
+    patient_headers = {"Authorization": f"Bearer {patient_auth['access_token']}"}
+
+    create_role = client.post(
+        "/api/admin/roles",
+        headers=admin_headers,
+        json={
+            "name": "self_assessment_member",
+            "description": "Custom self-service assessment access",
+            "permissions": ["diagnosis.run", "diagnosis.view_own", "patient.view_own"],
+        },
+    )
+    assert create_role.status_code == 201
+
+    assign_role = client.patch(
+        f"/api/admin/users/{patient_auth['user']['id']}/roles",
+        headers=admin_headers,
+        json={"roles": ["self_assessment_member"]},
+    )
+    assert assign_role.status_code == 200
+
+    # The access token predates the role change. The backend must still use
+    # the role's current permissions and resolve the user's own patient record.
+    assessment = client.post(
+        "/api/diagnosis/",
+        headers=patient_headers,
+        json={
+            "save": False,
+            "fasting_glucose": 135,
+            "hba1c": 7.1,
+            "frequent_urination": True,
+            "excessive_thirst": True,
+        },
+    )
+    assert assessment.status_code == 200
+    assert assessment.get_json()["data"]["patient_id"] == patient_auth["user"]["patient_id"]
 
 
 def test_patient_cannot_read_another_patients_assessment(client, app, patient_auth, doctor_auth):
