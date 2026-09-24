@@ -1042,14 +1042,6 @@ export function DiagnosisResultPage() {
       ].filter(Boolean).join(', ')
     : (isKhmer ? 'មិនទាន់មានតេស្តឈាម' : 'None / Pending')
 
-  const TABS = [
-    { id: 'overview', label: isKhmer ? 'ទិដ្ឋភាពទូទៅ' : 'Overview' },
-    { id: 'labs', label: isKhmer ? 'លទ្ធផលមន្ទីរពិសោធន៍' : 'Lab Results' },
-    { id: 'symptoms', label: isKhmer ? 'រោគសញ្ញា' : 'Symptoms' },
-    { id: 'risks', label: isKhmer ? 'កត្តាហានិភ័យ' : 'Risk Factors' },
-    { id: 'evidence', label: isKhmer ? 'ភស្តុតាងគ្លីនិក' : 'Clinical Evidence' },
-  ]
-
   const patientBmi = (() => {
     if (payload?.bmi != null && !isNaN(Number(payload.bmi))) {
       return `${Number(payload.bmi).toFixed(1)} kg/m²`
@@ -1106,9 +1098,9 @@ export function DiagnosisResultPage() {
 
   const abnormalCount = (() => {
     let count = 0
-    if (hba1cStatusRaw.label === 'High' || hba1cStatusRaw.label === 'Elevated') count += 1
-    if (fastingStatusRaw.label === 'High' || fastingStatusRaw.label === 'Elevated') count += 1
-    return Math.max(count, 2)
+    if (hba1cStatusRaw?.label === 'High' || hba1cStatusRaw?.label === 'Elevated') count += 1
+    if (fastingStatusRaw?.label === 'High' || fastingStatusRaw?.label === 'Elevated') count += 1
+    return count
   })()
 
   const keyIndicatorCount = (() => {
@@ -1119,6 +1111,37 @@ export function DiagnosisResultPage() {
     if (matchedRiskFactors.length > 0) count += 1
     return Math.max(count, 3)
   })()
+
+  const TABS = [
+    {
+      id: 'overview',
+      label: isKhmer ? 'ទិដ្ឋភាពទូទៅ' : 'Overview',
+      icon: ClipboardList,
+    },
+    {
+      id: 'labs',
+      label: isKhmer ? 'លទ្ធផលមន្ទីរពិសោធន៍' : 'Lab Results',
+      icon: FlaskConical,
+      badge: (hba1cValue != null || fastingValue != null) ? (abnormalCount > 0 ? abnormalCount : null) : null,
+    },
+    {
+      id: 'symptoms',
+      label: isKhmer ? 'រោគសញ្ញា' : 'Symptoms',
+      icon: Heart,
+      badge: matchedSymptoms.length > 0 ? matchedSymptoms.length : null,
+    },
+    {
+      id: 'risks',
+      label: isKhmer ? 'កត្តាហានិភ័យ' : 'Risk Factors',
+      icon: Zap,
+      badge: matchedRiskFactors.length > 0 ? matchedRiskFactors.length : null,
+    },
+    {
+      id: 'evidence',
+      label: isKhmer ? 'ភស្តុតាងគ្លីនិក' : 'Clinical Evidence',
+      icon: Brain,
+    },
+  ]
 
   const sidebarNextSteps = (() => {
     if (recommendations && recommendations.length >= 3) {
@@ -1524,25 +1547,46 @@ export function DiagnosisResultPage() {
 
             {/* 2. TABBED CONTENT CARD (TABS + ACTIVE VIEW) */}
             <div className="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-7 shadow-xs dark:border-slate-800/80 dark:bg-slate-900/90 space-y-6">
-              {/* PILL NAVIGATION TABS */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-none border-b border-slate-100 dark:border-slate-800/80">
-                {TABS.map((tab) => {
-                  const isActive = activeTab === tab.id
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`rounded-full px-5 py-2 text-xs sm:text-sm font-semibold transition-all shrink-0 cursor-pointer ${
-                        isActive
-                          ? 'bg-blue-600 text-white shadow-xs'
-                          : 'bg-slate-50 text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:bg-slate-800/60 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  )
-                })}
+              {/* ── Segmented Switcher Tab Bar (Like Diabetes Guide) ── */}
+              <div className="border-b border-slate-100 pb-4 dark:border-slate-800/80">
+                <div className="inline-flex max-w-full items-center gap-1.5 overflow-x-auto rounded-2xl bg-slate-100/90 p-1.5 dark:bg-slate-800/60 scrollbar-none">
+                  {TABS.map((tab) => {
+                    const isActive = activeTab === tab.id
+                    const Icon = tab.icon
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer ${
+                          isActive
+                            ? 'bg-white text-blue-900 shadow-xs dark:bg-slate-900 dark:text-white'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/40 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700/40'
+                        }`}
+                      >
+                        {Icon && (
+                          <Icon
+                            className={`h-4 w-4 shrink-0 transition-colors ${
+                              isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'
+                            }`}
+                          />
+                        )}
+                        <span>{tab.label}</span>
+                        {tab.badge != null && (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                              isActive
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300'
+                                : 'bg-slate-200/80 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                            }`}
+                          >
+                            {tab.badge}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
               {/* 3. TAB VIEWS */}
