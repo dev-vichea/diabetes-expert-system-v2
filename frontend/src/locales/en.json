@@ -947,6 +947,7 @@
           "title": "Doctor Review",
           "reviewedBy": "Reviewed by {{doctor}}",
           "verified": "Verified Review",
+          "verifiedWithoutNote": "This care plan has been reviewed and verified by your doctor.",
           "awaiting": "Awaiting review",
           "empty": "Your doctor hasn't reviewed this care plan yet. You'll see their notes here once the review is complete."
         },
