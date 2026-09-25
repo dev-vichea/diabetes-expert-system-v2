@@ -112,8 +112,11 @@ function getRoleMeta(role, t) {
       avatarGradient: 'from-amber-500 to-orange-600',
     }
   }
+  const customRoleLabel = normalized
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
   return {
-    label: t(`roles.${normalized}`, 'Patient'),
+    label: t(`roles.${normalized}`, customRoleLabel),
     badgeClass: 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-500/30',
     avatarGradient: 'from-emerald-500 to-teal-600',
   }

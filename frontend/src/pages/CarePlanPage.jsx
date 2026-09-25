@@ -124,10 +124,12 @@ export function CarePlanPage() {
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('Overview')
 
+  const taskStorageKey = `care_plan_daily_tasks:v4:${user.id}:${new Date().toLocaleDateString('en-CA')}`
+
   // Interactive Daily Checklist state with local persistence
   const [todayTasks, setTodayTasks] = useState(() => {
     try {
-      const saved = window.localStorage.getItem('care_plan_daily_tasks:v3')
+      const saved = window.localStorage.getItem(taskStorageKey)
       if (saved) {
         const parsed = JSON.parse(saved)
         if (Array.isArray(parsed) && parsed.length > 0 && !parsed.some((t) => String(t.title).toLowerCase().includes('metformin'))) {
@@ -157,9 +159,9 @@ export function CarePlanPage() {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem('care_plan_daily_tasks:v3', JSON.stringify(todayTasks))
+      window.localStorage.setItem(taskStorageKey, JSON.stringify(todayTasks))
     } catch {}
-  }, [todayTasks])
+  }, [todayTasks, taskStorageKey])
 
   useEffect(() => {
     if (incomingAssessmentId) {
@@ -198,7 +200,7 @@ export function CarePlanPage() {
                   setCarePlan(cpData)
                 }
               } catch (cpErr) {
-                console.warn('Failed to load care plan from backend, generating directly:', cpErr)
+                console.warn('Failed to load care plan from backend, generating directly:')
                 try {
                   const genResp = await api.post(`/diagnosis/${targetId}/care-plan`, { result: target })
                   const genData = getApiData(genResp)
@@ -206,7 +208,7 @@ export function CarePlanPage() {
                     setCarePlan(genData)
                   }
                 } catch (genErr) {
-                  console.error('Failed to generate care plan:', genErr)
+                  console.error('Failed to generate care plan:')
                 }
               }
             } else {
@@ -217,7 +219,7 @@ export function CarePlanPage() {
                   setCarePlan(genData)
                 }
               } catch (genErr) {
-                console.error('Failed to generate care plan directly:', genErr)
+                console.error('Failed to generate care plan directly:')
               }
             }
           }
@@ -257,7 +259,7 @@ export function CarePlanPage() {
         setCarePlan(data)
       }
     } catch (err) {
-      console.error('Failed to regenerate care plan:', err)
+      console.error('Failed to regenerate care plan:')
     } finally {
       setRegenerating(false)
     }

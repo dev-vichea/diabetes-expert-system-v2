@@ -99,7 +99,7 @@ function AuthenticatedRoutes() {
         <Route
           path="/diagnosis/result"
           element={(
-            <RoleGuard user={user} permissions={['diagnosis.run', 'diagnosis.view_own']} permissionMode="any">
+            <RoleGuard user={user} permissions={['diagnosis.run', 'diagnosis.view_own', 'diagnosis.review_any']} permissionMode="any">
               <DiagnosisResultPage />
             </RoleGuard>
           )}
@@ -107,7 +107,7 @@ function AuthenticatedRoutes() {
         <Route
           path="/my-results/:id"
           element={(
-            <RoleGuard user={user} permissions={['diagnosis.run', 'diagnosis.view_own']} permissionMode="any">
+            <RoleGuard user={user} permissions={['diagnosis.run', 'diagnosis.view_own', 'diagnosis.review_any']} permissionMode="any">
               <MyResultRedirect />
             </RoleGuard>
           )}

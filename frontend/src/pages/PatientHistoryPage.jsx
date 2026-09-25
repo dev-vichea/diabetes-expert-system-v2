@@ -30,6 +30,7 @@ import {
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { formatDateTime } from '@/lib/datetime'
 import { AppSelect, Sparkline, StatusBadge, UserAvatar, Skeleton, StatCardsSkeleton, CardListSkeleton } from '@/components/ui'
+import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 const EMPTY_SYMPTOM_FORM = {
@@ -87,6 +88,8 @@ function cumulativeSeries(items = [], dateKey) {
 
 export function PatientHistoryPage() {
   const { t } = useLanguage()
+  const { user } = useAuth()
+  const permissions = new Set(user?.permissions || [])
   const { patientId } = useParams()
   const [history, setHistory] = useState(null)
   const [profile, setProfile] = useState({
@@ -931,7 +934,7 @@ export function PatientHistoryPage() {
               onChange={(event) => setSymptomForm({ ...symptomForm, notes: event.target.value })}
             />
             <div className="sm:col-span-2">
-              <button type="submit" className="btn-primary w-full sm:w-auto" disabled={savingSymptom || !patient}>
+              <button type="submit" className="btn-primary w-full sm:w-auto" disabled={!permissions.has('symptom.manage') || savingSymptom || !patient}>
                 {savingSymptom ? t('historyPage.profile.saving', 'Saving...') : t('historyPage.symptomForm.add', 'Add Symptom')}
               </button>
             </div>
@@ -980,7 +983,7 @@ export function PatientHistoryPage() {
             <input className="input-base" placeholder={t('historyPage.labForm.range', 'Reference range')} value={labForm.reference_range} onChange={(event) => setLabForm({ ...labForm, reference_range: event.target.value })} />
             <textarea className="input-base sm:col-span-2" rows={2} placeholder={t('historyPage.labForm.notes', 'Notes')} value={labForm.notes} onChange={(event) => setLabForm({ ...labForm, notes: event.target.value })} />
             <div className="sm:col-span-2">
-              <button type="submit" className="btn-primary w-full sm:w-auto" disabled={savingLab || !patient}>
+              <button type="submit" className="btn-primary w-full sm:w-auto" disabled={!permissions.has('lab.manage') || savingLab || !patient}>
                 {savingLab ? t('historyPage.profile.saving', 'Saving...') : t('historyPage.labForm.add', 'Add Lab Result')}
               </button>
             </div>
@@ -1058,7 +1061,7 @@ export function PatientHistoryPage() {
             </label>
 
             <div className="md:col-span-2">
-              <button type="submit" className="btn-primary w-full sm:w-auto" disabled={savingProfile || loading || !patient}>
+              <button type="submit" className="btn-primary w-full sm:w-auto" disabled={!permissions.has('patient.manage') || savingProfile || loading || !patient}>
                 {savingProfile ? t('historyPage.profile.saving', 'Saving...') : t('historyPage.profile.updateProfile', 'Update Profile')}
               </button>
             </div>

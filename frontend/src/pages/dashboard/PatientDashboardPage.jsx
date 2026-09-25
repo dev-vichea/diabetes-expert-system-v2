@@ -493,13 +493,13 @@ export function PatientDashboardPage() {
           if (resultsRes.status === 'fulfilled') {
             setPatientResults(getApiData(resultsRes.value) || [])
           } else {
-            console.error('Failed to load diagnosis records:', resultsRes.reason)
+            console.error('Failed to load diagnosis records:')
           }
 
           if (profileRes.status === 'fulfilled') {
             setPatientProfile(getApiData(profileRes.value) || null)
           } else {
-            console.warn('Patient profile endpoint returned:', profileRes.reason)
+            console.warn('Patient profile endpoint returned:')
           }
         }
       } catch (err) {

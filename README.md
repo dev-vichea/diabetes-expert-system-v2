@@ -45,7 +45,7 @@ A professional, full-stack web application designed to leverage an expert system
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v18+)
+- Node.js (v20+)
 - Python (3.11+)
 - A [Supabase](https://supabase.com) account & PostgreSQL instance (or local PostgreSQL)
 
@@ -176,18 +176,36 @@ If you enabled `SEED_DEMO_DATA=true` in your backend environment, the following 
 
 ## 🧪 Testing and Verification
 
-**Backend Tests:**
+**Backend tests:**
 ```bash
 cd backend
 source .venv/bin/activate
 pytest
 ```
 
-**Frontend Build:**
+On macOS with Homebrew's native Pango/Cairo libraries, prefix backend test or
+server commands with `DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib` if
+WeasyPrint reports that it cannot load `libgobject`.
+
+**Frontend checks:**
 ```bash
 cd frontend
+npm test
+npm run lint
+npm run check:locales
 npm run build
 ```
+
+**Isolated browser workflows:**
+```bash
+cd frontend
+npm run test:e2e
+```
+
+The browser suite starts disposable services on ports 5002 and 5174 and uses a
+temporary SQLite database. It never opens or modifies the local development
+database. On Windows, set `E2E_PYTHON` to the backend virtual-environment
+Python executable before running the suite.
 
 ---
 

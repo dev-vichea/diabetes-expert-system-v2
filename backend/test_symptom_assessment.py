@@ -11,7 +11,7 @@ import os
 # Add the backend directory to path
 sys.path.insert(0, os.path.dirname(__file__))
 
-from app.expert_system.symptom_database import SYMPTOM_DATABASE, get_symptom_info
+from app.expert_system.symptom_database import ALL_SYMPTOMS, get_symptom_info
 from app.expert_system.symptom_based_rules import generate_symptom_rules, get_symptom_based_assessment
 from app.expert_system.symptom_confidence import calculate_symptom_confidence, get_confidence_explanation
 from app.expert_system.intelligent_interview import IntelligentInterview
@@ -28,10 +28,10 @@ def test_symptom_database():
     """Test 1: Verify symptom database."""
     print_header("TEST 1: Symptom Database")
     
-    print(f"\n📚 Total Symptoms: {len(SYMPTOM_DATABASE)}")
+    print(f"\n📚 Total Symptoms: {len(ALL_SYMPTOMS)}")
     
     categories = {}
-    for symptom in SYMPTOM_DATABASE.values():
+    for symptom in ALL_SYMPTOMS.values():
         cat = symptom['category']
         categories[cat] = categories.get(cat, 0) + 1
     
@@ -41,9 +41,9 @@ def test_symptom_database():
     
     # Show cardinal symptoms
     print(f"\n⭐ Cardinal Symptoms (3 Ps):")
-    for key, symptom in SYMPTOM_DATABASE.items():
-        if symptom.get('cardinal'):
-            print(f"   ✓ {symptom['name']} - {symptom['description']}")
+    for key, symptom in ALL_SYMPTOMS.items():
+        if symptom['category'] == 'cardinal':
+            print(f"   ✓ {symptom['name']} - {symptom['question']}")
     
     print("\n✅ Symptom Database OK")
 
@@ -72,8 +72,8 @@ def test_symptom_rules():
     sample = rules[0]
     print(f"   Name: {sample['name']}")
     print(f"   Priority: {sample['priority']}")
-    print(f"   Conditions: {len(sample['conditions'])} checks")
-    print(f"   Conclusion: {sample['conclusion']['diagnosis']}")
+    print(f"   Conditions: {len(sample['condition'])} checks")
+    print(f"   Conclusion: {sample['actions'][0]['action_value']}")
     
     print("\n✅ Rules OK")
 
@@ -112,7 +112,7 @@ def test_classic_type2():
     
     # Check if high confidence
     assert confidence['confidence_score'] >= 0.75, "Should have high confidence with all 3 Ps"
-    assert confidence['confidence_level'] == 'high', "Should be high confidence"
+    assert confidence['confidence_level'] in {'high', 'very_high'}, "Should be high confidence"
     
     print("\n✅ Classic Type 2 PASS")
 
@@ -174,7 +174,7 @@ def test_pediatric_type1():
     print(f"\n📊 Results:")
     print(f"   Confidence: {confidence['confidence_score']:.1%}")
     print(f"   Suspected Type: {assessment['type_indication']['likely_type']}")
-    print(f"   Reasoning: {assessment['type_indication']['reasoning']}")
+    print(f"   Reasoning: {assessment['type_indication']['type1_score']}")
     
     # Should detect Type 1 pattern
     assert "Type 1" in assessment['type_indication']['likely_type'], "Should detect Type 1"
@@ -235,7 +235,7 @@ def test_interview_flow():
         questions_asked.append(q)
         
         # Auto-answer based on question key
-        key = q['key']
+        key = q['id'].removeprefix('demographics_')
         if key == 'age':
             answers[key] = 55
         elif key == 'sex':
@@ -245,6 +245,7 @@ def test_interview_flow():
         else:
             answers[key] = False
     
+    interview.get_next_question(answers)
     progress = interview.get_interview_progress()
     
     print(f"\n📊 Interview Stats:")

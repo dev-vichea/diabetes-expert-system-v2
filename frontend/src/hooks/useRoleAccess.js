@@ -15,7 +15,7 @@ export function useRoleAccess(user) {
     canUseAssistant: userPermissions.has('assistant.use'),
     canViewTreatmentPlans: userPermissions.has('treatment_plan.view'),
     canManageTreatmentPlans: userPermissions.has('treatment_plan.manage'),
-    canViewOwnCarePlan: userPermissions.has('care_plan.view_own'),
+    canViewOwnCarePlan: userRoles.has('patient') && userPermissions.has('care_plan.view_own'),
     canViewGuide: userPermissions.has('guide.view'),
     canViewNotifications: userPermissions.has('notification.view'),
   }

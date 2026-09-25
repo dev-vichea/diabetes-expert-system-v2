@@ -323,7 +323,7 @@ function ClinicalReviewWorkspace({
       </aside>
 
       {/* ── Right Side: Main Detail & Full Doctor Review ── */}
-      <main className="custom-scrollbar min-w-0 flex-1 overflow-y-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-[#070b1b] xl:h-full">
+      <section className="custom-scrollbar min-w-0 flex-1 overflow-y-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-[#070b1b] xl:h-full">
         {error && <ErrorAlert message={error} className="m-4 border-rose-200" />}
 
         {!selectedResult ? (
@@ -572,7 +572,7 @@ function ClinicalReviewWorkspace({
             </section>
           </div>
         )}
-      </main>
+      </section>
     </div>
   )
 }

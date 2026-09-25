@@ -5,6 +5,8 @@ Based on Mayo Clinic, CDC, ADA, and WHO diabetes guidelines.
 All symptoms are categorized by type and severity.
 """
 
+from contextvars import ContextVar
+
 # Classic "3 Ps" - Cardinal symptoms of diabetes
 CARDINAL_SYMPTOMS = {
     "frequent_urination": {
@@ -271,27 +273,26 @@ SYMPTOM_ALIASES = {
 # edited weights / type indications / cardinal-emergency flags immediately
 # change the reasoning. Without an overlay (tests, rule sandbox, DB down) the
 # static knowledge above is used unchanged.
-_FACT_OVERLAY = {}
-_OVERLAY_ALIASES = {}
+_FACT_OVERLAY = ContextVar("fact_overlay", default={})
+_OVERLAY_ALIASES = ContextVar("fact_overlay_aliases", default={})
 
 
 def _canonical_fact_key(code):
     code = str(code or "").strip()
     if not code:
         return None
-    if code in _FACT_OVERLAY or code in ALL_SYMPTOMS:
+    if code in _FACT_OVERLAY.get() or code in ALL_SYMPTOMS:
         return code
     canonical = SYMPTOM_ALIASES.get(code)
-    if canonical and (canonical in _FACT_OVERLAY or canonical in ALL_SYMPTOMS):
+    if canonical and (canonical in _FACT_OVERLAY.get() or canonical in ALL_SYMPTOMS):
         return canonical
-    return _OVERLAY_ALIASES.get(code)
+    return _OVERLAY_ALIASES.get().get(code)
 
 
 def apply_fact_overlay(fact_map) -> None:
     """Merge doctor-managed fact rows (FactRepository.get_active_fact_map())
     over the static catalog. Row fields: weight, type_indication, question,
     label, category, is_cardinal, is_emergency, aliases."""
-    global _FACT_OVERLAY, _OVERLAY_ALIASES
     overlay = {}
     aliases = {}
     for key, row in (fact_map or {}).items():
@@ -326,14 +327,13 @@ def apply_fact_overlay(fact_map) -> None:
             alias = str(alias).strip().lower()
             if alias and alias != canonical:
                 aliases[alias] = canonical
-    _FACT_OVERLAY = overlay
-    _OVERLAY_ALIASES = aliases
+    _FACT_OVERLAY.set(overlay)
+    _OVERLAY_ALIASES.set(aliases)
 
 
 def clear_fact_overlay() -> None:
-    global _FACT_OVERLAY, _OVERLAY_ALIASES
-    _FACT_OVERLAY = {}
-    _OVERLAY_ALIASES = {}
+    _FACT_OVERLAY.set({})
+    _OVERLAY_ALIASES.set({})
 
 
 def get_symptom_info(symptom_code: str) -> dict | None:
@@ -341,8 +341,8 @@ def get_symptom_info(symptom_code: str) -> dict | None:
     if not symptom_code:
         return None
     canonical = _canonical_fact_key(symptom_code)
-    if canonical and canonical in _FACT_OVERLAY:
-        return _FACT_OVERLAY[canonical]
+    if canonical and canonical in _FACT_OVERLAY.get():
+        return _FACT_OVERLAY.get()[canonical]
     fallback = SYMPTOM_ALIASES.get(symptom_code, symptom_code)
     return ALL_SYMPTOMS.get(symptom_code) or ALL_SYMPTOMS.get(fallback)
 
@@ -359,14 +359,14 @@ def get_symptoms_by_category(category: str) -> dict:
 def get_cardinal_symptoms() -> list[str]:
     """The classic 3 Ps plus any doctor-flagged cardinal facts."""
     keys = set(CARDINAL_SYMPTOMS.keys())
-    keys.update(k for k, v in _FACT_OVERLAY.items() if v.get("is_cardinal"))
+    keys.update(k for k, v in _FACT_OVERLAY.get().items() if v.get("is_cardinal"))
     return list(keys)
 
 
 def get_emergency_symptoms() -> list[str]:
     """Emergency/DKA symptoms plus any doctor-flagged emergency facts."""
     keys = set(EMERGENCY_SYMPTOMS.keys())
-    keys.update(k for k, v in _FACT_OVERLAY.items() if v.get("is_emergency"))
+    keys.update(k for k, v in _FACT_OVERLAY.get().items() if v.get("is_emergency"))
     return list(keys)
 
 

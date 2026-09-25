@@ -310,19 +310,19 @@ class DiagnosisService:
             for row in rows
         ], total
 
-    def _get_accessible_result(self, diagnosis_result_id: int, current_user: dict):
+    def _get_accessible_result(self, diagnosis_result_id: int, current_user: dict, *, own_only=False):
         result = self.diagnosis_repository.get_result(diagnosis_result_id)
         if not result:
             raise NotFoundError("Diagnosis result not found.")
         permissions = set(current_user.get("permissions") or [])
-        if not permissions.intersection({"diagnosis.review_any", "patient.view"}):
+        if own_only or not permissions.intersection({"diagnosis.review_any", "patient.view"}):
             patient = self.patient_repository.get_patient_by_user_id(int(current_user["sub"]))
             if not patient or result.patient_id != patient.id:
                 raise ForbiddenError("You cannot access another patient's assessment.")
         return result
 
-    def get_result(self, diagnosis_result_id: int, current_user: dict) -> dict:
-        result = self._get_accessible_result(diagnosis_result_id, current_user)
+    def get_result(self, diagnosis_result_id: int, current_user: dict, *, own_only=False) -> dict:
+        result = self._get_accessible_result(diagnosis_result_id, current_user, own_only=own_only)
         serialized = self.diagnosis_repository.serialize_result(result)
         return self._rebuild_persisted_response(serialized)
 
@@ -577,7 +577,7 @@ class DiagnosisService:
                 get_notification_repository().create(
                     user_id=updated.patient.user_id,
                     title="Doctor Completed Assessment Review",
-                    message=f"Dr. Lina reviewed your recent health summary ({updated.diagnosis}) and updated your care recommendations.",
+                    message=f"{current_user.get('name') or 'Your clinician'} reviewed your recent health summary ({updated.diagnosis}) and updated your care recommendations.",
                     type="review",
                     link="/my-results",
                     metadata={"diagnosis_id": updated.id, "diagnosis": updated.diagnosis},
@@ -600,6 +600,9 @@ class DiagnosisService:
             if not patient_id:
                 raise ValidationError("Patient profile is not linked to this account.")
             return patient_id
+
+        if not has_clinical_patient_scope:
+            raise ForbiddenError("You do not have access to patient records.")
 
         patient_id = self._as_optional_int(payload.get("patient_id"), field_name="patient_id")
         if not patient_id:
@@ -1325,8 +1328,8 @@ class DiagnosisService:
         try:
             from app.services.reasoning_service import ReasoningService
             enriched["reasoning_report"] = ReasoningService().build_reasoning(enriched, normalized_payload)
-        except Exception:
-            logger.warning("Failed to build reasoning report", exc_info=True)
+        except Exception as error:
+            logger.warning("Failed to build reasoning report (%s)", type(error).__name__)
             enriched["reasoning_report"] = None
 
         # ── Structured AI Care Plan ──
@@ -1335,8 +1338,8 @@ class DiagnosisService:
         try:
             from app.services.care_plan_service import CarePlanService
             enriched["care_plan"] = CarePlanService().generate_care_plan(enriched, normalized_payload)
-        except Exception:
-            logger.warning("Failed to generate personalized care plan", exc_info=True)
+        except Exception as error:
+            logger.warning("Failed to generate personalized care plan (%s)", type(error).__name__)
             enriched["care_plan"] = None
 
         return enriched

@@ -579,7 +579,7 @@ export function ClinicalDashboard({ activeRole }) {
       const data = getApiData(response)
       setStats(data)
     } catch (err) {
-      console.error('Failed to load dashboard stats:', err)
+      console.error('Failed to load dashboard stats:')
       notify.error(t('dashboard.errorLoad', 'Could not load dashboard statistics.'))
     } finally {
       setLoading(false)

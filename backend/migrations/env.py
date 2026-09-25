@@ -4,6 +4,8 @@ from logging.config import fileConfig
 from flask import current_app
 
 from alembic import context
+from alembic.autogenerate import compare_metadata
+from alembic.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import inspect, text
 
@@ -13,17 +15,12 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-fileConfig(config.config_file_name)
+fileConfig(config.config_file_name, disable_existing_loggers=False)
 logger = logging.getLogger('alembic.env')
 
 
 def get_engine():
-    try:
-        # this works with Flask-SQLAlchemy<3 and Alchemical
-        return current_app.extensions['migrate'].db.get_engine()
-    except (TypeError, AttributeError):
-        # this works with Flask-SQLAlchemy>=3
-        return current_app.extensions['migrate'].db.engine
+    return current_app.extensions['migrate'].db.engine
 
 
 def get_engine_url():
@@ -74,11 +71,8 @@ def run_migrations_offline():
         context.run_migrations()
 
 
-def _bootstrap_fallback_alembic_version(connection):
+def _bootstrap_unversioned_sqlite(connection):
     if connection.dialect.name != "sqlite":
-        return
-
-    if not current_app.config.get("DB_FALLBACK_ACTIVE", False):
         return
 
     inspector = inspect(connection)
@@ -86,6 +80,19 @@ def _bootstrap_fallback_alembic_version(connection):
     user_tables = table_names - {"alembic_version"}
     if not user_tables:
         return
+
+    if 'alembic_version' in table_names:
+        if connection.execute(text('SELECT version_num FROM alembic_version LIMIT 1')).scalar():
+            return
+
+    # SQLite quick-start installations use create_all. Adopt only a complete
+    # current schema; blindly stamping partial legacy schemas skips upgrades.
+    migration_context = MigrationContext.configure(connection, opts={'compare_type': True})
+    if compare_metadata(migration_context, get_metadata()):
+        raise RuntimeError(
+            'Unversioned SQLite schema differs from the current models. '
+            'Back up the database and reconcile its schema before stamping a revision.'
+        )
 
     head_revision = ScriptDirectory.from_config(config).get_current_head()
     if not head_revision:
@@ -96,7 +103,7 @@ def _bootstrap_fallback_alembic_version(connection):
         connection.execute(text("INSERT INTO alembic_version (version_num) VALUES (:version_num)"), {"version_num": head_revision})
         connection.commit()
         logger.warning(
-            "Detected fallback SQLite schema without Alembic version table. Stamped schema at revision %s.",
+            "Verified current SQLite schema. Recorded Alembic revision %s.",
             head_revision,
         )
         return
@@ -138,7 +145,10 @@ def run_migrations_online():
     connectable = get_engine()
 
     with connectable.connect() as connection:
-        _bootstrap_fallback_alembic_version(connection)
+        _bootstrap_unversioned_sqlite(connection)
+        # Schema inspection starts an implicit SQLAlchemy transaction. End it
+        # before Alembic takes ownership, or upgrades get rolled back on close.
+        connection.commit()
 
         context.configure(
             connection=connection,

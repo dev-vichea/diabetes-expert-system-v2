@@ -31,6 +31,7 @@ const ACTION_TRANSLATION_KEYS = {
   'auth.google_link': 'linkedGoogle',
   'auth.logout': 'loggedOut',
   'assessment.evaluate': 'completedAssessment',
+  'assessment.complete': 'completedAssessment',
   'diagnosis.create': 'completedAssessment',
   'diagnosis.submit_to_care_team': 'submittedAssessment',
   'diagnosis.review': 'reviewedAssessment',

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import math
 
 from app.errors import NotFoundError, ValidationError
 
@@ -131,6 +132,23 @@ class PatientService:
 
         # Self-service updates are restricted to the patient's own profile fields.
         normalized = {key: payload[key] for key in self.SELF_PROFILE_FIELDS if key in payload}
+
+        for field in ('height_cm', 'weight_kg', 'waist_circumference'):
+            if field in normalized:
+                value = normalized[field]
+                if value is None or value == '':
+                    normalized[field] = None
+                    continue
+                try:
+                    number = float(value)
+                except (ValueError, TypeError):
+                    raise ValidationError(f'{field} must be a positive number.')
+                if isinstance(value, bool) or not math.isfinite(number) or number <= 0:
+                    raise ValidationError(f'{field} must be a positive number.')
+                normalized[field] = number
+        for field in ('smoking', 'sedentary_lifestyle', 'family_history', 'hypertension', 'high_cholesterol'):
+            if field in normalized and normalized[field] is not None and not isinstance(normalized[field], bool):
+                raise ValidationError(f'{field} must be a boolean.')
 
         if "gender" in normalized and normalized["gender"] not in self.ALLOWED_GENDERS:
             raise ValidationError("Gender must be one of: male, female, other, unknown.")
@@ -322,6 +340,9 @@ class PatientService:
             test_value = float(test_value_raw)
         except (TypeError, ValueError) as exc:
             raise ValidationError("test_value must be a valid number.") from exc
+
+        if isinstance(test_value_raw, bool) or not math.isfinite(test_value):
+            raise ValidationError("test_value must be a finite number.")
 
         measured_at_raw = str(payload.get("measured_at") or "").strip()
 

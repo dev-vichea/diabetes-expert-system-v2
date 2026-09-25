@@ -53,7 +53,7 @@ class AdminService:
             raise ValidationError('A JSON object is required.')
 
         email = str(payload.get('email') or '').strip().lower()
-        password = str(payload.get('password') or '').strip()
+        password = str(payload.get('password') or '')
         name = str(payload.get('name') or '').strip()
         role_names = payload.get('roles') or ['patient']
         is_active = self._as_bool(payload.get('is_active', True))
@@ -80,6 +80,7 @@ class AdminService:
             is_active=is_active,
             role_names=role_names,
         )
+        self._ensure_patient_profile(user)
         created = self.user_repository.to_public_dict(user)
 
         if self.audit_log_repository:
@@ -327,6 +328,7 @@ class AdminService:
                 permission_codes=allowed_direct_permissions,
             )
 
+        self._ensure_patient_profile(user)
         updated = self.user_repository.to_public_dict(user)
 
         if self.audit_log_repository:
@@ -397,6 +399,7 @@ class AdminService:
             user_id=updated_user.id,
             permission_codes=direct_permission_codes,
         )
+        self._ensure_patient_profile(updated_user)
         safe_user = self.user_repository.to_public_dict(updated_user)
 
         if self.audit_log_repository:
@@ -443,6 +446,15 @@ class AdminService:
             )
 
         return updated
+
+    def _ensure_patient_profile(self, user):
+        """Admin-provisioned patients need the same chart as self-registration."""
+        if self.patient_repository and any(role.name == 'patient' for role in user.roles):
+            if not self.patient_repository.get_patient_by_user_id(user.id):
+                patient = self.patient_repository.create_patient({
+                    'user_id': user.id, 'full_name': user.name, 'gender': 'unknown',
+                })
+                user.patient_profile = patient
 
     def list_audit_logs(
         self,

@@ -54,7 +54,7 @@ export function clearAssessmentSession(user) {
         (key.startsWith('diagnosis-assessment-draft:') ||
           key.startsWith('diagnosis-latest-result:') ||
           key === 'diagnosisResultSnapshot') &&
-        (key.includes(uKey) || key === 'diagnosisResultSnapshot')
+        (key.endsWith(`:${uKey}`) || key === 'diagnosisResultSnapshot')
       ) {
         window.localStorage.removeItem(key)
       }
@@ -63,4 +63,3 @@ export function clearAssessmentSession(user) {
     console.error('Failed to clear assessment session storage', err)
   }
 }
-

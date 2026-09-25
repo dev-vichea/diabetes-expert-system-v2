@@ -68,9 +68,10 @@ def optional_auth(fn):
                     if fresh_user:
                         user = {**user, **fresh_user, "sub": str(fresh_user["id"])}
                     g.current_user = user
-                except Exception:
-                    # Token invalid, continue without auth
-                    g.current_user = None
+                except UnauthorizedError:
+                    # An explicitly supplied invalid token must never silently
+                    # downgrade a protected user's request to anonymous mode.
+                    raise
             else:
                 g.current_user = None
         else:

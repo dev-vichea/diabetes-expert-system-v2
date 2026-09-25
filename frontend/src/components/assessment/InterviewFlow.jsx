@@ -230,7 +230,7 @@ function BmiQuestionCard({
   return (
     <div className="assessment-card-enter w-full flex-1 flex flex-col justify-center min-h-0 h-full relative overflow-hidden">
       {/* Content Container */}
-      <main className="w-full lg:w-[64%] xl:w-[60%] flex flex-col justify-center px-6 sm:px-12 lg:px-16 py-6 relative z-20 text-white min-h-[460px] lg:min-h-[520px]">
+      <section className="w-full lg:w-[64%] xl:w-[60%] flex flex-col justify-center px-6 sm:px-12 lg:px-16 py-6 relative z-20 text-white min-h-[460px] lg:min-h-[520px]">
         <div className="flex items-start gap-5">
           {/* Circular Step Badge */}
           <div className="flex h-12 w-12 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-full bg-white/20 text-2xl sm:text-3xl font-bold text-white">
@@ -509,7 +509,7 @@ function BmiQuestionCard({
             </div>
           </div>
         </div>
-      </main>
+      </section>
 
       {/* ⭐ PNG OVERLAY */}
       <img
@@ -682,7 +682,7 @@ function WaistQuestionCard({
   return (
     <div className="assessment-card-enter w-full flex-1 flex flex-col justify-center min-h-0 h-full">
       {/* Left Content */}
-      <main className="w-full lg:w-[58%] flex flex-col justify-center px-6 sm:px-12 lg:px-16 py-6 relative z-20 text-white">
+      <section className="w-full lg:w-[58%] flex flex-col justify-center px-6 sm:px-12 lg:px-16 py-6 relative z-20 text-white">
         <div className="flex items-start gap-5">
           {/* Question Number */}
           <div className="flex h-12 w-12 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-full bg-white/20 text-2xl sm:text-3xl font-bold text-white">
@@ -849,7 +849,7 @@ function WaistQuestionCard({
         </div>
           </div>
         </div>
-      </main>
+      </section>
 
       {/* ⭐ PNG OVERLAY */}
       <img
@@ -906,7 +906,7 @@ function QuestionCard({
   return (
     <div className="assessment-card-enter w-full flex-1 flex flex-col justify-center min-h-0 h-full">
       {/* Left Content */}
-      <main className="w-full lg:w-[58%] flex flex-col justify-between px-6 sm:px-12 lg:px-16 py-6 relative z-20 text-white min-h-[460px] lg:min-h-[520px]">
+      <section className="w-full lg:w-[58%] flex flex-col justify-between px-6 sm:px-12 lg:px-16 py-6 relative z-20 text-white min-h-[460px] lg:min-h-[520px]">
         <div className="flex items-start gap-5">
           {/* Question Number Badge */}
           <div className="flex h-12 w-12 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-full bg-white/20 text-2xl sm:text-3xl font-bold text-white">
@@ -945,7 +945,7 @@ function QuestionCard({
             ) : null}
           </div>
         </div>
-      </main>
+      </section>
 
       {/* ⭐ PNG OVERLAY */}
       {displayMedia ? (
