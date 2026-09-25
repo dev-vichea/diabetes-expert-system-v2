@@ -115,7 +115,9 @@
     "documents": "Documents",
     "tools": "Tools",
     "patientResults": "Patient Results",
-    "diabetesGuide": "Diabetes Guide"
+    "diabetesGuide": "Diabetes Guide",
+    "administration": "Administration",
+    "clinicalOperations": "Clinical Operations"
   },
   "page": {
     "treatmentPlanning": {
@@ -959,12 +961,14 @@
         "startAssessment": "Start Assessment",
         "fullReport": "Full Report",
         "doctorsPlan": "Doctor's Plan",
+        "carePlanDetails": "Care Plan Details",
         "phase2": "Phase 2",
         "activeIntervention": "Active Intervention",
         "dayProgress": "Day 14 / 30",
         "tabs": {
           "overview": "Overview",
-          "treatmentPlan": "Treatment Plan",
+          "carePlan": "Care Plan",
+          "treatmentPlan": "Care Plan",
           "medications": "Medications",
           "appointments": "Appointments"
         },
@@ -1011,6 +1015,16 @@
           "instruction": "Take with dinner",
           "viewAll": "View all medications"
         },
+        "activityGuide": {
+          "title": "Physical Activity & Fitness Guide",
+          "badge": "150 Min / Week",
+          "regimenTitle": "Target Activity Regimen",
+          "dailyWalk": "30 Min / Day",
+          "resistance": "2x / Week",
+          "postMeal": "Post-Meal",
+          "targetSubtitle": "Moderate aerobic activity and light post-meal walks to blunt glucose spikes",
+          "viewPlan": "View full care plan"
+        },
         "nutritionGuide": {
           "title": "Nutrition & Diet Guide",
           "badge": "Low Glycemic",
@@ -1019,7 +1033,7 @@
           "proteinPlate": "25% Lean protein",
           "grainPlate": "25% Whole grains",
           "targetNutrients": "Carbs: 45–60g / meal · Fiber: ≥ 28g daily",
-          "viewPlan": "View nutrition plan"
+          "viewPlan": "View full care plan"
         },
         "lifestyleTarget": {
           "title": "Lifestyle & Activity Target",
@@ -1041,25 +1055,29 @@
           "fullReportSub": "See complete details",
           "askQuestion": "Ask a Question",
           "askQuestionSub": "Get help from your care team",
-          "treatmentPlan": "View Treatment Plan",
-          "treatmentPlanSub": "Goals, nutrition, activity & more"
+          "carePlan": "View Care Plan",
+          "carePlanSub": "Nutrition, activity, lifestyle & monitoring",
+          "treatmentPlan": "View Care Plan",
+          "treatmentPlanSub": "Nutrition, activity, lifestyle & monitoring"
         },
         "doctorReview": {
           "title": "Doctor Review",
           "reviewedBy": "Reviewed by {{doctor}}",
           "verified": "Verified Review",
+          "verifiedWithoutNote": "This care plan has been reviewed and verified by your doctor.",
           "awaiting": "Awaiting review",
           "empty": "Your doctor hasn't reviewed this care plan yet. You'll see their notes here once the review is complete."
         },
         "needsAttention": {
           "title": "Needs attention",
-          "description": "Your latest fasting glucose result is above your recommended target. Follow your current treatment plan and contact your care team if symptoms worsen.",
+          "description": "Your latest fasting glucose result is above your recommended target. Follow your personalized care plan and contact your care team if symptoms worsen.",
           "warningSigns": "View warning signs"
         },
         "yourProgress": {
           "title": "Your Progress",
           "glucose": "Blood Glucose",
           "aboveTarget": "Above target",
+          "lifestyle": "Lifestyle Habits",
           "medications": "Medications",
           "onTrack": "On track",
           "activity": "Activity",
@@ -2345,6 +2363,10 @@
     "restartAssessment": "Restart Assessment",
     "openCarePlan": "Open Care Plan",
     "generateCarePlan": "Generate Care Plan",
+    "openReview": "Open Review",
+    "openReviewSubtitle": "Review diagnosis & add notes",
+    "patientProfile": "Patient Profile",
+    "patientProfileSubtitle": "View medical records & history",
     "currentPatient": "Current patient",
     "assessmentComplete": "Assessment complete! Your results have been saved.",
     "viewReport": "View Report →",

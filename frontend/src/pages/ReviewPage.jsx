@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   CheckCircle2,
   AlertCircle,
@@ -11,7 +11,6 @@ import {
   ArrowUpDown,
   Download,
   ChevronRight,
-  Stethoscope,
   X,
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
@@ -98,7 +97,6 @@ function ClinicalReviewWorkspace({
   saving,
   navigate,
   user,
-  canManageTreatmentPlans,
 }) {
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col gap-4 xl:flex-row xl:h-[calc(100vh-6.5rem)]">
@@ -552,32 +550,8 @@ function ClinicalReviewWorkspace({
                   )}
                 </div>
 
-                {/* Footer Controls: Treatment planner & Sign button */}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
-                  <div>
-                    {canManageTreatmentPlans && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          navigate('/treatment-plans/create', {
-                            state: {
-                              initialData: {
-                                patientName: selectedResult.patient_name || 'Patient',
-                                patientId: selectedResult.patient_id ? `P-00${selectedResult.patient_id}` : `P-${selectedResult.id}`,
-                                doctorName: user?.name || 'Doctor',
-                                diagnosis: selectedResult.diagnosis || 'Diabetes',
-                                procedures: [],
-                              },
-                            },
-                          })
-                        }
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-200/80 bg-cyan-50/50 px-3 py-2 text-xs font-bold text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300 dark:hover:bg-cyan-900/50"
-                      >
-                        <Stethoscope className="h-4 w-4" /> Open Treatment Planner <ChevronRight className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-
+                {/* Footer Controls: Sign button */}
+                <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
                   <div className="flex items-center gap-3 ml-auto">
                     {!selectedResult.reviewed_at && (
                       <span className="text-[11px] text-slate-400 hidden sm:inline">
@@ -606,8 +580,9 @@ function ClinicalReviewWorkspace({
 export function ReviewPage() {
   const { t, tExact, isKhmer } = useLanguage()
   const { user } = useAuth()
-  const canManageTreatmentPlans = user?.permissions?.includes('treatment_plan.manage')
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const paramResultId = searchParams.get('diagnosis_result_id') || searchParams.get('id')
   const [results, setResults] = useState([])
   const [selectedResultId, setSelectedResultId] = useState(null)
   const [selectedPatientKey, setSelectedPatientKey] = useState(null)
@@ -682,8 +657,22 @@ export function ReviewPage() {
     setLoading(true)
     setError('')
     try {
-      const response = await api.get('/diagnosis/review?limit=50')
+      const response = await api.get('/diagnosis/review?limit=100')
       const loaded = getApiData(response) || []
+
+      // If a specific diagnosis result was requested in the URL and isn't in recent results, fetch it directly
+      if (paramResultId && !loaded.some((item) => String(item.id) === String(paramResultId))) {
+        try {
+          const singleRes = await api.get(`/diagnosis/${paramResultId}`)
+          const singleItem = getApiData(singleRes)
+          if (singleItem && singleItem.id) {
+            loaded.unshift(singleItem)
+          }
+        } catch (_) {
+          // If individual fetch fails, proceed with the loaded review list
+        }
+      }
+
       setResults(loaded)
 
       if (selectedResultId && !loaded.some((item) => item.id === selectedResultId)) {
@@ -811,16 +800,26 @@ export function ReviewPage() {
     return groups
   }, [results, t])
 
-  // ── Auto-select first item if none selected ──
+  // ── Auto-select target from query param or first item ──
   useEffect(() => {
-    if (!selectedResultId && results.length > 0) {
+    if (results.length === 0) return
+
+    if (paramResultId) {
+      const match = results.find((r) => String(r.id) === String(paramResultId))
+      if (match) {
+        selectResult(match)
+        return
+      }
+    }
+
+    if (!selectedResultId) {
       if (viewMode === 'by-patient' && patientGroups.length > 0) {
         selectPatientGroup(patientGroups[0])
       } else {
         selectResult(results[0])
       }
     }
-  }, [results, selectedResultId, viewMode, patientGroups])
+  }, [results, selectedResultId, viewMode, patientGroups, paramResultId])
 
   // ── Filter & Sort: Patient Groups ──
   const filteredPatientGroups = useMemo(() => {
@@ -976,7 +975,6 @@ export function ReviewPage() {
       saving={saving}
       navigate={navigate}
       user={user}
-      canManageTreatmentPlans={canManageTreatmentPlans}
     />
   )
 }

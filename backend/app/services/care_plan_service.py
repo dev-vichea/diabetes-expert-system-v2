@@ -448,6 +448,34 @@ class CarePlanService:
                 "tag": "Cardioprotection",
             })
 
+        has_family_history = any("family" in r.lower() for r in findings.get("risk_factors", []))
+        if has_family_history and risk_level in ("moderate", "high"):
+            action_items.append({
+                "title": "Counter Genetic Risk with Polyphenol & Fiber-Rich Nutrition",
+                "description": "While family history elevates hereditary susceptibility, clinical trials demonstrate that an antioxidant-rich, low-glycemic dietary pattern counteracts genetic risk and reduces diabetes progression by over 58%.",
+                "priority": "high",
+                "tag": "Genetic Defense",
+            })
+
+        has_dyslipidemia = any("cholesterol" in r.lower() or "lipid" in r.lower() for r in findings.get("risk_factors", []))
+        if has_dyslipidemia:
+            action_items.append({
+                "title": "Cardioprotective Viscous Fiber & Healthy Fats",
+                "description": "Increase soluble viscous fiber (oats, barley, chia seeds, lentils) to bind bile acids and support healthy cholesterol levels, while substituting butter with extra virgin olive oil.",
+                "priority": "high",
+                "tag": "Lipid Optimization",
+            })
+            foods_to_prioritize.extend(["Oat bran and barley", "Chia and flax seeds", "Avocado and extra virgin olive oil"])
+
+        has_thirst = any("thirst" in s.lower() or "polydipsia" in s.lower() for s in findings.get("symptoms", []))
+        if has_thirst and not any("Hydration" in item.get("tag", "") for item in action_items):
+            action_items.append({
+                "title": "Targeted Osmotic Rehydration Strategy",
+                "description": "Drink pure water or plain herbal teas consistently throughout the day. Avoid fruit juices, sweetened teas, and sports drinks which trigger rebound glucose spikes.",
+                "priority": "high",
+                "tag": "Hydration Balance",
+            })
+
         return {
             "category": "Diet & Nutrition",
             "summary": summary,
@@ -593,6 +621,23 @@ class CarePlanService:
                 "Carry a water bottle and stop if you feel dizzy or lightheaded.",
             ])
 
+        has_vision = any("vision" in s.lower() or "blur" in s.lower() for s in findings.get("symptoms", []))
+        if has_vision and not findings["is_urgent"]:
+            precautions.append("Avoid heavy overhead lifting and intense breath-holding (Valsalva maneuvers) until an eye examination rules out retinal microvascular stress.")
+
+        bmi = findings["demographics"].get("bmi")
+        if bmi and bmi >= 30.0 and not findings["is_urgent"]:
+            precautions.append("Choose joint-friendly low-impact modalities (water aerobics, swimming, recumbent cycling) to protect knees and hips while maximizing metabolic calorie expenditure.")
+
+        has_sedentary = any("sedentary" in r.lower() or "inactiv" in r.lower() for r in findings.get("risk_factors", []))
+        if has_sedentary and not findings["is_urgent"] and not any("Gradual" in item["title"] for item in action_items):
+            action_items.append({
+                "title": "Gradual Step-Up Physical Conditioning",
+                "description": "If returning from a sedentary routine, start with 10-15 minutes of comfortable daily walking, increasing by 5 minutes each week to build cardiorespiratory capacity safely.",
+                "priority": "medium",
+                "tag": "Habit Building",
+            })
+
         return {
             "category": "Physical Activity",
             "summary": summary,
@@ -694,6 +739,24 @@ class CarePlanService:
             "tag": "Alcohol Moderation",
         })
 
+        has_fatigue = any("fatigue" in s.lower() or "tired" in s.lower() for s in findings.get("symptoms", []))
+        if has_fatigue and not any("Fatigue" in item.get("tag", "") or "Energy" in item.get("tag", "") for item in action_items):
+            action_items.append({
+                "title": "Circadian Energy Pacing & Fatigue Management",
+                "description": "Combat metabolic fatigue with 10-15 minutes of natural morning sunlight exposure, steady hydration, and consistent meal timing to eliminate afternoon glucose dips.",
+                "priority": "medium",
+                "tag": "Energy Management",
+            })
+
+        has_wounds = any("wound" in s.lower() or "heal" in s.lower() or "sore" in s.lower() for s in findings.get("symptoms", []))
+        if has_wounds and not any("Wound" in item.get("tag", "") or "Skin" in item.get("tag", "") for item in action_items):
+            action_items.append({
+                "title": "Vigilant Skin & Wound Care Protocol",
+                "description": "Clean any skin abrasions gently with mild soap and water, keep dry, and inspect daily for warmth or redness. Seek immediate medical attention for non-healing lesions.",
+                "priority": "high",
+                "tag": "Skin Protection",
+            })
+
         return {
             "category": "Lifestyle & Well-being",
             "summary": "Holistic lifestyle habits targeting restorative sleep, stress reduction, foot vigilance, and weight regulation.",
@@ -709,11 +772,17 @@ class CarePlanService:
         is_pregnant = findings["is_pregnant"]
         has_hypertension = any("hypertension" in r.lower() or "blood pressure" in r.lower() for r in findings["risk_factors"])
 
+        fpg_data = findings.get("key_labs", {}).get("fasting_glucose") or findings.get("key_labs", {}).get("fasting_plasma_glucose")
+        hba1c_data = findings.get("key_labs", {}).get("hba1c")
+
+        fpg_note = f" (Your lab: {fpg_data['value']} mg/dL)" if fpg_data else ""
+        hba1c_note = f" (Your lab: {hba1c_data['value']}%)" if hba1c_data else ""
+
         action_items = []
         target_ranges = {
-            "fasting_glucose": "80 - 130 mg/dL (ADA standard adult non-pregnant target)",
+            "fasting_glucose": f"80 - 130 mg/dL (ADA standard adult non-pregnant target){fpg_note}",
             "post_meal_glucose": "< 180 mg/dL (1-2 hours after meal start)",
-            "hba1c": "< 7.0% (individualized clinical target determined with physician)",
+            "hba1c": f"< 7.0% (individualized clinical target determined with physician){hba1c_note}",
         }
 
         if findings.get("is_provisional"):
