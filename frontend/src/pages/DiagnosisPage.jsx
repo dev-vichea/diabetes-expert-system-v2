@@ -72,7 +72,7 @@ const DEFAULT_FORM = {
   burning_sensation: false, numbness: false, recurrent_uti_yeast: false, itchy_skin: false, bed_wetting: false,
   extra_symptoms: '',
   sex: '', currently_pregnant: false, pregnancy_stage: '', has_labs: '',
-  family_history: false, obesity: false, hypertension: false,
+  family_history: false, obesity: false, hypertension: null,
   sedentary_lifestyle: false, gestational_history: false, smoking: false,
   high_cholesterol: false, pcos_history: false, ethnicity_high_risk: false,
   systolic_bp: '', diastolic_bp: '',
@@ -551,7 +551,7 @@ export function DiagnosisPage() {
       setForm((prev) => ({
         ...prev,
         age: '', sex: '', height_cm: '', weight_kg: '', bmi: '', waist_circumference: '',
-        family_history: false, hypertension: false, high_cholesterol: false,
+        family_history: false, hypertension: null, high_cholesterol: false,
         smoking: false, sedentary_lifestyle: false,
       }))
       setQcm((prev) => ({ ...prev, age_group: '', bmi_group: '' }))
@@ -853,6 +853,7 @@ export function DiagnosisPage() {
     setInterviewSkipped(prev => prev.includes(node.id) ? prev : [...prev, node.id])
     setInterviewDone(prev => prev.filter(id => id !== node.id))
     if (node.id === 'labs') up('no_labs_available', true)
+    if (node.id === 'blood_pressure') up('hypertension', null)
     setCursorOverride(null)
   }
 

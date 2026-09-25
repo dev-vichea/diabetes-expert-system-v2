@@ -640,6 +640,7 @@ export const INTERVIEW_NODES = [
     titleFallback: 'What is your typical Blood Pressure level?',
     helperKey: 'assessment.interview.bpHelper',
     helperFallback: 'Blood pressure ≥130/80 mmHg or being treated for hypertension significantly increases diabetes and vascular complications.',
+    skippable: true,
     options: [
       { value: false, labelKey: 'assessment.interview.bpNormal', labelFallback: 'Normal (< 130/80 mmHg)' },
       { value: true, labelKey: 'assessment.interview.bpHypertension', labelFallback: 'Elevated / High (≥ 130/80 mmHg or taking BP medicine)' },
