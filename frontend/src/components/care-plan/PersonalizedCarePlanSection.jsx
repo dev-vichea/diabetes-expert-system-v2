@@ -9,6 +9,7 @@ import {
   Award,
   Calendar,
   CalendarClock,
+  Check,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -176,72 +177,135 @@ function DropletIllustration({ className = 'h-8 w-8' }) {
   )
 }
 
-function getActionItemMeta(item, category) {
+function getActionItemMeta(item, category, isKhmer) {
   const title = (item.title || '').toLowerCase()
   const tag = (item.tag || item.frequency || '').toLowerCase()
 
   if (title.includes('water') || title.includes('hydrat') || tag.includes('hydrat')) {
-    return { icon: Droplets, color: 'sky', keyStat: '2.0–2.5L / Day' }
+    return {
+      icon: Droplets,
+      color: 'sky',
+      keyStat: isKhmer ? '២.០–២.៥ លីត្រ / ថ្ងៃ' : '2.0–2.5L / Day',
+    }
   }
   if (title.includes('plate') || tag.includes('plate')) {
-    return { icon: Utensils, color: 'emerald', keyStat: '50% Veg · 25% Protein · 25% Carbs' }
+    return {
+      icon: Utensils,
+      color: 'emerald',
+      keyStat: isKhmer ? '៥០% បន្លែ · ២៥% សាច់ · ២៥% បាយ' : '50% Veg · 25% Protein · 25% Carbs',
+    }
   }
   if (title.includes('sugar') || tag.includes('sugar')) {
-    return { icon: Apple, color: 'amber', keyStat: '< 25g Daily' }
+    return {
+      icon: Apple,
+      color: 'amber',
+      keyStat: isKhmer ? '< ២៥g ស្ករប្រចាំថ្ងៃ' : '< 25g Daily Added Sugar',
+    }
   }
   if (title.includes('fiber') || tag.includes('fiber')) {
-    return { icon: Apple, color: 'emerald', keyStat: '≥ 30g Daily' }
+    return {
+      icon: Apple,
+      color: 'emerald',
+      keyStat: isKhmer ? '≥ ៣០g ជាតិសរសៃ / ថ្ងៃ' : '≥ 30g Daily Fiber',
+    }
   }
   if (title.includes('walk') || title.includes('aerobic') || tag.includes('aerobic')) {
-    return { icon: Footprints, color: 'emerald', keyStat: '30 Min / Day' }
+    return {
+      icon: Footprints,
+      color: 'emerald',
+      keyStat: isKhmer ? '៣០ នាទី / ថ្ងៃ' : '30 Min / Day',
+    }
   }
   if (title.includes('resistance') || title.includes('strength') || tag.includes('muscle')) {
-    return { icon: Activity, color: 'indigo', keyStat: '2–3x / Week' }
+    return {
+      icon: Activity,
+      color: 'indigo',
+      keyStat: isKhmer ? '២–៣ ដង / សប្តាហ៍' : '2–3x / Week',
+    }
   }
   if (title.includes('post-meal') || title.includes('prandial') || tag.includes('post-meal')) {
-    return { icon: Clock, color: 'sky', keyStat: '10–15 Min Post-Meal' }
+    return {
+      icon: Clock,
+      color: 'sky',
+      keyStat: isKhmer ? '១០–១៥ នាទីក្រោយអាហារ' : '10–15 Min Post-Meal Walk',
+    }
   }
   if (title.includes('sedentary') || tag.includes('sedentary')) {
-    return { icon: Zap, color: 'amber', keyStat: 'Break Every 30m' }
+    return {
+      icon: Zap,
+      color: 'amber',
+      keyStat: isKhmer ? 'សម្រាករៀងរាល់ ៣០ នាទី' : 'Stand / Walk Every 30m',
+    }
   }
   if (title.includes('sleep') || tag.includes('sleep')) {
-    return { icon: Moon, color: 'indigo', keyStat: '7–8 Hours Nightly' }
+    return {
+      icon: Moon,
+      color: 'indigo',
+      keyStat: isKhmer ? '៧–៨ ម៉ោង រៀងរាល់យប់' : '7–8 Hours Nightly',
+    }
   }
-  if (title.includes('foot') || tag.includes('foot')) {
-    return { icon: Footprints, color: 'rose', keyStat: 'Daily Inspection' }
+  if (title.includes('foot') || tag.includes('foot') || title.includes('wound')) {
+    return {
+      icon: Footprints,
+      color: 'rose',
+      keyStat: isKhmer ? 'ពិនិត្យបាតជើងប្រចាំថ្ងៃ' : 'Daily Foot & Skin Check',
+    }
   }
-  if (title.includes('stress') || tag.includes('stress')) {
-    return { icon: HeartPulse, color: 'purple', keyStat: '10 Min Daily' }
+  if (title.includes('stress') || tag.includes('stress') || title.includes('cortisol')) {
+    return {
+      icon: HeartPulse,
+      color: 'purple',
+      keyStat: isKhmer ? '១០ នាទី ដកដង្ហើមវែងៗ' : '10 Min Daily Mindfulness',
+    }
   }
   if (title.includes('smbg') || title.includes('fasting blood sugar') || title.includes('glucose check')) {
-    return { icon: Droplets, color: 'amber', keyStat: 'Fasting AM' }
+    return {
+      icon: Droplets,
+      color: 'amber',
+      keyStat: isKhmer ? 'ពេលព្រឹកមុនអាហារ' : 'Fasting AM Target: 80–130',
+    }
   }
   if (title.includes('hba1c') || tag.includes('hba1c')) {
-    return { icon: Stethoscope, color: 'purple', keyStat: 'Every 3–6 Mo' }
+    return {
+      icon: Stethoscope,
+      color: 'purple',
+      keyStat: isKhmer ? 'រៀងរាល់ ៣–៦ ខែម្ដង' : 'Lab Test Every 3–6 Mo',
+    }
   }
-  if (title.includes('blood pressure') || title.includes('hypertension')) {
-    return { icon: HeartPulse, color: 'rose', keyStat: '< 130/80 mmHg' }
+  if (title.includes('blood pressure') || title.includes('hypertension') || title.includes('dash')) {
+    return {
+      icon: HeartPulse,
+      color: 'rose',
+      keyStat: isKhmer ? 'រក្សា < ១៣០/៨០ mmHg' : 'Target: < 130/80 mmHg',
+    }
   }
-  if (title.includes('weight') || tag.includes('weight')) {
-    return { icon: Scale, color: 'emerald', keyStat: '5–7% Target' }
+  if (title.includes('weight') || tag.includes('weight') || title.includes('caloric')) {
+    return {
+      icon: Scale,
+      color: 'emerald',
+      keyStat: isKhmer ? 'គោលដៅ ៥–៧% នៃទម្ងន់' : '5–7% Weight Target',
+    }
   }
 
   // Fallback by category
-  if (category === 'diet') return { icon: Utensils, color: 'emerald', keyStat: item.tag || null }
-  if (category === 'activity') return { icon: Activity, color: 'sky', keyStat: item.tag || null }
-  if (category === 'lifestyle') return { icon: Moon, color: 'indigo', keyStat: item.tag || null }
-  return { icon: HeartPulse, color: 'purple', keyStat: item.frequency || item.tag || null }
+  if (category === 'diet') return { icon: Utensils, color: 'emerald', keyStat: isKhmer ? 'អាហារមានតុល្យភាព' : 'Balanced Plate' }
+  if (category === 'activity') return { icon: Activity, color: 'sky', keyStat: isKhmer ? 'លំហាត់ប្រាណទៀងទាត់' : 'Consistent Routine' }
+  if (category === 'lifestyle') return { icon: Moon, color: 'indigo', keyStat: isKhmer ? 'ទម្លាប់ប្រចាំថ្ងៃ' : 'Daily Habit' }
+  return { icon: HeartPulse, color: 'purple', keyStat: isKhmer ? 'ការតាមដានសុខភាព' : 'Clinical Monitoring' }
 }
 
 function ActionItemRow({
   item,
+  itemKey,
   category,
   isExpanded,
   onToggle,
+  isCompleted = false,
+  onToggleComplete,
   isKhmer,
   tExact,
 }) {
-  const meta = getActionItemMeta(item, category)
+  const meta = getActionItemMeta(item, category, isKhmer)
   const Icon = meta.icon
 
   const colorStyles = {
@@ -288,20 +352,48 @@ function ActionItemRow({
 
   return (
     <div
-      onClick={onToggle}
       className={cn(
-        'group cursor-pointer rounded-xl border border-slate-100 bg-white p-3 shadow-2xs transition-all duration-150',
+        'group rounded-xl border border-slate-100 bg-white p-3 shadow-2xs transition-all duration-150',
         colorStyles.hoverBorder,
+        isCompleted && 'bg-emerald-50/25 border-emerald-200/60 dark:bg-emerald-950/15 dark:border-emerald-800/40',
         'dark:border-slate-800/80 dark:bg-slate-900/80 dark:hover:bg-slate-800/40'
       )}
     >
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          {/* Interactive Checkbox for Habit Tracking */}
+          {onToggleComplete && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleComplete()
+              }}
+              className={cn(
+                'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all duration-150',
+                isCompleted
+                  ? 'border-emerald-500 bg-emerald-500 text-white shadow-2xs'
+                  : 'border-slate-300 bg-transparent hover:border-slate-400 dark:border-slate-600'
+              )}
+              title={isCompleted ? (isKhmer ? 'ចុចដើម្បីដោះការធីក' : 'Mark as incomplete') : (isKhmer ? 'ចុចដើម្បីកត់ត្រាថាបានធ្វើរួច' : 'Mark as done for today')}
+            >
+              {isCompleted && <Check className="h-3 w-3 stroke-[3]" />}
+            </button>
+          )}
+
+          {/* Category Icon */}
           <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', colorStyles.iconBg)}>
             <Icon className="h-4 w-4" />
           </div>
-          <div className="min-w-0">
-            <h4 className="text-xs sm:text-sm font-semibold text-slate-900 truncate dark:text-slate-100">
+
+          {/* Title & Key Glanceable Stat */}
+          <div className="min-w-0 flex-1 cursor-pointer select-none" onClick={onToggle}>
+            <h4
+              className={cn(
+                'text-xs sm:text-sm font-semibold text-slate-900 truncate dark:text-slate-100 transition-colors',
+                isCompleted && 'line-through text-slate-400 dark:text-slate-500'
+              )}
+            >
               {displayTitle}
             </h4>
             {meta.keyStat && !isExpanded && (
@@ -312,18 +404,24 @@ function ActionItemRow({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Right side Tag Badge & Chevron */}
+        <div className="flex items-center gap-2 shrink-0 cursor-pointer select-none" onClick={onToggle}>
           {displayTag && (
             <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold border', colorStyles.badge)}>
               {displayTag}
             </span>
           )}
-          <ChevronDown
-            className={cn(
-              'h-3.5 w-3.5 text-slate-400 transition-transform duration-200 dark:text-slate-500',
-              isExpanded && 'rotate-180 text-slate-700 dark:text-slate-300'
-            )}
-          />
+          <button
+            type="button"
+            className="p-0.5 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition"
+          >
+            <ChevronDown
+              className={cn(
+                'h-3.5 w-3.5 transition-transform duration-200',
+                isExpanded && 'rotate-180 text-slate-700 dark:text-slate-300'
+              )}
+            />
+          </button>
         </div>
       </div>
 
@@ -348,6 +446,31 @@ export function PersonalizedCarePlanSection({
   const [viewMode, setViewMode] = useState('compact') // 'compact' | 'detailed'
   const [expandedItems, setExpandedItems] = useState({})
   const [isSafetyExpanded, setIsSafetyExpanded] = useState(false)
+  const [showClinicalNotes, setShowClinicalNotes] = useState(false)
+
+  // Interactive habit completion state (persisted per user & date)
+  const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), [])
+  const habitStorageKey = `care_plan_actions_done_${todayKey}_${latestResult?.id || 'default'}`
+  const [completedActions, setCompletedActions] = useState(() => {
+    try {
+      const saved = localStorage.getItem(habitStorageKey)
+      return saved ? JSON.parse(saved) : []
+    } catch {
+      return []
+    }
+  })
+
+  const toggleActionComplete = (itemKey) => {
+    setCompletedActions((prev) => {
+      const next = prev.includes(itemKey)
+        ? prev.filter((k) => k !== itemKey)
+        : [...prev, itemKey]
+      try {
+        localStorage.setItem(habitStorageKey, JSON.stringify(next))
+      } catch {}
+      return next
+    })
+  }
 
   if (!carePlan) {
     return null
@@ -484,12 +607,54 @@ export function PersonalizedCarePlanSection({
           {/* Left Content */}
           <div className="flex-1 space-y-3 min-w-0">
             <div>
-              <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white leading-tight">
-                {conditionName}
-              </h2>
-              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
-                {localizedSummary}
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white leading-tight">
+                  {conditionName}
+                </h2>
+                <span
+                  className={cn(
+                    'rounded-full px-2.5 py-0.5 text-xs font-bold border',
+                    riskLevel === 'high' || isUrgent
+                      ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300'
+                      : riskLevel === 'moderate'
+                      ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300'
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300'
+                  )}
+                >
+                  {riskLevel === 'high' || isUrgent
+                    ? (isKhmer ? 'ហានិភ័យខ្ពស់' : 'High Risk')
+                    : riskLevel === 'moderate'
+                    ? (isKhmer ? 'ហានិភ័យមធ្យម' : 'Moderate Risk')
+                    : (isKhmer ? 'ហានិភ័យទាប' : 'Low Risk')}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                {isKhmer
+                  ? 'ផែនការសកម្មភាពបែបបទរស់នៅ ដើម្បីរក្សាលំនឹងជាតិស្ករ និងបង្កើនសុខភាពរំលាយអាហារ។'
+                  : 'Actionable lifestyle targets to stabilize glucose and boost metabolic health.'}
               </p>
+
+              {/* Optional Collapsible Clinical Narrative */}
+              <div className="mt-1.5">
+                <button
+                  type="button"
+                  onClick={() => setShowClinicalNotes((prev) => !prev)}
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                >
+                  <Info className="h-3 w-3" />
+                  <span>
+                    {showClinicalNotes
+                      ? (isKhmer ? 'លាក់កំណត់សម្គាល់គ្លីនិក' : 'Hide Clinical Rationale')
+                      : (isKhmer ? 'មើលកំណត់សម្គាល់គ្លីនិក' : 'View Clinical Rationale')}
+                  </span>
+                  <ChevronDown className={cn('h-3 w-3 transition-transform duration-200', showClinicalNotes && 'rotate-180')} />
+                </button>
+                {showClinicalNotes && (
+                  <p className="mt-2 text-xs text-slate-600 dark:text-slate-300 bg-slate-50/90 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800 leading-relaxed animate-in fade-in duration-150">
+                    {localizedSummary}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Mini Stat Pills */}
@@ -653,34 +818,47 @@ export function PersonalizedCarePlanSection({
             })}
           </div>
 
-          {/* View Mode Toggle (Compact vs Detailed) */}
-          <div className="inline-flex items-center self-start md:self-auto rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">
-            <button
-              type="button"
-              onClick={() => setViewMode('compact')}
-              className={cn(
-                'flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition',
-                viewMode === 'compact'
-                  ? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-white'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-              )}
-            >
-              <Zap className="h-3 w-3" />
-              <span>{isKhmer ? 'ទិដ្ឋភាពសង្ខេប' : 'Compact'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('detailed')}
-              className={cn(
-                'flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition',
-                viewMode === 'detailed'
-                  ? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-white'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-              )}
-            >
-              <SlidersHorizontal className="h-3 w-3" />
-              <span>{isKhmer ? 'ទិដ្ឋភាពលម្អិត' : 'Detailed'}</span>
-            </button>
+          {/* View Mode Toggle + Completion Progress Counter */}
+          <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
+            {completedActions.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200/70 shadow-2xs dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/40 animate-in fade-in duration-200">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>
+                  {isKhmer
+                    ? `បានអនុវត្ត ${completedActions.length} កិច្ចការថ្ងៃនេះ`
+                    : `${completedActions.length} Done Today`}
+                </span>
+              </span>
+            )}
+
+            <div className="inline-flex items-center rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">
+              <button
+                type="button"
+                onClick={() => setViewMode('compact')}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition',
+                  viewMode === 'compact'
+                    ? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-white'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                )}
+              >
+                <Zap className="h-3 w-3" />
+                <span>{isKhmer ? 'ទិដ្ឋភាពសង្ខេប' : 'Compact'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('detailed')}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition',
+                  viewMode === 'detailed'
+                    ? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-white'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                )}
+              >
+                <SlidersHorizontal className="h-3 w-3" />
+                <span>{isKhmer ? 'ទិដ្ឋភាពលម្អិត' : 'Detailed'}</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -711,6 +889,34 @@ export function PersonalizedCarePlanSection({
                   </span>
                 </div>
 
+                {/* Visual Metric Strip for Diet */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-xl bg-emerald-50/70 p-2 border border-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-900/30">
+                    <span className="block text-xs font-bold text-emerald-800 dark:text-emerald-200">
+                      50 / 25 / 25
+                    </span>
+                    <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                      {isKhmer ? 'ចានសុខភាព (បន្លែ/សាច់/បាយ)' : 'Plate (Veg/Prot/Carb)'}
+                    </span>
+                  </div>
+                  <div className="rounded-xl bg-amber-50/70 p-2 border border-amber-100 dark:bg-amber-950/30 dark:border-amber-900/30">
+                    <span className="block text-xs font-bold text-amber-800 dark:text-amber-200">
+                      &lt; 25g
+                    </span>
+                    <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                      {isKhmer ? 'កម្រិតស្ករប្រចាំថ្ងៃ' : 'Daily Added Sugar'}
+                    </span>
+                  </div>
+                  <div className="rounded-xl bg-sky-50/70 p-2 border border-sky-100 dark:bg-sky-950/30 dark:border-sky-900/30">
+                    <span className="block text-xs font-bold text-sky-800 dark:text-sky-200">
+                      2.0–2.5 L
+                    </span>
+                    <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                      {isKhmer ? 'ជាតិទឹកប្រចាំថ្ងៃ' : 'Water Hydration'}
+                    </span>
+                  </div>
+                </div>
+
                 {/* Compact Action Items */}
                 <div className="space-y-2">
                   {diet.action_items?.map((item, idx) => {
@@ -719,9 +925,12 @@ export function PersonalizedCarePlanSection({
                       <ActionItemRow
                         key={idx}
                         item={item}
+                        itemKey={key}
                         category="diet"
                         isExpanded={isItemExpanded(key)}
                         onToggle={() => toggleItem(key)}
+                        isCompleted={completedActions.includes(key)}
+                        onToggleComplete={() => toggleActionComplete(key)}
                         isKhmer={isKhmer}
                         tExact={tExact}
                       />
@@ -839,9 +1048,12 @@ export function PersonalizedCarePlanSection({
                       <ActionItemRow
                         key={idx}
                         item={item}
+                        itemKey={key}
                         category="activity"
                         isExpanded={isItemExpanded(key)}
                         onToggle={() => toggleItem(key)}
+                        isCompleted={completedActions.includes(key)}
+                        onToggleComplete={() => toggleActionComplete(key)}
                         isKhmer={isKhmer}
                         tExact={tExact}
                       />
@@ -927,9 +1139,12 @@ export function PersonalizedCarePlanSection({
                       <ActionItemRow
                         key={idx}
                         item={item}
+                        itemKey={key}
                         category="lifestyle"
                         isExpanded={isItemExpanded(key)}
                         onToggle={() => toggleItem(key)}
+                        isCompleted={completedActions.includes(key)}
+                        onToggleComplete={() => toggleActionComplete(key)}
                         isKhmer={isKhmer}
                         tExact={tExact}
                       />
@@ -1001,9 +1216,12 @@ export function PersonalizedCarePlanSection({
                       <ActionItemRow
                         key={idx}
                         item={item}
+                        itemKey={key}
                         category="monitoring"
                         isExpanded={isItemExpanded(key)}
                         onToggle={() => toggleItem(key)}
+                        isCompleted={completedActions.includes(key)}
+                        onToggleComplete={() => toggleActionComplete(key)}
                         isKhmer={isKhmer}
                         tExact={tExact}
                       />
