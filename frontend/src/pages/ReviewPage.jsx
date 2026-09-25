@@ -11,7 +11,6 @@ import {
   ArrowUpDown,
   Download,
   ChevronRight,
-  Stethoscope,
   X,
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
@@ -98,7 +97,6 @@ function ClinicalReviewWorkspace({
   saving,
   navigate,
   user,
-  canManageTreatmentPlans,
 }) {
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col gap-4 xl:flex-row xl:h-[calc(100vh-6.5rem)]">
@@ -552,32 +550,8 @@ function ClinicalReviewWorkspace({
                   )}
                 </div>
 
-                {/* Footer Controls: Treatment planner & Sign button */}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
-                  <div>
-                    {canManageTreatmentPlans && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          navigate('/treatment-plans/create', {
-                            state: {
-                              initialData: {
-                                patientName: selectedResult.patient_name || 'Patient',
-                                patientId: selectedResult.patient_id ? `P-00${selectedResult.patient_id}` : `P-${selectedResult.id}`,
-                                doctorName: user?.name || 'Doctor',
-                                diagnosis: selectedResult.diagnosis || 'Diabetes',
-                                procedures: [],
-                              },
-                            },
-                          })
-                        }
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-200/80 bg-cyan-50/50 px-3 py-2 text-xs font-bold text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300 dark:hover:bg-cyan-900/50"
-                      >
-                        <Stethoscope className="h-4 w-4" /> Open Treatment Planner <ChevronRight className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-
+                {/* Footer Controls: Sign button */}
+                <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
                   <div className="flex items-center gap-3 ml-auto">
                     {!selectedResult.reviewed_at && (
                       <span className="text-[11px] text-slate-400 hidden sm:inline">
@@ -606,7 +580,6 @@ function ClinicalReviewWorkspace({
 export function ReviewPage() {
   const { t, tExact, isKhmer } = useLanguage()
   const { user } = useAuth()
-  const canManageTreatmentPlans = user?.permissions?.includes('treatment_plan.manage')
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const paramResultId = searchParams.get('diagnosis_result_id') || searchParams.get('id')
@@ -1002,7 +975,6 @@ export function ReviewPage() {
       saving={saving}
       navigate={navigate}
       user={user}
-      canManageTreatmentPlans={canManageTreatmentPlans}
     />
   )
 }

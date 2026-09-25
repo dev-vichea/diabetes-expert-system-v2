@@ -39,7 +39,6 @@ import { cn } from '@/lib/utils'
 import { AppointmentCalendarCanvas } from '@/components/dashboard/patient/AppointmentCalendarCanvas'
 import { PersonalizedCarePlanSection } from '@/components/care-plan/PersonalizedCarePlanSection'
 import { CarePlanGlucoseChart } from '@/components/care-plan/CarePlanGlucoseChart'
-import { getTreatmentPlanForUser } from '@/lib/treatmentPlanStore'
 import {
   getLatestFacts,
   toNumberOrNull,
@@ -143,10 +142,6 @@ export function CarePlanPage() {
   const [isSafetyExpanded, setIsSafetyExpanded] = useState(true)
   const [highlightSafety, setHighlightSafety] = useState(false)
   const safetySectionRef = useRef(null)
-
-  const patientPlan = useMemo(() => {
-    return getTreatmentPlanForUser(user?.name, user?.email)
-  }, [user])
 
   const followUpDateMonth = useMemo(() => {
     const d = new Date()
@@ -308,10 +303,10 @@ export function CarePlanPage() {
     ? (latestResult.reviewed_by_name.startsWith('Dr.') ? latestResult.reviewed_by_name : `Dr. ${latestResult.reviewed_by_name}`)
     : reviewer?.name
     ? (reviewer.name.startsWith('Dr.') ? reviewer.name : `Dr. ${reviewer.name}`)
-    : patientPlan?.doctorName || null
+    : null
 
   const followUpDoctor = reviewerName || (isKhmer ? 'ក្រុមថែទាំជំងឺទឹកនោមផ្អែម' : 'Diabetes Care Team')
-  const followUpLocation = patientPlan?.doctorRole || (isKhmer ? 'វិបផតថលថែទាំគ្លីនិក' : 'Clinical Care Portal')
+  const followUpLocation = isKhmer ? 'វិបផតថលថែទាំគ្លីនិក' : 'Clinical Care Portal'
 
   const reportUrl = latestResult?.id
     ? `/diagnosis/result?diagnosis_result_id=${latestResult.id}`

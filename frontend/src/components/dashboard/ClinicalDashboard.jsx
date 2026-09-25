@@ -29,7 +29,6 @@ import {
   Clock3,
   History,
   HeartPulse,
-  Pill,
   RefreshCw,
   RotateCcw,
   Search,
@@ -491,7 +490,6 @@ function CustomRangePopover({ isActive, value, onApply, onReset, t }) {
 export function ClinicalDashboard({ activeRole }) {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const canViewTreatmentPlans = user?.permissions?.includes('treatment_plan.view')
   const { language, t, tExact } = useLanguage()
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -639,16 +637,6 @@ export function ClinicalDashboard({ activeRole }) {
         tone: 'amber',
       },
       {
-        key: 'plans',
-        label: t('dashboard.focus.carePlans', 'Care plans'),
-        helper: t('dashboard.focus.carePlansHint', 'Recommendations issued'),
-        action: t('dashboard.focus.viewPlans', 'View plans'),
-        value: stats.treatment_plans.value,
-        icon: Pill,
-        href: '/treatment-plans',
-        tone: 'emerald',
-      },
-      {
         key: 'patients',
         label: t('dashboard.focus.totalPatients', 'Total patients'),
         helper: t('dashboard.focus.totalPatientsHint', 'In your clinic'),
@@ -658,8 +646,8 @@ export function ClinicalDashboard({ activeRole }) {
         href: '/patients',
         tone: 'blue',
       },
-    ].filter((metric) => metric.key !== 'plans' || canViewTreatmentPlans)
-  }, [canViewTreatmentPlans, stats, t])
+    ]
+  }, [stats, t])
 
   const priorityCases = useMemo(() => {
     const cases = [...(stats?.recent_cases || [])]
@@ -923,9 +911,9 @@ export function ClinicalDashboard({ activeRole }) {
                 <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-300">{t('dashboard.focus.needReview', 'Need review')}</p>
               </div>
               <div className="px-2 text-center first:pl-0 last:pr-0">
-                <span className="mx-auto mb-2 block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/40" aria-hidden />
-                <p className="text-2xl font-bold text-slate-950 tabular-nums dark:text-white"><AnimatedNumber value={stats?.treatment_plans?.value ?? 0} ready={heroStatsReady} /></p>
-                <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-300">{t('dashboard.focus.carePlans', 'Care plans')}</p>
+                <span className="mx-auto mb-2 block h-2.5 w-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/40" aria-hidden />
+                <p className="text-2xl font-bold text-slate-950 tabular-nums dark:text-white"><AnimatedNumber value={stats?.active_patients?.value ?? stats?.total_patients?.value ?? 0} ready={heroStatsReady} /></p>
+                <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-300">{t('dashboard.focus.totalPatients', 'Total patients')}</p>
               </div>
             </div>
           </div>

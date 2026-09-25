@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   UserCog,
   Users,
-  Stethoscope,
 } from 'lucide-react'
 import { translate } from './i18n'
 
@@ -17,7 +16,6 @@ export const NAV_ITEMS = [
   { to: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, section: 'workspace', permissions: ['analytics.view', 'patient.view', 'patient.view_own'], permissionMode: 'any' },
   { to: '/patients', labelKey: 'nav.patients', icon: Users, section: 'workspace', permissions: ['patient.view'] },
   { to: '/review', labelKey: 'nav.patientReview', icon: ClipboardCheck, section: 'workspace', permissions: ['diagnosis.review_any'] },
-  { to: '/treatment-plans', labelKey: 'nav.treatmentPlans', icon: Stethoscope, section: 'workspace', permissions: ['treatment_plan.view'] },
   { to: '/diagnosis', labelKey: 'nav.assessment', icon: Microscope, section: 'workspace', permissions: ['diagnosis.run'] },
   { to: '/my-results', labelKey: 'nav.myResults', icon: FileSpreadsheet, section: 'workspace', roles: ['patient'], permissions: ['diagnosis.view_own'] },
   { to: '/my-results', labelKey: 'nav.patientResults', icon: FileSpreadsheet, section: 'workspace', notRoles: ['patient'], permissions: ['diagnosis.view_own'] },
@@ -41,7 +39,6 @@ export const ROLE_NAV_CONFIG = {
       '/roles-permissions': 'administration',
       '/patients': 'clinicalOperations',
       '/review': 'clinicalOperations',
-      '/treatment-plans': 'clinicalOperations',
       '/diagnosis': 'clinicalOperations',
       '/my-results': 'clinicalOperations',
       '/rules': 'documents',
@@ -53,7 +50,6 @@ export const ROLE_NAV_CONFIG = {
       '/roles-permissions',
       '/patients',
       '/review',
-      '/treatment-plans',
       '/diagnosis',
       '/my-results',
       '/rules',
@@ -69,7 +65,6 @@ export const ROLE_NAV_CONFIG = {
       '/dashboard': 'workspace',
       '/patients': 'workspace',
       '/review': 'workspace',
-      '/treatment-plans': 'workspace',
       '/diagnosis': 'workspace',
       '/my-results': 'workspace',
       '/rules': 'documents',
@@ -79,7 +74,6 @@ export const ROLE_NAV_CONFIG = {
       '/dashboard',
       '/patients',
       '/review',
-      '/treatment-plans',
       '/diagnosis',
       '/my-results',
       '/rules',
@@ -122,7 +116,6 @@ export const ROLE_NAV_CONFIG = {
       '/dashboard',
       '/patients',
       '/review',
-      '/treatment-plans',
       '/diagnosis',
       '/care-plan',
       '/my-results',
@@ -143,8 +136,6 @@ export const PAGE_TITLE_BY_PATH = [
   { pattern: '/patients', titleKey: 'page.patientManagement.title', subtitleKey: 'page.patientManagement.subtitle' },
   { pattern: '/rules', titleKey: 'page.knowledgeBase.title', subtitleKey: 'page.knowledgeBase.subtitle' },
   { pattern: '/review', titleKey: 'page.clinicalReview.title', subtitleKey: 'page.clinicalReview.subtitle' },
-  { pattern: '/treatment-plans/create', titleKey: 'page.treatmentPlanningCreate.title', subtitleKey: 'page.treatmentPlanningCreate.subtitle' },
-  { pattern: '/treatment-plans', titleKey: 'page.treatmentPlanning.title', subtitleKey: 'page.treatmentPlanning.subtitle' },
   {
     pattern: '/my-results',
     titleKey: 'page.myDiagnosisResults.title',
@@ -199,8 +190,7 @@ export function getUserNavRole(user) {
     roles.includes('clinician') ||
     roles.includes('nurse') ||
     roles.includes('reviewer') ||
-    permissions.has('diagnosis.review_any') ||
-    permissions.has('treatment_plan.manage')
+    permissions.has('diagnosis.review_any')
   ) {
     return 'doctor'
   }

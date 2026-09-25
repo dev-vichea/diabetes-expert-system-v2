@@ -35,8 +35,6 @@ const AdminPage = lazyWithRetry(() => import('../pages/AdminPage').then((m) => (
 const AdminUserEditPage = lazyWithRetry(() => import('../pages/AdminUserEditPage').then((m) => ({ default: m.AdminUserEditPage })))
 const RolePermissionsPage = lazyWithRetry(() => import('../pages/RolePermissionsPage').then((m) => ({ default: m.RolePermissionsPage })))
 const DiabetesGuidePage = lazyWithRetry(() => import('../pages/DiabetesGuidePage').then((m) => ({ default: m.DiabetesGuidePage })))
-const TreatmentPlanningPage = lazyWithRetry(() => import('../pages/TreatmentPlanningPage').then((m) => ({ default: m.TreatmentPlanningPage })))
-const TreatmentPlanCreatePage = lazyWithRetry(() => import('../pages/TreatmentPlanCreatePage').then((m) => ({ default: m.TreatmentPlanCreatePage })))
 
 function MyResultRedirect() {
   const { id } = useParams()
@@ -160,23 +158,8 @@ function AuthenticatedRoutes() {
         />
 
         <Route path="/admin" element={<Navigate to="/users" replace />} />
-
-        <Route
-          path="/treatment-plans"
-          element={(
-            <RoleGuard user={user} permissions={['treatment_plan.view']}>
-              <TreatmentPlanningPage />
-            </RoleGuard>
-          )}
-        />
-        <Route
-          path="/treatment-plans/create"
-          element={(
-            <RoleGuard user={user} permissions={['treatment_plan.manage']}>
-              <TreatmentPlanCreatePage />
-            </RoleGuard>
-          )}
-        />
+        <Route path="/treatment-plans" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/treatment-plans/*" element={<Navigate to="/dashboard" replace />} />
 
         <Route
           path="/care-plan"

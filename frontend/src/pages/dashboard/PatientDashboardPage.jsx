@@ -48,7 +48,6 @@ import { ErrorAlert, DashboardSkeleton } from '@/components/ui'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { cn } from '@/lib/utils'
-import { getTreatmentPlanForUser } from '@/lib/treatmentPlanStore'
 import {
   getReportedSymptomLabels,
   getRelativeCheckAge,
@@ -103,10 +102,10 @@ function extractMetricHistory(results, keys) {
   return history
 }
 
-/** Builds real dynamic daily schedule from patient's treatment plan and assessments */
+/** Builds real dynamic daily schedule from patient's clinical assessments */
 function buildPatientDailySchedule(patientPlan, latestResult, isNewUser = false, isKhmer = false) {
-  // If the patient is new or has no assessments and no assigned care plan, return empty schedule
-  if (isNewUser || (!latestResult && !patientPlan)) {
+  // If the patient is new or has no assessments, return empty schedule
+  if (isNewUser || !latestResult) {
     return []
   }
 
@@ -124,8 +123,8 @@ function buildPatientDailySchedule(patientPlan, latestResult, isNewUser = false,
     badgeTone: 'amber',
     title: isKhmer ? 'តេស្តជាតិស្ករពេលព្រឹកមុនអាហារ' : 'Morning Fasting Glucose',
     subtitle: isKhmer
-      ? `តេស្តមុនអាហារពេលព្រឹក • គោលដៅ: ${patientPlan?.targetGlucose || '80–130 mg/dL'}`
-      : `Fasting test before breakfast • Target: ${patientPlan?.targetGlucose || '80–130 mg/dL'}`,
+      ? 'តេស្តមុនអាហារពេលព្រឹក • គោលដៅ: 80–130 mg/dL'
+      : 'Fasting test before breakfast • Target: 80–130 mg/dL',
     location: isKhmer ? 'ឧបករណ៍តេស្តតាមផ្ទះ' : 'Home Test Device',
     icon: Droplets,
   })
@@ -520,10 +519,8 @@ export function PatientDashboardPage() {
     }
   }, [t])
 
-  // Personalized Care Plan
-  const patientPlan = useMemo(() => {
-    return getTreatmentPlanForUser(user?.name, user?.email)
-  }, [user])
+  // Personalized Care Plan (null when treatment planning module is removed)
+  const patientPlan = null
 
   // Extract latest clinical facts
   const latestResult = patientResults[0]
@@ -965,15 +962,10 @@ export function PatientDashboardPage() {
     return selectedObj ? Boolean(selectedObj.isToday) : true
   }, [calendarWeek, selectedDayIndex])
 
-  // Is this user a brand-new patient (no diagnosis results or assigned plan)
+  // Is this user a brand-new patient (no diagnosis results yet)
   const isNewUser = useMemo(() => {
-    if (patientResults && patientResults.length > 0) return false
-    if (patientPlan && patientPlan.patientName && user?.name &&
-        patientPlan.patientName.toLowerCase().trim() === user.name.toLowerCase().trim()) {
-      return false
-    }
-    return true
-  }, [patientResults, patientPlan, user])
+    return (!patientResults || patientResults.length === 0)
+  }, [patientResults])
 
   // Real Dynamic Daily Care Schedule
   const dailySchedule = useMemo(() => {
@@ -1043,7 +1035,6 @@ export function PatientDashboardPage() {
     const hasClinicalData = Boolean(
       latestResult ||
       (patientResults && patientResults.length > 0) ||
-      (patientPlan && patientPlan.patientName) ||
       currentGlucose !== null ||
       currentA1c !== null ||
       currentBmi !== null
@@ -1761,19 +1752,18 @@ export function PatientDashboardPage() {
                 <span className="sm:col-span-3 font-semibold text-slate-400">{isKhmer ? 'វេជ្ជបញ្ជា / ពិធីការ' : 'Prescription / Protocol'}</span>
                 <div className="sm:col-span-9 space-y-0.5 font-medium text-slate-800 dark:text-slate-200">
                   <p>
-                    {patientPlan?.pharmacotherapy ||
-                      (latestResult?.recommendation
-                        ? (typeof latestResult.recommendation === 'string'
-                            ? latestResult.recommendation.split('.')[0] + '.'
-                            : Array.isArray(latestResult.recommendation) && latestResult.recommendation.length > 0
-                            ? String(latestResult.recommendation[0])
-                            : (isKhmer ? 'ការថែទាំរបបអាហារ និងលំហាត់ប្រាណជាប្រចាំ។' : 'Routine dietary and physical activity maintenance.'))
-                        : (isKhmer ? 'ការថែទាំរបបអាហារ និងលំហាត់ប្រាណជាប្រចាំ។' : 'Routine dietary and physical activity maintenance.'))}
+                    {latestResult?.recommendation
+                      ? (typeof latestResult.recommendation === 'string'
+                          ? latestResult.recommendation.split('.')[0] + '.'
+                          : Array.isArray(latestResult.recommendation) && latestResult.recommendation.length > 0
+                          ? String(latestResult.recommendation[0])
+                          : (isKhmer ? 'ការថែទាំរបបអាហារ និងលំហាត់ប្រាណជាប្រចាំ។' : 'Routine dietary and physical activity maintenance.'))
+                      : (isKhmer ? 'ការថែទាំរបបអាហារ និងលំហាត់ប្រាណជាប្រចាំ។' : 'Routine dietary and physical activity maintenance.')}
                   </p>
                   <p className="text-slate-500">
                     {isKhmer
-                      ? `របៀបរស់នៅ៖ ដើរលឿន ៣០ នាទីរាល់ថ្ងៃ • គោលដៅជាតិស្ករពេលព្រឹក ${patientPlan?.targetGlucose || '80–130 mg/dL'}`
-                      : `Lifestyle: 30-min brisk walk daily • Target fasting glucose ${patientPlan?.targetGlucose || '80–130 mg/dL'}`}
+                      ? 'របៀបរស់នៅ៖ ដើរលឿន ៣០ នាទីរាល់ថ្ងៃ • គោលដៅជាតិស្ករពេលព្រឹក 80–130 mg/dL'
+                      : 'Lifestyle: 30-min brisk walk daily • Target fasting glucose 80–130 mg/dL'}
                   </p>
                 </div>
               </div>
