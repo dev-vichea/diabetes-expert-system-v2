@@ -114,7 +114,9 @@
     "documents": "Documents",
     "tools": "Tools",
     "patientResults": "Patient Results",
-    "diabetesGuide": "Diabetes Guide"
+    "diabetesGuide": "Diabetes Guide",
+    "administration": "Administration",
+    "clinicalOperations": "Clinical Operations"
   },
   "page": {
     "treatmentPlanning": {

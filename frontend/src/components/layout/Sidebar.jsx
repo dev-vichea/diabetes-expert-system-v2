@@ -1,73 +1,15 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  Activity,
-  BookOpen,
-  ClipboardCheck,
-  FileSpreadsheet,
-  GraduationCap,
-  LayoutDashboard,
-  Microscope,
-  Users,
-  X,
-} from 'lucide-react'
+import { X } from 'lucide-react'
 import { NavDocuments } from './NavDocuments'
 import { NavMain } from './NavMain'
 import { NavSecondary } from './NavSecondary'
 import { NavUser } from './NavUser'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { getGroupedNavSections } from '@/lib/nav-config'
 import { cn } from '@/lib/utils'
 
 const BRAND_LOGO_SRC = '/images/logo.png'
-
-// Default nav items aligned with specifications when not supplied by parent
-const DEFAULT_WORKSPACE_ITEMS = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/diagnosis', label: 'Assessment', icon: Microscope },
-  { to: '/patients', label: 'Patients', icon: Users },
-]
-
-const DEFAULT_DOCUMENTS_ITEMS = [
-  { to: '/rules', label: 'Knowledge Base', icon: BookOpen },
-  { to: '/review', label: 'Patient Review', icon: ClipboardCheck },
-  { to: '/my-results', label: 'Patient Results', icon: FileSpreadsheet },
-  { to: '/guide', label: 'Diabetes Guide', icon: GraduationCap },
-]
-
-function splitNavGroups(navItems) {
-  if (!navItems || !navItems.length) {
-    return {
-      workspace: DEFAULT_WORKSPACE_ITEMS,
-      documents: DEFAULT_DOCUMENTS_ITEMS,
-      system: [],
-    }
-  }
-
-  const workspace = []
-  const system = []
-  const documents = []
-
-  for (const item of navItems) {
-    if (
-      item.section === 'documents' ||
-      item.to === '/rules' ||
-      item.to === '/review' ||
-      item.to === '/my-results' ||
-      item.to === '/guide'
-    ) {
-      documents.push(item)
-      continue
-    }
-
-    if (item.section === 'system') {
-      system.push(item)
-    } else {
-      workspace.push(item)
-    }
-  }
-
-  return { workspace, system, documents }
-}
 
 export function Sidebar({
   navItems,
@@ -81,7 +23,6 @@ export function Sidebar({
   className,
 }) {
   const { t } = useLanguage()
-  const { workspace, system, documents } = splitNavGroups(navItems)
   const [logoVisible, setLogoVisible] = useState(true)
 
   const effectiveUser = user || {
@@ -89,6 +30,8 @@ export function Sidebar({
     email: userEmail,
     role: activeRole,
   }
+
+  const sections = getGroupedNavSections(navItems, effectiveUser, t)
 
   return (
     <aside
@@ -156,35 +99,24 @@ export function Sidebar({
           )}
         </div>
 
-        {/* Middle Navigation (Workspace & Documents) */}
+        {/* Middle Navigation (Role-based Groups) */}
         <div
           className={cn(
             'custom-scrollbar flex-1 overflow-y-auto space-y-6 py-2',
             collapsed ? 'px-2' : 'px-3'
           )}
         >
-          {/* WORKSPACE Group */}
-          <NavMain
-            title={t('nav.workspace', 'WORKSPACE')}
-            items={workspace}
-            collapsed={collapsed}
-          />
-
-          {/* DOCUMENTS Group */}
-          <NavDocuments
-            title={t('nav.documents', 'DOCUMENTS')}
-            items={documents}
-            collapsed={collapsed}
-          />
-
-          {/* SYSTEM Group (if applicable) */}
-          {system?.length > 0 && (
-            <NavMain
-              title={t('nav.system', 'SYSTEM')}
-              items={system}
-              collapsed={collapsed}
-            />
-          )}
+          {sections.map((section) => {
+            const NavComponent = section.id === 'documents' ? NavDocuments : NavMain
+            return (
+              <NavComponent
+                key={section.id}
+                title={section.title}
+                items={section.items}
+                collapsed={collapsed}
+              />
+            )
+          })}
         </div>
       </div>
 

@@ -11,25 +11,128 @@ import {
   Users,
   Stethoscope,
 } from 'lucide-react'
-import { translate } from '@/lib/i18n'
+import { translate } from './i18n'
 
 export const NAV_ITEMS = [
   { to: '/dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, section: 'workspace', permissions: ['analytics.view', 'patient.view', 'patient.view_own'], permissionMode: 'any' },
-  { to: '/diagnosis', labelKey: 'nav.assessment', icon: Microscope, section: 'workspace', permissions: ['diagnosis.run'] },
-  { to: '/treatment-plans', labelKey: 'nav.treatmentPlans', icon: Stethoscope, section: 'workspace', permissions: ['treatment_plan.view'] },
   { to: '/patients', labelKey: 'nav.patients', icon: Users, section: 'workspace', permissions: ['patient.view'] },
-  { to: '/rules', labelKey: 'nav.knowledgeBase', icon: BookOpen, section: 'documents', permissions: ['rule.view'] },
-  { to: '/review', labelKey: 'nav.patientReview', icon: ClipboardCheck, section: 'documents', permissions: ['diagnosis.review_any'] },
-  { to: '/my-results', labelKey: 'nav.myResults', icon: FileSpreadsheet, section: 'documents', roles: ['patient'], permissions: ['diagnosis.view_own'] },
-  { to: '/my-results', labelKey: 'nav.patientResults', icon: FileSpreadsheet, section: 'documents', notRoles: ['patient'], permissions: ['diagnosis.view_own'] },
+  { to: '/review', labelKey: 'nav.patientReview', icon: ClipboardCheck, section: 'workspace', permissions: ['diagnosis.review_any'] },
+  { to: '/treatment-plans', labelKey: 'nav.treatmentPlans', icon: Stethoscope, section: 'workspace', permissions: ['treatment_plan.view'] },
+  { to: '/diagnosis', labelKey: 'nav.assessment', icon: Microscope, section: 'workspace', permissions: ['diagnosis.run'] },
+  { to: '/my-results', labelKey: 'nav.myResults', icon: FileSpreadsheet, section: 'workspace', roles: ['patient'], permissions: ['diagnosis.view_own'] },
+  { to: '/my-results', labelKey: 'nav.patientResults', icon: FileSpreadsheet, section: 'workspace', notRoles: ['patient'], permissions: ['diagnosis.view_own'] },
   { to: '/care-plan', labelKey: 'nav.carePlan', icon: HeartPulse, section: 'workspace', notRoles: ['admin'], permissions: ['care_plan.view_own'] },
+  { to: '/rules', labelKey: 'nav.knowledgeBase', icon: BookOpen, section: 'documents', permissions: ['rule.view'] },
   { to: '/guide', labelKey: 'nav.diabetesGuide', icon: GraduationCap, section: 'documents', permissions: ['guide.view'] },
-  // The users dashboard combines user, role, and permission data. Keep its
-  // navigation gate aligned with the API calls the page makes so a partially
-  // privileged account is not sent to a page that can only render errors.
   { to: '/users', labelKey: 'nav.users', icon: UserCog, section: 'system', permissions: ['user.view', 'permission.view'] },
   { to: '/roles-permissions', labelKey: 'nav.roles', icon: ShieldCheck, section: 'system', permissions: ['permission.view'] },
 ]
+
+export const ROLE_NAV_CONFIG = {
+  admin: {
+    sections: [
+      { id: 'administration', titleKey: 'nav.administration', defaultTitle: 'ADMINISTRATION' },
+      { id: 'clinicalOperations', titleKey: 'nav.clinicalOperations', defaultTitle: 'CLINICAL OPERATIONS' },
+      { id: 'documents', titleKey: 'nav.documents', defaultTitle: 'DOCUMENTS' },
+    ],
+    pathSection: {
+      '/dashboard': 'administration',
+      '/users': 'administration',
+      '/roles-permissions': 'administration',
+      '/patients': 'clinicalOperations',
+      '/review': 'clinicalOperations',
+      '/treatment-plans': 'clinicalOperations',
+      '/diagnosis': 'clinicalOperations',
+      '/my-results': 'clinicalOperations',
+      '/rules': 'documents',
+      '/guide': 'documents',
+    },
+    pathOrder: [
+      '/dashboard',
+      '/users',
+      '/roles-permissions',
+      '/patients',
+      '/review',
+      '/treatment-plans',
+      '/diagnosis',
+      '/my-results',
+      '/rules',
+      '/guide',
+    ],
+  },
+  doctor: {
+    sections: [
+      { id: 'workspace', titleKey: 'nav.workspace', defaultTitle: 'WORKSPACE' },
+      { id: 'documents', titleKey: 'nav.documents', defaultTitle: 'DOCUMENTS' },
+    ],
+    pathSection: {
+      '/dashboard': 'workspace',
+      '/patients': 'workspace',
+      '/review': 'workspace',
+      '/treatment-plans': 'workspace',
+      '/diagnosis': 'workspace',
+      '/my-results': 'workspace',
+      '/rules': 'documents',
+      '/guide': 'documents',
+    },
+    pathOrder: [
+      '/dashboard',
+      '/patients',
+      '/review',
+      '/treatment-plans',
+      '/diagnosis',
+      '/my-results',
+      '/rules',
+      '/guide',
+    ],
+  },
+  patient: {
+    sections: [
+      { id: 'workspace', titleKey: 'nav.workspace', defaultTitle: 'WORKSPACE' },
+      { id: 'documents', titleKey: 'nav.documents', defaultTitle: 'DOCUMENTS' },
+    ],
+    pathSection: {
+      '/dashboard': 'workspace',
+      '/diagnosis': 'workspace',
+      '/care-plan': 'workspace',
+      '/my-results': 'workspace',
+      '/guide': 'documents',
+    },
+    pathOrder: [
+      '/dashboard',
+      '/diagnosis',
+      '/care-plan',
+      '/my-results',
+      '/guide',
+    ],
+  },
+  default: {
+    sections: [
+      { id: 'workspace', titleKey: 'nav.workspace', defaultTitle: 'WORKSPACE' },
+      { id: 'documents', titleKey: 'nav.documents', defaultTitle: 'DOCUMENTS' },
+      { id: 'system', titleKey: 'nav.system', defaultTitle: 'SYSTEM' },
+    ],
+    pathSection: {
+      '/rules': 'documents',
+      '/guide': 'documents',
+      '/users': 'system',
+      '/roles-permissions': 'system',
+    },
+    pathOrder: [
+      '/dashboard',
+      '/patients',
+      '/review',
+      '/treatment-plans',
+      '/diagnosis',
+      '/care-plan',
+      '/my-results',
+      '/rules',
+      '/guide',
+      '/users',
+      '/roles-permissions',
+    ],
+  },
+}
 
 export const PAGE_TITLE_BY_PATH = [
   { pattern: '/guide', titleKey: 'page.diabetesGuide.title', subtitleKey: 'page.diabetesGuide.subtitle' },
@@ -70,19 +173,61 @@ export function getPageInfo(pathname, language = 'en', user = null) {
   }
 }
 
+/**
+ * Identify primary navigation role for menu layout and ordering.
+ */
+export function getUserNavRole(user) {
+  const rawRoles = user?.roles || (user?.role ? [user.role] : (user?.activeRole ? [user.activeRole] : []))
+  const roles = rawRoles.map((r) => String(r).toLowerCase().trim())
+  const permissions = new Set(user?.permissions || [])
+
+  // Admin: explicit role or user/permission administration capabilities
+  if (
+    roles.includes('admin') ||
+    roles.includes('super_admin') ||
+    permissions.has('user.manage') ||
+    permissions.has('permission.manage') ||
+    (permissions.has('user.view') && permissions.has('permission.view'))
+  ) {
+    return 'admin'
+  }
+
+  // Doctor/Clinician: doctor role or clinical review capabilities
+  if (
+    roles.includes('doctor') ||
+    roles.includes('physician') ||
+    roles.includes('clinician') ||
+    roles.includes('nurse') ||
+    roles.includes('reviewer') ||
+    permissions.has('diagnosis.review_any') ||
+    permissions.has('treatment_plan.manage')
+  ) {
+    return 'doctor'
+  }
+
+  if (roles.includes('patient')) {
+    return 'patient'
+  }
+
+  if (userHasStaffRole(user)) {
+    return 'doctor'
+  }
+
+  return 'patient'
+}
 
 /**
  * Staff = signed-in user with at least one non-patient role (doctor, admin,
  * knowledge_manager, …). Patients (and role-less users) are not staff.
  */
 export function userHasStaffRole(user) {
-  const roles = user?.roles || (user?.role ? [user.role] : [])
+  const roles = user?.roles || (user?.role ? [user.role] : (user?.activeRole ? [user.activeRole] : []))
   if (!roles.length) return false
   return roles.some((role) => String(role).toLowerCase() !== 'patient')
 }
 
 function hasAccess(user, item) {
-  const userRoles = new Set((user?.roles || (user?.role ? [user.role] : [])).map((r) => String(r).toLowerCase()))
+  const userRoles = new Set((user?.roles || (user?.role ? [user.role] : (user?.activeRole ? [user.activeRole] : []))).map((r) => String(r).toLowerCase()))
   const userPermissions = new Set(user?.permissions || [])
 
   if (item.roles?.length && item.roles.every((role) => !userRoles.has(String(role).toLowerCase()))) {
@@ -111,12 +256,66 @@ function hasAccess(user, item) {
 }
 
 export function getVisibleNavItems(user, language = 'en') {
-  return NAV_ITEMS
+  const role = getUserNavRole(user)
+  const config = ROLE_NAV_CONFIG[role] || ROLE_NAV_CONFIG.default
+
+  const visible = NAV_ITEMS
     .filter((item) => hasAccess(user, item))
-    .map((item) => ({
-      ...item,
-      label: translate(language, item.labelKey),
+    .map((item) => {
+      const section = config.pathSection?.[item.to] || item.section || 'workspace'
+      return {
+        ...item,
+        section,
+        label: translate(language, item.labelKey),
+      }
+    })
+
+  if (config.pathOrder?.length) {
+    const orderMap = new Map(config.pathOrder.map((path, idx) => [path, idx]))
+    visible.sort((a, b) => {
+      const orderA = orderMap.has(a.to) ? orderMap.get(a.to) : 999
+      const orderB = orderMap.has(b.to) ? orderMap.get(b.to) : 999
+      return orderA - orderB
+    })
+  }
+
+  return visible
+}
+
+export function getGroupedNavSections(navItems, user, t = (key, fallback) => fallback || key) {
+  const role = getUserNavRole(user)
+  const config = ROLE_NAV_CONFIG[role] || ROLE_NAV_CONFIG.default
+  const sectionsDef = config.sections || [
+    { id: 'workspace', titleKey: 'nav.workspace', defaultTitle: 'WORKSPACE' },
+    { id: 'documents', titleKey: 'nav.documents', defaultTitle: 'DOCUMENTS' },
+  ]
+
+  const items = navItems && navItems.length
+    ? navItems
+    : getVisibleNavItems(user)
+
+  // Map items to their section
+  const sectionBuckets = new Map(sectionsDef.map((sec) => [sec.id, []]))
+  const fallbackSectionId = sectionsDef[0]?.id || 'workspace'
+
+  for (const item of items) {
+    const targetSection =
+      (item.section && sectionBuckets.has(item.section))
+        ? item.section
+        : (config.pathSection?.[item.to] && sectionBuckets.has(config.pathSection[item.to]))
+          ? config.pathSection[item.to]
+          : fallbackSectionId
+
+    sectionBuckets.get(targetSection).push(item)
+  }
+
+  return sectionsDef
+    .map((sec) => ({
+      id: sec.id,
+      title: t(sec.titleKey, sec.defaultTitle || sec.id.toUpperCase()),
+      items: sectionBuckets.get(sec.id) || [],
     }))
+    .filter((sec) => sec.items.length > 0)
 }
 
 function toTitleCase(value) {

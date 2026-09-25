@@ -114,7 +114,9 @@
     "documents": "ឯកសារ",
     "tools": "ឧបករណ៍",
     "patientResults": "លទ្ធផលអ្នកជំងឺ",
-    "diabetesGuide": "មគ្គុទ្ទេសក៍ទឹកនោមផ្អែម"
+    "diabetesGuide": "មគ្គុទ្ទេសក៍ទឹកនោមផ្អែម",
+    "administration": "ការគ្រប់គ្រងប្រព័ន្ធ",
+    "clinicalOperations": "ប្រតិបត្តិការគ្លីនិក"
   },
   "page": {
     "treatmentPlanning": {
