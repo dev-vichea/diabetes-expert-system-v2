@@ -39,6 +39,7 @@ import {
   MoreHorizontal,
   TrendingUp,
   Smartphone,
+  ClipboardCheck,
   X,
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
@@ -796,6 +797,21 @@ export function DiagnosisResultPage() {
   const effectiveReasoningReport = activeResult?.reasoning_report || remoteReasoning || null
 
   const isStaff = userHasStaffRole(user)
+  const userRoles = useMemo(
+    () => (user?.roles || (user?.role ? [user.role] : [])).map((r) => String(r).toLowerCase()),
+    [user]
+  )
+  const isDoctor =
+    isStaff ||
+    userRoles.includes('doctor') ||
+    userRoles.includes('clinician') ||
+    userRoles.includes('admin') ||
+    Boolean(user?.permissions?.includes('diagnosis.review_any'))
+
+  const reviewUrl = targetResultId ? `/review?diagnosis_result_id=${targetResultId}` : '/review'
+  const patientRecordId = activeResult?.patient_id || snapshot?.context?.patient_id || null
+  const patientProfileUrl = patientRecordId ? `/patients/${patientRecordId}` : '/patients'
+
   const isClinicianAssessment = Boolean(
     activeResult?.is_clinician_assessment ||
     (isStaff && !activeResult?.is_submitted_to_care_team && activeResult?.diagnosed_by_user_id === user?.id) ||
@@ -1468,8 +1484,16 @@ export function DiagnosisResultPage() {
           </div>
 
           <div className="flex items-center gap-2.5">
-            {/* Open / Generate Care Plan Button (Filled Blue) */}
-            {canViewOwnCarePlan && (
+            {/* Open Review (Doctor) or Open / Generate Care Plan (Patient) */}
+            {isDoctor ? (
+              <Link
+                to={reviewUrl}
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-blue-700 transition"
+              >
+                <ClipboardCheck className="h-4 w-4" />
+                <span>{isKhmer ? 'បើកការពិនិត្យ' : t('diagnosisResult.openReview', 'Open Review')}</span>
+              </Link>
+            ) : canViewOwnCarePlan && (
               <Link
                 to="/care-plan"
                 state={{ result: activeResult || result, fromAssessmentId: targetResultId }}
@@ -1559,13 +1583,23 @@ export function DiagnosisResultPage() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 p-1.5 shadow-xl z-50">
-                <DropdownMenuItem
-                  onClick={() => setShowDoctorConsultModal(true)}
-                  className="flex items-center gap-2 p-2 rounded-xl text-xs font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
-                >
-                  <MessageSquare className="h-4 w-4 text-blue-600" />
-                  <span>{isKhmer ? 'ផ្ញើទៅកាន់គ្រូពេទ្យ' : 'Submit to Doctor'}</span>
-                </DropdownMenuItem>
+                {isDoctor ? (
+                  <DropdownMenuItem
+                    onClick={() => navigate(reviewUrl)}
+                    className="flex items-center gap-2 p-2 rounded-xl text-xs font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <ClipboardCheck className="h-4 w-4 text-blue-600" />
+                    <span>{isKhmer ? 'បើកការពិនិត្យអ្នកជំងឺ' : t('diagnosisResult.openReview', 'Open Review')}</span>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    onClick={() => setShowDoctorConsultModal(true)}
+                    className="flex items-center gap-2 p-2 rounded-xl text-xs font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <MessageSquare className="h-4 w-4 text-blue-600" />
+                    <span>{isKhmer ? 'ផ្ញើទៅកាន់គ្រូពេទ្យ' : 'Submit to Doctor'}</span>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={() => window.print()}
                   className="flex items-center gap-2 p-2 rounded-xl text-xs font-semibold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -1654,19 +1688,29 @@ export function DiagnosisResultPage() {
                       <span>{isKhmer ? 'មើលជំហានបន្ទាប់' : 'View next steps'}</span>
                       <ArrowRight className="h-3.5 w-3.5" />
                     </button>
-                    <Link
-                      to="/care-plan"
-                      state={{ result: activeResult || result, fromAssessmentId: targetResultId }}
-                      onClick={handleCarePlanNavigation}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-5 py-2.5 text-xs sm:text-sm font-semibold text-blue-600 shadow-2xs hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-blue-400 dark:hover:bg-slate-700 transition"
-                    >
-                      {hasOpenedCarePlan ? <HeartPulse className="h-3.5 w-3.5 text-blue-500" /> : <Sparkles className="h-3.5 w-3.5 text-blue-500" />}
-                      <span>
-                        {hasOpenedCarePlan
-                          ? (isKhmer ? 'បើកផែនការថែទាំ' : 'Open Care Plan')
-                          : (isKhmer ? 'បង្កើតផែនការថែទាំ' : 'Generate care plan')}
-                      </span>
-                    </Link>
+                    {isDoctor ? (
+                      <Link
+                        to={reviewUrl}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-5 py-2.5 text-xs sm:text-sm font-semibold text-blue-600 shadow-2xs hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-blue-400 dark:hover:bg-slate-700 transition"
+                      >
+                        <ClipboardCheck className="h-3.5 w-3.5 text-blue-500" />
+                        <span>{isKhmer ? 'បើកការពិនិត្យ' : t('diagnosisResult.openReview', 'Open Review')}</span>
+                      </Link>
+                    ) : (
+                      <Link
+                        to="/care-plan"
+                        state={{ result: activeResult || result, fromAssessmentId: targetResultId }}
+                        onClick={handleCarePlanNavigation}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-5 py-2.5 text-xs sm:text-sm font-semibold text-blue-600 shadow-2xs hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-blue-400 dark:hover:bg-slate-700 transition"
+                      >
+                        {hasOpenedCarePlan ? <HeartPulse className="h-3.5 w-3.5 text-blue-500" /> : <Sparkles className="h-3.5 w-3.5 text-blue-500" />}
+                        <span>
+                          {hasOpenedCarePlan
+                            ? (isKhmer ? 'បើកផែនការថែទាំ' : 'Open Care Plan')
+                            : (isKhmer ? 'បង្កើតផែនការថែទាំ' : 'Generate care plan')}
+                        </span>
+                      </Link>
+                    )}
                   </div>
                 </div>
 
@@ -2499,32 +2543,54 @@ export function DiagnosisResultPage() {
               </div>
 
               <div className="space-y-1">
-                {/* Action 1: Open / Generate Care Plan */}
-                <Link
-                  to="/care-plan"
-                  state={{ result: activeResult || result, fromAssessmentId: targetResultId }}
-                  onClick={handleCarePlanNavigation}
-                  className="group flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
-                      {hasOpenedCarePlan ? <HeartPulse className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+                {/* Action 1: Open Review (Doctor) or Open / Generate Care Plan (Patient) */}
+                {isDoctor ? (
+                  <Link
+                    to={reviewUrl}
+                    className="group flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                        <ClipboardCheck className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+                          {isKhmer ? 'បើកការពិនិត្យ' : t('diagnosisResult.openReview', 'Open Review')}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          {isKhmer ? 'ពិនិត្យការធ្វើរោគវិនិច្ឆ័យ និងកំណត់ចំណាំ' : t('diagnosisResult.openReviewSubtitle', 'Review diagnosis & add notes')}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
-                        {hasOpenedCarePlan
-                          ? (isKhmer ? 'បើកផែនការថែទាំ' : 'Open Care Plan')
-                          : (isKhmer ? 'បង្កើតផែនការថែទាំ' : 'Generate Care Plan')}
-                      </p>
-                      <p className="text-[11px] text-slate-400">
-                        {hasOpenedCarePlan
-                          ? (isKhmer ? 'ពិនិត្យមើលផែនការព្យាបាលផ្ទាល់ខ្លួន' : 'View personalized treatment plan')
-                          : (isKhmer ? 'បង្កើតផែនការព្យាបាលផ្ទាល់ខ្លួន' : 'Generate personalized treatment plan')}
-                      </p>
+                    <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition" />
+                  </Link>
+                ) : (
+                  <Link
+                    to="/care-plan"
+                    state={{ result: activeResult || result, fromAssessmentId: targetResultId }}
+                    onClick={handleCarePlanNavigation}
+                    className="group flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                        {hasOpenedCarePlan ? <HeartPulse className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+                      </div>
+                      <div>
+                        <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+                          {hasOpenedCarePlan
+                            ? (isKhmer ? 'បើកផែនការថែទាំ' : 'Open Care Plan')
+                            : (isKhmer ? 'បង្កើតផែនការថែទាំ' : 'Generate Care Plan')}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          {hasOpenedCarePlan
+                            ? (isKhmer ? 'ពិនិត្យមើលផែនការព្យាបាលផ្ទាល់ខ្លួន' : 'View personalized treatment plan')
+                            : (isKhmer ? 'បង្កើតផែនការព្យាបាលផ្ទាល់ខ្លួន' : 'Generate personalized treatment plan')}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition" />
-                </Link>
+                    <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition" />
+                  </Link>
+                )}
 
                 {/* Action 2: Generate PDF */}
                 <button
@@ -2549,43 +2615,71 @@ export function DiagnosisResultPage() {
                   <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition" />
                 </button>
 
-                {/* Action 3: Consult Care Team */}
-                <button
-                  type="button"
-                  onClick={() => setShowDoctorConsultModal(true)}
-                  className="w-full group flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition text-left cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
-                      <Stethoscope className="h-4 w-4" />
+                {/* Action 3: Patient Profile (Doctor) or Consult Care Team (Patient) */}
+                {isDoctor ? (
+                  <Link
+                    to={patientProfileUrl}
+                    className="group flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                        <User className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+                          {isKhmer ? 'ប្រវត្តិអ្នកជំងឺ' : t('diagnosisResult.patientProfile', 'Patient Profile')}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          {isKhmer ? 'មើលកំណត់ត្រា និងប្រវត្តិវេជ្ជសាស្ត្រ' : t('diagnosisResult.patientProfileSubtitle', 'View medical records & history')}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
-                        {isKhmer ? 'ពិគ្រោះជាមួយក្រុមគ្រូពេទ្យ' : 'Consult Care Team'}
-                      </p>
-                      <p className="text-[11px] text-slate-400">
-                        {isSubmittedToCareTeam ? (isKhmer ? 'បានបញ្ជូនរួចរាល់' : 'Submitted to chart') : (isKhmer ? 'ផ្ញើរបាយការណ៍ទៅកាន់គ្រូពេទ្យ' : 'Send assessment to doctor')}
-                      </p>
+                    <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition" />
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowDoctorConsultModal(true)}
+                    className="w-full group flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition text-left cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                        <Stethoscope className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+                          {isKhmer ? 'ពិគ្រោះជាមួយក្រុមគ្រូពេទ្យ' : 'Consult Care Team'}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          {isSubmittedToCareTeam ? (isKhmer ? 'បានបញ្ជូនរួចរាល់' : 'Submitted to chart') : (isKhmer ? 'ផ្ញើរបាយការណ៍ទៅកាន់គ្រូពេទ្យ' : 'Send assessment to doctor')}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition" />
-                </button>
+                    <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition" />
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* 4. SCREENING DISCLAIMER CARD */}
+            {/* 4. SCREENING DISCLAIMER / CLINICAL DECISION SUPPORT CARD */}
             <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 dark:border-indigo-900/60 dark:bg-indigo-950/30 flex items-start gap-3">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs">
                 <ShieldCheck className="h-4 w-4" />
               </div>
               <div>
                 <h4 className="text-xs sm:text-sm font-bold text-indigo-950 dark:text-indigo-200">
-                  {isKhmer ? 'នេះជាលទ្ធផលត្រួតពិនិត្យដំបូង' : 'This is a screening result'}
+                  {isDoctor
+                    ? (isKhmer ? 'ការគាំទ្រការសម្រេចចិត្តគ្លីនិក' : 'Clinical Decision Support')
+                    : (isKhmer ? 'នេះជាលទ្ធផលត្រួតពិនិត្យដំបូង' : 'This is a screening result')}
                 </h4>
                 <p className="mt-0.5 text-xs text-indigo-800/80 dark:text-indigo-300/80 leading-relaxed">
-                  {isKhmer
-                    ? 'សូមពិគ្រោះជាមួយអ្នកជំនាញវេជ្ជសាស្ត្រសម្រាប់ការធ្វើរោគវិនិច្ឆ័យពេញលេញ និងផែនការព្យាបាល។'
-                    : 'Please consult a healthcare professional for a full diagnosis and treatment plan.'}
+                  {isDoctor
+                    ? (isKhmer
+                      ? 'ប្រព័ន្ធជំនាញផ្អែកលើវិធាននេះជួយក្នុងការពិនិត្យតាមដាន។ សូមបញ្ជាក់ការរកឃើញដោយការធ្វើតេស្តមន្ទីរពិសោធន៍ និងការវាយតម្លៃរបស់អ្នក។'
+                      : 'Rule-based clinical decision support. Confirm findings with diagnostic labs and clinician evaluation.')
+                    : (isKhmer
+                      ? 'សូមពិគ្រោះជាមួយអ្នកជំនាញវេជ្ជសាស្ត្រសម្រាប់ការធ្វើរោគវិនិច្ឆ័យពេញលេញ និងផែនការព្យាបាល។'
+                      : 'Please consult a healthcare professional for a full diagnosis and treatment plan.')}
                 </p>
               </div>
             </div>
@@ -2747,7 +2841,15 @@ export function DiagnosisResultPage() {
               <ArrowLeft className="h-4 w-4" />
               {t('diagnosisResult.back', 'Back')}
             </button>
-            {canViewOwnCarePlan && (
+            {isDoctor ? (
+              <Link
+                to={reviewUrl}
+                className="btn-secondary gap-2 bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 border-0 text-xs sm:text-sm h-9 px-3.5 rounded-xl inline-flex items-center"
+              >
+                <ClipboardCheck className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                <span>{isKhmer ? 'បើកការពិនិត្យ' : t('diagnosisResult.openReview', 'Open Review')}</span>
+              </Link>
+            ) : canViewOwnCarePlan && (
               <Link
                 to="/care-plan"
                 state={{ result: activeResult || result, fromAssessmentId: targetResultId }}

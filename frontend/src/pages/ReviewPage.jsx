@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   CheckCircle2,
   AlertCircle,
@@ -608,6 +608,8 @@ export function ReviewPage() {
   const { user } = useAuth()
   const canManageTreatmentPlans = user?.permissions?.includes('treatment_plan.manage')
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const paramResultId = searchParams.get('diagnosis_result_id') || searchParams.get('id')
   const [results, setResults] = useState([])
   const [selectedResultId, setSelectedResultId] = useState(null)
   const [selectedPatientKey, setSelectedPatientKey] = useState(null)
@@ -682,8 +684,22 @@ export function ReviewPage() {
     setLoading(true)
     setError('')
     try {
-      const response = await api.get('/diagnosis/review?limit=50')
+      const response = await api.get('/diagnosis/review?limit=100')
       const loaded = getApiData(response) || []
+
+      // If a specific diagnosis result was requested in the URL and isn't in recent results, fetch it directly
+      if (paramResultId && !loaded.some((item) => String(item.id) === String(paramResultId))) {
+        try {
+          const singleRes = await api.get(`/diagnosis/${paramResultId}`)
+          const singleItem = getApiData(singleRes)
+          if (singleItem && singleItem.id) {
+            loaded.unshift(singleItem)
+          }
+        } catch (_) {
+          // If individual fetch fails, proceed with the loaded review list
+        }
+      }
+
       setResults(loaded)
 
       if (selectedResultId && !loaded.some((item) => item.id === selectedResultId)) {
@@ -811,16 +827,26 @@ export function ReviewPage() {
     return groups
   }, [results, t])
 
-  // ── Auto-select first item if none selected ──
+  // ── Auto-select target from query param or first item ──
   useEffect(() => {
-    if (!selectedResultId && results.length > 0) {
+    if (results.length === 0) return
+
+    if (paramResultId) {
+      const match = results.find((r) => String(r.id) === String(paramResultId))
+      if (match) {
+        selectResult(match)
+        return
+      }
+    }
+
+    if (!selectedResultId) {
       if (viewMode === 'by-patient' && patientGroups.length > 0) {
         selectPatientGroup(patientGroups[0])
       } else {
         selectResult(results[0])
       }
     }
-  }, [results, selectedResultId, viewMode, patientGroups])
+  }, [results, selectedResultId, viewMode, patientGroups, paramResultId])
 
   // ── Filter & Sort: Patient Groups ──
   const filteredPatientGroups = useMemo(() => {
