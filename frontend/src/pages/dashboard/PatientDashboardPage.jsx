@@ -1178,7 +1178,7 @@ export function PatientDashboardPage() {
       {/* ==================================================================== */}
       {/* 2-COLUMN MASTER LAYOUT: Left Content (72%) + Right Calendar Rail (28%) */}
       {/* ==================================================================== */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start xl:items-stretch">
         {/* ================================================================== */}
         {/* LEFT COLUMN: Main Dashboard (Metrics, Charts, Clinical Summary)    */}
         {/* ================================================================== */}
@@ -1803,9 +1803,9 @@ export function PatientDashboardPage() {
         {/* ================================================================== */}
         {/* RIGHT COLUMN: Interactive Calendar & Care Schedule Timeline        */}
         {/* ================================================================== */}
-        <div className="xl:col-span-4 min-w-0 rounded-2xl border border-slate-200/70 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] dark:border-slate-800 dark:bg-slate-900">
+        <div className="xl:col-span-4 min-w-0 flex flex-col h-full rounded-2xl border border-slate-200/70 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] dark:border-slate-800 dark:bg-slate-900">
           {/* 1. CALENDAR STRIP */}
-          <div>
+          <div className="shrink-0">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
                 {calendarWeek.monthName}
@@ -1868,7 +1868,7 @@ export function PatientDashboardPage() {
           </div>
 
           {/* 2. TIMELINE HEADER: Selected Date & Category Filter */}
-          <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3">
+          <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3 shrink-0">
             <div className="space-y-0.5">
               <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                 {selectedDateLabel}
@@ -1895,7 +1895,7 @@ export function PatientDashboardPage() {
 
           {/* 3. TIMELINE BODY: Empty State for New Users vs Live Schedule Rail */}
           {dailySchedule.length === 0 ? (
-            <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50 flex flex-col items-center justify-center">
+            <div className="mt-5 flex-1 min-h-[280px] rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 sm:p-8 text-center dark:border-slate-800 dark:bg-slate-900/50 flex flex-col items-center justify-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400 mb-3">
                 <CalendarDays className="h-6 w-6" />
               </div>
@@ -1932,9 +1932,9 @@ export function PatientDashboardPage() {
               ) : null}
             </div>
           ) : (
-            <>
+            <div className="mt-5 flex-1 min-h-0 flex flex-col">
               {/* VERTICAL TIMELINE RAIL (Dashed Line & Centered Node Dots) */}
-              <div className="mt-5 relative">
+              <div className="relative flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar">
                 <div className="flex flex-col">
                   {filteredSchedule.length === 0 ? (
                     <div className="py-8 text-center text-xs text-slate-400 dark:text-slate-500">
@@ -2108,7 +2108,7 @@ export function PatientDashboardPage() {
               </div>
 
               {/* Timeline Bottom CTA */}
-              <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+              <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs shrink-0">
                 <span className="text-slate-400">
                   {isKhmer
                     ? `បានបញ្ចប់ ${completedTasks.length} ក្នុងចំណោម ${dailySchedule.length}`
@@ -2124,7 +2124,7 @@ export function PatientDashboardPage() {
                   </Link>
                 )}
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
