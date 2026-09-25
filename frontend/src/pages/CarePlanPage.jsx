@@ -295,10 +295,9 @@ export function CarePlanPage() {
     ? (latestResult.reviewed_by_name.startsWith('Dr.') ? latestResult.reviewed_by_name : `Dr. ${latestResult.reviewed_by_name}`)
     : reviewer?.name
     ? (reviewer.name.startsWith('Dr.') ? reviewer.name : `Dr. ${reviewer.name}`)
-    : patientPlan?.doctorName || null
+    : null
 
   const followUpDoctor = reviewerName || (isKhmer ? 'ក្រុមថែទាំជំងឺទឹកនោមផ្អែម' : 'Diabetes Care Team')
-  const followUpLocation = patientPlan?.doctorRole || (isKhmer ? 'វិបផតថលថែទាំគ្លីនិក' : 'Clinical Care Portal')
 
   const reportUrl = latestResult?.id
     ? `/diagnosis/result?diagnosis_result_id=${latestResult.id}`
