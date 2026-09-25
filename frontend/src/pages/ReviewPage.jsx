@@ -11,6 +11,7 @@ import {
   ArrowUpDown,
   Download,
   ChevronRight,
+  HeartPulse,
   Stethoscope,
   X,
 } from 'lucide-react'
@@ -552,30 +553,23 @@ function ClinicalReviewWorkspace({
                   )}
                 </div>
 
-                {/* Footer Controls: Treatment planner & Sign button */}
+                {/* Footer Controls: Care Plan & Sign button */}
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
                   <div>
-                    {canManageTreatmentPlans && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          navigate('/treatment-plans/create', {
-                            state: {
-                              initialData: {
-                                patientName: selectedResult.patient_name || 'Patient',
-                                patientId: selectedResult.patient_id ? `P-00${selectedResult.patient_id}` : `P-${selectedResult.id}`,
-                                doctorName: user?.name || 'Doctor',
-                                diagnosis: selectedResult.diagnosis || 'Diabetes',
-                                procedures: [],
-                              },
-                            },
-                          })
-                        }
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-200/80 bg-cyan-50/50 px-3 py-2 text-xs font-bold text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300 dark:hover:bg-cyan-900/50"
-                      >
-                        <Stethoscope className="h-4 w-4" /> Open Treatment Planner <ChevronRight className="h-3.5 w-3.5" />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate('/care-plan', {
+                          state: {
+                            result: selectedResult,
+                            fromAssessmentId: selectedResult.id || selectedResult.diagnosis_result_id,
+                          },
+                        })
+                      }
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-primary-200/80 bg-primary-50/50 px-3 py-2 text-xs font-bold text-primary-700 transition hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-950/40 dark:text-primary-300 dark:hover:bg-primary-900/50"
+                    >
+                      <HeartPulse className="h-4 w-4" /> Open Care Plan <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
                   </div>
 
                   <div className="flex items-center gap-3 ml-auto">

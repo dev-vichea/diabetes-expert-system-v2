@@ -18,7 +18,6 @@ import {
   HeartPulse,
   MessageSquare,
   Moon,
-  Pill,
   Play,
   PlusCircle,
   Sparkles,
@@ -34,23 +33,17 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { ErrorAlert, Skeleton, StatCardsSkeleton, CardListSkeleton } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import {
-  CarePlanMedications,
-} from '@/components/dashboard/patient/CarePathHubComponents'
 import { AppointmentCalendarCanvas } from '@/components/dashboard/patient/AppointmentCalendarCanvas'
-import { CarePlanPrevention } from '@/components/dashboard/patient/CarePlanPrevention'
 import { PersonalizedCarePlanSection } from '@/components/care-plan/PersonalizedCarePlanSection'
 import { CarePlanGlucoseChart } from '@/components/care-plan/CarePlanGlucoseChart'
-import { getTreatmentPlanForUser } from '@/lib/treatmentPlanStore'
 import {
   getLatestFacts,
   toNumberOrNull,
 } from '@/components/dashboard/patient/patient-dashboard-utils'
 
 const TABS = [
-  { id: 'Overview', labelEn: 'Overview', labelKm: 'ទិដ្ឋភាពទូទៅ' },
-  { id: 'Treatment Plan', labelEn: 'Treatment Plan', labelKm: 'ផែនការព្យាបាល' },
-  { id: 'Medications', labelEn: 'Medications', labelKm: 'ថ្នាំពេទ្យ' },
+  { id: 'Care Plan', labelEn: 'Care Plan', labelKm: 'ផែនការថែទាំ' },
+  { id: 'Daily Habits', labelEn: 'Daily Habits & Checklist', labelKm: 'ទម្លាប់ និងកិច្ចការប្រចាំថ្ងៃ' },
   { id: 'Appointments', labelEn: 'Appointments', labelKm: 'ការណាត់ជួប' },
 ]
 
@@ -126,7 +119,7 @@ export function CarePlanPage() {
   const [loading, setLoading] = useState(true)
   const [regenerating, setRegenerating] = useState(false)
   const [error, setError] = useState('')
-  const [activeTab, setActiveTab] = useState('Overview')
+  const [activeTab, setActiveTab] = useState('Care Plan')
 
   // Interactive Daily Checklist state with local persistence
   const [todayTasks, setTodayTasks] = useState(() => {
@@ -141,10 +134,6 @@ export function CarePlanPage() {
   const [isSafetyExpanded, setIsSafetyExpanded] = useState(true)
   const [highlightSafety, setHighlightSafety] = useState(false)
   const safetySectionRef = useRef(null)
-
-  const patientPlan = useMemo(() => {
-    return getTreatmentPlanForUser(user?.name, user?.email)
-  }, [user])
 
   const followUpDateMonth = useMemo(() => {
     const d = new Date()
@@ -442,14 +431,6 @@ export function CarePlanPage() {
                   <span>{t('carePlanPage.overview.fullReport', isKhmer ? 'របាយការណ៍ពេញលេញ' : 'Full Report')}</span>
                 </Link>
 
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('Treatment Plan')}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                >
-                  <Stethoscope className="h-4 w-4 text-slate-400 dark:text-slate-400" />
-                  <span>{t('carePlanPage.overview.doctorsPlan', isKhmer ? 'ផែនការរបស់វេជ្ជបណ្ឌិត' : "Doctor's Plan")}</span>
-                </button>
               </div>
             </div>
           </div>
@@ -507,9 +488,23 @@ export function CarePlanPage() {
       </div>
 
       {/* ==================================================================== */}
-      {/* 3. TAB 1: OVERVIEW (MATCHING DESIGN LAYOUT)                           */}
+      {/* 3. TAB 1: CARE PLAN (PRIMARY ASSESSMENT-DRIVEN VIEW)                  */}
       {/* ==================================================================== */}
-      {activeTab === 'Overview' && (
+      {activeTab === 'Care Plan' && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          <PersonalizedCarePlanSection
+            carePlan={carePlan}
+            latestResult={latestResult}
+            onRegenerate={handleRegenerateCarePlan}
+            regenerating={regenerating}
+          />
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 4. TAB 2: DAILY HABITS & CHECKLIST                                   */}
+      {/* ==================================================================== */}
+      {activeTab === 'Daily Habits' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* ================================================================ */}
           {/* Left Column (8 cols): Today's Care, Glucose, Meds, Nutrition, Alert */}
@@ -688,45 +683,49 @@ export function CarePlanPage() {
               </div>
             </div>
 
-            {/* Row 2: Next Medication + Nutrition & Meal Guide (2 columns) */}
+            {/* Row 2: Assessment Care Focus + Nutrition & Meal Guide (2 columns) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Card 3: Next Medication */}
+              {/* Card 3: Assessment Care Focus */}
               <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all dark:border-slate-800 dark:bg-slate-900">
                 <div>
                   <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-primary-600 dark:bg-blue-950/60 dark:text-primary-400">
-                        <Pill className="h-4.5 w-4.5" />
+                        <Target className="h-4.5 w-4.5" />
                       </div>
                       <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                        {t('carePlanPage.overview.nextMedication.title', isKhmer ? 'ថ្នាំបន្ទាប់' : 'Next Medication')}
+                        {t('carePlanPage.dailyHabits.careFocus.title', isKhmer ? 'ការផ្តោតសំខាន់នៃការថែទាំ' : 'Assessment Care Focus')}
                       </h2>
                     </div>
 
-                    <span className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-700 border border-sky-200/60 dark:bg-sky-950/60 dark:text-sky-300">
-                      {t('carePlanPage.overview.nextMedication.scheduled', isKhmer ? 'បានកំណត់ពេល' : 'Scheduled')}
+                    <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300">
+                      {isKhmer ? 'ផ្អែកលើការវាយតម្លៃ' : 'Assessment-Driven'}
                     </span>
                   </div>
 
                   <div className="mt-4">
                     <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                      {t('carePlanPage.overview.nextMedication.name', isKhmer ? 'មេតហ្វ័រមីន 500 mg' : 'Metformin 500 mg')}
+                      {latestResult?.diagnosis || (isKhmer ? 'ការគ្រប់គ្រងរបៀបរស់នៅ' : 'Personalized Lifestyle Plan')}
                     </h3>
                     <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                      {t('carePlanPage.overview.nextMedication.time', isKhmer ? 'ថ្ងៃនេះ · ៧:០០ យប់' : 'Today · 7:00 PM')}
+                      {carePlan?.personalized_metrics?.daily_step_goal
+                        ? (isKhmer ? `គោលដៅជំហាន៖ ${carePlan.personalized_metrics.daily_step_goal.toLocaleString()} ជំហាន/ថ្ងៃ` : `Daily Step Goal: ${carePlan.personalized_metrics.daily_step_goal.toLocaleString()} steps/day`)
+                        : (isKhmer ? 'គោលដៅជំហាន៖ ៨,៥០០ ជំហាន/ថ្ងៃ' : 'Daily Step Goal: 8,500 steps/day')}
                     </p>
                     <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-                      {t('carePlanPage.overview.nextMedication.instruction', isKhmer ? 'ពិសារជាមួយអាហារពេលល្ងាច' : 'Take with dinner')}
+                      {carePlan?.personalized_metrics?.daily_water_liters
+                        ? (isKhmer ? `គោលដៅជាតិទឹក៖ ${carePlan.personalized_metrics.daily_water_liters} លីត្រ/ថ្ងៃ` : `Hydration Goal: ${carePlan.personalized_metrics.daily_water_liters} L/day`)
+                        : (isKhmer ? 'គោលដៅជាតិទឹក៖ ២.០ លីត្រ/ថ្ងៃ' : 'Hydration Goal: 2.0 L/day')}
                     </p>
                   </div>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab('Medications')}
+                  onClick={() => setActiveTab('Care Plan')}
                   className="group mt-5 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-semibold text-primary-600 transition hover:text-primary-700 dark:border-slate-800 dark:text-primary-400"
                 >
-                  <span>{t('carePlanPage.overview.nextMedication.viewAll', isKhmer ? 'មើលថ្នាំទាំងអស់' : 'View all medications')}</span>
+                  <span>{t('carePlanPage.dailyHabits.careFocus.viewPlan', isKhmer ? 'មើលអនុសាសន៍ផែនការថែទាំ' : 'View full care plan')}</span>
                   <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
                 </button>
               </div>
@@ -781,7 +780,7 @@ export function CarePlanPage() {
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab('Treatment Plan')}
+                  onClick={() => setActiveTab('Care Plan')}
                   className="group mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-semibold text-primary-600 transition hover:text-primary-700 dark:border-slate-800 dark:text-primary-400"
                 >
                   <span>{t('carePlanPage.overview.nutritionGuide.viewPlan', isKhmer ? 'មើលផែនការអាហារូបត្ថម្ភលម្អិត' : 'View nutrition plan')}</span>
@@ -801,7 +800,7 @@ export function CarePlanPage() {
                     {t('carePlanPage.overview.needsAttention.title', isKhmer ? 'ត្រូវការការយកចិត្តទុកដាក់' : 'Needs attention')}
                   </h3>
                   <p className="mt-0.5 text-xs text-rose-800/90 leading-relaxed dark:text-rose-200/90">
-                    {t('carePlanPage.overview.needsAttention.description', isKhmer ? 'កម្រិតជាតិស្ករពេលព្រឹកចុងក្រោយរបស់អ្នកខ្ពស់ជាងគោលដៅដែលបានណែនាំ។ សូមបន្តអនុវត្តតាមផែនការព្យាបាល និងទាក់ទងក្រុមថែទាំរបស់អ្នកប្រសិនបើរោគសញ្ញាកាន់តែធ្ងន់ធ្ងរ។' : 'Your latest fasting glucose result is above your recommended target. Follow your current treatment plan and contact your care team if symptoms worsen.')}
+                    {t('carePlanPage.overview.needsAttention.description', isKhmer ? 'កម្រិតជាតិស្ករពេលព្រឹកចុងក្រោយរបស់អ្នកខ្ពស់ជាងគោលដៅដែលបានណែនាំ។ សូមបន្តអនុវត្តតាមផែនការថែទាំ និងទាក់ទងក្រុមថែទាំរបស់អ្នកប្រសិនបើរោគសញ្ញាកាន់តែធ្ងន់ធ្ងរ។' : 'Your latest fasting glucose result is above your recommended target. Follow your personalized care plan and contact your care team if symptoms worsen.')}
                   </p>
                 </div>
               </div>
@@ -933,7 +932,7 @@ export function CarePlanPage() {
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab('Treatment Plan')}
+                  onClick={() => setActiveTab('Care Plan')}
                   className="group w-full flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3 text-left transition hover:border-primary-200 hover:bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-primary-900/60 dark:hover:bg-slate-800/50"
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -942,7 +941,7 @@ export function CarePlanPage() {
                     </div>
                     <div className="min-w-0">
                       <h3 className="text-xs font-bold text-slate-900 truncate dark:text-slate-100">
-                        {t('carePlanPage.overview.quickActions.treatmentPlan', isKhmer ? 'មើលផែនការព្យាបាល' : 'View Treatment Plan')}
+                        {t('carePlanPage.overview.quickActions.treatmentPlan', isKhmer ? 'មើលផែនការថែទាំ' : 'View Care Plan')}
                       </h3>
                       <p className="text-[11px] text-slate-500 truncate dark:text-slate-400">
                         {t('carePlanPage.overview.quickActions.treatmentPlanSub', isKhmer ? 'គោលដៅ អាហារូបត្ថម្ភ សកម្មភាព និងច្រើនទៀត' : 'Goals, nutrition, activity & more')}
@@ -1035,7 +1034,7 @@ export function CarePlanPage() {
 
               <button
                 type="button"
-                onClick={() => setActiveTab('Treatment Plan')}
+                onClick={() => setActiveTab('Care Plan')}
                 className="group mt-4 flex w-full items-center justify-between border-t border-slate-100 pt-3 text-xs font-semibold text-primary-600 transition hover:text-primary-700 dark:border-slate-800 dark:text-primary-400"
               >
                 <span>{t('carePlanPage.overview.lifestyleTarget.viewGuide', isKhmer ? 'ស្វែងយល់បន្ថែមអំពីការថែទាំ' : 'Explore lifestyle guide')}</span>
@@ -1073,17 +1072,6 @@ export function CarePlanPage() {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <Pill className="h-4 w-4 text-amber-500" />
-                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {t('carePlanPage.overview.yourProgress.medications', isKhmer ? 'ការទទួលទានថ្នាំ' : 'Medications')}
-                    </span>
-                  </div>
-                  <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/50 dark:text-emerald-300">
-                    {t('carePlanPage.overview.yourProgress.onTrack', isKhmer ? 'តាមផែនការ' : 'On track')}
-                  </span>
-                </div>
 
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5">
@@ -1171,29 +1159,6 @@ export function CarePlanPage() {
         </div>
       )}
 
-      {/* ==================================================================== */}
-      {/* 4. TAB 2: TREATMENT PLAN                                             */}
-      {/* ==================================================================== */}
-      {activeTab === 'Treatment Plan' && (
-        <div className="space-y-6 animate-in fade-in duration-150">
-          <PersonalizedCarePlanSection
-            carePlan={carePlan}
-            latestResult={latestResult}
-            onRegenerate={handleRegenerateCarePlan}
-            regenerating={regenerating}
-          />
-        </div>
-      )}
-
-      {/* ==================================================================== */}
-      {/* 5. TAB 3: MEDICATIONS                                                */}
-      {/* ==================================================================== */}
-      {activeTab === 'Medications' && (
-        <div className="space-y-6 animate-in fade-in duration-150">
-          <CarePlanMedications t={t} />
-          {latestResult && <CarePlanPrevention latestResult={latestResult} t={t} />}
-        </div>
-      )}
 
       {/* ==================================================================== */}
       {/* 6. TAB 4: APPOINTMENTS                                               */}

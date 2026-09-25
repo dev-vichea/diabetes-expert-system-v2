@@ -644,8 +644,8 @@ export function ClinicalDashboard({ activeRole }) {
         helper: t('dashboard.focus.carePlansHint', 'Recommendations issued'),
         action: t('dashboard.focus.viewPlans', 'View plans'),
         value: stats.treatment_plans.value,
-        icon: Pill,
-        href: '/treatment-plans',
+        icon: HeartPulse,
+        href: '/care-plan',
         tone: 'emerald',
       },
       {

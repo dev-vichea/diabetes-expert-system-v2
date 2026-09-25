@@ -161,31 +161,10 @@ function AuthenticatedRoutes() {
 
         <Route path="/admin" element={<Navigate to="/users" replace />} />
 
-        <Route
-          path="/treatment-plans"
-          element={(
-            <RoleGuard user={user} permissions={['treatment_plan.view']}>
-              <TreatmentPlanningPage />
-            </RoleGuard>
-          )}
-        />
-        <Route
-          path="/treatment-plans/create"
-          element={(
-            <RoleGuard user={user} permissions={['treatment_plan.manage']}>
-              <TreatmentPlanCreatePage />
-            </RoleGuard>
-          )}
-        />
+        <Route path="/treatment-plans" element={<Navigate to="/care-plan" replace />} />
+        <Route path="/treatment-plans/create" element={<Navigate to="/care-plan" replace />} />
 
-        <Route
-          path="/care-plan"
-          element={
-            <RoleGuard user={user} notRoles={['admin']} permissions={['care_plan.view_own']}>
-              <CarePlanPage />
-            </RoleGuard>
-          }
-        />
+        <Route path="/care-plan" element={<CarePlanPage />} />
 
         {/* Profile page — available to every authenticated user; the page itself
             adapts (health profile section renders for patient accounts only). */}
