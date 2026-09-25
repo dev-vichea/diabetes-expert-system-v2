@@ -21,6 +21,12 @@ role_permissions = db.Table(
     db.Column("permission_id", db.Integer, db.ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True),
 )
 
+user_permissions = db.Table(
+    "user_permissions",
+    db.Column("user_id", db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("permission_id", db.Integer, db.ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True),
+)
+
 
 class Role(db.Model):
     __tablename__ = "roles"
@@ -43,6 +49,7 @@ class Permission(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
 
     roles = db.relationship("Role", secondary=role_permissions, back_populates="permissions")
+    direct_users = db.relationship("User", secondary=user_permissions, back_populates="direct_permissions")
 
 
 class User(db.Model):
@@ -69,6 +76,11 @@ class User(db.Model):
     )
 
     roles = db.relationship("Role", secondary=user_roles, back_populates="users")
+    direct_permissions = db.relationship(
+        "Permission",
+        secondary=user_permissions,
+        back_populates="direct_users",
+    )
     diagnoses_made = db.relationship(
         "DiagnosisResult",
         back_populates="diagnosed_by_user",
@@ -397,4 +409,3 @@ class Notification(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=utc_now, index=True)
 
     user = db.relationship("User", backref=db.backref("notifications", cascade="all, delete-orphan", lazy="dynamic"))
-

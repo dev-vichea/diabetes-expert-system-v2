@@ -2,6 +2,7 @@ import axios from 'axios'
 
 export const ACCESS_TOKEN_KEY = 'access_token'
 export const REFRESH_TOKEN_KEY = 'refresh_token'
+export const AUTH_CLEARED_EVENT = 'auth:cleared'
 const DEFAULT_API_TIMEOUT_MS = 30000
 
 function resolveApiTimeout() {
@@ -40,6 +41,7 @@ export function clearAuthStorage() {
   localStorage.removeItem(REFRESH_TOKEN_KEY)
   localStorage.removeItem('token')
   localStorage.removeItem('user')
+  window.dispatchEvent(new Event(AUTH_CLEARED_EVENT))
 }
 
 api.interceptors.request.use((config) => {
@@ -63,7 +65,7 @@ api.interceptors.response.use(
     }
 
     const requestUrl = originalRequest.url || ''
-    const isAuthEndpoint = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/refresh')
+    const isAuthEndpoint = ['/auth/login', '/auth/refresh', '/auth/register', '/auth/google'].some((path) => requestUrl.includes(path))
     if (originalRequest._retry || isAuthEndpoint) {
       return Promise.reject(error)
     }
@@ -78,7 +80,7 @@ api.interceptors.response.use(
 
     try {
       if (!refreshPromise) {
-        refreshPromise = axios.post(`${api.defaults.baseURL}/auth/refresh`, { refresh_token: refreshToken })
+        refreshPromise = axios.post(`${api.defaults.baseURL}/auth/refresh`, { refresh_token: refreshToken }, { timeout: api.defaults.timeout })
       }
 
       const refreshResponse = await refreshPromise

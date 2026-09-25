@@ -61,7 +61,7 @@ def get_recent_assessments():
 
 
 @assessment_bp.get("/<int:diagnosis_result_id>")
-@require_auth(permissions=["diagnosis.run"])
+@require_auth(permissions=["diagnosis.run", "diagnosis.view_own", "diagnosis.review_any"], permission_mode="any")
 def get_assessment_result(diagnosis_result_id: int):
     """Retrieve a saved assessment result by ID."""
     result = get_diagnosis_service().get_result(diagnosis_result_id, current_user=g.current_user)
@@ -69,7 +69,7 @@ def get_assessment_result(diagnosis_result_id: int):
 
 
 @assessment_bp.get("/<int:diagnosis_result_id>/report.pdf")
-@require_auth(permissions=["diagnosis.run"])
+@require_auth(permissions=["diagnosis.run", "diagnosis.view_own", "report.export"], permission_mode="any")
 def download_assessment_report(diagnosis_result_id: int):
     """Generate and download PDF assessment report."""
     lang = request.args.get("lang", "en").lower().strip()
@@ -85,7 +85,7 @@ def download_assessment_report(diagnosis_result_id: int):
 
 
 @assessment_bp.get("/<int:diagnosis_result_id>/reasoning")
-@require_auth(permissions=["diagnosis.run"])
+@require_auth(permissions=["diagnosis.run", "diagnosis.view_own", "diagnosis.review_any"], permission_mode="any")
 def get_assessment_reasoning(diagnosis_result_id: int):
     """Generate structured AI reasoning report for a saved assessment result.
 
@@ -125,7 +125,7 @@ def generate_assessment_reasoning(diagnosis_result_id: int):
 
 
 @assessment_bp.get("/<int:diagnosis_result_id>/care-plan")
-@require_auth(permissions=["diagnosis.run", "diagnosis.view_own"], permission_mode="any")
+@require_auth(roles=["patient"], permissions=["care_plan.view_own"])
 def get_assessment_care_plan(diagnosis_result_id: int):
     """Retrieve or generate structured personalized AI care plan for an assessment result.
 
@@ -138,7 +138,7 @@ def get_assessment_care_plan(diagnosis_result_id: int):
     - Follow-up Schedule
     - Safety / Medical Disclaimer
     """
-    result = get_diagnosis_service().get_result(diagnosis_result_id, current_user=g.current_user)
+    result = get_diagnosis_service().get_result(diagnosis_result_id, current_user=g.current_user, own_only=True)
     care_plan = result.get("care_plan")
     if not care_plan:
         from app.services.care_plan_service import CarePlanService
@@ -147,7 +147,7 @@ def get_assessment_care_plan(diagnosis_result_id: int):
 
 
 @assessment_bp.post("/<int:diagnosis_result_id>/care-plan")
-@require_auth(permissions=["diagnosis.run", "diagnosis.view_own"], permission_mode="any")
+@require_auth(roles=["patient"], permissions=["care_plan.view_own"])
 def generate_assessment_care_plan(diagnosis_result_id: int):
     """Generate or regenerate structured personalized AI care plan from an assessment result.
 
@@ -156,15 +156,15 @@ def generate_assessment_care_plan(diagnosis_result_id: int):
     """
     payload = request.get_json(silent=True) or {}
     result = payload.get("result")
-    if not result:
-        result = get_diagnosis_service().get_result(diagnosis_result_id, current_user=g.current_user)
+    if diagnosis_result_id > 0 or not result:
+        result = get_diagnosis_service().get_result(diagnosis_result_id, current_user=g.current_user, own_only=True)
     from app.services.care_plan_service import CarePlanService
     care_plan = CarePlanService().generate_care_plan(result)
     return success_response(data=care_plan)
 
 
 @assessment_bp.post("/care-plan/generate")
-@require_auth(permissions=["diagnosis.run", "diagnosis.view_own"], permission_mode="any")
+@require_auth(roles=["patient"], permissions=["care_plan.view_own"])
 def generate_care_plan_direct():
     """Generate structured personalized care plan directly from an assessment result payload."""
     payload = request.get_json(silent=True) or {}
@@ -242,6 +242,9 @@ def complete_assessment_endpoint():
 
     service = get_conversational_assessment_service()
     current_user = getattr(g, "current_user", None)
+    if current_user and "diagnosis.run" not in current_user.get("permissions", []):
+        from app.errors import ForbiddenError
+        raise ForbiddenError("You do not have the required permission(s).")
     result = service.complete_assessment(answers, current_user)
     return success_response(data=result)
 

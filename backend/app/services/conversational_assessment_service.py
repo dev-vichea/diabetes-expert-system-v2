@@ -62,6 +62,7 @@ class ConversationalAssessmentService:
         Returns:
             Next question or assessment if complete
         """
+        answers = self._validate_answers(answers)
         interview = IntelligentInterview()
         
         # Get next question
@@ -96,12 +97,16 @@ class ConversationalAssessmentService:
         """
         Complete the assessment and generate diagnosis.
         """
+        from app.errors import ForbiddenError, ValidationError
+        answers = self._validate_answers(answers)
+        if current_user and "diagnosis.run" not in current_user.get("permissions", []):
+            raise ForbiddenError("You do not have the required permission(s).")
+        patient_id = self._resolve_patient_id(answers, current_user) if current_user else None
         assessment = self._generate_assessment(answers)
         
         # Save to database if user is authenticated
         if current_user:
             user_id = int(current_user.get("sub")) if current_user.get("sub") else None
-            patient_id = self._resolve_patient_id(answers, current_user)
             
             # Create session
             session = self.assessment_repository.create_session(
@@ -142,9 +147,38 @@ class ConversationalAssessmentService:
             
             assessment["diagnosis_result_id"] = diagnosis_record.id
             assessment["assessment_session_id"] = session.id
+            if self.audit_log_repository:
+                self.audit_log_repository.create(
+                    action="assessment.complete", entity_type="diagnosis_result",
+                    entity_id=str(diagnosis_record.id), actor_user_id=user_id,
+                    metadata={"mode": "conversational", "patient_id": patient_id},
+                )
         
         return assessment
     
+    @staticmethod
+    def _validate_answers(answers: dict) -> dict:
+        from app.errors import ValidationError
+        import math
+
+        if not isinstance(answers, dict):
+            raise ValidationError("answers must be a JSON object.")
+        answers = dict(answers)
+        if "age" in answers:
+            raw_age = answers["age"]
+            try:
+                age = float(raw_age)
+            except (TypeError, ValueError, OverflowError):
+                raise ValidationError("age must be a number between 0 and 120.") from None
+            if isinstance(raw_age, bool) or not math.isfinite(age) or not 0 <= age <= 120:
+                raise ValidationError("age must be a number between 0 and 120.")
+            answers["age"] = age
+        if "sex" in answers:
+            sex = answers["sex"]
+            if not isinstance(sex, str) or sex.lower() not in {"male", "female", "other"}:
+                raise ValidationError("sex must be male, female, or other.")
+        return answers
+
     def _generate_assessment(self, answers: dict) -> dict:
         """Generate comprehensive assessment from answers."""
         # Extract symptoms and risk factors
@@ -371,9 +405,12 @@ class ConversationalAssessmentService:
             return bilingual(CT, "chat.generic")
     
     def _resolve_patient_id(self, answers: dict, current_user: dict) -> int | None:
-        """Resolve patient ID if available."""
-        # For now, return None - can be extended
-        return None
+        from app.services.diagnosis_service import DiagnosisService
+        resolver = DiagnosisService(
+            self.rule_repository, self.diagnosis_repository,
+            self.assessment_repository, self.patient_repository,
+        )
+        return resolver._resolve_patient_id(answers, current_user, set(current_user.get("permissions") or []))
     
     def get_all_questions(self) -> list[dict]:
         """Get all possible interview questions (for frontend preloading)."""

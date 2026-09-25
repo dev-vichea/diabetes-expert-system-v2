@@ -50,7 +50,11 @@ DEFAULT_PERMISSIONS = [
 DEFAULT_ROLES = {
     "admin": {
         "description": "System administrator",
-        "permissions": [item["code"] for item in DEFAULT_PERMISSIONS],
+        "permissions": [
+            item["code"]
+            for item in DEFAULT_PERMISSIONS
+            if item["code"] != "care_plan.view_own"
+        ],
     },
     "doctor": {
         "description": "Medical practitioner",
@@ -148,6 +152,18 @@ def sync_default_access_control() -> None:
             for code in codes_to_add
             if code in role_data["permissions"] and code not in existing_codes
         )
+
+    # A personal care plan belongs to the patient account that owns it. Remove
+    # this permission from every non-patient role, including legacy/custom
+    # roles created before the exclusivity rule was introduced.
+    patient_care_plan_permission = permission_by_code.get("care_plan.view_own")
+    if patient_care_plan_permission:
+        for role in Role.query.filter(Role.name != "patient").all():
+            role.permissions = [
+                permission
+                for permission in role.permissions
+                if permission.code != "care_plan.view_own"
+            ]
 
     # Consolidate legacy built-in roles without deleting their user accounts.
     # Nurse is identified by the original built-in description so an admin can

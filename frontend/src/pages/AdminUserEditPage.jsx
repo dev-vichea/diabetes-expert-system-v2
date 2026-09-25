@@ -1,25 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { ArrowLeft, Save, Shield, Users } from 'lucide-react'
+import { ArrowLeft, Lock, Save, Shield, Users } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '../api/client'
 import { AdminHeroCard } from '@/components/admin'
 import { AdminUserSidebar } from '@/components/admin/AdminUserSidebar'
 import {
   AppSelect,
   Checkbox,
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
   PageHeaderSkeleton,
   TwoColumnPageSkeleton,
 } from '@/components/ui'
 import { notify } from '@/lib/toast'
 
-const CUSTOM_ROLE_DRAFT = 'custom'
+const PATIENT_EXCLUSIVE_PERMISSIONS = new Set(['care_plan.view_own'])
 
 const EMPTY_FORM = {
   name: '',
@@ -75,69 +69,11 @@ function normalizePermissionList(permissionCodes) {
   )
 }
 
-function samePermissions(left, right) {
-  const a = normalizePermissionList(left)
-  const b = normalizePermissionList(right)
-  if (a.length !== b.length) return false
-  return a.every((code, index) => code === b[index])
-}
-
-function RoleCombobox({ value, options, disabled, onValueChange, t }) {
-  const inputValue = value === CUSTOM_ROLE_DRAFT ? '' : value
-  const normalizedInput = normalizeRoleName(inputValue)
-  const selectedOption = useMemo(
-    () => options.find((option) => option.value === normalizedInput) || null,
-    [normalizedInput, options]
-  )
-  const hasExactMatch = options.some((option) => option.value === normalizedInput)
-  const items = useMemo(() => {
-    if (!normalizedInput || hasExactMatch) return options
-    return [
-      ...options,
-      {
-        value: normalizedInput,
-        label: t(`${EDIT_NS}.createRoleOption`, { name: inputValue }),
-        isCreate: true,
-      },
-    ]
-  }, [hasExactMatch, inputValue, normalizedInput, options, t])
-
-  return (
-    <Combobox
-      items={items}
-      value={selectedOption}
-      inputValue={inputValue}
-      disabled={disabled}
-      openOnInputClick
-      itemToStringLabel={(item) => item?.value || ''}
-      itemToStringValue={(item) => item?.value || ''}
-      isItemEqualToValue={(item, selected) => item?.value === selected?.value && Boolean(item?.isCreate) === Boolean(selected?.isCreate)}
-      onInputValueChange={(nextValue) => onValueChange(nextValue)}
-      onValueChange={(nextValue) => {
-        if (!nextValue) return
-        onValueChange(nextValue.value)
-      }}
-    >
-      <ComboboxInput disabled={disabled} placeholder={t(`${EDIT_NS}.rolePlaceholder`)} autoComplete="off" />
-      <ComboboxContent>
-        <ComboboxEmpty>{normalizedInput ? t(`${EDIT_NS}.noMatchingRoles`) : t(`${EDIT_NS}.noRolesAvailable`)}</ComboboxEmpty>
-        <ComboboxList>
-          {(item) => (
-            <ComboboxItem
-              key={`${item.isCreate ? 'create' : 'role'}-${item.value}`}
-              value={item}
-              className={item.isCreate ? 'border border-dashed border-cyan-200 bg-cyan-50/60 dark:border-cyan-500/20 dark:bg-cyan-500/5' : undefined}
-            >
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
-                  {item.isCreate ? item.label : formatRoleLabel(item.label)}
-                </p>
-              </div>
-            </ComboboxItem>
-          )}
-        </ComboboxList>
-      </ComboboxContent>
-    </Combobox>
+function permissionsAllowedForRole(roleName, permissionCodes) {
+  const normalizedRoleName = normalizeRoleName(roleName)
+  if (normalizedRoleName === 'patient') return normalizePermissionList(permissionCodes)
+  return normalizePermissionList(
+    (permissionCodes || []).filter((code) => !PATIENT_EXCLUSIVE_PERMISSIONS.has(code))
   )
 }
 
@@ -148,7 +84,7 @@ export function AdminUserEditPage() {
   const [user, setUser] = useState(null)
   const [roles, setRoles] = useState([])
   const [permissions, setPermissions] = useState([])
-  const [selectedPermissions, setSelectedPermissions] = useState([])
+  const [directPermissions, setDirectPermissions] = useState([])
   const [form, setForm] = useState(EMPTY_FORM)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -162,8 +98,18 @@ export function AdminUserEditPage() {
   )
 
   const roleOptions = useMemo(
-    () => visibleRoles.map((role) => ({ value: role.name, label: role.name })),
+    () => visibleRoles.map((role) => ({ value: role.name, label: formatRoleLabel(role.name) })),
     [visibleRoles]
+  )
+
+  const selectedRole = roleMap.get(normalizeRoleName(form.role_name)) || null
+  const rolePermissionSet = useMemo(
+    () => new Set(selectedRole?.permissions || []),
+    [selectedRole]
+  )
+  const effectivePermissions = useMemo(
+    () => normalizePermissionList([...rolePermissionSet, ...directPermissions]),
+    [rolePermissionSet, directPermissions]
   )
 
   const groupedPermissions = useMemo(() => {
@@ -194,6 +140,7 @@ export function AdminUserEditPage() {
         role: normalizeRoleName(form.role_name) || getUserRole(user),
         roles: [normalizeRoleName(form.role_name) || getUserRole(user)],
         is_active: form.is_active,
+        permissions: effectivePermissions,
       }
     : null
 
@@ -206,7 +153,7 @@ export function AdminUserEditPage() {
       role_name: roleName,
       is_active: Boolean(userData?.is_active),
     })
-    setSelectedPermissions(normalizePermissionList(userData?.permissions || []))
+    setDirectPermissions(permissionsAllowedForRole(roleName, userData?.direct_permissions || []))
   }
 
   async function loadPage() {
@@ -241,26 +188,20 @@ export function AdminUserEditPage() {
   function applyRoleSelection(rawValue) {
     const roleName = normalizeRoleName(rawValue)
     setForm((current) => ({ ...current, role_name: roleName || '' }))
-
-    const matchedRole = roleMap.get(roleName)
-    if (matchedRole) {
-      setSelectedPermissions(normalizePermissionList(matchedRole.permissions || []))
-    }
+    const inherited = new Set(roleMap.get(roleName)?.permissions || [])
+    setDirectPermissions((current) =>
+      permissionsAllowedForRole(roleName, current).filter((code) => !inherited.has(code))
+    )
   }
 
   function togglePermission(code, checked) {
-    setSelectedPermissions((current) => {
+    if (rolePermissionSet.has(code)) return
+    if (PATIENT_EXCLUSIVE_PERMISSIONS.has(code) && normalizeRoleName(form.role_name) !== 'patient') return
+    setDirectPermissions((current) => {
       const next = new Set(current)
       if (checked) next.add(code)
       else next.delete(code)
-
-      const nextPermissions = Array.from(next).sort((left, right) => left.localeCompare(right))
-      const currentRole = roleMap.get(normalizeRoleName(form.role_name))
-      if (currentRole && !samePermissions(nextPermissions, currentRole.permissions || [])) {
-        setForm((currentForm) => ({ ...currentForm, role_name: CUSTOM_ROLE_DRAFT }))
-      }
-
-      return nextPermissions
+      return Array.from(next).sort((left, right) => left.localeCompare(right))
     })
   }
 
@@ -270,22 +211,16 @@ export function AdminUserEditPage() {
     setError('')
 
     const normalizedRoleName = normalizeRoleName(form.role_name)
-    if (!normalizedRoleName || normalizedRoleName === CUSTOM_ROLE_DRAFT) {
+    const existingRole = roleMap.get(normalizedRoleName)
+    if (!existingRole) {
       setSaving(false)
-      notify.warning(t(`${EDIT_NS}.enterCustomRoleName`))
+      notify.warning(t(`${EDIT_NS}.selectExistingRole`))
       return
     }
 
     let loadingToast
 
     try {
-      const existingRole = roleMap.get(normalizedRoleName)
-      if (existingRole && !samePermissions(selectedPermissions, existingRole.permissions || [])) {
-        notify.warning(t(`${EDIT_NS}.roleNameConflict`))
-        setSaving(false)
-        return
-      }
-
       loadingToast = notify.loading(t(`${EDIT_NS}.savingProfile`))
 
       await api.patch(`/admin/users/${userId}/access-profile`, {
@@ -293,15 +228,12 @@ export function AdminUserEditPage() {
         email: form.email,
         is_active: form.is_active,
         role_name: normalizedRoleName,
-        permissions: normalizePermissionList(selectedPermissions),
-        role_description: t(`${EDIT_NS}.customRoleDescription`, {
-          name: form.name || t(`${EDIT_NS}.customRoleFallbackName`),
-        }),
+        direct_permissions: permissionsAllowedForRole(normalizedRoleName, directPermissions),
       })
 
       await loadPage()
       notify.dismiss(loadingToast)
-      notify.success(existingRole ? t(`${EDIT_NS}.saved`) : t(`${EDIT_NS}.roleCreated`))
+      notify.success(t(`${EDIT_NS}.saved`))
     } catch (err) {
       notify.dismiss(loadingToast)
       notify.error(getApiErrorMessage(err, t(`${EDIT_NS}.saveFailed`)))
@@ -351,7 +283,7 @@ export function AdminUserEditPage() {
 
       {error ? <p className="error-box">{error}</p> : null}
       <div className="grid min-w-0 gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <AdminUserSidebar user={previewUser} permissions={selectedPermissions} />
+        <AdminUserSidebar user={previewUser} permissions={effectivePermissions} />
 
         <div className="space-y-5">
           <section className="surface p-5 sm:p-6">
@@ -387,12 +319,11 @@ export function AdminUserEditPage() {
 
               <label className="block">
                 <span className="label-text">{t(`${EDIT_NS}.roleLabel`)}</span>
-                <RoleCombobox
+                <AppSelect
                   value={form.role_name}
                   options={roleOptions}
                   disabled={loading || saving}
                   onValueChange={applyRoleSelection}
-                  t={t}
                 />
               </label>
 
@@ -429,17 +360,50 @@ export function AdminUserEditPage() {
                     <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400">{group.label}</h3>
                     <div className="mt-3 space-y-3">
                       {group.items.map((permission) => {
-                        const checked = selectedPermissions.includes(permission.code)
+                        const inherited = rolePermissionSet.has(permission.code)
+                        const individuallyGranted = directPermissions.includes(permission.code)
+                        const checked = inherited || individuallyGranted
+                        const patientOnlyLocked =
+                          PATIENT_EXCLUSIVE_PERMISSIONS.has(permission.code) &&
+                          normalizeRoleName(form.role_name) !== 'patient'
+                        const permissionLocked = inherited || patientOnlyLocked
                         return (
-                          <label key={permission.code} className="flex items-start gap-3">
+                          <label
+                            key={permission.code}
+                            title={
+                              patientOnlyLocked
+                                ? t(`${EDIT_NS}.patientOnlyPermission`)
+                                : inherited
+                                  ? t(`${EDIT_NS}.inheritedPermission`)
+                                  : undefined
+                            }
+                            className={`flex items-start gap-3 ${permissionLocked ? 'cursor-not-allowed opacity-70' : ''}`}
+                          >
                             <Checkbox
                               checked={checked}
-                              disabled={loading || saving}
+                              disabled={loading || saving || permissionLocked}
                               aria-label={permission.description || permission.code}
                               onCheckedChange={(value) => togglePermission(permission.code, value === true)}
                             />
                             <div className="min-w-0">
                               <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{permission.description || permission.code}</p>
+                              {patientOnlyLocked && (
+                                <p className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-amber-700 dark:text-amber-400">
+                                  <Lock className="h-3 w-3" />
+                                  {t(`${EDIT_NS}.patientOnlyPermission`)}
+                                </p>
+                              )}
+                              {inherited && !patientOnlyLocked && (
+                                <p className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                                  <Lock className="h-3 w-3" />
+                                  {t(`${EDIT_NS}.inheritedPermission`)}
+                                </p>
+                              )}
+                              {individuallyGranted && !inherited && (
+                                <p className="mt-0.5 text-xs font-medium text-cyan-700 dark:text-cyan-400">
+                                  {t(`${EDIT_NS}.individualPermission`)}
+                                </p>
+                              )}
                             </div>
                           </label>
                         )

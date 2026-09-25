@@ -1,3 +1,4 @@
+import { useAuth } from '@/contexts/AuthContext'
 import { useState, useEffect, useCallback } from 'react'
 import { Check, Clock, Moon, Sun, Sunrise, Sunset } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -21,8 +22,9 @@ function readRoutineDone(dateKey) {
 }
 
 export function CarePlanRoutine({ latestResult, t }) {
+  const { user } = useAuth()
   const conditionKey = getCarePlanConditionKey(latestResult)
-  const todayKey = getTodayKey()
+  const todayKey = `${user.id}-${getTodayKey()}`
   const [donePhases, setDonePhases] = useState(() => new Set(readRoutineDone(todayKey)))
 
   useEffect(() => {

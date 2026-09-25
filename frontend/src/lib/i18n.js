@@ -82,7 +82,7 @@ export function translate(language, key, valuesOrFallback, maybeValues) {
 
   const fallback = isSecondString
     ? valuesOrFallback
-    : (isThirdString ? maybeValues : undefined)
+    : (isThirdString ? maybeValues : values?.defaultValue)
 
   const defaultMessage = getNestedValue(messages[DEFAULT_LANGUAGE], key)
   const localizedMessage = getNestedValue(messages[normalized], key)

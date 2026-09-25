@@ -78,7 +78,7 @@ class AuthService:
             raise ValidationError("A JSON object is required.")
 
         email = str(payload.get("email") or "").strip().lower()
-        password = str(payload.get("password") or "").strip()
+        password = str(payload.get("password") or "")
         name = str(payload.get("name") or "").strip()
 
         if not email or "@" not in email:
@@ -140,7 +140,7 @@ class AuthService:
         if not email or not password:
             raise ValidationError("Email and password are required.")
 
-        user = self.user_repository.get_by_email(email)
+        user = self.user_repository.get_by_email_case_insensitive(email.strip())
         if not user or not user.password_hash or not check_password_hash(user.password_hash, password):
             raise UnauthorizedError("Invalid credentials.")
 
@@ -194,9 +194,9 @@ class AuthService:
                 if "Wrong number of segments in token" in str(e):
                     is_access_token = True
                 else:
-                    raise UnauthorizedError(f"Invalid Google credential: {e}")
+                    raise UnauthorizedError("Invalid Google credential.")
             except Exception as e:
-                raise UnauthorizedError(f"Failed to verify Google credential: {e}")
+                raise UnauthorizedError("Failed to verify Google credential.")
 
         if is_access_token:
             try:
@@ -213,7 +213,7 @@ class AuthService:
             except UnauthorizedError:
                 raise
             except Exception as e:
-                raise UnauthorizedError(f"Failed to verify Google credential: {e}")
+                raise UnauthorizedError("Failed to verify Google credential.")
 
         if not id_info.get("email_verified"):
             raise UnauthorizedError("Google account email is not verified.")
@@ -228,6 +228,12 @@ class AuthService:
 
         # 1. Lookup by google_sub
         user = self.user_repository.get_by_google_sub(google_sub)
+        if user:
+            if not user.is_active:
+                raise UnauthorizedError("User account is inactive.")
+            roles = {role.name.lower() for role in user.roles}
+            if roles != {"patient"}:
+                raise ForbiddenError("Google login is restricted to patient accounts.")
 
         # 2. Lookup by email if not found by google_sub
         if not user:
@@ -339,7 +345,7 @@ class AuthService:
                 entity_type="user",
                 entity_id=str(user.id),
                 actor_user_id=user.id,
-                metadata={"refresh_jti": payload.get("jti")},
+                metadata={},
             )
 
         return {
@@ -374,10 +380,10 @@ class AuthService:
         if self.audit_log_repository:
             self.audit_log_repository.create(
                 action="auth.logout",
-                entity_type="token",
-                entity_id=revoked_jtis[0] if revoked_jtis else None,
+                entity_type="user",
+                entity_id=str(actor_user_id) if actor_user_id else None,
                 actor_user_id=actor_user_id,
-                metadata={"revoked_jtis": revoked_jtis},
+                metadata={"revoked_token_count": len(revoked_jtis)},
             )
 
     def issue_tokens(self, user: dict) -> dict:

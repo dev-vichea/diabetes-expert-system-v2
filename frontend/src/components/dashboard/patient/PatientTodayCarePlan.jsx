@@ -1,3 +1,4 @@
+import { useAuth } from '@/contexts/AuthContext'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -48,15 +49,17 @@ const DEFAULT_HABITS = [
 
 export function PatientTodayCarePlan({ latestResult }) {
   const { t } = useLanguage()
+  const { user } = useAuth()
 
-  const todayKey = `apple_health_habits_${new Date().toISOString().slice(0, 10)}`
+  const todayKey = `apple_health_habits_${user.id}_${new Date().toISOString().slice(0, 10)}`
 
   const [completedTaskIds, setCompletedTaskIds] = useState(() => {
     try {
       const saved = localStorage.getItem(todayKey)
-      return saved ? JSON.parse(saved) : ['glucose_morning']
+      const parsed = saved ? JSON.parse(saved) : []
+      return Array.isArray(parsed) ? parsed : []
     } catch {
-      return ['glucose_morning']
+      return []
     }
   })
 

@@ -17,8 +17,8 @@ export function LoginPage() {
   const navigate = useNavigate()
 
   const [formData, setFormData] = useState({
-    email: 'doctor@example.com',
-    password: 'doctor123',
+    email: '',
+    password: '',
     rememberMe: false,
   })
   const [showPassword, setShowPassword] = useState(false)
@@ -86,7 +86,7 @@ export function LoginPage() {
   }
 
   function handleGoogleError(err) {
-    console.error('Google login error:', err)
+    console.error('Google login error:')
     setError(t('auth.errorGoogleLoginFailed', 'Google sign-in failed. Please try again.'))
   }
 

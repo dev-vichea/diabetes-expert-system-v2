@@ -673,7 +673,7 @@ export function DiagnosisResultPage() {
             setRuleExplanations((prev) => ({ ...prev, [ruleKey]: data.description }))
           }
         } catch (err) {
-          console.warn('Failed to fetch rule explanation:', err)
+          console.warn('Failed to fetch rule explanation:')
         } finally {
           setLoadingRuleExplanations((prev) => ({ ...prev, [ruleKey]: false }))
         }

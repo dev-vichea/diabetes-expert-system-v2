@@ -65,4 +65,4 @@ EXPOSE 5001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:${PORT:-5001}/health || exit 1
 
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5001} --workers 4 --threads 2 --timeout 90 --access-logfile - --error-logfile - 'app:create_app()'"]
+CMD ["sh", "-c", "python -m flask --app 'app:create_app()' db upgrade && exec gunicorn --bind 0.0.0.0:${PORT:-5001} --workers 4 --threads 2 --timeout 90 --access-logfile - --error-logfile - 'app:create_app()'"]

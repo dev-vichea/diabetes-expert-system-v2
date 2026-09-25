@@ -170,4 +170,3 @@ def test_clinical_dashboard_aggregation(client, doctor_auth):
     assert "accuracy" in ra
     assert "top_triggered_rules" in ra
     assert "rule_distribution" in ra
-

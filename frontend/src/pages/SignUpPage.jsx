@@ -93,7 +93,7 @@ export function SignUpPage() {
   }
 
   function handleGoogleError(err) {
-    console.error('Google signup error:', err)
+    console.error('Google signup error:')
     setError(t('auth.errorGoogleLoginFailed', 'Google sign-in failed. Please try again.'))
   }
 

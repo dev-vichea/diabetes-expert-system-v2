@@ -2,6 +2,7 @@ import {
   BookOpen,
   ClipboardCheck,
   FileSpreadsheet,
+  FileText,
   GraduationCap,
   HeartPulse,
   LayoutDashboard,
@@ -19,11 +20,12 @@ export const NAV_ITEMS = [
   { to: '/diagnosis', labelKey: 'nav.assessment', icon: Microscope, section: 'workspace', permissions: ['diagnosis.run'] },
   { to: '/my-results', labelKey: 'nav.myResults', icon: FileSpreadsheet, section: 'workspace', roles: ['patient'], permissions: ['diagnosis.view_own'] },
   { to: '/my-results', labelKey: 'nav.patientResults', icon: FileSpreadsheet, section: 'workspace', notRoles: ['patient'], permissions: ['diagnosis.view_own'] },
-  { to: '/care-plan', labelKey: 'nav.carePlan', icon: HeartPulse, section: 'workspace', notRoles: ['admin'], permissions: ['care_plan.view_own'] },
+  { to: '/care-plan', labelKey: 'nav.carePlan', icon: HeartPulse, section: 'workspace', roles: ['patient'], permissions: ['care_plan.view_own'] },
   { to: '/rules', labelKey: 'nav.knowledgeBase', icon: BookOpen, section: 'documents', permissions: ['rule.view'] },
   { to: '/guide', labelKey: 'nav.diabetesGuide', icon: GraduationCap, section: 'documents', permissions: ['guide.view'] },
   { to: '/users', labelKey: 'nav.users', icon: UserCog, section: 'system', permissions: ['user.view', 'permission.view'] },
   { to: '/roles-permissions', labelKey: 'nav.roles', icon: ShieldCheck, section: 'system', permissions: ['permission.view'] },
+  { to: '/audit-logs', labelKey: 'nav.auditLogs', icon: FileText, section: 'system', permissions: ['audit.view'] },
 ]
 
 export const ROLE_NAV_CONFIG = {
@@ -146,6 +148,7 @@ export const PAGE_TITLE_BY_PATH = [
   { pattern: '/care-plan', titleKey: 'page.carePlan.title', subtitleKey: 'page.carePlan.subtitle' },
   { pattern: '/users', titleKey: 'page.users.title', subtitleKey: 'page.users.subtitle' },
   { pattern: '/roles-permissions', titleKey: 'page.rolesPermissions.title', subtitleKey: 'page.rolesPermissions.subtitle' },
+  { pattern: '/audit-logs', titleKey: 'page.auditLogs.title', subtitleKey: 'page.auditLogs.subtitle' },
   { pattern: '/dashboard', titleKey: 'page.dashboard.title', subtitleKey: 'page.dashboard.subtitle' },
 ]
 

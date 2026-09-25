@@ -42,7 +42,7 @@ export function KnowledgeBaseDashboard() {
       const data = getApiData(response)
       setStats(data)
     } catch (err) {
-      console.error('Failed to load dashboard stats:', err)
+      console.error('Failed to load dashboard stats:')
       notify.error('Could not load dashboard statistics.')
     } finally {
       setLoading(false)

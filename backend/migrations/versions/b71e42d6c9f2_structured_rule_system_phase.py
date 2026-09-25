@@ -6,7 +6,7 @@ Create Date: 2026-03-11 13:45:00.000000
 
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 import re
 
 from alembic import op
@@ -40,7 +40,7 @@ def upgrade():
     with op.batch_alter_table("rule_categories", schema=None) as batch_op:
         batch_op.create_index(batch_op.f("ix_rule_categories_code"), ["code"], unique=True)
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     category_table = sa.table(
         "rule_categories",
         sa.column("code", sa.String),

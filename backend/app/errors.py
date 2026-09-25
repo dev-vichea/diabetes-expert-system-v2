@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import traceback
 
 from flask import current_app, jsonify
 from werkzeug.exceptions import HTTPException
@@ -62,5 +63,13 @@ def register_error_handlers(app):
 
     @app.errorhandler(Exception)
     def handle_unexpected_error(error: Exception):
-        current_app.logger.exception("Unhandled server error", exc_info=error)
+        # Exception messages (including SQLAlchemy parameters) can contain
+        # credentials or clinical input. Keep stack locations, omit values.
+        current_app.logger.error(
+            "Unhandled server error (%s)\n%s",
+            type(error).__name__, "\n".join(
+                f"{frame.filename}:{frame.lineno} in {frame.name}"
+                for frame in traceback.extract_tb(error.__traceback__)
+            ),
+        )
         return jsonify(_error_payload(code="internal_server_error", message="An unexpected server error occurred.")), 500

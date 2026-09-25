@@ -18,6 +18,7 @@ from .entities import (
     Symptom,
     User,
     role_permissions,
+    user_permissions,
     user_roles,
 )
 
@@ -41,5 +42,6 @@ __all__ = [
     "Symptom",
     "User",
     "user_roles",
+    "user_permissions",
     "role_permissions",
 ]

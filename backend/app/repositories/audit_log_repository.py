@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from sqlalchemy import func
+from sqlalchemy import and_, func, or_
 
 from app.extensions import db
 from app.models import AuditLog, User
@@ -35,6 +35,8 @@ class AuditLogRepository:
     def paginate_logs(
         self,
         *,
+        search: str | None = None,
+        category: str | None = None,
         action: str | None = None,
         entity_type: str | None = None,
         entity_id: str | None = None,
@@ -42,7 +44,35 @@ class AuditLogRepository:
         page: int = 1,
         limit: int = 100,
     ) -> tuple[list[dict], int]:
-        query = AuditLog.query
+        # Request-level telemetry from older builds is intentionally hidden;
+        # administrators need meaningful actions, not HTTP implementation
+        # details such as request.read or endpoint names.
+        query = AuditLog.query.filter(
+            ~AuditLog.action.like("request.%"),
+            AuditLog.action != "auth.refresh",
+        )
+
+        if search:
+            term = f"%{search.strip().lower()}%"
+            query = query.outerjoin(User, AuditLog.actor_user_id == User.id).filter(
+                or_(
+                    func.lower(AuditLog.action).like(term),
+                    func.lower(AuditLog.entity_type).like(term),
+                    func.lower(User.name).like(term),
+                    func.lower(User.email).like(term),
+                )
+            )
+
+        category_filters = {
+            "authentication": ["auth.%"],
+            "assessments": ["assessment.%", "diagnosis.%"],
+            "users": ["user.%", "role.%"],
+            "patients": ["patient.%", "symptom.%", "lab_result.%"],
+            "knowledge": ["rule.%", "fact.%"],
+        }
+        patterns = category_filters.get(str(category or "").strip().lower())
+        if patterns:
+            query = query.filter(or_(*(AuditLog.action.like(pattern) for pattern in patterns)))
 
         if action:
             query = query.filter(AuditLog.action == action)
@@ -65,6 +95,8 @@ class AuditLogRepository:
     def list_logs(
         self,
         *,
+        search: str | None = None,
+        category: str | None = None,
         action: str | None = None,
         entity_type: str | None = None,
         entity_id: str | None = None,
@@ -72,6 +104,8 @@ class AuditLogRepository:
         limit: int = 100,
     ) -> list[dict]:
         items, _ = self.paginate_logs(
+            search=search,
+            category=category,
             action=action,
             entity_type=entity_type,
             entity_id=entity_id,
@@ -83,18 +117,26 @@ class AuditLogRepository:
 
     def count_recent_events(self, *, hours: int = 24) -> int:
         since = utc_now() - timedelta(hours=max(1, int(hours or 24)))
-        return AuditLog.query.filter(AuditLog.created_at >= since).count()
+        return AuditLog.query.filter(
+            AuditLog.created_at >= since,
+            ~AuditLog.action.like("request.%"),
+            AuditLog.action != "auth.refresh",
+        ).count()
 
     def get_activity_summary(self, *, days: int = 7, top_limit: int = 10) -> dict:
         safe_days = max(1, min(int(days or 7), 90))
         safe_limit = max(1, min(int(top_limit or 10), 50))
         since = utc_now() - timedelta(days=safe_days)
 
-        events_total = AuditLog.query.filter(AuditLog.created_at >= since).count()
+        meaningful_event = and_(
+            ~AuditLog.action.like("request.%"),
+            AuditLog.action != "auth.refresh",
+        )
+        events_total = AuditLog.query.filter(AuditLog.created_at >= since, meaningful_event).count()
 
         actions = (
             db.session.query(AuditLog.action, func.count(AuditLog.id))
-            .filter(AuditLog.created_at >= since)
+            .filter(AuditLog.created_at >= since, meaningful_event)
             .group_by(AuditLog.action)
             .order_by(func.count(AuditLog.id).desc(), AuditLog.action.asc())
             .limit(safe_limit)
@@ -103,7 +145,7 @@ class AuditLogRepository:
 
         entities = (
             db.session.query(AuditLog.entity_type, func.count(AuditLog.id))
-            .filter(AuditLog.created_at >= since)
+            .filter(AuditLog.created_at >= since, meaningful_event)
             .group_by(AuditLog.entity_type)
             .order_by(func.count(AuditLog.id).desc(), AuditLog.entity_type.asc())
             .limit(safe_limit)
@@ -112,7 +154,7 @@ class AuditLogRepository:
 
         unique_actor_count = (
             db.session.query(func.count(func.distinct(AuditLog.actor_user_id)))
-            .filter(AuditLog.created_at >= since, AuditLog.actor_user_id.isnot(None))
+            .filter(AuditLog.created_at >= since, meaningful_event, AuditLog.actor_user_id.isnot(None))
             .scalar()
             or 0
         )
@@ -129,7 +171,7 @@ class AuditLogRepository:
 
         daily_rows = (
             db.session.query(AuditLog.created_at)
-            .filter(AuditLog.created_at >= since)
+            .filter(AuditLog.created_at >= since, meaningful_event)
             .all()
         )
         for (created_at,) in daily_rows:

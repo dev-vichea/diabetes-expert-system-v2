@@ -317,7 +317,7 @@ export function DiagnosisPage() {
           })
         }
       } catch (err) {
-        console.warn('Unable to load facts from server, using built-in defaults', err)
+        console.warn('Unable to load facts from server, using built-in defaults')
       } finally {
         if (!cancelled) setLoadingFacts(false)
       }

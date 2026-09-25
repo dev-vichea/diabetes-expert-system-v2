@@ -3,13 +3,9 @@ import sys
 from pathlib import Path
 
 import pytest
-from dotenv import load_dotenv
 
-# Load .env before importing Config — its class-level attributes call
-# _resolve_secret_key / _resolve_database_url at import time, which
-# raise RuntimeError when FLASK_DEBUG and SECRET_KEY are absent.
+# Test configuration is isolated from backend/.env and local credentials.
 _backend_dir = Path(__file__).resolve().parents[1]
-load_dotenv(_backend_dir / ".env")
 os.environ.setdefault("FLASK_DEBUG", "1")
 
 sys.path.insert(0, str(_backend_dir))

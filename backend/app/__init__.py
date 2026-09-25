@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import click
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import make_url
@@ -102,7 +102,7 @@ def _register_cli_commands(app: Flask):
             seed_demo_data()
             app.logger.info("Database seeded successfully.")
         except Exception as e:
-            app.logger.error("Error during seeding: %s", e)
+            app.logger.error("Error during seeding (%s)", type(e).__name__)
             db.session.rollback()
 
 
@@ -129,7 +129,7 @@ def _ensure_user_profile_columns():
                     conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
             conn.commit()
     except Exception as e:
-        logging.getLogger(__name__).warning("Could not auto-add user columns: %s", e)
+        logging.getLogger(__name__).warning("Could not auto-add user columns (%s)", type(e).__name__)
 
 
 def _ensure_fact_columns():
@@ -144,7 +144,7 @@ def _ensure_fact_columns():
                 conn.execute(text("ALTER TABLE facts ADD COLUMN question_km TEXT"))
                 conn.commit()
     except Exception as e:
-        logging.getLogger(__name__).warning("Could not auto-add fact columns: %s", e)
+        logging.getLogger(__name__).warning("Could not auto-add fact columns (%s)", type(e).__name__)
 
 
 def _ensure_patient_profile_columns():
@@ -173,13 +173,16 @@ def _ensure_patient_profile_columns():
                     conn.execute(text(f"ALTER TABLE patients ADD COLUMN {col_name} {col_type}"))
             conn.commit()
     except Exception as e:
-        logging.getLogger(__name__).warning("Could not auto-add patient profile columns: %s", e)
+        logging.getLogger(__name__).warning("Could not auto-add patient profile columns (%s)", type(e).__name__)
 
 
 def create_app(config_object=Config):
     app = Flask(__name__)
     app.config.from_object(config_object)
     _resolve_startup_database(app)
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        **app.config.get("SQLALCHEMY_ENGINE_OPTIONS", {}), "hide_parameters": True,
+    }
 
     # Core setup
     _configure_logging(app)
@@ -199,6 +202,25 @@ def create_app(config_object=Config):
     migrate.init_app(app, db)
     limiter.init_app(app)
 
+    @app.before_request
+    def validate_json_object():
+        # Every JSON API consumes an object. Reject malformed/scalar input
+        # before route handlers call .get(), including otherwise empty arrays.
+        if request.path.startswith('/api/') and request.is_json:
+            from .errors import ValidationError
+            payload = request.get_json(silent=True)
+            if not isinstance(payload, dict):
+                raise ValidationError('A JSON object is required.')
+            if request.blueprint in {'assessment', 'diagnosis', 'conversation', 'conversational'}:
+                for field in ('answers', 'result'):
+                    if field in payload and not isinstance(payload[field], dict):
+                        raise ValidationError(f'{field} must be a JSON object.')
+
+    @app.teardown_request
+    def reset_fact_overlay(_error):
+        from .expert_system.symptom_database import clear_fact_overlay
+        clear_fact_overlay()
+
     # Ensure models are imported before migration autogeneration.
     from . import models  # noqa: F401
 
@@ -206,9 +228,10 @@ def create_app(config_object=Config):
         if app.config.get("DB_AUTO_CREATE", False):
             db.create_all()
 
-        _ensure_user_profile_columns()
-        _ensure_fact_columns()
-        _ensure_patient_profile_columns()
+        if app.config.get("DB_AUTO_CREATE", False):
+            _ensure_user_profile_columns()
+            _ensure_fact_columns()
+            _ensure_patient_profile_columns()
 
         # Permissions are application capabilities rather than demo-only data.
         # Keep the built-in catalog current for existing installations while
@@ -221,7 +244,7 @@ def create_app(config_object=Config):
                 db.session.commit()
         except Exception as e:
             db.session.rollback()
-            app.logger.warning("Could not synchronize access-control defaults: %s", e)
+            app.logger.warning("Could not synchronize access-control defaults (%s)", type(e).__name__)
 
         if app.config.get("SEED_DEMO_DATA", True):
             # Only run automatic seed if database has not been seeded yet
@@ -244,7 +267,7 @@ def create_app(config_object=Config):
                     db.session.commit()
             except Exception as e:
                 db.session.rollback()
-                app.logger.warning("Could not check seed status: %s", e)
+                app.logger.warning("Could not check seed status (%s)", type(e).__name__)
 
     from flask import redirect, render_template, url_for
 
@@ -309,10 +332,8 @@ def _resolve_startup_database(app: Flask):
 
         app.logger.warning(
             "Primary database unavailable. Falling back to SQLite. "
-            "primary_uri=%s fallback_uri=%s error=%s",
-            primary_uri,
-            fallback_uri,
-            exc,
+            "error_type=%s",
+            type(exc).__name__,
         )
     else:
         app.logger.info("Primary database connection verified. Using configured primary database.")

@@ -25,9 +25,9 @@ services:
       FLASK_DEBUG: 0
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required in production}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-diabetes_db}
-      DB_AUTO_CREATE: ${DB_AUTO_CREATE:-true}
-      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
-      RULES_SEED_VERSION: ${RULES_SEED_VERSION:-v2}
+      DB_AUTO_CREATE: ${DB_AUTO_CREATE:-false}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
+      RULES_SEED_VERSION: ${RULES_SEED_VERSION:-v3}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:80}
     depends_on:
       db:

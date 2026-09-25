@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import api, { clearAuthStorage, getAccessToken, getApiData, getRefreshToken, setAuthTokens } from '../api/client'
+import api, { AUTH_CLEARED_EVENT, clearAuthStorage, getAccessToken, getApiData, getRefreshToken, setAuthTokens } from '../api/client'
 
 const AuthContext = createContext(null)
 
@@ -19,6 +19,19 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => readStoredUser())
 
   useEffect(() => {
+    const onAuthCleared = () => setUser(null)
+    const onStorage = (event) => {
+      if (event.key === 'user' || event.key === null) setUser(readStoredUser())
+    }
+    window.addEventListener(AUTH_CLEARED_EVENT, onAuthCleared)
+    window.addEventListener('storage', onStorage)
+    return () => {
+      window.removeEventListener(AUTH_CLEARED_EVENT, onAuthCleared)
+      window.removeEventListener('storage', onStorage)
+    }
+  }, [])
+
+  useEffect(() => {
     if (user) localStorage.setItem('user', JSON.stringify(user))
     else localStorage.removeItem('user')
   }, [user])
@@ -34,7 +47,7 @@ export function AuthProvider({ children }) {
         .then((response) => {
           const data = getApiData(response)
           const nextUser = data?.user || data
-          if (!cancelled && nextUser?.email) setUser((current) => ({ ...current, ...nextUser }))
+          if (!cancelled && getAccessToken() && nextUser?.email) setUser((current) => current ? ({ ...current, ...nextUser }) : null)
         })
         .catch(() => { /* offline or token refresh in flight — cached user stays */ })
     }
