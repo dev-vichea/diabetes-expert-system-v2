@@ -425,7 +425,7 @@ function ActionItemRow({
 
       {isExpanded && (
         <div className="mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800 text-xs leading-relaxed text-slate-600 dark:text-slate-300 animate-in fade-in duration-150">
-          {item.description}
+          {tExact(item.description) || item.description}
         </div>
       )}
     </div>
@@ -745,35 +745,57 @@ export function PersonalizedCarePlanSection({
       <section className="space-y-4">
         {/* Controls Bar: Category Pills + View Mode Toggle */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          {/* Category Filter Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-            {[
-              { id: 'all', label: isKhmer ? 'ទាំងអស់' : 'All Recommendations', icon: Sparkles },
-              { id: 'diet', label: isKhmer ? 'អាហារូបត្ថម្ភ' : 'Diet & Nutrition', icon: Utensils },
-              { id: 'activity', label: isKhmer ? 'សកម្មភាពរាងកាយ' : 'Physical Activity', icon: Activity },
-              { id: 'lifestyle', label: isKhmer ? 'របៀបរស់នៅ' : 'Lifestyle', icon: Moon },
-              { id: 'monitoring', label: isKhmer ? 'ការតាមដាន' : 'Monitoring', icon: HeartPulse },
-            ].map((tab) => {
-              const Icon = tab.icon
-              const isActive = activeRecTab === tab.id
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveRecTab(tab.id)}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all',
-                    isActive
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  <span>{tab.label}</span>
-                </button>
-              )
-            })}
-          </div>
+          {/* Category Filter Pills (Styled like My Results filter bar) */}
+          {(() => {
+            const dietCount = diet.action_items?.length || 0
+            const activityCount = activity.action_items?.length || 0
+            const lifestyleCount = lifestyle.action_items?.length || 0
+            const monitoringCount = monitoring.action_items?.length || 0
+            const allCount = dietCount + activityCount + lifestyleCount + monitoringCount
+
+            return (
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar rounded-xl bg-slate-100/80 p-1 dark:bg-slate-900">
+                {[
+                  { id: 'all', label: isKhmer ? 'ទាំងអស់' : 'All Recommendations', icon: Sparkles, count: allCount },
+                  { id: 'diet', label: isKhmer ? 'អាហារូបត្ថម្ភ' : 'Diet & Nutrition', icon: Utensils, count: dietCount },
+                  { id: 'activity', label: isKhmer ? 'សកម្មភាពរាងកាយ' : 'Physical Activity', icon: Activity, count: activityCount },
+                  { id: 'lifestyle', label: isKhmer ? 'របៀបរស់នៅ' : 'Lifestyle', icon: Moon, count: lifestyleCount },
+                  { id: 'monitoring', label: isKhmer ? 'ការតាមដាន' : 'Monitoring', icon: HeartPulse, count: monitoringCount },
+                ].map((tab) => {
+                  const Icon = tab.icon
+                  const isActive = activeRecTab === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveRecTab(tab.id)}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold whitespace-nowrap transition-all shrink-0',
+                        isActive
+                          ? 'bg-cyan-600 font-bold text-white shadow-xs shadow-cyan-600/20 dark:bg-cyan-500'
+                          : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+                      )}
+                    >
+                      <Icon className={cn('h-3.5 w-3.5 shrink-0', isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400')} />
+                      <span>{tab.label}</span>
+                      {tab.count != null && (
+                        <span
+                          className={cn(
+                            'rounded-md px-1 py-0.2 text-[10px] font-bold',
+                            isActive
+                              ? 'bg-white/20 text-white'
+                              : 'bg-slate-200/80 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                          )}
+                        >
+                          {tab.count}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )
+          })()}
 
           {/* View Mode Toggle + Completion Progress Counter */}
           <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
@@ -1217,7 +1239,7 @@ export function PersonalizedCarePlanSection({
             <div className="flex items-center gap-3 rounded-xl border border-sky-100 bg-sky-50/50 p-3.5 dark:border-sky-950/70 dark:bg-sky-950/20">
               <Stethoscope className="h-4.5 w-4.5 shrink-0 text-sky-600 dark:text-sky-400" />
               <p className="text-xs font-medium text-sky-900 dark:text-sky-100 leading-relaxed">
-                {followUp.milestone_action}
+                {tExact(followUp.milestone_action) || followUp.milestone_action}
               </p>
             </div>
           )}
@@ -1238,7 +1260,7 @@ export function PersonalizedCarePlanSection({
                     {tExact(item.title) || item.title}
                   </h5>
                   <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 line-clamp-2">
-                    {item.description}
+                    {tExact(item.description) || item.description}
                   </p>
                 </div>
               ))}
@@ -1314,7 +1336,7 @@ export function PersonalizedCarePlanSection({
                   {disclaimer.red_flags.map((flag, idx) => (
                     <li key={idx} className="flex items-start gap-1.5">
                       <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-rose-500" />
-                      <span className="leading-snug text-[11px]">{flag}</span>
+                      <span className="leading-snug text-[11px]">{tExact(flag) || flag}</span>
                     </li>
                   ))}
                 </ul>

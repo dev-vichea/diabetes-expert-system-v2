@@ -35,6 +35,7 @@ import api, { getApiData, getApiErrorMessage } from '@/api/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { ErrorAlert, Skeleton, StatCardsSkeleton, CardListSkeleton } from '@/components/ui'
+import { ClinicalAnalyzingModal } from '@/components/ui/ClinicalAnalyzingModal'
 import { cn } from '@/lib/utils'
 import { AppointmentCalendarCanvas } from '@/components/dashboard/patient/AppointmentCalendarCanvas'
 import { PersonalizedCarePlanSection } from '@/components/care-plan/PersonalizedCarePlanSection'
@@ -121,6 +122,14 @@ export function CarePlanPage() {
   const [carePlan, setCarePlan] = useState(incomingResult?.care_plan || null)
   const [loading, setLoading] = useState(true)
   const [regenerating, setRegenerating] = useState(false)
+  const [generatingCarePlan, setGeneratingCarePlan] = useState(false)
+  const [carePlanDone, setCarePlanDone] = useState(false)
+
+  function handleCarePlanAnimationComplete() {
+    setRegenerating(false)
+    setGeneratingCarePlan(false)
+  }
+
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('Overview')
 
@@ -200,24 +209,38 @@ export function CarePlanPage() {
               } catch (cpErr) {
                 console.warn('Failed to load care plan from backend, generating directly:', cpErr)
                 try {
-                  const genResp = await api.post(`/diagnosis/${targetId}/care-plan`, { result: target })
+                  setGeneratingCarePlan(true)
+                  setCarePlanDone(false)
+                  const [genResp] = await Promise.all([
+                    api.post(`/diagnosis/${targetId}/care-plan`, { result: target }),
+                    new Promise((r) => setTimeout(r, 2200)),
+                  ])
                   const genData = getApiData(genResp)
                   if (!cancelled && genData) {
                     setCarePlan(genData)
                   }
+                  setCarePlanDone(true)
                 } catch (genErr) {
                   console.error('Failed to generate care plan:', genErr)
+                  setGeneratingCarePlan(false)
                 }
               }
             } else {
               try {
-                const genResp = await api.post('/diagnosis/care-plan/generate', { result: target })
+                setGeneratingCarePlan(true)
+                setCarePlanDone(false)
+                const [genResp] = await Promise.all([
+                  api.post('/diagnosis/care-plan/generate', { result: target }),
+                  new Promise((r) => setTimeout(r, 2200)),
+                ])
                 const genData = getApiData(genResp)
                 if (!cancelled && genData) {
                   setCarePlan(genData)
                 }
+                setCarePlanDone(true)
               } catch (genErr) {
                 console.error('Failed to generate care plan directly:', genErr)
+                setGeneratingCarePlan(false)
               }
             }
           }
@@ -244,21 +267,21 @@ export function CarePlanPage() {
     if (!target) return
 
     setRegenerating(true)
+    setCarePlanDone(false)
     try {
       const targetId = target.id || target.diagnosis_result_id
-      let resp
-      if (targetId) {
-        resp = await api.post(`/diagnosis/${targetId}/care-plan`, { result: target })
-      } else {
-        resp = await api.post('/diagnosis/care-plan/generate', { result: target })
-      }
+      const apiPromise = targetId
+        ? api.post(`/diagnosis/${targetId}/care-plan`, { result: target })
+        : api.post('/diagnosis/care-plan/generate', { result: target })
+      const minDelayPromise = new Promise((resolve) => setTimeout(resolve, 2200))
+      const [resp] = await Promise.all([apiPromise, minDelayPromise])
       const data = getApiData(resp)
       if (data) {
         setCarePlan(data)
       }
+      setCarePlanDone(true)
     } catch (err) {
       console.error('Failed to regenerate care plan:', err)
-    } finally {
       setRegenerating(false)
     }
   }
@@ -1270,6 +1293,13 @@ export function CarePlanPage() {
           <AppointmentCalendarCanvas t={t} />
         </div>
       )}
+
+      <ClinicalAnalyzingModal
+        isOpen={regenerating || generatingCarePlan}
+        isDone={carePlanDone}
+        mode="care-plan"
+        onComplete={handleCarePlanAnimationComplete}
+      />
     </div>
   )
 }

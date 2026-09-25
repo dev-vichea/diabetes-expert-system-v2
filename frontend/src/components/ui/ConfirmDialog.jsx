@@ -41,7 +41,7 @@ export function ConfirmDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/55 px-3 py-4 backdrop-blur-[2px] animate-in fade-in-0 sm:px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-3 sm:p-6 backdrop-blur-sm animate-in fade-in-0 duration-200"
       onClick={() => {
         if (!loading) onCancel?.()
       }}

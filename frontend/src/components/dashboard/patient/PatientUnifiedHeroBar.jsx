@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import {
   AlertCircle,
@@ -26,6 +27,26 @@ import { CAMBODIA_TIME_ZONE } from '@/lib/datetime'
 export function PatientUnifiedHeroBar({ user, latestResult }) {
   const { language, t, tExact } = useLanguage()
   const [contactModalOpen, setContactModalOpen] = useState(false)
+
+  // Lock body overflow & handle Escape key when modal is open (matching DiabetesGuidePage)
+  useEffect(() => {
+    if (!contactModalOpen) return undefined
+
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') {
+        setContactModalOpen(false)
+      }
+    }
+
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [contactModalOpen])
 
   // Name & Greeting
   const rawName = (user?.name || '').trim()
@@ -197,89 +218,99 @@ export function PatientUnifiedHeroBar({ user, latestResult }) {
       </section>
 
       {/* Doctor & Care Team Modal */}
-      {contactModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100 text-primary-700 dark:bg-primary-950 dark:text-primary-300">
-                  <Stethoscope className="h-6 w-6" />
+      {contactModalOpen &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-3 sm:p-6 backdrop-blur-sm animate-in fade-in-0 duration-200"
+            onClick={() => setContactModalOpen(false)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95 duration-150"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100 text-primary-700 dark:bg-primary-950 dark:text-primary-300">
+                    <Stethoscope className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                      Diabetes Care Team
+                    </h4>
+                    <p className="text-xs text-slate-500">General Diabetes Clinic • Care Unit A</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                    Diabetes Care Team
-                  </h4>
-                  <p className="text-xs text-slate-500">General Diabetes Clinic • Care Unit A</p>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setContactModalOpen(false)}
+                  className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setContactModalOpen(false)}
-                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
 
-            <div className="mt-5 space-y-3 rounded-2xl border border-slate-100 bg-[#fafafc] p-4 dark:border-slate-800 dark:bg-slate-800/40">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-200 text-sm font-bold text-primary-800">
-                  {latestResult?.reviewed_by_name ? latestResult.reviewed_by_name.slice(0, 2).toUpperCase() : 'DC'}
+              <div className="mt-5 space-y-3 rounded-2xl border border-slate-100 bg-[#fafafc] p-4 dark:border-slate-800 dark:bg-slate-800/40">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-200 text-sm font-bold text-primary-800">
+                    {latestResult?.reviewed_by_name ? latestResult.reviewed_by_name.slice(0, 2).toUpperCase() : 'DC'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                      {latestResult?.reviewed_by_name
+                        ? (latestResult.reviewed_by_name.startsWith('Dr.') ? latestResult.reviewed_by_name : `Dr. ${latestResult.reviewed_by_name}`)
+                        : 'Diabetes Clinical Care Team'}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {latestResult?.reviewed_by_name ? 'Attending Physician' : 'Endocrinology & Care Support'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                    {latestResult?.reviewed_by_name
-                      ? (latestResult.reviewed_by_name.startsWith('Dr.') ? latestResult.reviewed_by_name : `Dr. ${latestResult.reviewed_by_name}`)
-                      : 'Diabetes Clinical Care Team'}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {latestResult?.reviewed_by_name ? 'Attending Physician' : 'Endocrinology & Care Support'}
-                  </p>
-                </div>
+                <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                  Contact for medication adjustments, lab prescriptions, or severe glucose readings (&gt; 250 mg/dL or &lt; 70 mg/dL).
+                </p>
               </div>
-              <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-                Contact for medication adjustments, lab prescriptions, or severe glucose readings (&gt; 250 mg/dL or &lt; 70 mg/dL).
-              </p>
-            </div>
 
-            <div className="mt-5 space-y-2.5">
-              <a
-                href="tel:+85523888999"
-                className="flex items-center justify-between rounded-2xl border border-slate-200 p-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                <span className="flex items-center gap-2.5">
-                  <Phone className="h-4 w-4 text-emerald-600" />
-                  <span>Clinic Hotline: +855 23 888 999</span>
-                </span>
-                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-emerald-700">
-                  Open Now
-                </span>
-              </a>
+              <div className="mt-5 space-y-2.5">
+                <a
+                  href="tel:+85523888999"
+                  className="flex items-center justify-between rounded-2xl border border-slate-200 p-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <Phone className="h-4 w-4 text-emerald-600" />
+                    <span>Clinic Hotline: +855 23 888 999</span>
+                  </span>
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-emerald-700">
+                    Open Now
+                  </span>
+                </a>
 
-              <a
-                href="mailto:careteam@diabetesclinic.org?subject=Diabetes%20Care%20Plan%20Inquiry"
-                className="flex items-center justify-between rounded-2xl border border-slate-200 p-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                <span className="flex items-center gap-2.5">
-                  <Mail className="h-4 w-4 text-sky-600" />
-                  <span>careteam@diabetesclinic.org</span>
-                </span>
-                <span className="text-[10px] text-slate-400">&lt; 24h reply</span>
-              </a>
-            </div>
+                <a
+                  href="mailto:careteam@diabetesclinic.org?subject=Diabetes%20Care%20Plan%20Inquiry"
+                  className="flex items-center justify-between rounded-2xl border border-slate-200 p-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <Mail className="h-4 w-4 text-sky-600" />
+                    <span>careteam@diabetesclinic.org</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400">&lt; 24h reply</span>
+                </a>
+              </div>
 
-            <div className="mt-6 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setContactModalOpen(false)}
-                className="rounded-full bg-slate-100 px-5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200"
-              >
-                Done
-              </button>
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setContactModalOpen(false)}
+                  className="rounded-full bg-slate-100 px-5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </>
   )
 }

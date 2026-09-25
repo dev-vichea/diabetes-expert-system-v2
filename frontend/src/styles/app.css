@@ -121,7 +121,6 @@
   .page-open-motion {
     animation: pageOpenMotion 260ms ease-out;
     transform-origin: top center;
-    will-change: transform, opacity;
   }
 
   @keyframes assessmentStepEnter {

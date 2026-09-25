@@ -623,7 +623,7 @@ export function ClinicalDashboard({ activeRole }) {
         action: t('dashboard.focus.reviewNow', 'Review now'),
         value: stats.doctor_workload?.urgent_pending ?? stats.urgent_cases.value,
         icon: HeartPulse,
-        href: '/review',
+        href: '/review?status=urgent',
         tone: 'rose',
       },
       {
@@ -633,7 +633,7 @@ export function ClinicalDashboard({ activeRole }) {
         action: t('dashboard.focus.openQueue', 'Open queue'),
         value: stats.doctor_workload?.pending_reviews ?? 0,
         icon: Clock3,
-        href: '/review',
+        href: '/review?status=pending',
         tone: 'amber',
       },
       {
@@ -645,6 +645,16 @@ export function ClinicalDashboard({ activeRole }) {
         icon: Users,
         href: '/patients',
         tone: 'blue',
+      },
+      {
+        key: 'plans',
+        label: t('dashboard.focus.carePlans', 'Care plans'),
+        helper: t('dashboard.focus.carePlansHint', 'Recommendations issued'),
+        action: t('dashboard.focus.viewPlans', 'View plans'),
+        value: stats.treatment_plans?.value ?? 0,
+        icon: Stethoscope,
+        href: '/review',
+        tone: 'emerald',
       },
     ]
   }, [stats, t])

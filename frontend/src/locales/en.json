@@ -1928,7 +1928,8 @@
       "noUrgentFlags": "No acute warning signs",
       "urgentWarningPresent": "Urgent / DKA Warning signs detected",
       "hypoWarningPresent": "Hypoglycemia risk signs reported",
-      "currentUser": "Current user"
+      "currentUser": "Current user",
+      "clickToEdit": "Click to edit this answer"
     },
     "footer": {
       "continueHint": "Answer each section, then continue.",

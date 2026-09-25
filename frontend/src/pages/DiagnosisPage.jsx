@@ -34,6 +34,7 @@ import {
   LoadingState,
   StatusBadge,
 } from '@/components/ui'
+import { ClinicalAnalyzingModal } from '@/components/ui/ClinicalAnalyzingModal'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
@@ -361,6 +362,18 @@ export function DiagnosisPage() {
   const [patients, setPatients] = useState([])
   const [loadingPatients, setLoadingPatients] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [analyzingAssessment, setAnalyzingAssessment] = useState(false)
+  const [assessmentDone, setAssessmentDone] = useState(false)
+  const pendingNavigationRef = useRef(null)
+
+  function handleAssessmentAnimationComplete() {
+    setAnalyzingAssessment(false)
+    setSubmitting(false)
+    if (pendingNavigationRef.current) {
+      navigate(pendingNavigationRef.current.path, { state: pendingNavigationRef.current.state })
+    }
+  }
+
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [extraLabs, setExtraLabs] = useState([])
@@ -425,9 +438,9 @@ export function DiagnosisPage() {
   /* Record every card the user actually saw so Back can walk the visit path
      in reverse. The last-entry guard keeps it idempotent under StrictMode. */
   useEffect(() => {
-    if (!currentNodeId) return
+    if (!draftReady || isHydratingRef.current || !currentNodeId) return
     setInterviewTrail((trail) => (trail[trail.length - 1] === currentNodeId ? trail : [...trail, currentNodeId]))
-  }, [currentNodeId])
+  }, [currentNodeId, draftReady])
   const currentNode = useMemo(
     () => INTERVIEW_NODES.find((n) => n.id === currentNodeId) || null,
     [currentNodeId],
@@ -480,6 +493,7 @@ export function DiagnosisPage() {
       if (Array.isArray(p.extraLabs)) setExtraLabs(p.extraLabs)
       if (Array.isArray(p.interviewDone)) setInterviewDone(p.interviewDone)
       if (Array.isArray(p.interviewSkipped)) setInterviewSkipped(p.interviewSkipped)
+      if (Array.isArray(p.interviewTrail) && p.interviewTrail.length > 0) setInterviewTrail(p.interviewTrail)
       if (typeof p.step === 'number') setStep(Math.max(1, Math.min(REVIEW_STEP, p.step)))
       if (typeof p.maxReachedStep === 'number') setMaxReached(Math.max(1, Math.min(REVIEW_STEP, p.maxReachedStep)))
       if (p.result) setResult(p.result)
@@ -496,9 +510,18 @@ export function DiagnosisPage() {
     if (isDraftPristine) { window.localStorage.removeItem(storageKey); return }
     window.localStorage.setItem(storageKey, JSON.stringify({
       version: DIAGNOSIS_DRAFT_VERSION, step, maxReachedStep: maxReached,
-      form, qcm, extraLabs, result, interviewDone, interviewSkipped, subject: subjectMode, savedAt: new Date().toISOString(),
+      form, qcm, extraLabs, result, interviewDone, interviewSkipped, subject: subjectMode,
+      interviewTrail, savedAt: new Date().toISOString(),
     }))
-  }, [storageKey, step, maxReached, form, qcm, extraLabs, result, interviewDone, interviewSkipped, subjectMode, draftReady, isDraftPristine])
+  }, [storageKey, step, maxReached, form, qcm, extraLabs, result, interviewDone, interviewSkipped, subjectMode, interviewTrail, draftReady, isDraftPristine])
+
+  /* Populate interviewTrail when restoring an assessment where questions are completed but trail was empty */
+  useEffect(() => {
+    if (!draftReady || isHydratingRef.current) return
+    if (interviewTrail.length === 0 && (interviewDone.length > 0 || autoCursor === null) && applicableOrder.length > 0) {
+      setInterviewTrail(applicableOrder.map((n) => n.id))
+    }
+  }, [draftReady, interviewDone.length, autoCursor, applicableOrder, interviewTrail.length])
 
   /* ── Profile prefill (patient, "for myself"): fill empty fields from the saved health profile ── */
   const profileDataRef = useRef(null)
@@ -953,16 +976,31 @@ export function DiagnosisPage() {
        answers changed in the meantime. */
     const applicableIds = new Set(applicableOrder.map((n) => n.id))
     const candidates = []
-    if (currentNodeId) {
+    if (currentNodeId && step === 1) {
       const trailPos = interviewTrail.lastIndexOf(currentNodeId)
       if (trailPos > 0) candidates.push(...interviewTrail.slice(0, trailPos).reverse())
       const orderPos = applicableOrder.findIndex((n) => n.id === currentNodeId)
       if (orderPos > 0) candidates.push(...applicableOrder.slice(0, orderPos).map((n) => n.id).reverse())
     } else {
-      // Stepping back from the "All questions answered" completion card
-      if (interviewTrail.length > 0) candidates.push(...[...interviewTrail].reverse())
-      if (interviewDone.length > 0) candidates.push(...[...interviewDone].reverse())
-      candidates.push(...[...applicableOrder].map((n) => n.id).reverse())
+      // Stepping back from Review Summary (Step 2 or Step 1 completion card)
+      // Never jump to 'subject' (Question 1) when stepping back from the summary if there are other questions!
+      const validTrail = interviewTrail.filter((id) => id !== 'subject' || applicableOrder.length <= 1)
+      if (validTrail.length > 0) candidates.push(...[...validTrail].reverse())
+
+      const doneReversed = [...applicableOrder]
+        .reverse()
+        .filter((n) => interviewDone.includes(n.id) || interviewSkipped.includes(n.id))
+        .map((n) => n.id)
+        .filter((id) => id !== 'subject' || applicableOrder.length <= 1)
+      candidates.push(...doneReversed)
+
+      const naturalReversed = [...applicableOrder]
+        .reverse()
+        .map((n) => n.id)
+        .filter((id) => id !== 'subject' || applicableOrder.length <= 1)
+      candidates.push(...naturalReversed)
+
+      if (applicableIds.has('subject')) candidates.push('subject')
     }
     const previousNode = candidates.find((id) => applicableIds.has(id))
     if (!previousNode) return
@@ -1087,7 +1125,14 @@ export function DiagnosisPage() {
 
       // Auto-save assessment to medical chart
       payload.save = true
-      const res = await api.post('/diagnosis/', payload)
+      setAnalyzingAssessment(true)
+      setAssessmentDone(false)
+      pendingNavigationRef.current = null
+
+      const [res] = await Promise.all([
+        api.post('/diagnosis/', payload),
+        new Promise((resolve) => setTimeout(resolve, 2200)),
+      ])
       const data = getApiData(res)
       setResult(data); setStep(REVIEW_STEP); setMaxReached(REVIEW_STEP)
       saveDiagnosisResultSnapshot({ user, result: data, payload, context: buildContext() })
@@ -1095,9 +1140,18 @@ export function DiagnosisPage() {
       const resultPath = data?.diagnosis_result_id
         ? `/diagnosis/result?diagnosis_result_id=${data.diagnosis_result_id}`
         : '/diagnosis/result'
-      navigate(resultPath, { state: { result: data, payload, context: buildContext(), isDraft: false, savedAt: new Date().toISOString() } })
-    } catch (err) { setError(getApiErrorMessage(err, 'Assessment failed. Please try again.')) }
-    finally { setSubmitting(false) }
+
+      pendingNavigationRef.current = {
+        path: resultPath,
+        state: { result: data, payload, context: buildContext(), isDraft: false, savedAt: new Date().toISOString() },
+      }
+      setAssessmentDone(true)
+    } catch (err) {
+      setAnalyzingAssessment(false)
+      setAssessmentDone(false)
+      setSubmitting(false)
+      setError(getApiErrorMessage(err, 'Assessment failed. Please try again.'))
+    }
   }
 
   /* ================================================================
@@ -1239,12 +1293,14 @@ export function DiagnosisPage() {
     const rows = [
       {
         num: 1,
+        nodeId: 'age',
         question: t('assessment.review.age', 'Age'),
         answer: form.age ? `${form.age} ${t('common.yearsUnit', 'yrs')}` : '—',
         points: form.age ? String(agePts) : '0',
       },
       {
         num: 2,
+        nodeId: 'sex',
         question: t('assessment.review.sex', 'Gender'),
         answer: form.sex === 'female'
           ? `${sexLabel}${form.currently_pregnant ? ` · ${t('assessment.interview.pregnantShort', 'Pregnant')}` : ''}`
@@ -1253,54 +1309,63 @@ export function DiagnosisPage() {
       },
       {
         num: 3,
+        nodeId: 'ethnicity',
         question: t('assessment.interview.ethnicity', 'Ethnicity'),
         answer: ethnicityLabel,
         points: '0',
       },
       {
         num: 4,
+        nodeId: 'body',
         question: t('assessment.review.bmiCategory', 'Body Mass Index (BMI)'),
         answer: form.bmi ? `${form.bmi} kg/m²${bmiCat ? ` (${bmiCat})` : ''}` : '—',
         points: form.bmi ? String(bmiPts) : '0',
       },
       {
         num: 5,
+        nodeId: 'waist',
         question: t('assessment.review.waist', 'Waist measurement'),
         answer: form.waist_circumference ? `${form.waist_circumference} cm` : '—',
         points: waistPts > 0 ? String(waistPts) : '0',
       },
       {
         num: 6,
+        nodeId: 'symptom_thirst',
         question: t('assessment.review.symptoms', 'Symptoms'),
         answer: symptomsAnswer,
         points: symptomsCount > 0 ? String(symptomsCount) : '0',
       },
       {
         num: 7,
+        nodeId: 'family_history',
         question: t('assessment.review.risks', 'Risk factors'),
         answer: risksAnswer,
         points: String(riskPts),
       },
       {
         num: 8,
+        nodeId: 'labs',
         question: t('assessment.review.fastingGlucose', 'Fasting Blood Glucose (FPG)'),
         answer: form.fasting_glucose ? `${form.fasting_glucose} mg/dL` : t('common.notTested', 'Not tested'),
         points: fpgStatus,
       },
       {
         num: 9,
+        nodeId: 'labs',
         question: t('assessment.review.hba1c', 'HbA1c'),
         answer: form.hba1c ? `${form.hba1c} %` : t('common.notTested', 'Not tested'),
         points: hba1cStatus,
       },
       {
         num: 10,
+        nodeId: 'labs',
         question: t('assessment.review.ogtt', 'Oral Glucose Tolerance (OGTT 2h)'),
         answer: form.ogtt_2h ? `${form.ogtt_2h} mg/dL` : t('common.notTested', 'Not tested'),
         points: ogttStatus,
       },
       {
         num: 11,
+        nodeId: 'emergency_gate',
         question: t('assessment.review.safetyFlags', 'Warning & Safety Flags'),
         answer: warnAnswer,
         points: warnPts,
@@ -1558,19 +1623,29 @@ export function DiagnosisPage() {
                                   return (
                                     <tr
                                       key={row.num}
+                                      onClick={() => row.nodeId && editInterviewNode(row.nodeId)}
                                       className={cn(
-                                        'transition-colors',
+                                        'group transition-colors cursor-pointer',
                                         isZebra
-                                          ? 'bg-[#f0f9ff] dark:bg-sky-950/25 hover:bg-sky-100/60 dark:hover:bg-sky-950/40'
-                                          : 'bg-transparent hover:bg-slate-50/70 dark:hover:bg-slate-800/40'
+                                          ? 'bg-[#f0f9ff] dark:bg-sky-950/25 hover:bg-sky-100/70 dark:hover:bg-sky-950/50'
+                                          : 'bg-transparent hover:bg-slate-50/80 dark:hover:bg-slate-800/50'
                                       )}
+                                      title={t('assessment.review.clickToEdit', 'Click to edit this answer')}
                                     >
                                       <td className="py-3.5 px-6 sm:px-8 font-normal text-slate-800 dark:text-slate-200 align-top">
                                         <span className="font-semibold text-slate-900 dark:text-white mr-1.5">{row.num}.</span>
                                         {row.question}
                                       </td>
                                       <td className="py-3.5 px-6 sm:px-8 font-medium text-slate-700 dark:text-slate-300 align-top leading-relaxed break-words">
-                                        {row.answer}
+                                        <div className="flex items-center justify-between gap-3">
+                                          <span>{row.answer}</span>
+                                          {row.nodeId ? (
+                                            <span className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity font-medium shrink-0">
+                                              <Edit3 className="h-3 w-3" />
+                                              <span>{t('common.edit', 'Edit')}</span>
+                                            </span>
+                                          ) : null}
+                                        </div>
                                       </td>
                                       <td className="py-3.5 px-6 sm:px-8 font-semibold text-slate-900 dark:text-slate-100 text-right sm:text-center align-top whitespace-nowrap">
                                         {row.points}
@@ -1663,7 +1738,7 @@ export function DiagnosisPage() {
 
                       <button
                         type="button"
-                        onClick={() => { setStep(1); setCursorOverride(null) }}
+                        onClick={interviewBack}
                         className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-full px-4 py-2 text-xs font-semibold text-[#1b365d] bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900/60 transition-colors border border-blue-200/70 dark:border-blue-800/70 cursor-pointer"
                       >
                         <Edit3 className="h-3.5 w-3.5" />
@@ -1700,19 +1775,29 @@ export function DiagnosisPage() {
                               return (
                                 <tr
                                   key={row.num}
+                                  onClick={() => row.nodeId && editInterviewNode(row.nodeId)}
                                   className={cn(
-                                    'transition-colors hover:bg-blue-100/50 dark:hover:bg-sky-950/40',
+                                    'group transition-colors cursor-pointer',
                                     isZebra
-                                      ? 'bg-[#f0f8ff] dark:bg-sky-950/20'
-                                      : 'bg-white dark:bg-slate-900'
+                                      ? 'bg-[#f0f8ff] dark:bg-sky-950/20 hover:bg-blue-100/60 dark:hover:bg-sky-950/50'
+                                      : 'bg-white dark:bg-slate-900 hover:bg-blue-50/70 dark:hover:bg-slate-800/50'
                                   )}
+                                  title={t('assessment.review.clickToEdit', 'Click to edit this answer')}
                                 >
                                   <td className="py-3.5 sm:py-4 px-6 font-normal text-slate-800 dark:text-slate-200 align-top">
                                     <span className="font-semibold text-slate-900 dark:text-slate-100 mr-1.5">{row.num}.</span>
                                     {row.question}
                                   </td>
                                   <td className="py-3.5 sm:py-4 px-6 font-medium text-slate-800 dark:text-slate-100 align-top leading-relaxed break-words">
-                                    {row.answer}
+                                    <div className="flex items-center justify-between gap-3">
+                                      <span>{row.answer}</span>
+                                      {row.nodeId ? (
+                                        <span className="inline-flex items-center gap-1 text-xs text-[#1b365d] dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity font-medium shrink-0">
+                                          <Edit3 className="h-3 w-3" />
+                                          <span>{t('common.edit', 'Edit')}</span>
+                                        </span>
+                                      ) : null}
+                                    </div>
                                   </td>
                                   <td className="py-3.5 sm:py-4 px-6 font-semibold text-slate-800 dark:text-slate-200 text-right sm:text-center align-top whitespace-nowrap">
                                     {row.points}
@@ -1769,7 +1854,7 @@ export function DiagnosisPage() {
                   <span>{result ? t('assessment.footerHintSubmitted', 'Assessment submitted') : t('assessment.footerHintReady', 'Ready to submit')}</span>
                 </span>
                 <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                  <button type="button" className="btn-secondary gap-1.5" onClick={() => { setStep(1); setCursorOverride(null) }}>
+                  <button type="button" className="btn-secondary gap-1.5" onClick={interviewBack}>
                     <ArrowLeft className="h-4 w-4" /> {t('common.back', 'Back')}
                   </button>
                   <button type="submit" className="btn-primary gap-1.5" disabled={submitting}>
@@ -1797,6 +1882,13 @@ export function DiagnosisPage() {
         confirmTone="danger"
         onCancel={() => setShowRestart(false)}
         onConfirm={() => { startNew(); setShowRestart(false) }}
+      />
+
+      <ClinicalAnalyzingModal
+        isOpen={analyzingAssessment}
+        isDone={assessmentDone}
+        mode="assessment"
+        onComplete={handleAssessmentAnimationComplete}
       />
     </div>
   )

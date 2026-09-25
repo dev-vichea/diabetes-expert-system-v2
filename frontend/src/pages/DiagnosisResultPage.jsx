@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Activity,
@@ -58,6 +59,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui'
+import { ClinicalAnalyzingModal } from '@/components/ui/ClinicalAnalyzingModal'
 import { ConditionEducationPanel } from '@/components/diagnosis/ConditionEducationPanel'
 import { getSymptomGuideKey } from '@/lib/symptom-guide'
 import { getRiskGuideKey } from '@/lib/risk-factor-guide'
@@ -746,9 +748,18 @@ export function DiagnosisResultPage() {
   const [remoteReasoning, setRemoteReasoning] = useState(null)
   const targetResultId = diagnosisResultId || activeResult?.id || activeResult?.diagnosis_result_id || null
 
+  const isMountedRef = useRef(true)
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
   const [hasOpenedCarePlan, setHasOpenedCarePlan] = useState(() => {
     if (!targetResultId) return false
     try {
+      if (activeResult?.care_plan) return true
       return window.localStorage.getItem(`care_plan_generated_${targetResultId}`) === 'true'
     } catch {
       return false
@@ -758,19 +769,132 @@ export function DiagnosisResultPage() {
   useEffect(() => {
     if (!targetResultId) return
     try {
+      if (activeResult?.care_plan) {
+        setHasOpenedCarePlan(true)
+        return
+      }
       const generated = window.localStorage.getItem(`care_plan_generated_${targetResultId}`) === 'true'
       setHasOpenedCarePlan(generated)
     } catch {}
+  }, [targetResultId, activeResult?.care_plan])
+
+  const [isGeneratingCarePlan, setIsGeneratingCarePlan] = useState(false)
+  const [carePlanDone, setCarePlanDone] = useState(false)
+  const [preloadedCarePlan, setPreloadedCarePlan] = useState(null)
+
+  const [activeSymptomIndex, setActiveSymptomIndex] = useState(0)
+  const [isSymptomCyclingPaused, setIsSymptomCyclingPaused] = useState(false)
+
+  useEffect(() => {
+    const total = activeResult?.matched_symptoms?.length || result?.matched_symptoms?.length || 0
+    if (total <= 1) {
+      setActiveSymptomIndex(0)
+      return undefined
+    }
+    if (isSymptomCyclingPaused) return undefined
+    const interval = setInterval(() => {
+      setActiveSymptomIndex((prev) => (prev + 1) % total)
+    }, 2400)
+    return () => clearInterval(interval)
+  }, [activeResult?.matched_symptoms?.length, result?.matched_symptoms?.length, isSymptomCyclingPaused])
+
+  useEffect(() => {
+    setActiveSymptomIndex(0)
   }, [targetResultId])
 
-  const handleCarePlanNavigation = () => {
-    if (targetResultId) {
-      try {
-        window.localStorage.setItem(`care_plan_generated_${targetResultId}`, 'true')
-      } catch {}
-      setHasOpenedCarePlan(true)
+  const handleCarePlanNavigation = (e) => {
+    if (isGeneratingCarePlan) {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault()
+      return
     }
+
+    if (hasOpenedCarePlan) {
+      // Care plan already generated, proceed directly to view
+      return
+    }
+
+    // Intercept click to show clinical care plan generation animation
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault()
+    }
+
+    setIsGeneratingCarePlan(true)
+    setCarePlanDone(false)
+
+    const target = activeResult || result
+    const targetId = targetResultId
+
+    const apiPromise = targetId
+      ? api.post(`/diagnosis/${targetId}/care-plan`, { result: target }).catch((err) => {
+          console.warn('Pre-generating care plan note (falling back):', err)
+          return null
+        })
+      : api.post('/diagnosis/care-plan/generate', { result: target }).catch((err) => {
+          console.warn('Direct care plan generation note (falling back):', err)
+          return null
+        })
+
+    const minDelayPromise = new Promise((resolve) => setTimeout(resolve, 2200))
+
+    Promise.all([apiPromise, minDelayPromise])
+      .then(([resp]) => {
+        if (!isMountedRef.current) return
+        const plan = resp ? getApiData(resp) : null
+        if (targetId) {
+          try {
+            window.localStorage.setItem(`care_plan_generated_${targetId}`, 'true')
+          } catch {}
+        }
+        setHasOpenedCarePlan(true)
+        if (plan) {
+          setPreloadedCarePlan(plan)
+        }
+        setCarePlanDone(true)
+      })
+      .catch(() => {
+        if (!isMountedRef.current) return
+        if (targetId) {
+          try {
+            window.localStorage.setItem(`care_plan_generated_${targetId}`, 'true')
+          } catch {}
+        }
+        setHasOpenedCarePlan(true)
+        setCarePlanDone(true)
+      })
   }
+
+  const handleCarePlanModalComplete = () => {
+    setIsGeneratingCarePlan(false)
+    setCarePlanDone(false)
+    navigate('/care-plan', {
+      state: {
+        result: preloadedCarePlan
+          ? { ...(activeResult || result), care_plan: preloadedCarePlan }
+          : (activeResult || result),
+        fromAssessmentId: targetResultId,
+      },
+    })
+  }
+
+  useEffect(() => {
+    if (!showConditionGuideModal && !showDoctorConsultModal) return undefined
+
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') {
+        setShowConditionGuideModal(false)
+        setShowDoctorConsultModal(false)
+      }
+    }
+
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showConditionGuideModal, showDoctorConsultModal])
 
   useEffect(() => {
     if (activeResult?.reasoning_report) {
@@ -1150,6 +1274,67 @@ export function DiagnosisResultPage() {
         fastingValue != null ? `FPG: ${formatLabValue('fasting', fastingValue)}` : null,
       ].filter(Boolean).join(', ')
     : (isKhmer ? 'មិនទាន់មានតេស្តឈាម' : 'None / Pending')
+
+  const symptomSeverity = (() => {
+    const count = matchedSymptoms.length
+    if (count >= 4) {
+      return {
+        label: isKhmer ? 'ចម្បង' : 'Significant',
+        badgeClass: 'bg-rose-50 text-rose-700 border-rose-200/70 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800/50',
+        dotClass: 'bg-rose-500 dark:bg-rose-400 shadow-2xs shadow-rose-500/40',
+        badgeDot: 'bg-rose-500',
+      }
+    }
+    if (count >= 2) {
+      return {
+        label: isKhmer ? 'មធ្យម' : 'Moderate',
+        badgeClass: 'bg-amber-50 text-amber-700 border-amber-200/70 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/50',
+        dotClass: 'bg-amber-500 dark:bg-amber-400 shadow-2xs shadow-amber-500/40',
+        badgeDot: 'bg-amber-500',
+      }
+    }
+    if (count === 1) {
+      return {
+        label: isKhmer ? 'កម្រិតស្រាល' : 'Mild',
+        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/40',
+        dotClass: 'bg-emerald-500 dark:bg-emerald-400 shadow-2xs shadow-emerald-500/30',
+        badgeDot: 'bg-emerald-500',
+      }
+    }
+    return {
+      label: isKhmer ? 'គ្មាន' : 'None',
+      badgeClass: 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
+      dotClass: 'bg-slate-300 dark:bg-slate-600',
+      badgeDot: 'bg-slate-400',
+    }
+  })()
+
+  const currentSymptomData = (() => {
+    const total = matchedSymptoms.length
+    if (total === 0) {
+      return {
+        safeIndex: 0,
+        stepNumber: 0,
+        name: isKhmer ? 'គ្មានរោគសញ្ញារាយការណ៍' : 'No symptoms reported',
+        meaning: isKhmer ? 'រោគសញ្ញាដែលបានផ្គូផ្គងក្នុងកម្រងសំណួរ' : 'Symptoms matched from assessment',
+      }
+    }
+    const safeIndex = activeSymptomIndex % total
+    const raw = matchedSymptoms[safeIndex]
+    const guideKey = getSymptomGuideKey(raw)
+    const localeGuide = guideKey ? t(`diagnosisResult.symptomGuide.items.${guideKey}`, null) : null
+    const guide = resolveGuide(raw, localeGuide)
+    const name = (guide && guide.name) || tExact(raw) || toReadableLabel(raw)
+    const meaning = (guide && guide.meaning)
+      ? String(guide.meaning)
+      : (isKhmer ? 'រោគសញ្ញាដែលបានផ្គូផ្គងក្នុងកម្រងសំណួរ' : 'Symptoms matched from assessment')
+    return {
+      safeIndex,
+      stepNumber: safeIndex + 1,
+      name,
+      meaning,
+    }
+  })()
 
   const patientBmi = (() => {
     if (payload?.bmi != null && !isNaN(Number(payload.bmi))) {
@@ -1706,8 +1891,8 @@ export function DiagnosisResultPage() {
                         {hasOpenedCarePlan ? <HeartPulse className="h-3.5 w-3.5 text-blue-500" /> : <Sparkles className="h-3.5 w-3.5 text-blue-500" />}
                         <span>
                           {hasOpenedCarePlan
-                            ? (isKhmer ? 'បើកផែនការថែទាំ' : 'Open Care Plan')
-                            : (isKhmer ? 'បង្កើតផែនការថែទាំ' : 'Generate care plan')}
+                            ? (isKhmer ? 'បើកផែនការថែទាំ' : t('diagnosisResult.openCarePlan', 'Open Care Plan'))
+                            : (isKhmer ? 'បង្កើតផែនការថែទាំ' : t('diagnosisResult.generateCarePlan', 'Generate Care Plan'))}
                         </span>
                       </Link>
                     )}
@@ -1874,7 +2059,11 @@ export function DiagnosisResultPage() {
                   </div>
 
                   {/* Symptoms Card */}
-                  <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900 space-y-3">
+                  <div
+                    className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs dark:border-slate-800 dark:bg-slate-900 space-y-3 transition-all"
+                    onMouseEnter={() => setIsSymptomCyclingPaused(true)}
+                    onMouseLeave={() => setIsSymptomCyclingPaused(false)}
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
@@ -1884,32 +2073,93 @@ export function DiagnosisResultPage() {
                           {isKhmer ? 'រោគសញ្ញា' : 'Symptoms'}
                         </span>
                       </div>
+                      <Activity
+                        className={cn(
+                          'h-4 w-4 transition-colors',
+                          matchedSymptoms.length > 0
+                            ? 'text-amber-500 dark:text-amber-400'
+                            : 'text-slate-400 dark:text-slate-500'
+                        )}
+                      />
                     </div>
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                        {matchedSymptoms.length} / 8
-                      </span>
-                      <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-900">
-                        {matchedSymptoms.length >= 4 ? (isKhmer ? 'ចម្បង' : 'Significant') : matchedSymptoms.length > 0 ? (isKhmer ? 'មធ្យម' : 'Moderate') : (isKhmer ? 'គ្មាន' : 'None')}
+                    <div className="flex items-baseline justify-between gap-2">
+                      <div className="flex items-baseline gap-1.5 min-w-0">
+                        <span
+                          key={currentSymptomData.stepNumber}
+                          className="text-2xl font-black tracking-tight text-slate-900 dark:text-white tabular-nums transition-all"
+                        >
+                          {currentSymptomData.stepNumber} / 8
+                        </span>
+                        {matchedSymptoms.length > 1 && (
+                          <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 shrink-0">
+                            ({matchedSymptoms.length} {isKhmer ? 'សរុប' : 'total'})
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold border transition-all duration-300',
+                          symptomSeverity.badgeClass
+                        )}
+                      >
+                        <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', symptomSeverity.badgeDot)} />
+                        <span>{symptomSeverity.label}</span>
                       </span>
                     </div>
-                    {/* 8-dot indicator row */}
-                    <div className="flex items-center gap-2 py-1">
+
+                    {/* 8-dot indicator row with dynamic cycling indicator change */}
+                    <div className="flex items-center gap-1.5 py-1" role="tablist" aria-label="Symptom indicator">
                       {Array.from({ length: 8 }).map((_, idx) => {
-                        const isFilled = idx < matchedSymptoms.length
+                        const isMatched = idx < matchedSymptoms.length
+                        const isCurrent = matchedSymptoms.length > 0 && idx === currentSymptomData.safeIndex
+                        const isPastOrCurrent = matchedSymptoms.length > 0 && idx <= currentSymptomData.safeIndex
+
                         return (
-                          <span
+                          <button
                             key={idx}
-                            className={`h-2.5 w-2.5 rounded-full transition-all ${
-                              isFilled ? 'bg-blue-600 dark:bg-blue-400' : 'bg-blue-100 dark:bg-slate-700'
-                            }`}
+                            type="button"
+                            disabled={!isMatched}
+                            onClick={() => {
+                              if (isMatched) {
+                                setActiveSymptomIndex(idx)
+                              }
+                            }}
+                            title={isMatched ? `Symptom ${idx + 1} of 8` : undefined}
+                            className={cn(
+                              'h-2.5 rounded-full transition-all duration-300 focus:outline-hidden',
+                              isCurrent
+                                ? cn('w-5', symptomSeverity.dotClass, 'shadow-xs')
+                                : isPastOrCurrent
+                                ? cn('w-2.5', symptomSeverity.dotClass, 'opacity-75')
+                                : isMatched
+                                ? 'w-2.5 bg-amber-200/90 dark:bg-amber-900/60 hover:bg-amber-300 dark:hover:bg-amber-800'
+                                : 'w-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 cursor-default'
+                            )}
                           />
                         )
                       })}
                     </div>
-                    <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
-                      {isKhmer ? 'រោគសញ្ញាដែលបានផ្គូផ្គងក្នុងកម្រងសំណួរ' : 'Symptoms matched from assessment'}
-                    </p>
+
+                    {/* Symptom cycling display / caption */}
+                    <div className="min-h-[2.25rem] flex flex-col justify-center overflow-hidden">
+                      {matchedSymptoms.length > 0 ? (
+                        <div
+                          key={currentSymptomData.safeIndex}
+                          className="animate-in fade-in slide-in-from-bottom-0.5 duration-200 space-y-0.5"
+                        >
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
+                            {currentSymptomData.name}
+                          </p>
+                          <p className="text-[10.5px] font-medium text-slate-400 dark:text-slate-500 truncate">
+                            {isKhmer ? 'រោគសញ្ញាដែលបានផ្គូផ្គងក្នុងកម្រងសំណួរ' : 'Symptoms matched from assessment'}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                          {isKhmer ? 'រោគសញ្ញាដែលបានផ្គូផ្គងក្នុងកម្រងសំណួរ' : 'Symptoms matched from assessment'}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -2578,8 +2828,8 @@ export function DiagnosisResultPage() {
                       <div>
                         <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
                           {hasOpenedCarePlan
-                            ? (isKhmer ? 'បើកផែនការថែទាំ' : 'Open Care Plan')
-                            : (isKhmer ? 'បង្កើតផែនការថែទាំ' : 'Generate Care Plan')}
+                            ? (isKhmer ? 'បើកផែនការថែទាំ' : t('diagnosisResult.openCarePlan', 'Open Care Plan'))
+                            : (isKhmer ? 'បង្កើតផែនការថែទាំ' : t('diagnosisResult.generateCarePlan', 'Generate Care Plan'))}
                         </p>
                         <p className="text-[11px] text-slate-400">
                           {hasOpenedCarePlan
@@ -2688,118 +2938,138 @@ export function DiagnosisResultPage() {
 
         {/* ── MODALS ── */}
         {/* Condition Education Guide Modal */}
-        {showConditionGuideModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-            <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                    {isKhmer ? `មគ្គុទ្ទេសក៍សុខភាព: ${suspectedType?.type || result?.diagnosis || 'ជំងឺទឹកនោមផ្អែម'}` : `Condition Guide: ${suspectedType?.type || result?.diagnosis || 'Type 1 Diabetes'}`}
-                  </h3>
+        {showConditionGuideModal &&
+          createPortal(
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-3 sm:p-6 backdrop-blur-sm animate-in fade-in-0 duration-200"
+              onClick={() => setShowConditionGuideModal(false)}
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                onClick={(e) => e.stopPropagation()}
+                className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-150"
+              >
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {isKhmer ? `មគ្គុទ្ទេសក៍សុខភាព: ${suspectedType?.type || result?.diagnosis || 'ជំងឺទឹកនោមផ្អែម'}` : `Condition Guide: ${suspectedType?.type || result?.diagnosis || 'Type 1 Diabetes'}`}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowConditionGuideModal(false)}
+                    className="rounded-full p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowConditionGuideModal(false)}
-                  className="rounded-full p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                <div className="pt-4">
+                  <ConditionEducationPanel result={result} defaultOpen={true} embedded={true} />
+                </div>
               </div>
-              <div className="pt-4">
-                <ConditionEducationPanel result={result} defaultOpen={true} embedded={true} />
-              </div>
-            </div>
-          </div>
-        )}
+            </div>,
+            document.body
+          )}
 
         {/* Doctor Consultation Modal */}
-        {showDoctorConsultModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-            <div className="relative w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <Stethoscope className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                    {isKhmer ? 'បញ្ជូនទៅកាន់ក្រុមគ្រូពេទ្យ' : 'Submit to Doctor & Care Team'}
-                  </h3>
+        {showDoctorConsultModal &&
+          createPortal(
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-3 sm:p-6 backdrop-blur-sm animate-in fade-in-0 duration-200"
+              onClick={() => setShowDoctorConsultModal(false)}
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                onClick={(e) => e.stopPropagation()}
+                className="relative w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 animate-in zoom-in-95 duration-150"
+              >
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <Stethoscope className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {isKhmer ? 'បញ្ជូនទៅកាន់ក្រុមគ្រូពេទ្យ' : 'Submit to Doctor & Care Team'}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowDoctorConsultModal(false)}
+                    className="rounded-full p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowDoctorConsultModal(false)}
-                  className="rounded-full p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
 
-              {isSubmittedToCareTeam ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold text-sm">
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span>{isKhmer ? 'បានបញ្ជូនទៅកាន់ក្រុមគ្រូពេទ្យរួចរាល់' : 'Assessment submitted to care team'}</span>
-                  </div>
-                  {patientNoteSaved && (
-                    <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3 text-xs text-slate-700 dark:text-slate-300">
-                      <p className="font-semibold text-slate-900 dark:text-white mb-1">{isKhmer ? 'កំណត់ត្រារបស់អ្នក:' : 'Your note:'}</p>
-                      <p className="italic">"{patientNoteSaved}"</p>
+                {isSubmittedToCareTeam ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold text-sm">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>{isKhmer ? 'បានបញ្ជូនទៅកាន់ក្រុមគ្រូពេទ្យរួចរាល់' : 'Assessment submitted to care team'}</span>
                     </div>
-                  )}
-                  <div className="flex justify-end pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowDoctorConsultModal(false)}
-                      className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 rounded-xl"
-                    >
-                      {isKhmer ? 'បិទ' : 'Close'}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                    {isKhmer ? 'ចែករំលែករោគសញ្ញាបច្ចុប្បន្ន ការប្រែប្រួលថ្មីៗ ឬសំណួរដែលអ្នកចង់ឱ្យគ្រូពេទ្យពិនិត្យ:' : 'Share any current symptoms, recent changes, medications, or questions you would like your doctor to review:'}
-                  </p>
-                  <textarea
-                    rows={4}
-                    value={patientNote}
-                    onChange={(e) => setPatientNote(e.target.value)}
-                    placeholder={t(
-                      'diagnosisResult.patientNotePlaceholder',
-                      'Share any current symptoms, recent changes, medications, or questions you would like your doctor to review...'
+                    {patientNoteSaved && (
+                      <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3 text-xs text-slate-700 dark:text-slate-300">
+                        <p className="font-semibold text-slate-900 dark:text-white mb-1">{isKhmer ? 'កំណត់ត្រារបស់អ្នក:' : 'Your note:'}</p>
+                        <p className="italic">"{patientNoteSaved}"</p>
+                      </div>
                     )}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-800 dark:text-white resize-none"
-                  />
-                  <div className="flex justify-end gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowDoctorConsultModal(false)}
-                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
-                    >
-                      {isKhmer ? 'បោះបង់' : 'Cancel'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await handleSubmitToCareTeam()
-                        setShowDoctorConsultModal(false)
-                      }}
-                      disabled={submittingToCareTeam}
-                      className="btn-primary gap-2 h-9 px-4 text-xs font-semibold rounded-xl inline-flex items-center"
-                    >
-                      {submittingToCareTeam ? (
-                        <RotateCcw className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Send className="h-3.5 w-3.5" />
-                      )}
-                      <span>{isKhmer ? 'បញ្ជូនឥឡូវនេះ' : 'Submit Now'}</span>
-                    </button>
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowDoctorConsultModal(false)}
+                        className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 rounded-xl"
+                      >
+                        {isKhmer ? 'បិទ' : 'Close'}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      {isKhmer ? 'ចែករំលែករោគសញ្ញាបច្ចុប្បន្ន ការប្រែប្រួលថ្មីៗ ឬសំណួរដែលអ្នកចង់ឱ្យគ្រូពេទ្យពិនិត្យ:' : 'Share any current symptoms, recent changes, medications, or questions you would like your doctor to review:'}
+                    </p>
+                    <textarea
+                      rows={4}
+                      value={patientNote}
+                      onChange={(e) => setPatientNote(e.target.value)}
+                      placeholder={t(
+                        'diagnosisResult.patientNotePlaceholder',
+                        'Share any current symptoms, recent changes, medications, or questions you would like your doctor to review...'
+                      )}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-800 dark:text-white resize-none"
+                    />
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowDoctorConsultModal(false)}
+                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                      >
+                        {isKhmer ? 'បោះបង់' : 'Cancel'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await handleSubmitToCareTeam()
+                          setShowDoctorConsultModal(false)
+                        }}
+                        disabled={submittingToCareTeam}
+                        className="btn-primary gap-2 h-9 px-4 text-xs font-semibold rounded-xl inline-flex items-center"
+                      >
+                        {submittingToCareTeam ? (
+                          <RotateCcw className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Send className="h-3.5 w-3.5" />
+                        )}
+                        <span>{isKhmer ? 'បញ្ជូនឥឡូវនេះ' : 'Submit Now'}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>,
+            document.body
+          )}
 
         {/* Restart Confirmation Dialog */}
         <ConfirmDialog
@@ -2875,6 +3145,14 @@ export function DiagnosisResultPage() {
           </div>
         </div>
       </div>
+
+      {/* Clinical Analyzing Modal for Care Plan Generation */}
+      <ClinicalAnalyzingModal
+        isOpen={isGeneratingCarePlan}
+        isDone={carePlanDone}
+        mode="care-plan"
+        onComplete={handleCarePlanModalComplete}
+      />
     </div>
   )
 }

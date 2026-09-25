@@ -14,7 +14,7 @@ const SheetClose = DialogPrimitive.Close
 const SheetPortal = DialogPrimitive.Portal
 
 const overlayVariants = cva(
-  'fixed inset-0 z-50 bg-slate-950/55 backdrop-blur-[2px] transition-opacity',
+  'fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm transition-opacity',
   {
     variants: {
       motion: {

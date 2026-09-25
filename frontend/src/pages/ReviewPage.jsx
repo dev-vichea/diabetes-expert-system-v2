@@ -56,6 +56,7 @@ function getRiskTextColor(percent) {
 function ClinicalReviewWorkspace({
   t,
   tExact,
+  isKhmer,
   selectedResult,
   selectedResultId,
   selectedPatientKey,
@@ -385,22 +386,29 @@ function ClinicalReviewWorkspace({
                 </div>
               </div>
 
-              {/* Action Buttons: PDF & Patient Records */}
+              {/* Action Buttons: Result, PDF & Patient Records */}
               <div className="flex items-center gap-2">
+                <Link
+                  to={`/diagnosis/result?diagnosis_result_id=${selectedResult.id}`}
+                  state={{ result: selectedResult }}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <FileText className="h-3.5 w-3.5 text-slate-500" /> {isKhmer ? 'លទ្ធផល' : 'Result'}
+                </Link>
                 <button
                   type="button"
                   onClick={() => handleDownloadPdf(selectedResult.id)}
                   disabled={downloadingPdf}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors"
                 >
                   <Download className="h-3.5 w-3.5 text-slate-500" /> PDF
                 </button>
                 {selectedResult.patient_id && (
                   <Link
                     to={`/patients/${selectedResult.patient_id}`}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors"
                   >
-                    <User className="h-3.5 w-3.5 text-slate-500" /> Records
+                    <User className="h-3.5 w-3.5 text-slate-500" /> {isKhmer ? 'កំណត់ត្រា' : 'Records'}
                   </Link>
                 )}
               </div>
@@ -589,9 +597,19 @@ export function ReviewPage() {
 
   // View & Filter Controls
   const [viewMode, setViewMode] = useState('by-patient') // 'by-patient' | 'all-submissions'
-  const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'pending' | 'urgent' | 'reviewed'
+  const [statusFilter, setStatusFilter] = useState(() => {
+    const s = searchParams.get('status')
+    return ['all', 'pending', 'urgent', 'reviewed'].includes(s) ? s : 'all'
+  })
   const [sortBy, setSortBy] = useState('newest') // 'newest' | 'risk-desc' | 'urgent-first' | 'name-asc'
   const [searchQuery, setSearchQuery] = useState('')
+
+  useEffect(() => {
+    const s = searchParams.get('status')
+    if (s && ['all', 'pending', 'urgent', 'reviewed'].includes(s)) {
+      setStatusFilter(s)
+    }
+  }, [searchParams])
 
   const sortOptions = useMemo(
     () => [
@@ -934,6 +952,7 @@ export function ReviewPage() {
     <ClinicalReviewWorkspace
       t={t}
       tExact={tExact}
+      isKhmer={isKhmer}
       selectedResult={selectedResult}
       selectedResultId={selectedResultId}
       selectedPatientKey={selectedPatientKey}

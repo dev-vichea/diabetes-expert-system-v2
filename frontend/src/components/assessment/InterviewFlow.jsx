@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Activity, AlertTriangle, ArrowLeft, ArrowRight, Armchair, Baby, Bandage, BatteryLow, Bug, Building2, CalendarHeart,
   Calculator, Check, Cigarette, ClipboardList, Contrast, Droplet, Droplets, Egg, Eye, Flame, FlaskConical, Flower2,
@@ -1257,13 +1258,22 @@ export function InterviewFlow(props) {
   useEffect(() => { if (node?.kind === 'number' && inputRef.current) inputRef.current.focus() }, [node?.id])
 
   useEffect(() => {
+    if (!previewMedia) return undefined
+
     function handleKeyDown(e) {
-      if (e.key === 'Escape' && previewMedia) {
+      if (e.key === 'Escape') {
         setPreviewMedia(null)
       }
     }
+
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [previewMedia])
 
   if (!node) return null
@@ -1349,6 +1359,7 @@ export function InterviewFlow(props) {
       )
   } else if (node.kind === 'subject') {
     /* Patient accounts: "Myself / Someone else" with Ada radio cards */
+    continueEnabled = Boolean(subjectValue)
     body = (
       <div className="space-y-4 max-w-md pt-1">
         {subjectOptions.map((option) => {
@@ -1569,7 +1580,7 @@ export function InterviewFlow(props) {
         </button>
       ) : null}
 
-      {node.kind !== 'patient' && node.kind !== 'subject' && node.kind !== 'body' && node.kind !== 'waist' ? (
+      {node.kind !== 'patient' && node.kind !== 'body' && node.kind !== 'waist' ? (
         <button
           type="button"
           className="rounded-full bg-white px-10 py-3 text-base sm:text-lg font-semibold transition hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-md active:scale-[0.98]"
@@ -1608,55 +1619,58 @@ export function InterviewFlow(props) {
       </QuestionCard>
 
       {/* Lightbox / Zoom Modal for Full-Screen Image Viewing */}
-      {previewMedia ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
-          onClick={() => setPreviewMedia(null)}
-        >
-          <div
-            className="relative max-w-4xl w-full rounded-3xl bg-white dark:bg-slate-900 shadow-2xl border border-white/20 overflow-hidden max-h-[92vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="relative aspect-[16/10] max-h-[68vh] w-full bg-slate-950 flex items-center justify-center overflow-hidden">
-              <img
-                src={previewMedia.image}
-                alt={previewMedia.name}
-                className="w-full h-full object-contain"
-              />
-              <button
-                type="button"
-                onClick={() => setPreviewMedia(null)}
-                aria-label={t('common.close', 'Close')}
-                className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 hover:bg-black/95 text-white backdrop-blur-md transition-all shadow-lg cursor-pointer"
+      {previewMedia
+        ? createPortal(
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
+              onClick={() => setPreviewMedia(null)}
+            >
+              <div
+                className="relative max-w-4xl w-full rounded-3xl bg-white dark:bg-slate-900 shadow-2xl border border-white/20 overflow-hidden max-h-[92vh] flex flex-col"
+                onClick={(e) => e.stopPropagation()}
               >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="p-6">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h4 className="text-xl font-bold text-slate-900 dark:text-slate-100">{previewMedia.name}</h4>
-                {previewMedia.medicalTerm ? (
-                  <span className="rounded-md bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-600/20 dark:bg-blue-950/60 dark:text-blue-300">
-                    {previewMedia.medicalTerm}
-                  </span>
-                ) : null}
-                {previewMedia.badge ? (
-                  <span className="rounded-md bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-950/60 dark:text-amber-300">
-                    {previewMedia.badge}
-                  </span>
-                ) : null}
+                <div className="relative aspect-[16/10] max-h-[68vh] w-full bg-slate-950 flex items-center justify-center overflow-hidden">
+                  <img
+                    src={previewMedia.image}
+                    alt={previewMedia.name}
+                    className="w-full h-full object-contain"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMedia(null)}
+                    aria-label={t('common.close', 'Close')}
+                    className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/70 hover:bg-black/95 text-white backdrop-blur-md transition-all shadow-lg cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="p-6">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <h4 className="text-xl font-bold text-slate-900 dark:text-slate-100">{previewMedia.name}</h4>
+                    {previewMedia.medicalTerm ? (
+                      <span className="rounded-md bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-600/20 dark:bg-blue-950/60 dark:text-blue-300">
+                        {previewMedia.medicalTerm}
+                      </span>
+                    ) : null}
+                    {previewMedia.badge ? (
+                      <span className="rounded-md bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-950/60 dark:text-amber-300">
+                        {previewMedia.badge}
+                      </span>
+                    ) : null}
+                  </div>
+                  {previewMedia.caption ? (
+                    <p className="mt-2.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                      {previewMedia.caption}
+                    </p>
+                  ) : null}
+                </div>
               </div>
-              {previewMedia.caption ? (
-                <p className="mt-2.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                  {previewMedia.caption}
-                </p>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      ) : null}
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   )
 }

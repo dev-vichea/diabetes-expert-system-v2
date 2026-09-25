@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Area,
@@ -143,6 +144,27 @@ export function AdminPage() {
   const [error, setError] = useState('')
   const [updatingId, setUpdatingId] = useState(null)
   const [showCreateUser, setShowCreateUser] = useState(false)
+
+  // Lock body overflow & handle Escape key when modal is open (matching DiabetesGuidePage)
+  useEffect(() => {
+    if (!showCreateUser) return undefined
+
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') {
+        setShowCreateUser(false)
+      }
+    }
+
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showCreateUser])
+
   const [creatingUser, setCreatingUser] = useState(false)
   const [createForm, setCreateForm] = useState({ name: '', email: '', password: '', role: 'patient' })
 
@@ -1279,112 +1301,118 @@ export function AdminPage() {
       {/* ==================================================================== */}
       {/* 6. CREATE USER MODAL DIALOG                                          */}
       {/* ==================================================================== */}
-      {showCreateUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-xs">
-          <form
-            onSubmit={createUser}
-            className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95 duration-150"
+      {showCreateUser &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-3 sm:p-6 backdrop-blur-sm animate-in fade-in-0 duration-200"
+            onClick={() => setShowCreateUser(false)}
           >
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-600 dark:text-sky-400">
-                  {isKhmer ? 'គ្រប់គ្រងអ្នកប្រើប្រាស់' : 'User Registration'}
-                </p>
-                <h2 className="mt-1 text-xl font-bold text-slate-950 dark:text-white">
-                  {isKhmer ? 'បង្កើតគណនីអ្នកប្រើថ្មី' : 'Add New System User'}
-                </h2>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  {isKhmer ? 'បញ្ចូលព័ត៌មានលម្អិតដើម្បីបង្កើតគណនីក្នុងប្រព័ន្ធ' : 'Create an account in the shared system directory.'}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-                onClick={() => setShowCreateUser(false)}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <label className="sm:col-span-2">
-                <span className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  {isKhmer ? 'ឈ្មោះពេញ' : 'Full Name'} *
-                </span>
-                <input
-                  required
-                  value={createForm.name}
-                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                  placeholder="e.g. Sokha Chan or Dr. Sarah Connor"
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                />
-              </label>
-
-              <label className="sm:col-span-2">
-                <span className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  {isKhmer ? 'អាសយដ្ឋានអ៊ីមែល' : 'Email Address'} *
-                </span>
-                <input
-                  required
-                  type="email"
-                  value={createForm.email}
-                  onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                  placeholder="user@example.com"
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                />
-              </label>
-
-              <label>
-                <span className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  {isKhmer ? 'ពាក្យសម្ងាត់បណ្តោះអាសន្ន' : 'Temporary Password'} *
-                </span>
-                <input
-                  required
-                  minLength={6}
-                  type="password"
-                  value={createForm.password}
-                  onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                  placeholder="At least 6 chars"
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                />
-              </label>
-
-              <label>
-                <span className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  {isKhmer ? 'តួនាទីដំបូង' : 'Assigned Role'} *
-                </span>
-                <select
-                  value={createForm.role}
-                  onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-pointer"
+            <form
+              onSubmit={createUser}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95 duration-150"
+            >
+              <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-600 dark:text-sky-400">
+                    {isKhmer ? 'គ្រប់គ្រងអ្នកប្រើប្រាស់' : 'User Registration'}
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold text-slate-950 dark:text-white">
+                    {isKhmer ? 'បង្កើតគណនីអ្នកប្រើថ្មី' : 'Add New System User'}
+                  </h2>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    {isKhmer ? 'បញ្ចូលព័ត៌មានលម្អិតដើម្បីបង្កើតគណនីក្នុងប្រព័ន្ធ' : 'Create an account in the shared system directory.'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                  onClick={() => setShowCreateUser(false)}
                 >
-                  <option value="patient">{isKhmer ? 'អ្នកជំងឺ (Patient)' : 'Patient'}</option>
-                  <option value="doctor">{isKhmer ? 'វេជ្ជបណ្ឌិត (Doctor)' : 'Doctor'}</option>
-                  <option value="admin">{isKhmer ? 'អ្នកគ្រប់គ្រង (Admin)' : 'Admin'}</option>
-                </select>
-              </label>
-            </div>
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
 
-            <div className="mt-6 flex items-center justify-end gap-2.5 border-t border-slate-100 pt-4 dark:border-slate-800">
-              <button
-                type="button"
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
-                onClick={() => setShowCreateUser(false)}
-              >
-                {isKhmer ? 'បោះបង់' : 'Cancel'}
-              </button>
-              <button
-                type="submit"
-                disabled={creatingUser}
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-blue-700 transition disabled:opacity-60 cursor-pointer"
-              >
-                {creatingUser ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                <span>{isKhmer ? 'បង្កើតគណនី' : 'Create User'}</span>
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <label className="sm:col-span-2">
+                  <span className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {isKhmer ? 'ឈ្មោះពេញ' : 'Full Name'} *
+                  </span>
+                  <input
+                    required
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                    placeholder="e.g. Sokha Chan or Dr. Sarah Connor"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
+                </label>
+
+                <label className="sm:col-span-2">
+                  <span className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {isKhmer ? 'អាសយដ្ឋានអ៊ីមែល' : 'Email Address'} *
+                  </span>
+                  <input
+                    required
+                    type="email"
+                    value={createForm.email}
+                    onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                    placeholder="user@example.com"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
+                </label>
+
+                <label>
+                  <span className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {isKhmer ? 'ពាក្យសម្ងាត់បណ្តោះអាសន្ន' : 'Temporary Password'} *
+                  </span>
+                  <input
+                    required
+                    minLength={6}
+                    type="password"
+                    value={createForm.password}
+                    onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                    placeholder="At least 6 chars"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
+                </label>
+
+                <label>
+                  <span className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {isKhmer ? 'តួនាទីដំបូង' : 'Assigned Role'} *
+                  </span>
+                  <select
+                    value={createForm.role}
+                    onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-pointer"
+                  >
+                    <option value="patient">{isKhmer ? 'អ្នកជំងឺ (Patient)' : 'Patient'}</option>
+                    <option value="doctor">{isKhmer ? 'វេជ្ជបណ្ឌិត (Doctor)' : 'Doctor'}</option>
+                    <option value="admin">{isKhmer ? 'អ្នកគ្រប់គ្រង (Admin)' : 'Admin'}</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="mt-6 flex items-center justify-end gap-2.5 border-t border-slate-100 pt-4 dark:border-slate-800">
+                <button
+                  type="button"
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+                  onClick={() => setShowCreateUser(false)}
+                >
+                  {isKhmer ? 'បោះបង់' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingUser}
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-blue-700 transition disabled:opacity-60 cursor-pointer"
+                >
+                  {creatingUser ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  <span>{isKhmer ? 'បង្កើតគណនី' : 'Create User'}</span>
+                </button>
+              </div>
+            </form>
+          </div>,
+          document.body
+        )}
     </div>
   )
 }

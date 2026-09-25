@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Activity,
   BarChart3,
@@ -198,6 +199,27 @@ export function RolePermissionsPage() {
   const [roleFilter, setRoleFilter] = useState('')
   const [activeCategoryFilter, setActiveCategoryFilter] = useState('all')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+
+  // Lock body overflow & handle Escape key when modal is open (matching DiabetesGuidePage)
+  useEffect(() => {
+    if (!showDeleteModal) return undefined
+
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') {
+        setShowDeleteModal(false)
+      }
+    }
+
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showDeleteModal])
+
   const [replacementRoleName, setReplacementRoleName] = useState('')
   const [showMembers, setShowMembers] = useState(false)
 
@@ -1115,71 +1137,81 @@ export function RolePermissionsPage() {
       </div>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 dark:bg-red-950/50">
-                <Trash2 className="h-5 w-5" />
-              </div>
-              <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                {t('rolesPage.form.deleteConfirmTitle')}
-              </h3>
-            </div>
-
-            <p className="mt-3 text-xs text-slate-600 dark:text-slate-300">
-              {t('rolesPage.form.deleteConfirmMessage', { name: form.name })}
-            </p>
-
-            {selectedRole?.user_count > 0 && (
-              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
-                <div className="flex items-center gap-1.5 font-semibold">
-                  <Info className="h-4 w-4" />
-                  {t('rolesPage.form.activeUsersWarning')}
+      {showDeleteModal &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-3 sm:p-6 backdrop-blur-sm animate-in fade-in-0 duration-200"
+            onClick={() => setShowDeleteModal(false)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95 duration-150"
+            >
+              <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 dark:bg-red-950/50">
+                  <Trash2 className="h-5 w-5" />
                 </div>
-                <p className="mt-1">
-                  {t('rolesPage.form.reassignBeforeDelete', { count: selectedRole.user_count })}
-                </p>
-                <label className="mt-3 block font-semibold" htmlFor="replacement-role">
-                  {t('rolesPage.form.replacementRole')}
-                </label>
-                <select
-                  id="replacement-role"
-                  value={replacementRoleName}
-                  onChange={(event) => setReplacementRoleName(event.target.value)}
-                  className="mt-1.5 w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-amber-900/70 dark:bg-slate-900 dark:text-slate-100"
-                >
-                  <option value="">{t('rolesPage.form.selectReplacementRole')}</option>
-                  {replacementRoleOptions.map((role) => (
-                    <option key={role.id} value={role.name}>
-                      {t(`roles.${role.name}`, { defaultValue: role.name })}
-                    </option>
-                  ))}
-                </select>
+                <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                  {t('rolesPage.form.deleteConfirmTitle')}
+                </h3>
               </div>
-            )}
 
-            <div className="mt-6 flex justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={() => setShowDeleteModal(false)}
-                className="btn-secondary px-4 py-2 text-xs"
-                disabled={deleting}
-              >
-                {t('rolesPage.form.cancelDelete')}
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteRole}
-                disabled={deleting || (selectedRole?.user_count > 0 && !replacementRoleName)}
-                className="btn-primary bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 px-4 py-2 text-xs"
-              >
-                {deleting ? t('rolesPage.form.deletingRole') : t('rolesPage.form.deleteConfirmAction')}
-              </button>
+              <p className="mt-3 text-xs text-slate-600 dark:text-slate-300">
+                {t('rolesPage.form.deleteConfirmMessage', { name: form.name })}
+              </p>
+
+              {selectedRole?.user_count > 0 && (
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
+                  <div className="flex items-center gap-1.5 font-semibold">
+                    <Info className="h-4 w-4" />
+                    {t('rolesPage.form.activeUsersWarning')}
+                  </div>
+                  <p className="mt-1">
+                    {t('rolesPage.form.reassignBeforeDelete', { count: selectedRole.user_count })}
+                  </p>
+                  <label className="mt-3 block font-semibold" htmlFor="replacement-role">
+                    {t('rolesPage.form.replacementRole')}
+                  </label>
+                  <select
+                    id="replacement-role"
+                    value={replacementRoleName}
+                    onChange={(event) => setReplacementRoleName(event.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-amber-900/70 dark:bg-slate-900 dark:text-slate-100"
+                  >
+                    <option value="">{t('rolesPage.form.selectReplacementRole')}</option>
+                    {replacementRoleOptions.map((role) => (
+                      <option key={role.id} value={role.name}>
+                        {t(`roles.${role.name}`, { defaultValue: role.name })}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="mt-6 flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(false)}
+                  className="btn-secondary px-4 py-2 text-xs"
+                  disabled={deleting}
+                >
+                  {t('rolesPage.form.cancelDelete')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteRole}
+                  disabled={deleting || (selectedRole?.user_count > 0 && !replacementRoleName)}
+                  className="btn-primary bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 px-4 py-2 text-xs"
+                >
+                  {deleting ? t('rolesPage.form.deletingRole') : t('rolesPage.form.deleteConfirmAction')}
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   )
 }

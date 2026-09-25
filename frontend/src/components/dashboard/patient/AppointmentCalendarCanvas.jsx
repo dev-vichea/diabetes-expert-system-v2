@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Calendar as CalendarIcon,
   Check,
@@ -137,6 +138,27 @@ export function AppointmentCalendarCanvas({ t }) {
     timeLabel: '10:00 - 10:45 AM',
     room: 'Clinic Wing B, Room 204',
   })
+
+  // Lock body overflow & handle Escape key when modals are open (matching DiabetesGuidePage)
+  useEffect(() => {
+    if (!activeModalAppointment && !isBookingModalOpen) return undefined
+
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') {
+        setActiveModalAppointment(null)
+        setIsBookingModalOpen(false)
+      }
+    }
+
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [activeModalAppointment, isBookingModalOpen])
 
   // Dynamic 7-day week dates
   const weekDates = useMemo(() => {
@@ -681,231 +703,247 @@ export function AppointmentCalendarCanvas({ t }) {
       {/* ================================================================== */}
       {/* 3. APPOINTMENT DETAIL POPUP / MODAL                                */}
       {/* ================================================================== */}
-      {activeModalAppointment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="relative w-full max-w-md rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-950/60 dark:text-primary-300">
-                  <CalendarIcon className="h-4 w-4" />
-                </span>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                    {activeModalAppointment.title}
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    {activeModalAppointment.procedure}
-                  </p>
+      {activeModalAppointment &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-3 sm:p-6 backdrop-blur-sm animate-in fade-in-0 duration-200"
+            onClick={() => setActiveModalAppointment(null)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95 duration-150"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-950/60 dark:text-primary-300">
+                    <CalendarIcon className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                      {activeModalAppointment.title}
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      {activeModalAppointment.procedure}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              <button
-                type="button"
-                onClick={() => setActiveModalAppointment(null)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="mt-4 space-y-3 text-xs">
-              <div className="flex items-start gap-2.5">
-                <User className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-bold text-slate-900 dark:text-slate-100">
-                    {activeModalAppointment.doctor}
-                  </p>
-                  <p className="text-slate-500">{activeModalAppointment.doctorRole}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2.5">
-                <Clock className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-bold text-slate-900 dark:text-slate-100">
-                    {activeModalAppointment.timeLabel}
-                  </p>
-                  <p className="text-slate-500">
-                    {weekDates[activeModalAppointment.dayIndex]?.dayName},{' '}
-                    {weekDates[activeModalAppointment.dayIndex]?.dayNum}{' '}
-                    {weekDates[activeModalAppointment.dayIndex]?.monthName}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2.5">
-                <MapPin className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-bold text-slate-900 dark:text-slate-100">
-                    {activeModalAppointment.room}
-                  </p>
-                  <p className="text-slate-500">Main Clinical Facility</p>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/50">
-                <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200">
-                  <Info className="h-3.5 w-3.5 text-primary-600" />
-                  <span>Preparation Instructions:</span>
-                </div>
-                <p className="mt-1 text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]">
-                  {activeModalAppointment.instructions}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-              <span className="text-[11px] font-semibold text-slate-400">
-                Status: <strong className="text-slate-800 dark:text-slate-200">{activeModalAppointment.status}</strong>
-              </span>
-
-              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setActiveModalAppointment(null)}
-                  className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300"
+                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
                 >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    alert('Appointment confirmed & synced to your personal calendar.')
-                    setActiveModalAppointment(null)
-                  }}
-                  className="rounded-xl bg-primary-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-primary-700 shadow-2xs"
-                >
-                  Add to Calendar
+                  <X className="h-4 w-4" />
                 </button>
               </div>
+
+              <div className="mt-4 space-y-3 text-xs">
+                <div className="flex items-start gap-2.5">
+                  <User className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-slate-900 dark:text-slate-100">
+                      {activeModalAppointment.doctor}
+                    </p>
+                    <p className="text-slate-500">{activeModalAppointment.doctorRole}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <Clock className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-slate-900 dark:text-slate-100">
+                      {activeModalAppointment.timeLabel}
+                    </p>
+                    <p className="text-slate-500">
+                      {weekDates[activeModalAppointment.dayIndex]?.dayName},{' '}
+                      {weekDates[activeModalAppointment.dayIndex]?.dayNum}{' '}
+                      {weekDates[activeModalAppointment.dayIndex]?.monthName}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <MapPin className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-slate-900 dark:text-slate-100">
+                      {activeModalAppointment.room}
+                    </p>
+                    <p className="text-slate-500">Main Clinical Facility</p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/50">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200">
+                    <Info className="h-3.5 w-3.5 text-primary-600" />
+                    <span>Preparation Instructions:</span>
+                  </div>
+                  <p className="mt-1 text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]">
+                    {activeModalAppointment.instructions}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 flex items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+                <span className="text-[11px] font-semibold text-slate-400">
+                  Status: <strong className="text-slate-800 dark:text-slate-200">{activeModalAppointment.status}</strong>
+                </span>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveModalAppointment(null)}
+                    className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      alert('Appointment confirmed & synced to your personal calendar.')
+                      setActiveModalAppointment(null)
+                    }}
+                    className="rounded-xl bg-primary-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-primary-700 shadow-2xs"
+                  >
+                    Add to Calendar
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {/* ================================================================== */}
       {/* 4. BOOK NEW APPOINTMENT MODAL                                      */}
       {/* ================================================================== */}
-      {isBookingModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <form
-            onSubmit={handleCreateBooking}
-            className="relative w-full max-w-md rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95 duration-150"
+      {isBookingModalOpen &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-3 sm:p-6 backdrop-blur-sm animate-in fade-in-0 duration-200"
+            onClick={() => setIsBookingModalOpen(false)}
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-950/60 dark:text-primary-300">
-                  <Plus className="h-4 w-4" />
-                </span>
-                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Book Clinical Appointment
-                </h3>
-              </div>
+            <form
+              onSubmit={handleCreateBooking}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900 animate-in fade-in zoom-in-95 duration-150"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-950/60 dark:text-primary-300">
+                    <Plus className="h-4 w-4" />
+                  </span>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                    Book Clinical Appointment
+                  </h3>
+                </div>
 
-              <button
-                type="button"
-                onClick={() => setIsBookingModalOpen(false)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="mt-4 space-y-3 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  Specialist / Department
-                </label>
-                <select
-                  value={newBooking.doctor}
-                  onChange={(e) =>
-                    setNewBooking((prev) => ({ ...prev, doctor: e.target.value }))
-                  }
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 font-medium text-slate-800 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                <button
+                  type="button"
+                  onClick={() => setIsBookingModalOpen(false)}
+                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
                 >
-                  <option>Dr. Lina (Endocrinologist)</option>
-                  <option>Central Diagnostic Lab (Pathology HbA1c)</option>
-                  <option>Dr. Jennifer (Ophthalmology Retinal Screening)</option>
-                  <option>Sarah Miller, RD (Diabetes Dietetics)</option>
-                  <option>Dr. David (Podiatrist Foot Care)</option>
-                </select>
+                  <X className="h-4 w-4" />
+                </button>
               </div>
 
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  Appointment Type
-                </label>
-                <input
-                  type="text"
-                  value={newBooking.title}
-                  onChange={(e) =>
-                    setNewBooking((prev) => ({ ...prev, title: e.target.value }))
-                  }
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 font-medium text-slate-800 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                  placeholder="e.g. Routine Glycemic Review"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+              <div className="mt-4 space-y-3 text-xs">
                 <div>
                   <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    Day of Week
+                    Specialist / Department
                   </label>
                   <select
-                    value={newBooking.dayIndex}
+                    value={newBooking.doctor}
                     onChange={(e) =>
-                      setNewBooking((prev) => ({ ...prev, dayIndex: e.target.value }))
+                      setNewBooking((prev) => ({ ...prev, doctor: e.target.value }))
                     }
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 font-medium text-slate-800 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                   >
-                    {weekDates.map((d, idx) => (
-                      <option key={idx} value={idx}>
-                        {d.dayName}, {d.dayNum} {d.monthName}
-                      </option>
-                    ))}
+                    <option>Dr. Lina (Endocrinologist)</option>
+                    <option>Central Diagnostic Lab (Pathology HbA1c)</option>
+                    <option>Dr. Jennifer (Ophthalmology Retinal Screening)</option>
+                    <option>Sarah Miller, RD (Diabetes Dietetics)</option>
+                    <option>Dr. David (Podiatrist Foot Care)</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    Time Window
+                    Appointment Type
                   </label>
-                  <select
-                    value={newBooking.startHour}
+                  <input
+                    type="text"
+                    value={newBooking.title}
                     onChange={(e) =>
-                      setNewBooking((prev) => ({ ...prev, startHour: e.target.value }))
+                      setNewBooking((prev) => ({ ...prev, title: e.target.value }))
                     }
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 font-medium text-slate-800 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                  >
-                    {TIME_SLOTS.map((h) => (
-                      <option key={h} value={h}>
-                        {h}:00 {h >= 12 ? 'PM' : 'AM'}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="e.g. Routine Glycemic Review"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      Day of Week
+                    </label>
+                    <select
+                      value={newBooking.dayIndex}
+                      onChange={(e) =>
+                        setNewBooking((prev) => ({ ...prev, dayIndex: e.target.value }))
+                      }
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 font-medium text-slate-800 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                    >
+                      {weekDates.map((d, idx) => (
+                        <option key={idx} value={idx}>
+                          {d.dayName}, {d.dayNum} {d.monthName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      Time Window
+                    </label>
+                    <select
+                      value={newBooking.startHour}
+                      onChange={(e) =>
+                        setNewBooking((prev) => ({ ...prev, startHour: e.target.value }))
+                      }
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 font-medium text-slate-800 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                    >
+                      {TIME_SLOTS.map((h) => (
+                        <option key={h} value={h}>
+                          {h}:00 {h >= 12 ? 'PM' : 'AM'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="mt-5 flex items-center justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setIsBookingModalOpen(false)}
-                className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="rounded-xl bg-primary-600 px-4 py-2 text-xs font-semibold text-white hover:bg-primary-700 shadow-sm"
-              >
-                Confirm Booking
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+              <div className="mt-5 flex items-center justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsBookingModalOpen(false)}
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-xl bg-primary-600 px-4 py-2 text-xs font-semibold text-white hover:bg-primary-700 shadow-sm"
+                >
+                  Confirm Booking
+                </button>
+              </div>
+            </form>
+          </div>,
+          document.body
+        )}
     </div>
   )
 }
