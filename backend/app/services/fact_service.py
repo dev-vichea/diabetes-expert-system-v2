@@ -39,7 +39,7 @@ class FactService:
         self.audit_log_repository = audit_log_repository
         self.rule_repository = rule_repository
 
-    def list_facts(self, *, category=None, status=None, search=None) -> list[dict]:
+    def list_facts(self, *, category=None, status=None, search=None, limit=None) -> list[dict]:
         normalized_status = None
         if status:
             normalized_status = str(status).strip().lower()
@@ -49,6 +49,7 @@ class FactService:
             category=str(category).strip().lower() if category else None,
             status=normalized_status,
             search=search,
+            limit=limit,
         )
 
     def get_fact(self, fact_id: int) -> dict:

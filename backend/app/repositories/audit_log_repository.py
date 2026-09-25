@@ -32,15 +32,16 @@ class AuditLogRepository:
     def list_by_entity(self, *, entity_type: str, entity_id: str, limit: int = 100) -> list[dict]:
         return self.list_logs(entity_type=entity_type, entity_id=entity_id, limit=limit)
 
-    def list_logs(
+    def paginate_logs(
         self,
         *,
         action: str | None = None,
         entity_type: str | None = None,
         entity_id: str | None = None,
         actor_user_id: int | None = None,
+        page: int = 1,
         limit: int = 100,
-    ) -> list[dict]:
+    ) -> tuple[list[dict], int]:
         query = AuditLog.query
 
         if action:
@@ -52,9 +53,33 @@ class AuditLogRepository:
         if actor_user_id is not None:
             query = query.filter(AuditLog.actor_user_id == actor_user_id)
 
-        safe_limit = max(1, min(int(limit or 100), 500))
-        rows = query.order_by(AuditLog.created_at.desc(), AuditLog.id.desc()).limit(safe_limit).all()
-        return self._serialize_many(rows)
+        total = query.order_by(None).count()
+
+        safe_page = max(1, int(page or 1))
+        safe_limit = max(1, min(int(limit or 100), 200))
+        offset = (safe_page - 1) * safe_limit
+
+        rows = query.order_by(AuditLog.created_at.desc(), AuditLog.id.desc()).offset(offset).limit(safe_limit).all()
+        return self._serialize_many(rows), total
+
+    def list_logs(
+        self,
+        *,
+        action: str | None = None,
+        entity_type: str | None = None,
+        entity_id: str | None = None,
+        actor_user_id: int | None = None,
+        limit: int = 100,
+    ) -> list[dict]:
+        items, _ = self.paginate_logs(
+            action=action,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            actor_user_id=actor_user_id,
+            page=1,
+            limit=limit,
+        )
+        return items
 
     def count_recent_events(self, *, hours: int = 24) -> int:
         since = utc_now() - timedelta(hours=max(1, int(hours or 24)))
@@ -92,12 +117,34 @@ class AuditLogRepository:
             or 0
         )
 
+        daily_map = {}
+        for d in range(safe_days - 1, -1, -1):
+            day_dt = (utc_now() - timedelta(days=d)).date()
+            day_iso = day_dt.isoformat()
+            daily_map[day_iso] = {
+                "date": day_iso,
+                "day": day_dt.strftime("%a"),
+                "events": 0,
+            }
+
+        daily_rows = (
+            db.session.query(AuditLog.created_at)
+            .filter(AuditLog.created_at >= since)
+            .all()
+        )
+        for (created_at,) in daily_rows:
+            if created_at:
+                day_iso = created_at.date().isoformat()
+                if day_iso in daily_map:
+                    daily_map[day_iso]["events"] += 1
+
         return {
             "days": safe_days,
             "events_total": int(events_total),
             "active_actor_count": int(unique_actor_count),
             "top_actions": [{"action": action, "count": int(count)} for action, count in actions],
             "top_entities": [{"entity_type": entity_type, "count": int(count)} for entity_type, count in entities],
+            "daily_trend": list(daily_map.values()),
         }
 
     def _serialize_many(self, logs: list[AuditLog]) -> list[dict]:

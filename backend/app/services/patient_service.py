@@ -43,18 +43,19 @@ class PatientService:
     def list_patients(
         self,
         *,
-        search: str | None,
-        gender: str | None,
-        has_diagnosis: bool | None,
-        limit: int,
-    ) -> list[dict]:
-        patients = self.patient_repository.list_patients(
+        search: str | None = None,
+        gender: str | None = None,
+        has_diagnosis: bool | None = None,
+        page: int = 1,
+        limit: int = 20,
+    ) -> tuple[list[dict], int]:
+        return self.patient_repository.paginate_patients(
             search=search,
             gender=gender,
             has_diagnosis=has_diagnosis,
+            page=page,
             limit=limit,
         )
-        return [self.patient_repository.serialize_patient(patient) for patient in patients]
 
     def get_patient_profile(self, patient_id: int) -> dict:
         patient = self.patient_repository.get_patient(patient_id)
@@ -83,17 +84,28 @@ class PatientService:
 
         return self.patient_repository.serialize_patient(updated_patient)
 
-    def get_patient_history(self, patient_id: int) -> dict:
+    def get_patient_history(self, patient_id: int, limit: int = 50) -> dict:
         patient = self.patient_repository.get_patient(patient_id)
         if not patient:
             raise NotFoundError("Patient not found.")
 
-        symptoms = self.patient_repository.list_symptoms(patient_id)
-        lab_results = self.patient_repository.list_lab_results(patient_id)
-        diagnoses = self.patient_repository.list_diagnoses(patient_id)
+        safe_limit = min(max(1, int(limit or 50)), 200)
+        symptoms = self.patient_repository.list_symptoms(patient_id, limit=safe_limit)
+        lab_results = self.patient_repository.list_lab_results(patient_id, limit=safe_limit)
+        diagnoses = self.patient_repository.list_diagnoses(patient_id, limit=safe_limit)
+
+        latest_diag = diagnoses[0] if diagnoses else None
+
+        patient_dict = self.patient_repository.serialize_patient(
+            patient,
+            symptom_count=len(symptoms),
+            lab_result_count=len(lab_results),
+            diagnosis_count=len(diagnoses),
+            latest_diagnosis=latest_diag,
+        )
 
         return {
-            "patient": self.patient_repository.serialize_patient(patient),
+            "patient": patient_dict,
             "symptoms": [self.patient_repository.serialize_symptom(item) for item in symptoms],
             "lab_results": [self.patient_repository.serialize_lab_result(item) for item in lab_results],
             "diagnosis_history": [self.patient_repository.serialize_diagnosis(item) for item in diagnoses],
@@ -148,13 +160,13 @@ class PatientService:
 
         return self.patient_repository.serialize_patient(updated_patient)
 
-    def get_my_history(self, current_user: dict) -> dict:
+    def get_my_history(self, current_user: dict, limit: int = 50) -> dict:
         user_id = self._current_user_id(current_user)
         patient = self.patient_repository.get_patient_by_user_id(user_id)
         if not patient:
             raise NotFoundError("Patient profile not found.")
 
-        return self.get_patient_history(patient.id)
+        return self.get_patient_history(patient.id, limit=limit)
 
     def add_symptom(self, patient_id: int, payload: dict, actor_user_id: int | None = None) -> dict:
         patient = self.patient_repository.get_patient(patient_id)

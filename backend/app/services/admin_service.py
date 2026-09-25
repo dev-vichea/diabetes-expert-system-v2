@@ -28,16 +28,18 @@ class AdminService:
         search: str | None = None,
         role: str | None = None,
         status: str | None = None,
-        limit: int = 200,
-    ) -> list[dict]:
+        page: int = 1,
+        limit: int = 20,
+    ) -> tuple[list[dict], int]:
         is_active = self._parse_status_filter(status)
-        users = self.user_repository.list_users(
+        users, total = self.user_repository.paginate_users(
             search=search,
             role=role,
             is_active=is_active,
+            page=page,
             limit=limit,
         )
-        return [self.user_repository.to_public_dict(user) for user in users]
+        return [self.user_repository.to_public_dict(user) for user in users], total
 
     def get_user(self, user_id: int) -> dict:
         user = self.user_repository.get_by_id(user_id)
@@ -439,16 +441,18 @@ class AdminService:
         entity_type: str | None = None,
         entity_id: str | None = None,
         actor_user_id: int | None = None,
+        page: int = 1,
         limit: int = 100,
-    ) -> list[dict]:
+    ) -> tuple[list[dict], int]:
         if not self.audit_log_repository:
-            return []
+            return [], 0
 
-        return self.audit_log_repository.list_logs(
+        return self.audit_log_repository.paginate_logs(
             action=action,
             entity_type=entity_type,
             entity_id=entity_id,
             actor_user_id=actor_user_id,
+            page=page,
             limit=limit,
         )
 
@@ -467,6 +471,10 @@ class AdminService:
         }
 
     def get_system_stats(self) -> dict:
+        from app.extensions import db
+        from app.models.entities import AssessmentSession, DiagnosisResult
+        from sqlalchemy import func
+
         users_total = self.user_repository.count_users()
         users_active = self.user_repository.count_active_users()
         users_inactive = self.user_repository.count_inactive_users()
@@ -480,6 +488,12 @@ class AdminService:
         diagnosis_urgent = self.diagnosis_repository.count_urgent_results() if self.diagnosis_repository else 0
         diagnosis_reviewed = self.diagnosis_repository.count_reviewed_results() if self.diagnosis_repository else 0
         diagnosis_recent_7d = self.diagnosis_repository.count_recent_results(days=7) if self.diagnosis_repository else 0
+
+        assessments_total = db.session.query(func.count(AssessmentSession.id)).scalar() or diagnosis_total
+        treatment_plans_total = db.session.query(func.count(DiagnosisResult.id)).filter(
+            DiagnosisResult.recommendation.isnot(None),
+            DiagnosisResult.recommendation != "",
+        ).scalar() or 0
 
         events_24h = self.audit_log_repository.count_recent_events(hours=24) if self.audit_log_repository else 0
 
@@ -502,6 +516,13 @@ class AdminService:
                 'urgent': diagnosis_urgent,
                 'reviewed': diagnosis_reviewed,
                 'recent_7d': diagnosis_recent_7d,
+                'treatment_plans': treatment_plans_total,
+            },
+            'assessments': {
+                'total': assessments_total,
+            },
+            'treatment_plans': {
+                'total': treatment_plans_total,
             },
             'activity': {
                 'events_24h': events_24h,

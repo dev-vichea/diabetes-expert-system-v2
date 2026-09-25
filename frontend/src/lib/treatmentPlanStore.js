@@ -217,14 +217,23 @@ export function getTreatmentPlanForUser(userName, userEmail) {
   const cleanName = (userName || '').toLowerCase().trim()
   const cleanEmail = (userEmail || '').toLowerCase().trim()
 
-  return (
-    plans.find(
-      (p) =>
-        p.patientName.toLowerCase().includes(cleanName) ||
-        (cleanName && cleanName.includes(p.patientName.toLowerCase())) ||
-        p.patientId === 'P-1042'
-    ) || plans[2]
+  if (!cleanName && !cleanEmail) return null
+
+  // 1. Direct or partial match with patient name or email
+  const matched = plans.find(
+    (p) =>
+      (cleanName && p.patientName && p.patientName.toLowerCase().trim() === cleanName) ||
+      (cleanEmail && p.patientEmail && p.patientEmail.toLowerCase().trim() === cleanEmail)
   )
+  if (matched) return matched
+
+  // 2. Demo fallback only for specific seeded demo account 'john patient'
+  if (cleanName === 'john patient' || cleanEmail === 'john.patient@example.com') {
+    return plans.find((p) => p.patientId === 'P-1042') || null
+  }
+
+  // 3. User without an assigned treatment plan
+  return null
 }
 
 export function createTreatmentPlan(planData) {
@@ -235,7 +244,7 @@ export function createTreatmentPlan(planData) {
     patientName: planData.patientName || 'Patient',
     avatar: planData.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&h=120&q=80',
     status: planData.status || 'Approved',
-    doctorName: planData.doctorName || 'Dr. Lina',
+    doctorName: planData.doctorName || 'Diabetes Care Team',
     doctorRole: planData.doctorRole || 'Attending Physician',
     createdAt: new Date().toISOString().split('T')[0],
     startDate: planData.startDate || new Date().toISOString().split('T')[0],

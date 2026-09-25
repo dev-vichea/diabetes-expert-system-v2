@@ -43,7 +43,8 @@
     "enableDesc": "{{name}} will be restored and allowed to sign in again.",
     "disableUser": "Disable User",
     "enableUser": "Enable User",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "yearsShort": "yrs"
   },
   "auth": {
     "loginTitle": "Welcome Back",
@@ -650,7 +651,11 @@
       "urgent": "Your latest assessment was flagged for urgent follow-up.",
       "urgentReason": "Reason: {{reason}}",
       "noResult": "You haven't completed an assessment yet. Start your first one to see your situation here.",
-      "ageLabel": "Age"
+      "ageLabel": "Age",
+      "highA1cDesc": "Your recent HbA1c is {{hba1c}}, above the 5.7% target. Staying consistent with daily habits and your doctor will help guide your levels lower.",
+      "urgentDesc": "Your recent readings are higher than standard target ranges. Follow your care plan and consult your doctor.",
+      "stableDesc": "Your latest metabolic indicators and blood sugar levels look stable. Keep maintaining your daily routine.",
+      "noResultDesc": "Take your first assessment to receive personalized guidance, risk evaluation, and customized health targets."
     },
     "health": {
       "title": "Health snapshot",
@@ -826,6 +831,131 @@
       "balancedDietText": "Half vegetables, a quarter protein, a quarter whole grains — and water instead of sweet drinks. Simple habits, big effect on glucose."
     },
     "carePlanPage": {
+      "overview": {
+        "title": "My Care Plan",
+        "stable": "Stable",
+        "attentionRequired": "Attention Required",
+        "updatedToday": "Updated today",
+        "doctorReviewed": "Doctor reviewed",
+        "doctorReviewPending": "Doctor review pending",
+        "heroDescription": "Your personalized care plan to help manage diabetes and stay healthy.",
+        "startAssessment": "Start Assessment",
+        "fullReport": "Full Report",
+        "doctorsPlan": "Doctor's Plan",
+        "phase2": "Phase 2",
+        "activeIntervention": "Active Intervention",
+        "dayProgress": "Day 14 / 30",
+        "tabs": {
+          "overview": "Overview",
+          "treatmentPlan": "Treatment Plan",
+          "medications": "Medications",
+          "appointments": "Appointments"
+        },
+        "todaysCare": {
+          "title": "Today's Care",
+          "subtitle": "Complete your daily tasks",
+          "completedCount": "{{done}} of {{total}} completed",
+          "completed": "Completed",
+          "next": "Next",
+          "later": "Later",
+          "tasks": {
+            "glucose": {
+              "title": "Morning glucose check",
+              "subtitle": "08:00 AM · Fasting reading"
+            },
+            "nutrition": {
+              "title": "Morning Hydration & Balanced Nutrition",
+              "subtitle": "08:30 AM · Low glycemic breakfast"
+            },
+            "walk": {
+              "title": "30-min walk",
+              "subtitle": "12:30 PM · Light aerobic activity"
+            },
+            "foot": {
+              "title": "Foot & skin check",
+              "subtitle": "08:00 PM · Check for pressure spots"
+            }
+          }
+        },
+        "currentGlucose": {
+          "title": "Current Glucose",
+          "trendStable": "Trend: Stable",
+          "fastingLabel": "Fasting glucose",
+          "targetZone": "✓ Target zone",
+          "aboveTarget": "↑ Above target",
+          "pendingTest": "Pending test",
+          "targetRange": "Target: 80 - 130 mg/dL"
+        },
+        "nextMedication": {
+          "title": "Next Medication",
+          "scheduled": "Scheduled",
+          "name": "Metformin 500 mg",
+          "time": "Today · 7:00 PM",
+          "instruction": "Take with dinner",
+          "viewAll": "View all medications"
+        },
+        "nutritionGuide": {
+          "title": "Nutrition & Diet Guide",
+          "badge": "Low Glycemic",
+          "methodTitle": "Healthy Plate Method",
+          "vegPlate": "50% Non-starchy veg",
+          "proteinPlate": "25% Lean protein",
+          "grainPlate": "25% Whole grains",
+          "targetNutrients": "Carbs: 45–60g / meal · Fiber: ≥ 28g daily",
+          "viewPlan": "View nutrition plan"
+        },
+        "lifestyleTarget": {
+          "title": "Lifestyle & Activity Target",
+          "badge": "Daily Goals",
+          "activityTitle": "30-Min Brisk Walk",
+          "activitySubtitle": "Moderate aerobic activity · 5 days/wk",
+          "activityStatus": "4/5 days",
+          "hydrationTitle": "2.0L Hydration",
+          "hydrationSubtitle": "Zero sugary drinks · Boosts metabolism",
+          "hydrationStatus": "1.6 / 2.0L",
+          "sleepTitle": "7–8 Hours Sleep",
+          "sleepSubtitle": "Regulates cortisol & insulin sensitivity",
+          "sleepStatus": "Optimal",
+          "viewGuide": "Explore lifestyle guide"
+        },
+        "quickActions": {
+          "title": "Quick Actions",
+          "fullReport": "View Full Report",
+          "fullReportSub": "See complete details",
+          "askQuestion": "Ask a Question",
+          "askQuestionSub": "Get help from your care team",
+          "treatmentPlan": "View Treatment Plan",
+          "treatmentPlanSub": "Goals, nutrition, activity & more"
+        },
+        "doctorReview": {
+          "title": "Doctor Review",
+          "reviewedBy": "Reviewed by {{doctor}}",
+          "verified": "Verified Review",
+          "awaiting": "Awaiting review",
+          "empty": "Your doctor hasn't reviewed this care plan yet. You'll see their notes here once the review is complete."
+        },
+        "needsAttention": {
+          "title": "Needs attention",
+          "description": "Your latest fasting glucose result is above your recommended target. Follow your current treatment plan and contact your care team if symptoms worsen.",
+          "warningSigns": "View warning signs"
+        },
+        "yourProgress": {
+          "title": "Your Progress",
+          "glucose": "Blood Glucose",
+          "aboveTarget": "Above target",
+          "medications": "Medications",
+          "onTrack": "On track",
+          "activity": "Activity",
+          "nutrition": "Nutrition"
+        },
+        "safety": {
+          "title": "Seek care urgently if",
+          "item1": "You develop confusion, drowsiness or fainting",
+          "item2": "You have rapid breathing with fruity-smelling breath",
+          "item3": "Vomiting or diarrhea stops you keeping fluids down",
+          "item4": "A wound is red, swollen, or not healing"
+        }
+      },
       "loading": "Loading your care plan...",
       "loadFailed": "Failed to load your care plan",
       "hero": {
@@ -1294,10 +1424,24 @@
     "normalRange": "Normal Range",
     "valueMgDl": "Value (mg/dL)",
     "extraPlaceholderText": "e.g. tingling feet, dry mouth, frequent infections...",
+    "validation": {
+      "ageRange": "Please enter a valid age between 1 and 120.",
+      "weightRange": "Weight must be between 10 and 350 kg (22–770 lbs).",
+      "heightRange": "Height must be between 50 and 250 cm (1'8\"–8'2\").",
+      "weightRangeShort": "Weight: 10–350 kg (22–770 lbs)",
+      "heightRangeShort": "Height: 50–250 cm (1'8\"–8'2\")",
+      "bmiRange": "BMI must be between 10 and 80 kg/m².",
+      "waistRange": "Waist must be between 40 and 220 cm (16–86 in).",
+      "fastingRange": "Fasting glucose must be 40–600 mg/dL.",
+      "hba1cRange": "HbA1c must be 3–20%.",
+      "ogttRange": "2-hour OGTT must be 40–800 mg/dL.",
+      "enterRealisticValues": "Please enter realistic height & weight values",
+      "checkInputs": "Please check your entered values before continuing."
+    },
     "steps": {
       "interview": {
         "title": "Evidence Interview",
-        "description": "One question at a time — adapts to your answers"
+        "description": "Adaptive questions"
       },
       "profile": {
         "title": "Profile",
@@ -1321,6 +1465,10 @@
       }
     },
     "interview": {
+      "clinicalReference": "Clinical Reference",
+      "enlargePhoto": "Click to enlarge photo",
+      "closePreview": "Close preview",
+      "startOver": "Start Over",
       "finishNow": "Enough — see my result",
       "patientTitle": "Who is this assessment for?",
       "patientHelper": "Select the patient — answers we already know will be pre-filled.",
@@ -1373,9 +1521,57 @@
       "bmiScaleOverweight": "Overweight (23.0 – 27.4)",
       "bmiScaleObese": "Obesity (≥ 27.5)",
       "bmiCalculatorTitle": "BMI Calculator",
+      "whatsMyBmi": "What's my BMI?",
+      "myBmiIs": "My BMI is...",
+      "herBmiTitle": "What's her BMI?",
+      "hisBmiTitle": "What's his BMI?",
+      "theirBmiTitle": "What's their BMI?",
+      "herBmiIs": "Her BMI is...",
+      "hisBmiIs": "His BMI is...",
+      "theirBmiIs": "Their BMI is...",
+      "lowerThan23": "Lower than 23",
+      "between23and27": "Between 23 – 27.5",
+      "higherThan27": "Higher than 27.5",
+      "lowerThan25": "Lower than 25",
+      "between25and30": "Between 25 – 30",
+      "higherThan30": "Higher than 30",
+      "imperial": "Imperial",
+      "metric": "Metric",
+      "myWeight": "My weight",
+      "myHeight": "My height",
+      "herWeight": "Her weight",
+      "hisWeight": "His weight",
+      "weight": "Weight",
+      "herHeight": "Her height",
+      "hisHeight": "His height",
+      "height": "Height",
+      "nextQuestion": "Next question",
+      "previousQuestion": "Previous",
       "enterHeightWeightPrompt": "Enter your height and weight to calculate your BMI, or select your category below.",
+      "enterHeightWeightToCalc": "Enter your height and weight to calculate your BMI",
+      "bmiCalculated": "Calculated BMI",
       "waistOptional": "Waist in cm (optional)",
       "waistHelperText": "Waist circumference measures central/abdominal fat — a strong independent risk factor for diabetes.",
+      "waistQuestionTitle": "What's your waist circumference?",
+      "herWaistTitle": "What's her waist circumference?",
+      "hisWaistTitle": "What's his waist circumference?",
+      "theirWaistTitle": "What's their waist circumference?",
+      "waistQuestionHelper": "Measured below the ribs, usually at the level of the navel",
+      "men": "Men",
+      "women": "Women",
+      "waistMenLow": "< 94cm",
+      "waistMenMid": "94 - 102cm",
+      "waistMenHigh": "> 102cm",
+      "waistWomenLow": "< 80cm",
+      "waistWomenMid": "80 - 88cm",
+      "waistWomenHigh": "> 88cm",
+      "waistMenLowImperial": "< 37 in",
+      "waistMenMidImperial": "37 - 40 in",
+      "waistMenHighImperial": "> 40 in",
+      "waistWomenLowImperial": "< 31.5 in",
+      "waistWomenMidImperial": "31.5 - 35 in",
+      "waistWomenHighImperial": "> 35 in",
+      "orEnterExactWaist": "Or enter exact waist circumference",
       "hasLabsTitle": "Do you have recent lab results?",
       "hasLabsHelper": "Lab values sharpen accuracy a lot — but the interview works without them.",
       "labsTitle": "Enter the lab values you have",
@@ -1702,7 +1898,19 @@
       "ogtt": "Oral Glucose (OGTT 2h)",
       "rpg": "Random Glucose (RPG)",
       "hypoFlag": "Hypoglycemia Risk",
-      "urgentFlag": "Urgent Warning Flag"
+      "urgentFlag": "Urgent Warning Flag",
+      "tableQuestion": "Question",
+      "tableAnswer": "Answer",
+      "tablePoints": "Points",
+      "bmiCategory": "Body Mass Index (BMI)",
+      "safetyFlags": "Warning & Safety Flags",
+      "totalRiskScore": "Total ADA Risk Score",
+      "highRiskAlert": "Elevated Risk (≥ 5 points)",
+      "lowRiskAlert": "Low / Normal Risk (< 5 points)",
+      "noUrgentFlags": "No acute warning signs",
+      "urgentWarningPresent": "Urgent / DKA Warning signs detected",
+      "hypoWarningPresent": "Hypoglycemia risk signs reported",
+      "currentUser": "Current user"
     },
     "footer": {
       "continueHint": "Answer each section, then continue.",
@@ -1749,7 +1957,8 @@
       "selfDesc": "Pre-fill my details from my saved health profile",
       "other": "Someone else",
       "otherDesc": "Ask me everything — age, weight and health of that person",
-      "otherBanner": "You are assessing someone else — answer each question using their information, not yours. The result will be saved to this account's history."
+      "otherBanner": "You are assessing someone else — answer each question using their information, not yours. The result will be saved to this account's history.",
+      "assessingOther": "Assessing someone else"
     }
   },
   "publicPages": {
@@ -2018,6 +2227,7 @@
     "back": "Back",
     "restartAssessment": "Restart Assessment",
     "openCarePlan": "Open Care Plan",
+    "generateCarePlan": "Generate Care Plan",
     "currentPatient": "Current patient",
     "assessmentComplete": "Assessment complete! Your results have been saved.",
     "viewReport": "View Report →",
@@ -3000,16 +3210,31 @@
       "reset": "Reset"
     },
     "table": {
+      "patient": "Patient",
       "name": "Name",
       "gender": "Gender",
       "phone": "Phone",
+      "age": "Age",
+      "condition": "Condition",
       "diagnoses": "Diagnoses",
+      "lastActivity": "Last Activity",
       "actions": "Actions",
       "loading": "Loading patients...",
       "empty": "No patients found for current filters.",
       "history": "History",
       "latestResult": "Latest Result",
-      "assess": "Assess"
+      "result": "Result",
+      "assess": "Assess",
+      "notAssessed": "Not Assessed",
+      "noDiagnosisYet": "No diagnosis recorded yet",
+      "callPatient": "Call {{phone}}"
+    },
+    "conditions": {
+      "diabetes": "Likely Diabetes",
+      "prediabetes": "Prediabetes",
+      "elevatedRisk": "Elevated Risk",
+      "possibleSigns": "Possible Signs",
+      "normal": "Normal Glucose"
     },
     "form": {
       "editTitle": "Edit Patient",
@@ -3177,13 +3402,78 @@
   "landing": {
     "title": "Diabetes Expert System",
     "logoAlt": "Diabetes Expert System logo",
-    "subtitle": "An intelligent clinical decision support system for early detection, risk assessment, and personalized diabetes management.",
+    "heroTag": "Norton University · Clinical Decision Support",
+    "heroHeadline": "Empowering Lives through Transformative Healthcare",
+    "heroSubtitle": "Our mission is to empower lives, fostering wellness through innovative medical practices, cutting-edge technology, and a dedicated team of healthcare professionals.",
+    "cta": "Make Assessment",
+    "ctaSecondary": "Explore Clinical Guide",
+    "chatWithUs": "Chat with Us",
+    "nav": {
+      "home": "Home",
+      "about": "About Us",
+      "services": "Services",
+      "articles": "Articles",
+      "contact": "Contact",
+      "login": "Sign In",
+      "getStarted": "Get Started"
+    },
+    "heroBadges": {
+      "doctors": "38+ Experienced Doctors",
+      "achievements": "20+ Medical Achievements",
+      "assistantTitle": "Dr. Emily Turner",
+      "assistantRole": "Cardiologist",
+      "assistantAction": "Make Assessment"
+    },
+    "about": {
+      "title": "About Us",
+      "quote": "Leading healthcare institution dedicated to providing exceptional medical services and personalized care.",
+      "visionTitle": "Vision",
+      "visionDesc": "To be the premier healthcare provider, recognized for our excellence in medical care, patient-centered approach, and commitment to advancing healthcare services, ultimately improving the health and well-being of our community.",
+      "missionsTitle": "Missions",
+      "mission1": "Provide exceptional and comprehensive healthcare services",
+      "mission2": "Prioritize patient-centered care and satisfaction",
+      "mission3": "Foster a culture of continuous learning and innovation",
+      "mission4": "Cultivate strong partnerships and collaborations",
+      "learnMore": "Learn More"
+    },
+    "services": {
+      "eyebrow": "Our Services",
+      "heading": "Comprehensive Healthcare Solutions for Your Well-being",
+      "card1Title": "Primary Care",
+      "card1Desc": "Receive personalized and comprehensive primary healthcare services.",
+      "card2Title": "Specialized Medical Services",
+      "card2Desc": "Access a wide range of specialized medical services tailored to meet your specific needs.",
+      "card3Title": "Diagnostic Imaging",
+      "card3Desc": "Utilize state-of-the-art accurate and timely diagnostic imaging technology.",
+      "card4Title": "Rehabilitation Services",
+      "card4Desc": "Regain mobility and functionality with our comprehensive rehabilitation services.",
+      "learnMore": "Learn More"
+    },
+    "stats": {
+      "stat1Number": "38+",
+      "stat1Label": "Experienced Doctors",
+      "stat2Number": "20+",
+      "stat2Label": "Medical Achievements",
+      "stat3Number": "98.4%",
+      "stat3Label": "Diagnostic Precision",
+      "stat4Number": "100%",
+      "stat4Label": "Evidence-Based Rules"
+    },
+    "footer": {
+      "desc": "An intelligent clinical decision support system for early detection, risk assessment, and personalized diabetes management.",
+      "col1Title": "Clinical Services",
+      "col2Title": "Clinical Standards",
+      "col3Title": "Institution & Team",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Clinical Use",
+      "disclaimer": "Clinical Disclaimer",
+      "allRights": "All rights reserved."
+    },
     "badges": {
       "aiDiagnosis": "AI Diagnosis",
       "riskAnalysis": "Risk Analysis",
       "treatmentPlan": "Treatment Plan"
     },
-    "cta": "Get Started",
     "developedBy": "Developed by",
     "team": {
       "saoKuntisa": "Sao Kuntisa",
@@ -3193,7 +3483,7 @@
     },
     "supervisedBy": "Supervised by",
     "supervisorName": "Prof. Sek Sokcheat",
-    "footerVersion": "v1.0",
+    "footerVersion": "v2.0",
     "footerUniversity": "Norton University",
     "footerCity": "Phnom Penh"
   },

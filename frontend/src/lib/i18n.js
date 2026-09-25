@@ -20,14 +20,38 @@ export const LANGUAGE_STORAGE_KEY = 'app-language'
 export const SUPPORTED_LANGUAGES = ['en', 'km']
 
 export const messages = {
-  en: enMessages,
-  km: kmMessages,
+  en: {
+    ...enMessages,
+    carePlanPage: enMessages.carePlanPage || enMessages.patientDashboard?.carePlanPage,
+  },
+  km: {
+    ...kmMessages,
+    carePlanPage: kmMessages.carePlanPage || kmMessages.patientDashboard?.carePlanPage,
+  },
 }
 
 export const exactTextMap = exactEnKm
 
 function getNestedValue(object, path) {
-  return path.split('.').reduce((value, segment) => (value == null ? undefined : value[segment]), object)
+  if (!object || !path) return undefined
+  // Direct path lookup
+  const direct = path.split('.').reduce((value, segment) => (value == null ? undefined : value[segment]), object)
+  if (direct !== undefined) return direct
+
+  // Check alias under patientDashboard (e.g. "carePlanPage.xxx" -> object.patientDashboard?.carePlanPage?.xxx)
+  if (object.patientDashboard) {
+    const fromPatient = path.split('.').reduce((value, segment) => (value == null ? undefined : value[segment]), object.patientDashboard)
+    if (fromPatient !== undefined) return fromPatient
+  }
+
+  // Check alias if path starts with "patientDashboard." but object has it at root
+  if (path.startsWith('patientDashboard.')) {
+    const withoutPrefix = path.slice('patientDashboard.'.length)
+    const fromRoot = withoutPrefix.split('.').reduce((value, segment) => (value == null ? undefined : value[segment]), object)
+    if (fromRoot !== undefined) return fromRoot
+  }
+
+  return undefined
 }
 
 function interpolate(template, values) {
@@ -49,8 +73,17 @@ export function getLocaleForLanguage(language) {
 
 export function translate(language, key, valuesOrFallback, maybeValues) {
   const normalized = normalizeLanguage(language)
-  const values = typeof valuesOrFallback === 'string' ? maybeValues : valuesOrFallback
-  const fallback = typeof valuesOrFallback === 'string' ? valuesOrFallback : undefined
+  const isSecondString = typeof valuesOrFallback === 'string'
+  const isThirdString = typeof maybeValues === 'string'
+
+  const values = isSecondString
+    ? (typeof maybeValues === 'object' && maybeValues !== null ? maybeValues : undefined)
+    : (typeof valuesOrFallback === 'object' && valuesOrFallback !== null ? valuesOrFallback : undefined)
+
+  const fallback = isSecondString
+    ? valuesOrFallback
+    : (isThirdString ? maybeValues : undefined)
+
   const defaultMessage = getNestedValue(messages[DEFAULT_LANGUAGE], key)
   const localizedMessage = getNestedValue(messages[normalized], key)
   const resolved = localizedMessage ?? defaultMessage ?? fallback

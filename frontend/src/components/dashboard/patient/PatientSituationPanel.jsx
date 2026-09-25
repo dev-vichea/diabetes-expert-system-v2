@@ -20,13 +20,17 @@ export function PatientSituationPanel({ latestResult }) {
   const hba1c = toNumberOrNull(facts.hba1c)
   const isHighA1c = hba1c !== null && hba1c >= 8.0
 
+  const a1cText = hba1c !== null ? `${hba1c}%` : ''
   // Apple Health style plain-language explanation
   const plainExplanation = latestResult
     ? isUrgent
       ? isHighA1c
         ? t(
             'patientDashboard.situation.highA1cDesc',
-            'Your recent HbA1c is 10.5%, above the 5.7% target. Staying consistent with medication and booking a follow-up visit will help guide your levels lower.'
+            a1cText
+              ? `Your recent HbA1c is ${a1cText}, above the 5.7% target. Staying consistent with medication and booking a follow-up visit will help guide your levels lower.`
+              : 'Your recent HbA1c is elevated above the 5.7% target. Staying consistent with medication and booking a follow-up visit will help guide your levels lower.',
+            { hba1c: a1cText || 'elevated' }
           )
         : t(
             'patientDashboard.situation.urgentDesc',

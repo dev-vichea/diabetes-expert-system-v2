@@ -235,7 +235,8 @@
   white-space: nowrap;
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.13);
   animation: assistant-mascot-bubble-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .assistant-mascot-bubble::after {
@@ -370,4 +371,3 @@
 .dark .assistant-cursor {
   background-color: #38bdf8;
 }
-

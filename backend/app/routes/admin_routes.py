@@ -2,7 +2,7 @@ from flask import Blueprint, g, request
 
 from app.dependencies import get_admin_service
 from app.errors import ValidationError
-from app.utils.api_response import success_response
+from app.utils.api_response import paginated_response, success_response
 from app.utils.auth import require_auth
 
 admin_bp = Blueprint('admin', __name__)
@@ -14,15 +14,17 @@ def list_users():
     search = request.args.get('search', default='', type=str).strip() or None
     role = request.args.get('role', default='', type=str).strip() or None
     status = request.args.get('status', default='', type=str).strip() or None
-    limit = request.args.get('limit', default=200, type=int)
+    page = max(1, request.args.get('page', default=1, type=int))
+    limit = min(max(1, request.args.get('limit', default=20, type=int)), 200)
 
-    safe_users = get_admin_service().list_users(
+    safe_users, total = get_admin_service().list_users(
         search=search,
         role=role,
         status=status,
+        page=page,
         limit=limit,
     )
-    return success_response(data=safe_users)
+    return paginated_response(items=safe_users, page=page, limit=limit, total=total)
 
 
 @admin_bp.get('/users/<int:user_id>')
@@ -162,16 +164,18 @@ def list_audit_logs():
     entity_type = request.args.get('entity_type', default='', type=str).strip() or None
     entity_id = request.args.get('entity_id', default='', type=str).strip() or None
     actor_user_id = request.args.get('actor_user_id', default=None, type=int)
-    limit = request.args.get('limit', default=100, type=int)
+    page = max(1, request.args.get('page', default=1, type=int))
+    limit = min(max(1, request.args.get('limit', default=100, type=int)), 200)
 
-    logs = get_admin_service().list_audit_logs(
+    logs, total = get_admin_service().list_audit_logs(
         action=action,
         entity_type=entity_type,
         entity_id=entity_id,
         actor_user_id=actor_user_id,
+        page=page,
         limit=limit,
     )
-    return success_response(data=logs)
+    return paginated_response(items=logs, page=page, limit=limit, total=total)
 
 
 @admin_bp.get('/activity')

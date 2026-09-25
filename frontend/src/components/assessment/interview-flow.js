@@ -299,7 +299,6 @@ export const INTERVIEW_NODES = [
       { value: 'female', labelKey: 'assessment.interview.sexFemale', labelFallback: 'Female' },
       { value: 'other', labelKey: 'assessment.interview.sexOther', labelFallback: 'Other' },
     ],
-    autoDone: ({ form }) => ['male', 'female', 'other'].includes(form.sex),
   },
   {
     id: 'ethnicity',
@@ -319,7 +318,6 @@ export const INTERVIEW_NODES = [
       { value: 'indigenous', labelKey: 'assessment.interview.ethnicityIndigenous', labelFallback: 'Indigenous / Pacific Islander' },
       { value: 'other', labelKey: 'assessment.interview.ethnicityOther', labelFallback: 'Other / Mixed background' },
     ],
-    autoDone: ({ form }) => Boolean(form.ethnicity),
   },
   {
     /* 1. Excessive Thirst (Polydipsia) - Asked one-by-one right after demographics */
@@ -494,11 +492,23 @@ export const INTERVIEW_NODES = [
     id: 'body',
     kind: 'body',
     icon: 'Scale',
-    priority: () => 4.0,
+    priority: () => 2.6,
     titleKey: 'assessment.interview.bodyTitle',
-    titleFallback: 'Body measurements & Waist',
+    titleFallback: "What's your BMI?",
     helperKey: 'assessment.interview.bodyHelper',
-    helperFallback: 'Height, weight, and waist circumference — I will calculate your BMI and abdominal risk automatically.',
+    helperFallback: 'Height & weight — I will calculate your BMI and weight category automatically.',
+    skippable: true,
+  },
+  {
+    id: 'waist',
+    kind: 'waist',
+    field: 'waist_circumference',
+    icon: 'Scale',
+    priority: () => 2.7,
+    titleKey: 'assessment.interview.waistQuestionTitle',
+    titleFallback: "What's your waist circumference?",
+    helperKey: 'assessment.interview.waistQuestionHelper',
+    helperFallback: 'Measured below the ribs, usually at the level of the navel.',
     skippable: true,
   },
   {
@@ -922,58 +932,283 @@ export function getFactLabel(key, factsMap, language, t) {
 }
 
 /**
+ * Adapts second-person questions/helpers ("you / your / my") into third-person
+ * ("she / her / he / his / they / their / the person") when assessing someone else.
+ */
+export function adaptSubjectGrammar(text, isOther = false, sex = null, language = 'en') {
+  if (!isOther || !text || typeof text !== 'string') return text
+
+  if (language === 'km') {
+    return text
+      .replace(/តើអ្នក/g, 'តើគាត់')
+      .replace(/របស់អ្នក/g, 'របស់គាត់')
+      .replace(/របស់ខ្ញុំ/g, 'របស់គាត់')
+      .replace(/អ្នក/g, 'គាត់')
+      .replace(/ខ្ញុំ/g, 'គាត់')
+  }
+
+  const isFemale = sex === 'female'
+  const isMale = sex === 'male'
+
+  if (isFemale) {
+    return text
+      .replace(/How old are you\?/gi, 'How old is she?')
+      .replace(/How old are you/gi, 'How old is she')
+      .replace(/What is your sex\?/gi, 'What is her biological sex?')
+      .replace(/What is your sex/gi, 'What is her biological sex')
+      .replace(/What is your ethnic background\?/gi, 'What is her ethnic background?')
+      .replace(/What is your ethnic background/gi, 'What is her ethnic background')
+      .replace(/What is your/gi, 'What is her')
+      .replace(/What's your/gi, "What's her")
+      .replace(/What's my/gi, "What's her")
+      .replace(/Whats my/gi, "What's her")
+      .replace(/My BMI is\.\.\./gi, 'Her BMI is...')
+      .replace(/My weight/gi, 'Her weight')
+      .replace(/My height/gi, 'Her height')
+      .replace(/Do you feel unusually thirsty/gi, 'Does she feel unusually thirsty')
+      .replace(/Do you feel hungry/gi, 'Does she feel hungry')
+      .replace(/Do you feel/gi, 'Does she feel')
+      .replace(/Do you need to urinate/gi, 'Does she need to urinate')
+      .replace(/Do you need/gi, 'Does she need')
+      .replace(/Do you have a parent or sibling/gi, 'Does she have a parent or sibling')
+      .replace(/Do you have recent lab results/gi, 'Does she have recent lab results')
+      .replace(/Do you have/gi, 'Does she have')
+      .replace(/Do you experience/gi, 'Does she experience')
+      .replace(/Do you drink/gi, 'Does she drink')
+      .replace(/Do you do/gi, 'Does she do')
+      .replace(/Do you/gi, 'Does she')
+      .replace(/Have you lost weight/gi, 'Has she lost weight')
+      .replace(/Have you lost/gi, 'Has she lost')
+      .replace(/Have you noticed/gi, 'Has she noticed')
+      .replace(/Have you had sudden episodes/gi, 'Has she had sudden episodes')
+      .replace(/Have you had gestational diabetes/gi, 'Has she had gestational diabetes')
+      .replace(/Have you had/gi, 'Has she had')
+      .replace(/Have you experienced/gi, 'Has she experienced')
+      .replace(/Have you/gi, 'Has she')
+      .replace(/How far along are you\?/gi, 'How far along is she?')
+      .replace(/How far along are you/gi, 'How far along is she')
+      .replace(/Are you currently pregnant\?/gi, 'Is she currently pregnant?')
+      .replace(/Are you currently pregnant/gi, 'Is she currently pregnant')
+      .replace(/Are you currently/gi, 'Is she currently')
+      .replace(/Are you experiencing/gi, 'Is she experiencing')
+      .replace(/Are you/gi, 'Is she')
+      .replace(/Did you/gi, 'Did she')
+      .replace(/How much water do you drink/gi, 'How much water does she drink')
+      .replace(/How many times do you wake up/gi, 'How many times does she wake up')
+      .replace(/How frequently do you drink/gi, 'How frequently does she drink')
+      .replace(/How often do you consume/gi, 'How often does she consume')
+      .replace(/How often do you/gi, 'How often does she')
+      .replace(/Enter the lab values you have/gi, 'Enter her lab values')
+      .replace(/Enter your height and weight/gi, 'Enter her height and weight')
+      .replace(/calculate your BMI/gi, 'calculate her BMI')
+      .replace(/Rate your daily/gi, 'Rate her daily')
+      .replace(/Rate your/gi, 'Rate her')
+      .replace(/does your mouth feel/gi, 'does her mouth feel')
+      .replace(/without changing your diet/gi, 'without changing her diet')
+      .replace(/changing your diet/gi, 'changing her diet')
+      .replace(/doubles your baseline predisposition/gi, 'doubles her baseline predisposition')
+      .replace(/doubles your baseline/gi, 'doubles her baseline')
+      .replace(/out of your body/gi, 'out of her body')
+      .replace(/your labs/gi, 'her labs')
+      .replace(/your body/gi, 'her body')
+      .replace(/your report/gi, 'her report')
+      .replace(/your diet/gi, 'her diet')
+      .replace(/your typical/gi, 'her typical')
+      .replace(/your daily/gi, 'her daily')
+      .replace(/your health profile/gi, 'her health profile')
+      .replace(/your baseline/gi, 'her baseline')
+      .replace(/your/gi, 'her')
+      .replace(/\byou\b/gi, 'she')
+  }
+
+  if (isMale) {
+    return text
+      .replace(/How old are you\?/gi, 'How old is he?')
+      .replace(/How old are you/gi, 'How old is he')
+      .replace(/What is your sex\?/gi, 'What is his biological sex?')
+      .replace(/What is your sex/gi, 'What is his biological sex')
+      .replace(/What is your ethnic background\?/gi, 'What is his ethnic background?')
+      .replace(/What is your ethnic background/gi, 'What is his ethnic background')
+      .replace(/What is your/gi, 'What is his')
+      .replace(/What's your/gi, "What's his")
+      .replace(/What's my/gi, "What's his")
+      .replace(/Whats my/gi, "What's his")
+      .replace(/My BMI is\.\.\./gi, 'His BMI is...')
+      .replace(/My weight/gi, 'His weight')
+      .replace(/My height/gi, 'His height')
+      .replace(/Do you feel unusually thirsty/gi, 'Does he feel unusually thirsty')
+      .replace(/Do you feel hungry/gi, 'Does he feel hungry')
+      .replace(/Do you feel/gi, 'Does he feel')
+      .replace(/Do you need to urinate/gi, 'Does he need to urinate')
+      .replace(/Do you need/gi, 'Does he need')
+      .replace(/Do you have a parent or sibling/gi, 'Does he have a parent or sibling')
+      .replace(/Do you have recent lab results/gi, 'Does he have recent lab results')
+      .replace(/Do you have/gi, 'Does he have')
+      .replace(/Do you experience/gi, 'Does he experience')
+      .replace(/Do you drink/gi, 'Does he drink')
+      .replace(/Do you do/gi, 'Does he do')
+      .replace(/Do you/gi, 'Does he')
+      .replace(/Have you lost weight/gi, 'Has he lost weight')
+      .replace(/Have you lost/gi, 'Has he lost')
+      .replace(/Have you noticed/gi, 'Has he noticed')
+      .replace(/Have you had sudden episodes/gi, 'Has he had sudden episodes')
+      .replace(/Have you had/gi, 'Has he had')
+      .replace(/Have you experienced/gi, 'Has he experienced')
+      .replace(/Have you/gi, 'Has he')
+      .replace(/Are you currently/gi, 'Is he currently')
+      .replace(/Are you experiencing/gi, 'Is he experiencing')
+      .replace(/Are you/gi, 'Is he')
+      .replace(/Did you/gi, 'Did he')
+      .replace(/How much water do you drink/gi, 'How much water does he drink')
+      .replace(/How many times do you wake up/gi, 'How many times does he wake up')
+      .replace(/How frequently do you drink/gi, 'How frequently does he drink')
+      .replace(/How often do you consume/gi, 'How often does he consume')
+      .replace(/How often do you/gi, 'How often does he')
+      .replace(/Enter the lab values you have/gi, 'Enter his lab values')
+      .replace(/Enter your height and weight/gi, 'Enter his height and weight')
+      .replace(/calculate your BMI/gi, 'calculate his BMI')
+      .replace(/Rate your daily/gi, 'Rate his daily')
+      .replace(/Rate your/gi, 'Rate his')
+      .replace(/does your mouth feel/gi, 'does his mouth feel')
+      .replace(/without changing your diet/gi, 'without changing his diet')
+      .replace(/changing your diet/gi, 'changing his diet')
+      .replace(/doubles your baseline predisposition/gi, 'doubles his baseline predisposition')
+      .replace(/doubles your baseline/gi, 'doubles his baseline')
+      .replace(/out of your body/gi, 'out of his body')
+      .replace(/your labs/gi, 'his labs')
+      .replace(/your body/gi, 'his body')
+      .replace(/your report/gi, 'his report')
+      .replace(/your diet/gi, 'his diet')
+      .replace(/your typical/gi, 'his typical')
+      .replace(/your daily/gi, 'his daily')
+      .replace(/your health profile/gi, 'his health profile')
+      .replace(/your baseline/gi, 'his baseline')
+      .replace(/your/gi, 'his')
+      .replace(/\byou\b/gi, 'he')
+  }
+
+  // Unknown sex (e.g. Question 2 Age, before Sex is chosen) or other
+  return text
+    .replace(/How old are you\?/gi, 'How old are they?')
+    .replace(/How old are you/gi, 'How old are they')
+    .replace(/What is your sex\?/gi, 'What is their biological sex?')
+    .replace(/What is your sex/gi, 'What is their biological sex')
+    .replace(/What is your ethnic background\?/gi, 'What is their ethnic background?')
+    .replace(/What is your ethnic background/gi, 'What is their ethnic background')
+    .replace(/What is your/gi, 'What is their')
+    .replace(/What's your/gi, "What's their")
+    .replace(/What's my/gi, "What's their")
+    .replace(/Whats my/gi, "What's their")
+    .replace(/My BMI is\.\.\./gi, 'Their BMI is...')
+    .replace(/My weight/gi, 'Weight')
+    .replace(/My height/gi, 'Height')
+    .replace(/Do you feel/gi, 'Do they feel')
+    .replace(/Do you need/gi, 'Do they need')
+    .replace(/Do you have/gi, 'Do they have')
+    .replace(/Do you experience/gi, 'Do they experience')
+    .replace(/Do you drink/gi, 'Do they drink')
+    .replace(/Do you do/gi, 'Do they do')
+    .replace(/Do you/gi, 'Do they')
+    .replace(/Have you noticed/gi, 'Have they noticed')
+    .replace(/Have you lost/gi, 'Have they lost')
+    .replace(/Have you had/gi, 'Have they had')
+    .replace(/Have you experienced/gi, 'Have they experienced')
+    .replace(/Have you/gi, 'Have they')
+    .replace(/Are you currently/gi, 'Are they currently')
+    .replace(/Are you experiencing/gi, 'Are they experiencing')
+    .replace(/Are you/gi, 'Are they')
+    .replace(/Did you/gi, 'Did they')
+    .replace(/How much water do you drink/gi, 'How much water do they drink')
+    .replace(/How many times do you wake up/gi, 'How many times do they wake up')
+    .replace(/How frequently do you drink/gi, 'How frequently do they drink')
+    .replace(/How often do you consume/gi, 'How often do they consume')
+    .replace(/How often do you/gi, 'How often do they')
+    .replace(/Enter the lab values you have/gi, 'Enter their lab values')
+    .replace(/Enter your height and weight/gi, 'Enter their height and weight')
+    .replace(/calculate your BMI/gi, 'calculate their BMI')
+    .replace(/Rate your daily/gi, 'Rate their daily')
+    .replace(/Rate your/gi, 'Rate their')
+    .replace(/does your mouth feel/gi, 'does their mouth feel')
+    .replace(/changing your diet/gi, 'changing their diet')
+    .replace(/doubles your baseline/gi, 'doubles their baseline')
+    .replace(/out of your body/gi, 'out of their body')
+    .replace(/your labs/gi, 'their labs')
+    .replace(/your body/gi, 'their body')
+    .replace(/your report/gi, 'their report')
+    .replace(/your diet/gi, 'their diet')
+    .replace(/your typical/gi, 'their typical')
+    .replace(/your daily/gi, 'their daily')
+    .replace(/your health profile/gi, 'their health profile')
+    .replace(/your baseline/gi, 'their baseline')
+    .replace(/your/gi, 'their')
+    .replace(/\byou\b/gi, 'they')
+}
+
+/**
  * Resolves the question prompt for an interview node:
  * - Checks if the node maps to a database Fact (via node.factKey or node.field)
  * - Returns fact.question_km / fact.question dynamically so doctor DB updates are live!
  * - Falls back to i18n t(node.titleKey, node.titleFallback).
+ * - Adapts pronouns if assessing someone else.
  */
-export function getNodeQuestion(node, factsMap, language, t) {
+export function getNodeQuestion(node, factsMap, language, t, subjectContext = {}) {
   if (!node) return ''
+  const { isOther = false, sex = null } = subjectContext
+  let rawText = ''
   const factKey = node.factKey || (node.kind === 'yesno' ? node.field : null)
   if (factKey && factsMap && typeof factsMap.get === 'function') {
     const fact = factsMap.get(factKey)
     if (fact) {
       if (language === 'km') {
-        if (fact.question_km && fact.question_km.trim()) return fact.question_km.trim()
+        if (fact.question_km && fact.question_km.trim()) rawText = fact.question_km.trim()
       } else {
-        if (fact.question && fact.question.trim()) return fact.question.trim()
+        if (fact.question && fact.question.trim()) rawText = fact.question.trim()
       }
     }
   }
-  const translated = t ? t(node.titleKey, node.titleFallback) : (node.titleFallback || '')
-  if (translated) return translated
-  if (factKey && factsMap && typeof factsMap.get === 'function') {
-    const fact = factsMap.get(factKey)
-    return fact?.question || fact?.question_km || node.titleFallback || ''
+  if (!rawText) {
+    const translated = t ? t(node.titleKey, node.titleFallback) : (node.titleFallback || '')
+    if (translated) rawText = translated
   }
-  return node.titleFallback || ''
+  if (!rawText && factKey && factsMap && typeof factsMap.get === 'function') {
+    const fact = factsMap.get(factKey)
+    rawText = fact?.question || fact?.question_km || node.titleFallback || ''
+  }
+  if (!rawText) rawText = node.titleFallback || ''
+  return adaptSubjectGrammar(rawText, isOther, sex, language)
 }
 
 /**
  * Resolves the helper/educational prompt for an interview node:
  * - Checks if the database Fact has clinical meaning/guidance (fact.meaning / meaning_km)
  * - Falls back to i18n t(node.helperKey, node.helperFallback).
+ * - Adapts pronouns if assessing someone else.
  */
-export function getNodeHelper(node, factsMap, language, t) {
+export function getNodeHelper(node, factsMap, language, t, subjectContext = {}) {
   if (!node) return ''
+  const { isOther = false, sex = null } = subjectContext
+  let rawText = ''
   const factKey = node.factKey || (node.kind === 'yesno' ? node.field : null)
   if (factKey && factsMap && typeof factsMap.get === 'function') {
     const fact = factsMap.get(factKey)
     if (fact) {
       if (language === 'km') {
-        if (fact.meaning_km && fact.meaning_km.trim()) return fact.meaning_km.trim()
+        if (fact.meaning_km && fact.meaning_km.trim()) rawText = fact.meaning_km.trim()
       } else {
-        if (fact.meaning && fact.meaning.trim()) return fact.meaning.trim()
+        if (fact.meaning && fact.meaning.trim()) rawText = fact.meaning.trim()
       }
     }
   }
-  const translated = node.helperKey && t ? t(node.helperKey, node.helperFallback) : (node.helperFallback || '')
-  if (translated) return translated
-  if (factKey && factsMap && typeof factsMap.get === 'function') {
-    const fact = factsMap.get(factKey)
-    return fact?.meaning || fact?.meaning_km || node.helperFallback || ''
+  if (!rawText) {
+    const translated = node.helperKey && t ? t(node.helperKey, node.helperFallback) : (node.helperFallback || '')
+    if (translated) rawText = translated
   }
-  return node.helperFallback || ''
+  if (!rawText && factKey && factsMap && typeof factsMap.get === 'function') {
+    const fact = factsMap.get(factKey)
+    rawText = fact?.meaning || fact?.meaning_km || node.helperFallback || ''
+  }
+  if (!rawText) rawText = node.helperFallback || ''
+  return adaptSubjectGrammar(rawText, isOther, sex, language)
 }
 
 /**

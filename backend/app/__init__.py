@@ -290,12 +290,12 @@ def _resolve_startup_database(app: Flask):
         app.logger.info("Using local SQLite database: %s", primary_uri)
         return
 
-    if not app.config.get("DB_FALLBACK_ENABLED", False):
-        return
-
     try:
         _check_database_connection(primary_uri)
     except SQLAlchemyError as exc:
+        if not app.config.get("DB_FALLBACK_ENABLED", False):
+            raise
+
         fallback_uri = app.config.get("DB_FALLBACK_URL")
         _ensure_sqlite_parent_dir_exists(fallback_uri)
 

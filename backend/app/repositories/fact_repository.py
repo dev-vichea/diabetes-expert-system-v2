@@ -14,7 +14,7 @@ OVERLAY_FIELDS = ("weight", "type_indication", "is_cardinal", "is_emergency", "a
 class FactRepository:
     """CRUD + lookups for the doctor-managed fact/symptom knowledge catalog."""
 
-    def list_facts(self, *, category=None, status=None, search=None) -> list[dict]:
+    def list_facts(self, *, category=None, status=None, search=None, limit=None) -> list[dict]:
         query = Fact.query
         if category:
             query = query.filter(Fact.category == str(category).strip().lower())
@@ -29,7 +29,10 @@ class FactRepository:
                 func.lower(Fact.label).like(like),
                 func.lower(Fact.medical_term).like(like),
             ))
-        rows = query.order_by(Fact.display_order.asc(), Fact.key.asc()).all()
+        query = query.order_by(Fact.display_order.asc(), Fact.key.asc())
+        if limit:
+            query = query.limit(min(max(1, int(limit)), 1000))
+        rows = query.all()
         return [self._serialize(row) for row in rows]
 
     def get_fact(self, fact_id: int) -> dict | None:
@@ -42,12 +45,30 @@ class FactRepository:
     def get_by_key(self, key: str) -> Fact | None:
         return Fact.query.filter(Fact.key == str(key).strip().lower()).first()
 
+    _ACTIVE_FACT_MAP_CACHE = None
+
+    @classmethod
+    def invalidate_cache(cls):
+        cls._ACTIVE_FACT_MAP_CACHE = None
+
     def get_active_fact_map(self) -> dict[str, dict]:
         """Active inputs for the symptom overlay; derived facts are rule outputs."""
-        rows = Fact.query.filter(
-            Fact.is_active.is_(True), Fact.category != "derived"
-        ).all()
-        return {
+        if FactRepository._ACTIVE_FACT_MAP_CACHE is not None:
+            return FactRepository._ACTIVE_FACT_MAP_CACHE
+
+        rows = (
+            Fact.query.with_entities(
+                Fact.key,
+                Fact.weight,
+                Fact.type_indication,
+                Fact.is_cardinal,
+                Fact.is_emergency,
+                Fact.aliases,
+            )
+            .filter(Fact.is_active.is_(True), Fact.category != "derived")
+            .all()
+        )
+        fact_map = {
             row.key: {
                 "weight": row.weight,
                 "type_indication": row.type_indication,
@@ -57,6 +78,8 @@ class FactRepository:
             }
             for row in rows
         }
+        FactRepository._ACTIVE_FACT_MAP_CACHE = fact_map
+        return fact_map
 
     def create(self, data: dict) -> dict:
         row = Fact(
@@ -82,6 +105,7 @@ class FactRepository:
         )
         db.session.add(row)
         db.session.commit()
+        self.invalidate_cache()
         return self._serialize(row)
 
     def update(self, row: Fact, data: dict) -> dict:
@@ -109,6 +133,7 @@ class FactRepository:
         if "source" in data:
             row.source = str(data["source"])
         db.session.commit()
+        self.invalidate_cache()
         return self._serialize(row)
 
     def _serialize(self, row: Fact) -> dict:

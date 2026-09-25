@@ -1,4 +1,5 @@
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.extensions import db
 from app.models import Permission, Role, User, user_roles
@@ -15,14 +16,15 @@ class UserRepository:
     def get_by_id(self, user_id: int) -> User | None:
         return db.session.get(User, user_id)
 
-    def list_users(
+    def paginate_users(
         self,
         *,
         search: str | None = None,
         role: str | None = None,
         is_active: bool | None = None,
-        limit: int = 200,
-    ) -> list[User]:
+        page: int = 1,
+        limit: int = 20,
+    ) -> tuple[list[User], int]:
         query = User.query
 
         if search:
@@ -38,13 +40,35 @@ class UserRepository:
         if is_active is not None:
             query = query.filter(User.is_active.is_(bool(is_active)))
 
-        safe_limit = max(1, min(int(limit or 200), 500))
-        return (
-            query.distinct()
+        total = query.distinct().order_by(None).count()
+
+        safe_page = max(1, int(page or 1))
+        safe_limit = max(1, min(int(limit or 20), 200))
+        offset = (safe_page - 1) * safe_limit
+
+        users = (
+            query.options(
+                selectinload(User.roles).selectinload(Role.permissions),
+                joinedload(User.patient_profile),
+            )
+            .distinct()
             .order_by(User.created_at.desc(), User.id.desc())
+            .offset(offset)
             .limit(safe_limit)
             .all()
         )
+        return users, total
+
+    def list_users(
+        self,
+        *,
+        search: str | None = None,
+        role: str | None = None,
+        is_active: bool | None = None,
+        limit: int = 200,
+    ) -> list[User]:
+        users, _ = self.paginate_users(search=search, role=role, is_active=is_active, page=1, limit=limit)
+        return users
 
     def list_roles(self) -> list[Role]:
         return Role.query.order_by(Role.name.asc()).all()

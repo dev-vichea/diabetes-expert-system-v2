@@ -1,9 +1,10 @@
 from datetime import timedelta
 
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.extensions import db
-from app.models import DiagnosisResult
+from app.models import DiagnosisResult, User
 from app.models.entities import utc_now
 from app.utils.datetime import serialize_datetime
 
@@ -89,16 +90,41 @@ class DiagnosisRepository:
 
     def list_by_patient_id(self, patient_id: int, limit: int = 100) -> list[dict]:
         rows = (
-            DiagnosisResult.query.filter_by(patient_id=patient_id)
-            .order_by(DiagnosisResult.created_at.desc())
+            DiagnosisResult.query.options(
+                joinedload(DiagnosisResult.patient),
+                joinedload(DiagnosisResult.diagnosed_by_user).selectinload(User.roles),
+                joinedload(DiagnosisResult.reviewed_by_user),
+                joinedload(DiagnosisResult.assessment_session),
+            )
+            .filter_by(patient_id=patient_id)
+            .order_by(DiagnosisResult.created_at.desc(), DiagnosisResult.id.desc())
             .limit(limit)
             .all()
         )
         return [self._serialize(row) for row in rows]
 
+    def paginate_recent(self, page: int = 1, limit: int = 100) -> tuple[list[dict], int]:
+        query = DiagnosisResult.query.options(
+            joinedload(DiagnosisResult.patient),
+            joinedload(DiagnosisResult.diagnosed_by_user).selectinload(User.roles),
+            joinedload(DiagnosisResult.reviewed_by_user),
+            joinedload(DiagnosisResult.assessment_session),
+        )
+        total = query.order_by(None).count()
+        safe_page = max(1, int(page or 1))
+        safe_limit = min(max(1, int(limit or 100)), 300)
+        offset = (safe_page - 1) * safe_limit
+        rows = (
+            query.order_by(DiagnosisResult.created_at.desc(), DiagnosisResult.id.desc())
+            .offset(offset)
+            .limit(safe_limit)
+            .all()
+        )
+        return [self._serialize(row) for row in rows], total
+
     def list_recent(self, limit: int = 100) -> list[dict]:
-        rows = DiagnosisResult.query.order_by(DiagnosisResult.created_at.desc()).limit(limit).all()
-        return [self._serialize(row) for row in rows]
+        items, _ = self.paginate_recent(page=1, limit=limit)
+        return items
 
     def serialize_result(self, row: DiagnosisResult) -> dict:
         return self._serialize(row)

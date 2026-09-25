@@ -1,5 +1,6 @@
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import joinedload
 
 from app.errors import ValidationError
 from app.extensions import db
@@ -90,6 +91,117 @@ class PatientRepository:
             raise ValidationError("Database error while updating patient.") from exc
         return patient
 
+    def paginate_patients(
+        self,
+        *,
+        search: str | None = None,
+        gender: str | None = None,
+        has_diagnosis: bool | None = None,
+        page: int = 1,
+        limit: int = 20,
+    ) -> tuple[list[dict], int]:
+        query = Patient.query
+
+        if search:
+            search_term = f"%{search.lower()}%"
+            query = query.filter(
+                func.lower(Patient.full_name).like(search_term)
+                | func.lower(func.coalesce(Patient.phone, "")).like(search_term)
+            )
+
+        if gender:
+            query = query.filter(func.lower(func.coalesce(Patient.gender, "")) == gender.lower())
+
+        if has_diagnosis is True:
+            query = query.join(DiagnosisResult, DiagnosisResult.patient_id == Patient.id).distinct()
+        elif has_diagnosis is False:
+            query = query.outerjoin(DiagnosisResult, DiagnosisResult.patient_id == Patient.id).filter(
+                DiagnosisResult.id.is_(None)
+            )
+
+        total = query.order_by(None).count()
+
+        safe_page = max(1, int(page or 1))
+        safe_limit = min(max(1, int(limit or 20)), 200)
+        offset = (safe_page - 1) * safe_limit
+
+        patients = (
+            query.options(joinedload(Patient.user))
+            .order_by(Patient.updated_at.desc(), Patient.id.desc())
+            .offset(offset)
+            .limit(safe_limit)
+            .all()
+        )
+
+        if not patients:
+            return [], total
+
+        patient_ids = [p.id for p in patients]
+
+        # Batch query diagnosis counts
+        diag_counts = dict(
+            db.session.query(DiagnosisResult.patient_id, func.count(DiagnosisResult.id))
+            .filter(DiagnosisResult.patient_id.in_(patient_ids))
+            .group_by(DiagnosisResult.patient_id)
+            .all()
+        )
+
+        # Batch query latest diagnosis per patient
+        subq = (
+            db.session.query(
+                DiagnosisResult.patient_id,
+                func.max(DiagnosisResult.id).label("max_id"),
+            )
+            .filter(DiagnosisResult.patient_id.in_(patient_ids))
+            .group_by(DiagnosisResult.patient_id)
+            .subquery()
+        )
+        latest_rows = (
+            db.session.query(
+                DiagnosisResult.id,
+                DiagnosisResult.patient_id,
+                DiagnosisResult.diagnosis,
+                DiagnosisResult.created_at,
+            )
+            .join(subq, DiagnosisResult.id == subq.c.max_id)
+            .all()
+        )
+        latest_map = {row.patient_id: row for row in latest_rows}
+
+        results = []
+        for p in patients:
+            diag_count = diag_counts.get(p.id, 0)
+            latest = latest_map.get(p.id)
+            results.append({
+                "id": p.id,
+                "user_id": p.user_id,
+                "full_name": p.full_name,
+                "avatar_url": p.user.avatar_url if p.user else None,
+                "gender": p.gender,
+                "date_of_birth": p.date_of_birth.isoformat() if p.date_of_birth else None,
+                "phone": p.phone,
+                "notes": p.notes,
+                "height_cm": p.height_cm,
+                "weight_kg": p.weight_kg,
+                "waist_circumference": p.waist_circumference,
+                "smoking": p.smoking,
+                "sedentary_lifestyle": p.sedentary_lifestyle,
+                "family_history": p.family_history,
+                "hypertension": p.hypertension,
+                "high_cholesterol": p.high_cholesterol,
+                "profile_completed_at": serialize_datetime(p.profile_completed_at),
+                "profile_completed": p.profile_completed_at is not None,
+                "created_at": serialize_datetime(p.created_at),
+                "updated_at": serialize_datetime(p.updated_at),
+                "symptom_count": 0,
+                "lab_result_count": 0,
+                "diagnosis_count": diag_count,
+                "latest_diagnosis_result_id": latest.id if latest else None,
+                "latest_diagnosis": latest.diagnosis if latest else None,
+                "latest_diagnosis_created_at": serialize_datetime(latest.created_at) if latest else None,
+            })
+        return results, total
+
     def list_patients(
         self,
         *,
@@ -117,7 +229,7 @@ class PatientRepository:
                 DiagnosisResult.id.is_(None)
             )
 
-        return query.order_by(Patient.updated_at.desc()).limit(limit).all()
+        return query.options(joinedload(Patient.user)).order_by(Patient.updated_at.desc(), Patient.id.desc()).limit(limit).all()
 
     def add_symptom(self, patient_id: int, payload: dict) -> Symptom:
         symptom = Symptom(
@@ -133,11 +245,12 @@ class PatientRepository:
         db.session.commit()
         return symptom
 
-    def list_symptoms(self, patient_id: int, limit: int = 200) -> list[Symptom]:
+    def list_symptoms(self, patient_id: int, limit: int = 50) -> list[Symptom]:
+        safe_limit = min(max(1, int(limit or 50)), 200)
         return (
             Symptom.query.filter_by(patient_id=patient_id)
             .order_by(Symptom.recorded_at.desc())
-            .limit(limit)
+            .limit(safe_limit)
             .all()
         )
 
@@ -155,29 +268,70 @@ class PatientRepository:
         db.session.commit()
         return result
 
-    def list_lab_results(self, patient_id: int, limit: int = 200) -> list[LabResult]:
+    def list_lab_results(self, patient_id: int, limit: int = 50) -> list[LabResult]:
+        safe_limit = min(max(1, int(limit or 50)), 200)
         return (
             LabResult.query.filter_by(patient_id=patient_id)
             .order_by(LabResult.measured_at.desc())
-            .limit(limit)
+            .limit(safe_limit)
             .all()
         )
 
-    def list_diagnoses(self, patient_id: int, limit: int = 200) -> list[DiagnosisResult]:
+    def list_diagnoses(self, patient_id: int, limit: int = 50) -> list[DiagnosisResult]:
+        safe_limit = min(max(1, int(limit or 50)), 200)
         return (
             DiagnosisResult.query.filter_by(patient_id=patient_id)
-            .order_by(DiagnosisResult.created_at.desc())
-            .limit(limit)
+            .options(
+                joinedload(DiagnosisResult.diagnosed_by_user),
+                joinedload(DiagnosisResult.reviewed_by_user),
+            )
+            .order_by(DiagnosisResult.created_at.desc(), DiagnosisResult.id.desc())
+            .limit(safe_limit)
             .all()
         )
 
     @staticmethod
-    def serialize_patient(patient: Patient) -> dict:
-        latest_diagnosis = (
-            sorted(patient.diagnosis_results, key=lambda item: item.created_at or item.id, reverse=True)[0]
-            if patient.diagnosis_results
-            else None
-        )
+    def serialize_patient(
+        patient: Patient,
+        *,
+        symptom_count: int | None = None,
+        lab_result_count: int | None = None,
+        diagnosis_count: int | None = None,
+        latest_diagnosis: DiagnosisResult | None = None,
+    ) -> dict:
+        from sqlalchemy.orm import attributes
+
+        state = attributes.instance_state(patient)
+
+        if symptom_count is None:
+            if "symptoms" not in state.unloaded:
+                symptom_count = len(patient.symptoms)
+            else:
+                symptom_count = db.session.query(func.count(Symptom.id)).filter(Symptom.patient_id == patient.id).scalar() or 0
+
+        if lab_result_count is None:
+            if "lab_results" not in state.unloaded:
+                lab_result_count = len(patient.lab_results)
+            else:
+                lab_result_count = db.session.query(func.count(LabResult.id)).filter(LabResult.patient_id == patient.id).scalar() or 0
+
+        if diagnosis_count is None:
+            if "diagnosis_results" not in state.unloaded:
+                diagnosis_count = len(patient.diagnosis_results)
+            else:
+                diagnosis_count = db.session.query(func.count(DiagnosisResult.id)).filter(DiagnosisResult.patient_id == patient.id).scalar() or 0
+
+        if latest_diagnosis is None:
+            if "diagnosis_results" not in state.unloaded and patient.diagnosis_results:
+                latest_diagnosis = (
+                    sorted(patient.diagnosis_results, key=lambda item: item.created_at or item.id, reverse=True)[0]
+                )
+            else:
+                latest_diagnosis = (
+                    DiagnosisResult.query.filter_by(patient_id=patient.id)
+                    .order_by(DiagnosisResult.created_at.desc(), DiagnosisResult.id.desc())
+                    .first()
+                )
 
         return {
             "id": patient.id,
@@ -200,9 +354,9 @@ class PatientRepository:
             "profile_completed": patient.profile_completed_at is not None,
             "created_at": serialize_datetime(patient.created_at),
             "updated_at": serialize_datetime(patient.updated_at),
-            "symptom_count": len(patient.symptoms),
-            "lab_result_count": len(patient.lab_results),
-            "diagnosis_count": len(patient.diagnosis_results),
+            "symptom_count": symptom_count,
+            "lab_result_count": lab_result_count,
+            "diagnosis_count": diagnosis_count,
             "latest_diagnosis_result_id": latest_diagnosis.id if latest_diagnosis else None,
             "latest_diagnosis": latest_diagnosis.diagnosis if latest_diagnosis else None,
             "latest_diagnosis_created_at": serialize_datetime(latest_diagnosis.created_at) if latest_diagnosis else None,

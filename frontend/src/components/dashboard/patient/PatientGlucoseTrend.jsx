@@ -59,9 +59,10 @@ export function PatientGlucoseTrend({ results }) {
   const { t } = useLanguage()
   const facts = getLatestFacts(results)
   const rawGlucose = toNumberOrNull(facts.fasting_glucose ?? facts.fasting_plasma_glucose)
-  const baseline = rawGlucose !== null ? Math.round(rawGlucose) : 142
+  const baseline = rawGlucose !== null ? Math.round(rawGlucose) : null
 
   const chartData = useMemo(() => {
+    if (baseline === null) return []
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     const today = new Date()
     const offsets = [-4, +6, -14, +12, -8, +2, 0]
@@ -80,13 +81,32 @@ export function PatientGlucoseTrend({ results }) {
     })
   }, [baseline])
 
+  if (baseline === null) {
+    return (
+      <div className="overflow-hidden rounded-[26px] border border-slate-200/70 bg-white p-6 sm:p-7 shadow-[0_8px_30px_rgb(0,0,0,0.03)] dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-center gap-2 border-b border-slate-100 pb-5 dark:border-slate-800">
+          <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-100 text-sky-600 dark:bg-sky-950 dark:text-sky-400">
+            <TrendingUp className="h-3.5 w-3.5" />
+          </span>
+          <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+            7-Day Blood Glucose Trend
+          </h3>
+        </div>
+        <div className="flex h-56 flex-col items-center justify-center p-6 text-center text-slate-500">
+          <p className="font-semibold text-slate-700 dark:text-slate-300">No Glucose Tests Logged Yet</p>
+          <p className="mt-1 text-xs text-slate-400">Complete an assessment with your fasting blood sugar to generate your trend analysis.</p>
+        </div>
+      </div>
+    )
+  }
+
   const avgGlucose = Math.round(
-    chartData.reduce((acc, item) => acc + item.glucose, 0) / chartData.length
+    chartData.reduce((acc, item) => acc + item.glucose, 0) / (chartData.length || 1)
   )
   const inRangeCount = chartData.filter(
     (item) => item.glucose >= TARGET_MIN && item.glucose <= TARGET_MAX
   ).length
-  const inRangePercent = Math.round((inRangeCount / chartData.length) * 100)
+  const inRangePercent = Math.round((inRangeCount / (chartData.length || 1)) * 100)
   const maxGlucose = Math.max(...chartData.map((d) => d.glucose))
 
   return (

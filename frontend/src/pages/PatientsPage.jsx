@@ -3,8 +3,10 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Activity,
   ArrowRight,
+  ChevronLeft,
   ChevronRight,
   FileText,
+  Phone,
   Search,
   SlidersHorizontal,
   Stethoscope,
@@ -13,10 +15,10 @@ import {
   Calendar,
   X,
 } from 'lucide-react'
-import api, { getApiData, getApiErrorMessage } from '../api/client'
+import api, { getApiData, getApiPaginated, getApiErrorMessage } from '../api/client'
 import { AppSelect, ErrorAlert, StatusBadge, UserAvatar, Skeleton } from '@/components/ui'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { formatDateTime } from '@/lib/datetime'
+import { formatDateTime, formatRelativeTime } from '@/lib/datetime'
 
 const DEFAULT_FILTERS = {
   search: '',
@@ -30,8 +32,68 @@ function genderBadgeTone(gender) {
   return 'neutral'
 }
 
+function calculateAge(dateOfBirth) {
+  if (!dateOfBirth) return null
+  const dob = new Date(dateOfBirth)
+  if (Number.isNaN(dob.getTime())) return null
+  return Math.max(0, Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 3600 * 1000)))
+}
+
+function getConditionMeta(diagnosis, t, tExact) {
+  if (!diagnosis) {
+    return {
+      tone: 'neutral',
+      label: t('patientsPage.table.notAssessed', 'Not Assessed'),
+      fullText: t('patientsPage.table.noDiagnosisYet', 'No diagnosis recorded yet'),
+    }
+  }
+
+  const text = String(diagnosis).toLowerCase()
+  if (text.includes('likely diabetes') || text.includes('suspected diabetes') || text.includes('mellitus')) {
+    return {
+      tone: 'danger',
+      label: t('patientsPage.conditions.diabetes', 'Likely Diabetes'),
+      fullText: tExact ? tExact(diagnosis) : diagnosis,
+    }
+  }
+  if (text.includes('prediabetes')) {
+    return {
+      tone: 'warning',
+      label: t('patientsPage.conditions.prediabetes', 'Prediabetes'),
+      fullText: tExact ? tExact(diagnosis) : diagnosis,
+    }
+  }
+  if (text.includes('elevated') || text.includes('risk')) {
+    return {
+      tone: 'warning',
+      label: t('patientsPage.conditions.elevatedRisk', 'Elevated Risk'),
+      fullText: tExact ? tExact(diagnosis) : diagnosis,
+    }
+  }
+  if (text.includes('possible') || text.includes('signs')) {
+    return {
+      tone: 'info',
+      label: t('patientsPage.conditions.possibleSigns', 'Possible Signs'),
+      fullText: tExact ? tExact(diagnosis) : diagnosis,
+    }
+  }
+  if (text.includes('normal')) {
+    return {
+      tone: 'success',
+      label: t('patientsPage.conditions.normal', 'Normal Glucose'),
+      fullText: tExact ? tExact(diagnosis) : diagnosis,
+    }
+  }
+
+  return {
+    tone: 'primary',
+    label: tExact ? tExact(diagnosis) : diagnosis,
+    fullText: tExact ? tExact(diagnosis) : diagnosis,
+  }
+}
+
 export function PatientsPage() {
-  const { t } = useLanguage()
+  const { t, tExact, language } = useLanguage()
   const navigate = useNavigate()
   const [urlParams] = useSearchParams()
   const [patients, setPatients] = useState([])
@@ -46,35 +108,55 @@ export function PatientsPage() {
 
   const [filters, setFilters] = useState(initialFilters)
   const [draftFilters, setDraftFilters] = useState(initialFilters)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const [totalCount, setTotalCount] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Debounced search to prevent rapid-fire requests
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setFilters((prev) => {
+        if (prev.search === draftFilters.search.trim()) return prev
+        setPage(1)
+        return { ...prev, search: draftFilters.search.trim() }
+      })
+    }, 300)
+    return () => clearTimeout(handler)
+  }, [draftFilters.search])
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams()
     if (filters.search) params.set('search', filters.search)
     if (filters.gender) params.set('gender', filters.gender)
     if (filters.has_diagnosis) params.set('has_diagnosis', filters.has_diagnosis)
-    params.set('limit', '200')
+    params.set('page', String(page))
+    params.set('limit', String(pageSize))
     return params.toString()
-  }, [filters])
+  }, [filters, page, pageSize])
 
   // Computed stats
   const stats = useMemo(() => {
-    const total = patients.length
+    const total = totalCount || patients.length
     const withDiagnosis = patients.filter((p) => Number(p.diagnosis_count) > 0).length
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString()
     const recent = patients.filter((p) => p.created_at && p.created_at >= thirtyDaysAgo).length
     const maleCount = patients.filter((p) => p.gender === 'male').length
     const femaleCount = patients.filter((p) => p.gender === 'female').length
     return { total, withDiagnosis, recent, maleCount, femaleCount }
-  }, [patients])
+  }, [patients, totalCount])
 
   async function loadPatients(activeQueryString = queryString) {
     setLoading(true)
     setError('')
     try {
       const response = await api.get(`/patients/?${activeQueryString}`)
-      setPatients(getApiData(response) || [])
+      const paginated = getApiPaginated(response)
+      setPatients(paginated.data)
+      setTotalCount(paginated.total)
+      setTotalPages(paginated.totalPages)
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load patients'))
     } finally {
@@ -87,7 +169,8 @@ export function PatientsPage() {
   }, [queryString])
 
   function applyFilters(event) {
-    event.preventDefault()
+    if (event) event.preventDefault()
+    setPage(1)
     setFilters({
       search: draftFilters.search.trim(),
       gender: draftFilters.gender,
@@ -97,6 +180,7 @@ export function PatientsPage() {
 
   function resetFilters() {
     setDraftFilters(DEFAULT_FILTERS)
+    setPage(1)
     setFilters(DEFAULT_FILTERS)
   }
 
@@ -275,12 +359,20 @@ export function PatientsPage() {
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="flex items-center gap-4 px-5 py-3.5 animate-pulse">
                 <Skeleton className="h-10 w-10 rounded-full shrink-0" />
-                <div className="flex-1 space-y-1.5">
-                  <Skeleton className="h-3.5 w-36" />
-                  <Skeleton className="h-2.5 w-24" />
+                <div className="w-36 space-y-1.5 shrink-0">
+                  <Skeleton className="h-3.5 w-28" />
+                  <Skeleton className="h-2.5 w-16" />
                 </div>
-                <Skeleton className="h-5 w-16 rounded-full" />
-                <Skeleton className="h-5 w-12 rounded-full" />
+                <Skeleton className="h-4 w-28 shrink-0 hidden md:block" />
+                <Skeleton className="h-5 w-16 rounded-full shrink-0 hidden md:block" />
+                <Skeleton className="h-4 w-12 shrink-0 hidden md:block" />
+                <Skeleton className="h-5 w-28 rounded-full shrink-0 hidden md:block" />
+                <Skeleton className="h-4 w-10 shrink-0 hidden md:block" />
+                <div className="flex-1 space-y-1 hidden md:block">
+                  <Skeleton className="h-3.5 w-20" />
+                  <Skeleton className="h-2.5 w-16" />
+                </div>
+                <Skeleton className="h-8 w-20 rounded-lg shrink-0" />
               </div>
             ))}
           </div>
@@ -300,86 +392,292 @@ export function PatientsPage() {
 
         {/* Patient list rows */}
         {patients.length > 0 && (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
-            {/* Table header */}
-            <div className="hidden items-center gap-4 bg-slate-50/70 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800/30 dark:text-slate-400 md:flex">
-              <span className="w-10 shrink-0" />
-              <span className="min-w-0 flex-1">{t('patientsPage.table.patient', 'Patient')}</span>
-              <span className="w-24 shrink-0 text-center">{t('patientsPage.table.gender', 'Gender')}</span>
-              <span className="w-20 shrink-0 text-center">{t('patientsPage.table.diagnoses', 'Diagnoses')}</span>
-              <span className="w-32 shrink-0">{t('patientsPage.table.lastActivity', 'Last Activity')}</span>
-              <span className="w-28 shrink-0 text-right">{t('patientsPage.table.actions', 'Actions')}</span>
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full border-collapse text-left text-sm">
+                <thead className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800/80 dark:bg-slate-800/30 dark:text-slate-400">
+                  <tr>
+                    <th className="px-5 py-3 whitespace-nowrap">{t('patientsPage.table.patient', 'Patient')}</th>
+                    <th className="px-4 py-3 whitespace-nowrap">{t('patientsPage.table.phone', 'Phone')}</th>
+                    <th className="px-4 py-3 text-center whitespace-nowrap">{t('patientsPage.table.gender', 'Gender')}</th>
+                    <th className="px-4 py-3 text-center whitespace-nowrap">{t('patientsPage.table.age', 'Age')}</th>
+                    <th className="px-4 py-3 whitespace-nowrap">{t('patientsPage.table.condition', 'Condition')}</th>
+                    <th className="px-4 py-3 text-center whitespace-nowrap">{t('patientsPage.table.diagnoses', 'Diagnoses')}</th>
+                    <th className="px-4 py-3 whitespace-nowrap">{t('patientsPage.table.lastActivity', 'Last Activity')}</th>
+                    <th className="px-5 py-3 text-right whitespace-nowrap">{t('patientsPage.table.actions', 'Actions')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                  {patients.map((patient) => {
+                    const hasDiagnosis = Number(patient.diagnosis_count) > 0
+                    const age = calculateAge(patient.date_of_birth)
+                    const condition = getConditionMeta(patient.latest_diagnosis, t, tExact)
+                    const activityDate = patient.latest_diagnosis_created_at || patient.created_at
+
+                    return (
+                      <tr
+                        key={patient.id}
+                        onClick={() => navigate(`/patients/${patient.id}`)}
+                        className="group cursor-pointer transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/30"
+                      >
+                        {/* Patient Name + PID */}
+                        <td className="px-5 py-3.5 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <UserAvatar name={patient.full_name} src={patient.avatar_url} size="md" />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-slate-900 group-hover:text-primary-600 transition-colors dark:text-slate-100 dark:group-hover:text-primary-400">
+                                {patient.full_name}
+                              </p>
+                              <p className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
+                                PID-#{String(patient.id).padStart(4, '0')}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Phone */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {patient.phone ? (
+                            <a
+                              href={`tel:${patient.phone}`}
+                              onClick={(event) => event.stopPropagation()}
+                              className="inline-flex items-center gap-1.5 font-mono text-xs font-medium text-slate-700 hover:text-primary-600 dark:text-slate-300 dark:hover:text-primary-400 transition-colors"
+                              title={t('patientsPage.table.callPatient', 'Call {{phone}}', { phone: patient.phone })}
+                            >
+                              <Phone className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                              <span>{patient.phone}</span>
+                            </a>
+                          ) : (
+                            <span className="text-xs text-slate-400 dark:text-slate-500 italic">—</span>
+                          )}
+                        </td>
+
+                        {/* Gender */}
+                        <td className="px-4 py-3.5 text-center whitespace-nowrap">
+                          <StatusBadge tone={genderBadgeTone(patient.gender)} size="sm">
+                            {t(`common.${patient.gender}`, patient.gender || 'N/A')}
+                          </StatusBadge>
+                        </td>
+
+                        {/* Age */}
+                        <td className="px-4 py-3.5 text-center whitespace-nowrap">
+                          {age != null ? (
+                            <span
+                              className="text-xs font-medium text-slate-700 dark:text-slate-300"
+                              title={patient.date_of_birth ? `DOB: ${patient.date_of_birth}` : undefined}
+                            >
+                              {age} {t('common.yearsShort', 'yrs')}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-400 dark:text-slate-500">—</span>
+                          )}
+                        </td>
+
+                        {/* Latest Condition / Diagnosis */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <StatusBadge tone={condition.tone} size="sm" title={condition.fullText}>
+                            <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-current" />
+                            {condition.label}
+                          </StatusBadge>
+                        </td>
+
+                        {/* Diagnoses count */}
+                        <td className="px-4 py-3.5 text-center whitespace-nowrap">
+                          <div className="inline-flex items-center gap-1.5">
+                            <span
+                              className={`h-2 w-2 rounded-full ${hasDiagnosis ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                            />
+                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                              {patient.diagnosis_count || 0}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Last Activity */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {activityDate ? (
+                            <div className="min-w-0" title={formatDateTime(activityDate, '—', language)}>
+                              <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                {formatRelativeTime(activityDate, language, t)}
+                              </p>
+                              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                                {formatDateTime(activityDate, '—', language).split(',')[0]}
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400 dark:text-slate-500">—</span>
+                          )}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                openPatientWorkflow(patient)
+                              }}
+                              className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-medium text-slate-700 transition hover:bg-primary-100 hover:text-primary-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-primary-950/40 dark:hover:text-primary-300"
+                              title={patient.latest_diagnosis_result_id ? t('patientsPage.table.latestResult', 'Latest Result') : t('patientsPage.table.assess', 'Assess')}
+                            >
+                              <Activity className="h-3 w-3" />
+                              <span>{patient.latest_diagnosis_result_id ? t('patientsPage.table.result', 'Result') : t('patientsPage.table.assess', 'Assess')}</span>
+                            </button>
+                            <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 group-hover:text-slate-500 dark:text-slate-600 dark:group-hover:text-slate-400 transition-colors" />
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
 
-            {patients.map((patient) => {
-              const hasDiagnosis = Number(patient.diagnosis_count) > 0
-              return (
-                <div
-                  key={patient.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => navigate(`/patients/${patient.id}`)}
-                  onKeyDown={(event) => { if (event.key === 'Enter') navigate(`/patients/${patient.id}`) }}
-                  className="group flex cursor-pointer items-center gap-4 px-5 py-3 transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/30"
-                >
-                  {/* Avatar */}
-                  <UserAvatar name={patient.full_name} src={patient.avatar_url} size="md" />
+            {/* Mobile Card List View */}
+            <div className="divide-y divide-slate-100 md:hidden dark:divide-slate-800/60">
+              {patients.map((patient) => {
+                const hasDiagnosis = Number(patient.diagnosis_count) > 0
+                const age = calculateAge(patient.date_of_birth)
+                const condition = getConditionMeta(patient.latest_diagnosis, t, tExact)
+                const activityDate = patient.latest_diagnosis_created_at || patient.created_at
 
-                  {/* Name + Phone */}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                      {patient.full_name}
-                    </p>
-                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                      {patient.phone || t('patientsPage.list.noPhone', 'No phone on file')}
-                    </p>
-                  </div>
+                return (
+                  <article
+                    key={patient.id}
+                    onClick={() => navigate(`/patients/${patient.id}`)}
+                    className="cursor-pointer space-y-2.5 p-4 transition hover:bg-slate-50/80 dark:hover:bg-slate-800/30"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <UserAvatar name={patient.full_name} src={patient.avatar_url} size="md" />
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-slate-900 dark:text-white">
+                            {patient.full_name}
+                          </p>
+                          <p className="text-xs text-slate-400 dark:text-slate-500 font-mono">
+                            PID-#{String(patient.id).padStart(4, '0')}
+                          </p>
+                        </div>
+                      </div>
+                      <StatusBadge tone={condition.tone} size="sm">
+                        {condition.label}
+                      </StatusBadge>
+                    </div>
 
-                  {/* Gender badge */}
-                  <div className="hidden w-24 shrink-0 justify-center md:flex">
-                    <StatusBadge tone={genderBadgeTone(patient.gender)}>
-                      {t(`common.${patient.gender}`, patient.gender || 'N/A')}
-                    </StatusBadge>
-                  </div>
+                    {/* Phone, Gender & Age Row */}
+                    <div className="flex flex-wrap items-center gap-2 pt-0.5 text-xs">
+                      {patient.phone ? (
+                        <a
+                          href={`tel:${patient.phone}`}
+                          onClick={(event) => event.stopPropagation()}
+                          className="inline-flex items-center gap-1 font-mono text-slate-600 hover:text-primary-600 dark:text-slate-300 dark:hover:text-primary-400"
+                        >
+                          <Phone className="h-3 w-3 text-slate-400" />
+                          <span>{patient.phone}</span>
+                        </a>
+                      ) : (
+                        <span className="text-slate-400 dark:text-slate-500 italic text-[11px]">
+                          {t('patientsPage.list.noPhone', 'No phone on file')}
+                        </span>
+                      )}
 
-                  {/* Diagnosis count */}
-                  <div className="hidden w-20 shrink-0 items-center justify-center gap-1.5 md:flex">
-                    <span
-                      className={`h-2 w-2 rounded-full ${hasDiagnosis ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
-                    />
-                    <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      {patient.diagnosis_count || 0}
-                    </span>
-                  </div>
+                      <span className="text-slate-300 dark:text-slate-600">•</span>
 
-                  {/* Last activity */}
-                  <div className="hidden w-32 shrink-0 md:block">
-                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                      {patient.latest_diagnosis_created_at
-                        ? formatDateTime(patient.latest_diagnosis_created_at)
-                        : patient.created_at
-                          ? formatDateTime(patient.created_at)
-                          : '—'}
-                    </p>
-                  </div>
+                      <StatusBadge tone={genderBadgeTone(patient.gender)} size="sm">
+                        {t(`common.${patient.gender}`, patient.gender || 'N/A')}
+                      </StatusBadge>
 
-                  {/* Actions */}
-                  <div className="flex w-28 shrink-0 items-center justify-end gap-1.5">
-                    <button
-                      type="button"
-                      onClick={(event) => { event.stopPropagation(); openPatientWorkflow(patient) }}
-                      className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-medium text-slate-700 opacity-0 transition group-hover:opacity-100 hover:bg-primary-100 hover:text-primary-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-primary-950/40 dark:hover:text-primary-300 max-sm:opacity-100"
-                      title={patient.latest_diagnosis_result_id ? t('patientsPage.table.latestResult', 'Latest Result') : t('patientsPage.table.assess', 'Assess')}
-                    >
-                      <Activity className="h-3 w-3" />
-                      {patient.latest_diagnosis_result_id ? t('patientsPage.table.result', 'Result') : t('patientsPage.table.assess', 'Assess')}
-                    </button>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 dark:text-slate-600" />
-                  </div>
+                      {age != null && (
+                        <>
+                          <span className="text-slate-300 dark:text-slate-600">•</span>
+                          <span className="text-slate-600 dark:text-slate-400">
+                            {age} {t('common.yearsShort', 'yrs')}
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Footer row: Activity & Action button */}
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100/80 dark:border-slate-800/40">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                        <span
+                          className={`h-2 w-2 rounded-full ${hasDiagnosis ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                        />
+                        <span>
+                          {patient.diagnosis_count || 0} {t('patientsPage.table.diagnoses', 'Diagnoses')}
+                        </span>
+                        {activityDate && (
+                          <>
+                            <span className="text-slate-300 dark:text-slate-600">·</span>
+                            <span>{formatRelativeTime(activityDate, language, t)}</span>
+                          </>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          openPatientWorkflow(patient)
+                        }}
+                        className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-primary-100 hover:text-primary-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-primary-950/40 dark:hover:text-primary-300"
+                      >
+                        <Activity className="h-3 w-3" />
+                        <span>{patient.latest_diagnosis_result_id ? t('patientsPage.table.result', 'Result') : t('patientsPage.table.assess', 'Assess')}</span>
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-6 flex flex-col items-center justify-between gap-4 border-t border-slate-200/80 pt-4 sm:flex-row dark:border-slate-800">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {t('common.showing', 'Showing')}{' '}
+                  <span className="font-semibold text-slate-900 dark:text-white">
+                    {(page - 1) * pageSize + 1}
+                  </span>{' '}
+                  -{' '}
+                  <span className="font-semibold text-slate-900 dark:text-white">
+                    {Math.min(page * pageSize, totalCount)}
+                  </span>{' '}
+                  {t('common.of', 'of')}{' '}
+                  <span className="font-semibold text-slate-900 dark:text-white">{totalCount}</span>{' '}
+                  {t('patientsPage.table.patients', 'patients')}
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={page <= 1 || loading}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    className="inline-flex h-9 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span>{t('common.previous', 'Previous')}</span>
+                  </button>
+
+                  <span className="px-2 text-xs font-medium text-slate-600 dark:text-slate-400">
+                    {page} / {totalPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    disabled={page >= totalPages || loading}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    className="inline-flex h-9 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                  >
+                    <span>{t('common.next', 'Next')}</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
                 </div>
-              )
-            })}
-          </div>
+              </div>
+            )}
+          </>
         )}
       </section>
     </div>

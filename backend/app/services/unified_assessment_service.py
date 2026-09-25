@@ -202,7 +202,7 @@ class UnifiedAssessmentService:
         # Demographics
         if "age" in payload and payload["age"] not in (None, "") and not isinstance(payload["age"], bool):
             validated["age"] = self._validate_number(
-                payload["age"], "age", min_val=0, max_val=120
+                payload["age"], "age", min_val=1, max_val=120
             )
         
         if "sex" in payload and payload["sex"]:
@@ -213,6 +213,20 @@ class UnifiedAssessmentService:
         if "bmi" in payload and payload["bmi"] not in (None, "") and not isinstance(payload["bmi"], bool):
             validated["bmi"] = self._validate_number(
                 payload["bmi"], "bmi", min_val=10, max_val=80
+            )
+
+        # Anthropometrics (prevent dump inputs from corrupting clinical inference)
+        if "weight_kg" in payload and payload["weight_kg"] not in (None, "") and not isinstance(payload["weight_kg"], bool):
+            validated["weight_kg"] = self._validate_number(
+                payload["weight_kg"], "weight_kg", min_val=10, max_val=350
+            )
+        if "height_cm" in payload and payload["height_cm"] not in (None, "") and not isinstance(payload["height_cm"], bool):
+            validated["height_cm"] = self._validate_number(
+                payload["height_cm"], "height_cm", min_val=50, max_val=250
+            )
+        if "waist_circumference" in payload and payload["waist_circumference"] not in (None, "") and not isinstance(payload["waist_circumference"], bool):
+            validated["waist_circumference"] = self._validate_number(
+                payload["waist_circumference"], "waist_circumference", min_val=40, max_val=220
             )
         
         # Lab values

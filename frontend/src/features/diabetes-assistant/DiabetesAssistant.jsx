@@ -18,13 +18,16 @@ import { DrBot3D } from './DrBot3D'
 import { useLanguage } from '@/contexts/LanguageContext'
 import './DiabetesAssistant.css'
 
-const STORAGE_KEY = 'diabetes-assistant-conversation:v4'
+const STORAGE_KEY = 'diabetes-assistant-conversation:v5'
 const PANEL_PLACEMENT_STORAGE_KEY = 'diabetes-assistant-placement:v1'
 const TRIGGER_PLACEMENT_STORAGE_KEY = 'diabetes-assistant-trigger-placement:v1'
 const DESKTOP_MEDIA_QUERY = '(min-width: 768px)'
 const DESKTOP_EDGE_GAP = 24
 const DESKTOP_TRIGGER_GAP = 124
-const MASCOT_GREETINGS = ['Hello! 👋', 'How can I help you?']
+const MASCOT_GREETINGS = {
+  en: ['Hello! 👋', 'How can I help you?'],
+  km: ['សួស្តី! 👋', 'តើខ្ញុំអាចជួយអ្វីបានខ្លះ?'],
+}
 
 const CONVERSATION_STAGES = {
   INTRO: 'intro',
@@ -92,18 +95,41 @@ function readStoredConversation() {
       )
 
     if (validStage && validMessages) {
+      // Deduplicate any consecutive identical messages from stored session
+      const deduplicatedMessages = []
+      for (const m of stored.messages) {
+        const prev = deduplicatedMessages[deduplicatedMessages.length - 1]
+        if (prev && prev.sender === m.sender && prev.text === m.text) {
+          continue
+        }
+        deduplicatedMessages.push(m)
+      }
+
       return {
         stage: stored.stage === CONVERSATION_STAGES.ANSWERING ? CONVERSATION_STAGES.TOPICS : stored.stage,
-        messages: stored.messages.map((m) => {
+        messages: deduplicatedMessages.map((m) => {
           let translation = m.translation || null
           if (!translation && m.sender === 'bot') {
             const qMatch = DIABETES_QUESTIONS.find((q) => q.answer === m.text)
             if (qMatch) translation = qMatch.answerKm
-            else if (m.text === ASSISTANT_COPY.welcome.en) translation = ASSISTANT_COPY.welcome.km
+            else if (m.text === ASSISTANT_COPY.welcome.en || m.text === 'Hello! 👋\nDo you have any questions about diabetes?') {
+              translation = ASSISTANT_COPY.welcome.km
+              m.text = ASSISTANT_COPY.welcome.en
+            }
             else if (m.text === ASSISTANT_COPY.topicPrompt.en) translation = ASSISTANT_COPY.topicPrompt.km
             else if (m.text === ASSISTANT_COPY.followUp.en) translation = ASSISTANT_COPY.followUp.km
             else if (m.text === ASSISTANT_COPY.initialDecline.en) translation = ASSISTANT_COPY.initialDecline.km
             else if (m.text === ASSISTANT_COPY.finished.en) translation = ASSISTANT_COPY.finished.km
+          } else if (!translation && m.sender === 'user') {
+            if (m.text === 'Yes') translation = 'បាទ/ចាស'
+            else if (m.text === 'No') translation = 'ទេ'
+            else if (m.text === 'Back') translation = 'ត្រឡប់ក្រោយ'
+            else {
+              const qMatch = DIABETES_QUESTIONS.find(
+                (q) => q.question === m.text || q.displayQuestion === m.text
+              )
+              if (qMatch) translation = qMatch.questionKm || qMatch.displayQuestionKm
+            }
           }
           return { ...m, isStreaming: false, translation }
         }),
@@ -120,8 +146,16 @@ function readStoredConversation() {
  * Typewriter writing animation for bot messages.
  */
 function StreamingMessageContent({ text, isStreaming, onStreamingComplete, onScrollToBottom }) {
+  const { language } = useLanguage()
+  const isKhmer = language === 'km'
   const [displayedLength, setDisplayedLength] = useState(isStreaming ? 0 : text.length)
   const isDone = displayedLength >= text.length
+
+  const onStreamingCompleteRef = useRef(onStreamingComplete)
+  onStreamingCompleteRef.current = onStreamingComplete
+  const onScrollToBottomRef = useRef(onScrollToBottom)
+  onScrollToBottomRef.current = onScrollToBottom
+  const hasCompletedRef = useRef(false)
 
   useEffect(() => {
     if (!isStreaming) {
@@ -129,6 +163,7 @@ function StreamingMessageContent({ text, isStreaming, onStreamingComplete, onScr
       return
     }
 
+    hasCompletedRef.current = false
     setDisplayedLength(0)
     // Snappy, natural pacing without being slow
     const stepSize = Math.max(1, Math.floor(text.length / 85))
@@ -137,21 +172,37 @@ function StreamingMessageContent({ text, isStreaming, onStreamingComplete, onScr
         const next = prev + stepSize
         if (next >= text.length) {
           clearInterval(interval)
-          if (onStreamingComplete) onStreamingComplete()
           return text.length
         }
-        if (onScrollToBottom) onScrollToBottom()
         return next
       })
     }, 16)
 
     return () => clearInterval(interval)
-  }, [text, isStreaming, onStreamingComplete, onScrollToBottom])
+  }, [text, isStreaming])
+
+  // Fire onStreamingComplete safely when typing reaches full length
+  useEffect(() => {
+    if (isStreaming && displayedLength >= text.length && !hasCompletedRef.current) {
+      hasCompletedRef.current = true
+      onStreamingCompleteRef.current?.()
+    }
+  }, [isStreaming, displayedLength, text.length])
+
+  // Periodic smooth scroll to keep view aligned as text types
+  useEffect(() => {
+    if (isStreaming && displayedLength < text.length) {
+      onScrollToBottomRef.current?.()
+    }
+  }, [isStreaming, displayedLength, text.length])
 
   const handleClickToSkip = () => {
     if (!isDone) {
       setDisplayedLength(text.length)
-      if (onStreamingComplete) onStreamingComplete()
+      if (!hasCompletedRef.current) {
+        hasCompletedRef.current = true
+        onStreamingCompleteRef.current?.()
+      }
     }
   }
 
@@ -161,7 +212,7 @@ function StreamingMessageContent({ text, isStreaming, onStreamingComplete, onScr
     <div
       onClick={handleClickToSkip}
       className={!isDone ? 'cursor-pointer select-none' : ''}
-      title={!isDone ? 'Click to show full response' : undefined}
+      title={!isDone ? (isKhmer ? 'ចុចដើម្បីបង្ហាញចម្លើយទាំងស្រុង' : 'Click to show full response') : undefined}
     >
       <FormattedMessage content={visibleText} />
       {!isDone && <span className="assistant-cursor" />}
@@ -173,12 +224,55 @@ function StreamingMessageContent({ text, isStreaming, onStreamingComplete, onScr
  * Minimal, clean message bubbles with Copy and Translate actions.
  */
 function ChatMessage({ message, onStreamingComplete, onScrollToBottom }) {
+  const { language } = useLanguage()
+  const isKhmer = language === 'km'
   const isUser = message.sender === 'user'
   const [copied, setCopied] = useState(false)
-  const [isTranslated, setIsTranslated] = useState(false)
+  const [isToggled, setIsToggled] = useState(false)
 
-  const hasTranslation = Boolean(message.translation)
-  const currentText = isTranslated && hasTranslation ? message.translation : message.text
+  // Find translation if missing
+  let translation = message.translation
+  if (!translation) {
+    if (message.sender === 'bot') {
+      const qMatch = DIABETES_QUESTIONS.find((q) => q.answer === message.text)
+      if (qMatch) translation = qMatch.answerKm
+      else if (message.text === ASSISTANT_COPY.welcome.en) translation = ASSISTANT_COPY.welcome.km
+      else if (message.text === ASSISTANT_COPY.topicPrompt.en) translation = ASSISTANT_COPY.topicPrompt.km
+      else if (message.text === ASSISTANT_COPY.followUp.en) translation = ASSISTANT_COPY.followUp.km
+      else if (message.text === ASSISTANT_COPY.initialDecline.en) translation = ASSISTANT_COPY.initialDecline.km
+      else if (message.text === ASSISTANT_COPY.finished.en) translation = ASSISTANT_COPY.finished.km
+    } else if (message.sender === 'user') {
+      if (message.text === 'Yes') translation = 'បាទ/ចាស'
+      else if (message.text === 'No') translation = 'ទេ'
+      else if (message.text === 'Back') translation = 'ត្រឡប់ក្រោយ'
+      else if (message.text === 'បាទ/ចាស') translation = 'Yes'
+      else if (message.text === 'ទេ') translation = 'No'
+      else if (message.text === 'ត្រឡប់ក្រោយ') translation = 'Back'
+      else {
+        const qMatch = DIABETES_QUESTIONS.find(
+          (q) => q.question === message.text || q.displayQuestion === message.text
+        )
+        if (qMatch) translation = qMatch.questionKm || qMatch.displayQuestionKm
+        else {
+          const qMatchKm = DIABETES_QUESTIONS.find(
+            (q) => q.questionKm === message.text || q.displayQuestionKm === message.text
+          )
+          if (qMatchKm) translation = qMatchKm.question || qMatchKm.displayQuestion
+        }
+      }
+    }
+  }
+
+  const hasTranslation = Boolean(translation)
+
+  // Determine current active display text:
+  // If isKhmer: default is translation (Khmer), toggled is message.text (English)
+  // If English: default is message.text (English), toggled is translation (Khmer)
+  const defaultText = isKhmer && hasTranslation ? translation : message.text
+  const alternateText = isKhmer ? message.text : (hasTranslation ? translation : message.text)
+
+  const currentText = isToggled && hasTranslation ? alternateText : defaultText
+  const isShowingKhmer = isKhmer ? !isToggled : isToggled
 
   const handleCopy = (e) => {
     e.stopPropagation()
@@ -190,14 +284,14 @@ function ChatMessage({ message, onStreamingComplete, onScrollToBottom }) {
 
   const handleToggleTranslate = (e) => {
     e.stopPropagation()
-    setIsTranslated((prev) => !prev)
+    setIsToggled((prev) => !prev)
   }
 
   return (
     <div className={`flex items-end gap-2 duration-150 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
         <span
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 overflow-hidden p-0.5 mb-0.5"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden p-0.5 mb-0.5"
           aria-hidden="true"
         >
           <img
@@ -208,17 +302,17 @@ function ChatMessage({ message, onStreamingComplete, onScrollToBottom }) {
         </span>
       )}
 
-      <div className="max-w-[85%] sm:max-w-[80%]">
+      <div className="max-w-[88%] sm:max-w-[82%]">
         <div
           className={[
-            'relative px-3.5 py-2 sm:px-4 sm:py-2.5 text-left text-[13px] sm:text-sm leading-relaxed',
+            'relative px-3.5 py-2 pr-12 sm:px-4 sm:py-2.5 sm:pr-14 text-left text-[13px] sm:text-sm leading-relaxed',
             isUser
               ? 'rounded-[18px] rounded-br-[4px] bg-[#007aff] dark:bg-blue-600 text-white font-normal'
-              : 'rounded-[18px] rounded-bl-[4px] bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-100 shadow-2xs',
+              : 'rounded-[18px] rounded-bl-[4px] bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100',
           ].join(' ')}
         >
           {isUser ? (
-            <div className="whitespace-pre-line text-white">{message.text}</div>
+            <div className="whitespace-pre-line text-white">{currentText}</div>
           ) : (
             <>
               <StreamingMessageContent
@@ -228,37 +322,37 @@ function ChatMessage({ message, onStreamingComplete, onScrollToBottom }) {
                 onScrollToBottom={onScrollToBottom}
               />
 
-              {/* Action Icons inside bubble */}
+              {/* Action Icons positioned cleanly in bottom-right corner without creating an empty line below text */}
               {!message.isStreaming && (
-                <div className="flex items-center justify-end gap-1 mt-1.5 -mb-0.5 select-none">
+                <div className="absolute bottom-1 right-1.5 sm:bottom-1.5 sm:right-2 flex items-center gap-0.5 select-none opacity-60 hover:opacity-100 transition-opacity">
                   {hasTranslation && (
                     <button
                       type="button"
                       onClick={handleToggleTranslate}
                       className={[
-                        'flex items-center justify-center h-6 w-6 rounded transition-colors',
-                        isTranslated
+                        'flex items-center justify-center h-5 w-5 rounded transition-colors',
+                        isToggled
                           ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50'
-                          : 'text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60',
+                          : 'text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/80 dark:hover:bg-slate-700/80',
                       ].join(' ')}
-                      title={isTranslated ? 'Show English' : 'បកប្រែជាភាសាខ្មែរ (Translate to Khmer)'}
-                      aria-label="Translate message"
+                      title={isShowingKhmer ? 'Show English' : 'បកប្រែជាភាសាខ្មែរ (Translate to Khmer)'}
+                      aria-label={isShowingKhmer ? 'Show English' : 'Translate message'}
                     >
-                      <Languages className="h-3.5 w-3.5" />
+                      <Languages className="h-3 w-3" />
                     </button>
                   )}
 
                   <button
                     type="button"
                     onClick={handleCopy}
-                    className="flex items-center justify-center h-6 w-6 rounded text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors"
-                    title={copied ? 'Copied' : 'Copy message'}
-                    aria-label="Copy message"
+                    className="flex items-center justify-center h-5 w-5 rounded text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 transition-colors"
+                    title={copied ? (isKhmer ? 'បានចម្លង' : 'Copied') : (isKhmer ? 'ចម្លងសារ' : 'Copy message')}
+                    aria-label={isKhmer ? 'ចម្លងសារ' : 'Copy message'}
                   >
                     {copied ? (
-                      <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                     ) : (
-                      <Copy className="h-3.5 w-3.5" />
+                      <Copy className="h-3 w-3" />
                     )}
                   </button>
                 </div>
@@ -278,7 +372,7 @@ function AiTypingIndicator() {
   return (
     <div className="flex items-end gap-2 justify-start duration-150">
       <span
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 overflow-hidden p-0.5 mb-0.5"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden p-0.5 mb-0.5"
         aria-hidden="true"
       >
         <img
@@ -288,7 +382,7 @@ function AiTypingIndicator() {
         />
       </span>
 
-      <div className="rounded-[18px] rounded-bl-[4px] bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 px-3.5 py-2.5 flex items-center gap-1 shadow-2xs">
+      <div className="rounded-[18px] rounded-bl-[4px] bg-slate-100 dark:bg-slate-800 px-3.5 py-2.5 flex items-center gap-1">
         <span className="h-1.5 w-1.5 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce [animation-delay:-0.3s]" />
         <span className="h-1.5 w-1.5 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce [animation-delay:-0.15s]" />
         <span className="h-1.5 w-1.5 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce" />
@@ -309,26 +403,26 @@ function ChatOptions({ stage, onChooseIntro, onChooseQuestion, onChooseFollowUp,
     const onSelect = isIntro ? onChooseIntro : onChooseFollowUp
 
     return (
-      <div className="pl-9 animate-in fade-in duration-200">
+      <div className="pl-[50px] sm:pl-[52px] animate-in fade-in duration-200">
         <div className="flex items-center gap-2">
           <button
             type="button"
             disabled={disabled}
             onClick={() => onSelect(true)}
-            className="h-9 min-w-[84px] px-4 rounded-full bg-[#007aff] hover:bg-blue-600 active:scale-95 text-white text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
+            className="h-8.5 min-w-[78px] px-3.5 rounded-full bg-[#007aff] hover:bg-blue-600 active:scale-95 text-white text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
           >
             <Check className="h-3.5 w-3.5" />
-            <span>Yes</span>
+            <span>{isKhmer ? 'បាទ/ចាស' : 'Yes'}</span>
           </button>
 
           <button
             type="button"
             disabled={disabled}
             onClick={() => onSelect(false)}
-            className="h-9 min-w-[84px] px-4 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
+            className="h-8.5 min-w-[78px] px-3.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
           >
             <X className="h-3.5 w-3.5 text-slate-400" />
-            <span>No</span>
+            <span>{isKhmer ? 'ទេ' : 'No'}</span>
           </button>
         </div>
       </div>
@@ -394,6 +488,9 @@ function ChatOptions({ stage, onChooseIntro, onChooseQuestion, onChooseFollowUp,
 }
 
 export function DiabetesAssistant() {
+  const { language } = useLanguage()
+  const isKhmer = language === 'km'
+  const greetings = MASCOT_GREETINGS[isKhmer ? 'km' : 'en']
   const isDesktopViewport = typeof window !== 'undefined' && window.matchMedia(DESKTOP_MEDIA_QUERY).matches
   const [isOpen, setIsOpen] = useState(false)
   const [conversation, setConversation] = useState(readStoredConversation)
@@ -411,6 +508,7 @@ export function DiabetesAssistant() {
   const triggerDragStateRef = useRef(null)
   const lastTriggerDragAtRef = useRef(0)
   const pendingTimeoutsRef = useRef([])
+  const completedStreamingIdsRef = useRef(new Set())
 
   const scheduleTimeout = useCallback((fn, delay) => {
     const id = setTimeout(fn, delay)
@@ -446,6 +544,15 @@ export function DiabetesAssistant() {
   }, [conversation, isOpen, isAiTyping, scrollToBottom])
 
   useEffect(() => {
+    function handleOpenEvent() {
+      setIsOpen(true)
+    }
+
+    window.addEventListener('open-diabetes-assistant', handleOpenEvent)
+    return () => window.removeEventListener('open-diabetes-assistant', handleOpenEvent)
+  }, [])
+
+  useEffect(() => {
     if (!isOpen) return undefined
 
     function closeOnEscape(event) {
@@ -457,81 +564,77 @@ export function DiabetesAssistant() {
   }, [isOpen])
 
   useEffect(() => {
-    let frameId
-
     function placePanel() {
-      window.cancelAnimationFrame(frameId)
-      frameId = window.requestAnimationFrame(() => {
-        if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
-          dragStateRef.current = null
-          setIsDragging(false)
-          setPanelPosition(null)
-          return
-        }
+      if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+        dragStateRef.current = null
+        setIsDragging(false)
+        setPanelPosition(null)
+        return
+      }
 
-        const panel = panelRef.current
-        if (!panel) return
+      const storedPlacement = readStoredPlacement(PANEL_PLACEMENT_STORAGE_KEY)
+      if (!storedPlacement) {
+        setPanelPosition(null)
+        return
+      }
 
-        const rect = panel.getBoundingClientRect()
-        const storedPlacement = readStoredPlacement(PANEL_PLACEMENT_STORAGE_KEY)
-        const side = storedPlacement?.side || 'right'
-        const defaultY = window.innerHeight - rect.height - DESKTOP_TRIGGER_GAP
-        const y = clamp(
-          storedPlacement?.y ?? defaultY,
-          DESKTOP_EDGE_GAP,
-          window.innerHeight - rect.height - DESKTOP_EDGE_GAP
-        )
-        const x = side === 'left' ? DESKTOP_EDGE_GAP : window.innerWidth - rect.width - DESKTOP_EDGE_GAP
+      const panel = panelRef.current
+      const width = panel?.offsetWidth || 416
+      const height = panel?.offsetHeight || 600
+      const side = storedPlacement.side || 'right'
+      const defaultY = window.innerHeight - height - DESKTOP_TRIGGER_GAP
+      const y = clamp(
+        storedPlacement.y ?? defaultY,
+        DESKTOP_EDGE_GAP,
+        window.innerHeight - height - DESKTOP_EDGE_GAP
+      )
+      const x = side === 'left' ? DESKTOP_EDGE_GAP : window.innerWidth - width - DESKTOP_EDGE_GAP
 
-        setPanelPosition({ x, y })
-      })
+      setPanelPosition({ x, y })
     }
 
     placePanel()
     window.addEventListener('resize', placePanel)
 
     return () => {
-      window.cancelAnimationFrame(frameId)
       window.removeEventListener('resize', placePanel)
     }
-  }, [isOpen])
+  }, [])
 
   useEffect(() => {
-    let frameId
-
     function placeTrigger() {
-      window.cancelAnimationFrame(frameId)
-      frameId = window.requestAnimationFrame(() => {
-        if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
-          triggerDragStateRef.current = null
-          setIsTriggerDragging(false)
-          setTriggerPosition(null)
-          return
-        }
+      if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+        triggerDragStateRef.current = null
+        setIsTriggerDragging(false)
+        setTriggerPosition(null)
+        return
+      }
 
-        const trigger = triggerRef.current
-        if (!trigger) return
+      const storedPlacement = readStoredPlacement(TRIGGER_PLACEMENT_STORAGE_KEY)
+      if (!storedPlacement) {
+        setTriggerPosition(null)
+        return
+      }
 
-        const rect = trigger.getBoundingClientRect()
-        const storedPlacement = readStoredPlacement(TRIGGER_PLACEMENT_STORAGE_KEY)
-        const side = storedPlacement?.side || 'right'
-        const defaultY = window.innerHeight - rect.height - DESKTOP_EDGE_GAP
-        const y = clamp(
-          storedPlacement?.y ?? defaultY,
-          DESKTOP_EDGE_GAP,
-          window.innerHeight - rect.height - DESKTOP_EDGE_GAP
-        )
-        const x = side === 'left' ? DESKTOP_EDGE_GAP : window.innerWidth - rect.width - DESKTOP_EDGE_GAP
+      const trigger = triggerRef.current
+      const width = trigger?.offsetWidth || 78
+      const height = trigger?.offsetHeight || 88
+      const side = storedPlacement.side || 'right'
+      const defaultY = window.innerHeight - height - DESKTOP_EDGE_GAP
+      const y = clamp(
+        storedPlacement.y ?? defaultY,
+        DESKTOP_EDGE_GAP,
+        window.innerHeight - height - DESKTOP_EDGE_GAP
+      )
+      const x = side === 'left' ? DESKTOP_EDGE_GAP : window.innerWidth - width - DESKTOP_EDGE_GAP
 
-        setTriggerPosition({ x, y })
-      })
+      setTriggerPosition({ x, y })
     }
 
     placeTrigger()
     window.addEventListener('resize', placeTrigger)
 
     return () => {
-      window.cancelAnimationFrame(frameId)
       window.removeEventListener('resize', placeTrigger)
     }
   }, [])
@@ -539,24 +642,32 @@ export function DiabetesAssistant() {
   useEffect(() => {
     if (isOpen) return undefined
 
+    const greetingsList = MASCOT_GREETINGS[isKhmer ? 'km' : 'en']
     const interval = setInterval(() => {
-      setGreetingIndex((prev) => (prev + 1) % MASCOT_GREETINGS.length)
+      setGreetingIndex((prev) => (prev + 1) % greetingsList.length)
     }, 4500)
 
     return () => clearInterval(interval)
-  }, [isOpen])
+  }, [isOpen, isKhmer])
 
-  function appendSingleMessage(msg) {
-    setConversation((prev) => ({
-      ...prev,
-      messages: [...prev.messages, msg],
-    }))
-  }
+  const appendSingleMessage = useCallback((msg) => {
+    setConversation((prev) => {
+      const lastMsg = prev.messages[prev.messages.length - 1]
+      // Reject duplicate consecutive identical messages from the same sender
+      if (lastMsg && lastMsg.sender === msg.sender && lastMsg.text === msg.text) {
+        return prev
+      }
+      return {
+        ...prev,
+        messages: [...prev.messages, msg],
+      }
+    })
+  }, [])
 
   function handleIntroChoice(hasQuestion) {
     clearAllTimeouts()
     if (hasQuestion) {
-      appendSingleMessage(createMessage('user', 'Yes'))
+      appendSingleMessage(createMessage('user', 'Yes', { translation: 'បាទ/ចាស' }))
       setConversation((prev) => ({ ...prev, stage: CONVERSATION_STAGES.ANSWERING }))
       setIsAiTyping(true)
 
@@ -572,7 +683,7 @@ export function DiabetesAssistant() {
       return
     }
 
-    appendSingleMessage(createMessage('user', 'No'))
+    appendSingleMessage(createMessage('user', 'No', { translation: 'ទេ' }))
     setConversation((prev) => ({ ...prev, stage: CONVERSATION_STAGES.ANSWERING }))
     setIsAiTyping(true)
 
@@ -589,7 +700,11 @@ export function DiabetesAssistant() {
 
   function handleQuestion(question) {
     clearAllTimeouts()
-    appendSingleMessage(createMessage('user', question.question))
+    appendSingleMessage(
+      createMessage('user', question.question, {
+        translation: question.questionKm || question.displayQuestionKm || question.question,
+      })
+    )
     setConversation((prev) => ({ ...prev, stage: CONVERSATION_STAGES.ANSWERING }))
     setIsAiTyping(true)
 
@@ -607,7 +722,7 @@ export function DiabetesAssistant() {
   function handleFollowUp(wantsAnotherQuestion) {
     clearAllTimeouts()
     if (wantsAnotherQuestion) {
-      appendSingleMessage(createMessage('user', 'Yes'))
+      appendSingleMessage(createMessage('user', 'Yes', { translation: 'បាទ/ចាស' }))
       setConversation((prev) => ({ ...prev, stage: CONVERSATION_STAGES.ANSWERING }))
       setIsAiTyping(true)
 
@@ -623,7 +738,7 @@ export function DiabetesAssistant() {
       return
     }
 
-    appendSingleMessage(createMessage('user', 'No'))
+    appendSingleMessage(createMessage('user', 'No', { translation: 'ទេ' }))
     setConversation((prev) => ({ ...prev, stage: CONVERSATION_STAGES.ANSWERING }))
     setIsAiTyping(true)
 
@@ -640,7 +755,7 @@ export function DiabetesAssistant() {
 
   function handleBack() {
     clearAllTimeouts()
-    appendSingleMessage(createMessage('user', 'Back'))
+    appendSingleMessage(createMessage('user', 'Back', { translation: 'ត្រឡប់ក្រោយ' }))
     setConversation((prev) => ({ ...prev, stage: CONVERSATION_STAGES.ANSWERING }))
     setIsAiTyping(true)
 
@@ -656,37 +771,45 @@ export function DiabetesAssistant() {
   }
 
   const handleStreamingComplete = useCallback(
-    (messageIndex) => {
+    (messageId) => {
+      if (!messageId || completedStreamingIdsRef.current.has(messageId)) {
+        return
+      }
+      completedStreamingIdsRef.current.add(messageId)
+
+      let shouldTriggerFollowUp = false
+
       setConversation((prev) => {
-        const updatedMessages = prev.messages.map((m, idx) =>
-          idx === messageIndex ? { ...m, isStreaming: false } : m
-        )
+        const msgIndex = prev.messages.findIndex((m) => m.id === messageId)
+        if (msgIndex === -1) return prev
 
-        const currentMsg = prev.messages[messageIndex]
-        let nextStage = prev.stage
-
-        // If the answer to a topic just finished, trigger the follow-up prompt
-        if (
+        const currentMsg = prev.messages[msgIndex]
+        const isAnswer =
           currentMsg &&
           currentMsg.sender === 'bot' &&
           DIABETES_QUESTIONS.some((q) => q.answer === currentMsg.text || q.answerKm === currentMsg.text)
-        ) {
-          scheduleTimeout(() => {
-            setIsAiTyping(true)
-            scheduleTimeout(() => {
-              setIsAiTyping(false)
-              appendSingleMessage(
-                createMessage('bot', ASSISTANT_COPY.followUp.en, {
-                  translation: ASSISTANT_COPY.followUp.km,
-                  isStreaming: true,
-                })
-              )
-            }, 450)
-          }, 300)
-          return { ...prev, messages: updatedMessages, stage: CONVERSATION_STAGES.ANSWERING }
+
+        // Only trigger follow-up if not already present or queued after this answer
+        const alreadyHasFollowUp = prev.messages
+          .slice(msgIndex + 1)
+          .some(
+            (m) =>
+              m.text === ASSISTANT_COPY.followUp.en ||
+              m.text === ASSISTANT_COPY.followUp.km
+          )
+
+        if (isAnswer && !alreadyHasFollowUp) {
+          shouldTriggerFollowUp = true
         }
 
-        if (
+        const updatedMessages = prev.messages.map((m) =>
+          m.id === messageId ? { ...m, isStreaming: false } : m
+        )
+
+        let nextStage = prev.stage
+        if (isAnswer) {
+          nextStage = CONVERSATION_STAGES.ANSWERING
+        } else if (
           currentMsg?.text === ASSISTANT_COPY.followUp.en ||
           currentMsg?.text === ASSISTANT_COPY.followUp.km
         ) {
@@ -716,12 +839,29 @@ export function DiabetesAssistant() {
           stage: nextStage,
         }
       })
+
+      // Run follow-up timeouts purely outside of the React state updater
+      if (shouldTriggerFollowUp) {
+        scheduleTimeout(() => {
+          setIsAiTyping(true)
+          scheduleTimeout(() => {
+            setIsAiTyping(false)
+            appendSingleMessage(
+              createMessage('bot', ASSISTANT_COPY.followUp.en, {
+                translation: ASSISTANT_COPY.followUp.km,
+                isStreaming: true,
+              })
+            )
+          }, 450)
+        }, 300)
+      }
     },
-    [scheduleTimeout]
+    [scheduleTimeout, appendSingleMessage]
   )
 
   function restartConversation() {
     clearAllTimeouts()
+    completedStreamingIdsRef.current.clear()
     setIsAiTyping(false)
     setConversation(createInitialConversation())
   }
@@ -816,8 +956,8 @@ export function DiabetesAssistant() {
       const storedTriggerPlacement = readStoredPlacement(TRIGGER_PLACEMENT_STORAGE_KEY)
       const triggerY = clamp(
         triggerPosition?.y ??
-          storedTriggerPlacement?.y ??
-          window.innerHeight - triggerRect.height - DESKTOP_EDGE_GAP,
+        storedTriggerPlacement?.y ??
+        window.innerHeight - triggerRect.height - DESKTOP_EDGE_GAP,
         DESKTOP_EDGE_GAP,
         window.innerHeight - triggerRect.height - DESKTOP_EDGE_GAP
       )
@@ -844,8 +984,16 @@ export function DiabetesAssistant() {
     }
   }
 
+  const lastActionTimeRef = useRef(0)
+
+  const toggleAssistant = useCallback(() => {
+    const now = Date.now()
+    if (now - lastActionTimeRef.current < 250) return
+    lastActionTimeRef.current = now
+    setIsOpen((prev) => !prev)
+  }, [])
+
   function handleTriggerPointerDown(event) {
-    if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return
     if (event.pointerType === 'mouse' && event.button !== 0) return
 
     const trigger = triggerRef.current
@@ -859,11 +1007,8 @@ export function DiabetesAssistant() {
       offsetX: event.clientX - rect.left,
       offsetY: event.clientY - rect.top,
       latestPosition: { x: rect.left, y: rect.top },
-      hasMoved: false,
+      isDragging: false,
     }
-    setTriggerPosition({ x: rect.left, y: rect.top })
-    setIsTriggerDragging(true)
-    event.currentTarget.setPointerCapture(event.pointerId)
   }
 
   function handleTriggerPointerMove(event) {
@@ -872,26 +1017,35 @@ export function DiabetesAssistant() {
     if (!dragState || !trigger || dragState.pointerId !== event.pointerId) return
 
     const moveDistance = Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY)
-    if (moveDistance > 6) {
-      dragState.hasMoved = true
+    if (!dragState.isDragging && moveDistance > 8) {
+      if (!window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return
+      dragState.isDragging = true
+      setIsTriggerDragging(true)
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId)
+      } catch {
+        // Pointer capture is best effort
+      }
     }
 
-    const rect = trigger.getBoundingClientRect()
-    const position = {
-      x: clamp(
-        event.clientX - dragState.offsetX,
-        DESKTOP_EDGE_GAP,
-        window.innerWidth - rect.width - DESKTOP_EDGE_GAP
-      ),
-      y: clamp(
-        event.clientY - dragState.offsetY,
-        DESKTOP_EDGE_GAP,
-        window.innerHeight - rect.height - DESKTOP_EDGE_GAP
-      ),
-    }
+    if (dragState.isDragging) {
+      const rect = trigger.getBoundingClientRect()
+      const position = {
+        x: clamp(
+          event.clientX - dragState.offsetX,
+          DESKTOP_EDGE_GAP,
+          window.innerWidth - rect.width - DESKTOP_EDGE_GAP
+        ),
+        y: clamp(
+          event.clientY - dragState.offsetY,
+          DESKTOP_EDGE_GAP,
+          window.innerHeight - rect.height - DESKTOP_EDGE_GAP
+        ),
+      }
 
-    dragState.latestPosition = position
-    setTriggerPosition(position)
+      dragState.latestPosition = position
+      setTriggerPosition(position)
+    }
   }
 
   function finishTriggerDrag(event) {
@@ -899,68 +1053,50 @@ export function DiabetesAssistant() {
     const trigger = triggerRef.current
     if (!dragState || !trigger || dragState.pointerId !== event.pointerId) return
 
-    const rect = trigger.getBoundingClientRect()
-    const latestPosition = dragState.latestPosition || { x: rect.left, y: rect.top }
-    const side = latestPosition.x + rect.width / 2 < window.innerWidth / 2 ? 'left' : 'right'
-    const snappedPosition = {
-      x: side === 'left' ? DESKTOP_EDGE_GAP : window.innerWidth - rect.width - DESKTOP_EDGE_GAP,
-      y: clamp(
-        latestPosition.y,
-        DESKTOP_EDGE_GAP,
-        window.innerHeight - rect.height - DESKTOP_EDGE_GAP
-      ),
-    }
-
-    if (dragState.hasMoved) {
-      lastTriggerDragAtRef.current = Date.now()
-    }
-
+    const wasDragging = dragState.isDragging
     triggerDragStateRef.current = null
-    setIsTriggerDragging(false)
-    setTriggerPosition(snappedPosition)
 
-    try {
-      window.localStorage.setItem(
-        TRIGGER_PLACEMENT_STORAGE_KEY,
-        JSON.stringify({ side, y: snappedPosition.y })
-      )
-    } catch {
-      // Local storage persistence is best-effort.
-    }
+    if (wasDragging) {
+      lastActionTimeRef.current = Date.now()
+      setIsTriggerDragging(false)
 
-    try {
-      event.currentTarget.releasePointerCapture(event.pointerId)
-    } catch {
-      // Pointer capture release is best-effort.
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId)
+      } catch {
+        // Pointer capture release is best-effort.
+      }
+
+      const rect = trigger.getBoundingClientRect()
+      const latestPosition = dragState.latestPosition || { x: rect.left, y: rect.top }
+      const side = latestPosition.x + rect.width / 2 < window.innerWidth / 2 ? 'left' : 'right'
+      const snappedPosition = {
+        x: side === 'left' ? DESKTOP_EDGE_GAP : window.innerWidth - rect.width - DESKTOP_EDGE_GAP,
+        y: clamp(
+          latestPosition.y,
+          DESKTOP_EDGE_GAP,
+          window.innerHeight - rect.height - DESKTOP_EDGE_GAP
+        ),
+      }
+
+      setTriggerPosition(snappedPosition)
+
+      try {
+        window.localStorage.setItem(
+          TRIGGER_PLACEMENT_STORAGE_KEY,
+          JSON.stringify({ side, y: snappedPosition.y })
+        )
+      } catch {
+        // Local storage persistence is best-effort.
+      }
+    } else {
+      // User clicked without dragging
+      toggleAssistant()
     }
   }
 
-  function handleTriggerClick() {
-    if (Date.now() - lastTriggerDragAtRef.current < 200) {
-      return
-    }
-
-    if (!isOpen && isDesktopViewport) {
-      const panel = panelRef.current
-      const trigger = triggerRef.current
-
-      if (panel && trigger) {
-        const panelRect = panel.getBoundingClientRect()
-        const triggerRect = trigger.getBoundingClientRect()
-        const side = triggerRect.left + triggerRect.width / 2 < window.innerWidth / 2 ? 'left' : 'right'
-        const defaultY = window.innerHeight - panelRect.height - DESKTOP_TRIGGER_GAP
-        const storedPlacement = readStoredPlacement(PANEL_PLACEMENT_STORAGE_KEY)
-        const y = clamp(
-          storedPlacement?.y ?? defaultY,
-          DESKTOP_EDGE_GAP,
-          window.innerHeight - panelRect.height - DESKTOP_EDGE_GAP
-        )
-        const x = side === 'left' ? DESKTOP_EDGE_GAP : window.innerWidth - panelRect.width - DESKTOP_EDGE_GAP
-        setPanelPosition({ x, y })
-      }
-    }
-
-    setIsOpen((prev) => !prev)
+  function handleTriggerClick(event) {
+    event?.preventDefault?.()
+    toggleAssistant()
   }
 
   const triggerIsOnLeft = Boolean(
@@ -980,7 +1116,7 @@ export function DiabetesAssistant() {
         ref={panelRef}
         id="diabetes-assistant-panel"
         role="dialog"
-        aria-label={ASSISTANT_COPY.title}
+        aria-label={isKhmer ? 'ជំនួយការជំងឺទឹកនោមផ្អែម' : ASSISTANT_COPY.title}
         aria-hidden={!isOpen}
         style={isDesktopViewport && panelPosition ? { left: panelPosition.x, top: panelPosition.y } : undefined}
         className={[
@@ -992,55 +1128,83 @@ export function DiabetesAssistant() {
             : 'invisible pointer-events-none translate-y-2 scale-[0.98] opacity-0',
         ].join(' ')}
       >
-        {/* Simple, flat header: solid blue, no gradient, no glow */}
+        {/* Blue container with fixed wave bottom */}
         <header
-          className="relative flex shrink-0 items-center justify-between gap-3 bg-[#007aff] dark:bg-blue-600 px-4 py-3 text-white md:cursor-grab md:select-none md:active:cursor-grabbing select-none"
+          className="relative shrink-0 select-none bg-slate-50/50 dark:bg-slate-900/50 md:cursor-grab md:select-none md:active:cursor-grabbing"
           onPointerDown={handleDragStart}
           onPointerMove={handleDragMove}
           onPointerUp={finishDrag}
           onPointerCancel={finishDrag}
-          title="Drag to move the assistant"
+          title={isKhmer ? 'អូសដើម្បីផ្លាស់ទីជំនួយការ' : 'Drag to move the assistant'}
         >
-          <GripHorizontal className="pointer-events-none absolute left-1/2 top-1 hidden h-3.5 w-3.5 -translate-x-1/2 text-white/40 md:block" aria-hidden="true" />
+          {/* Main blue container */}
+          <div className="relative bg-[#007aff] dark:bg-blue-600 px-4 pt-3 pb-2 text-white">
+            <GripHorizontal className="pointer-events-none absolute left-1/2 top-1 hidden h-3.5 w-3.5 -translate-x-1/2 text-white/40 md:block" aria-hidden="true" />
 
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 p-1 overflow-hidden">
-              <img
-                src="/images/dr-bot.png"
-                alt="Dr. Bot"
-                className="h-full w-full object-contain"
-              />
-            </div>
-            <div className="min-w-0">
-              <h2 className="truncate text-sm font-semibold text-white">
-                {ASSISTANT_COPY.title}
-              </h2>
-              <p className="text-[11px] text-blue-100 font-normal">
-                Patient education
-              </p>
+            <div className="flex min-w-0 items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 p-1 overflow-hidden">
+                  <img
+                    src="/images/dr-bot.png"
+                    alt="Dr. Bot"
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="truncate text-sm font-semibold text-white">
+                    {isKhmer ? 'ជំនួយការជំងឺទឹកនោមផ្អែម' : ASSISTANT_COPY.title}
+                  </h2>
+                  <p className="text-[11px] text-blue-100 font-normal">
+                    {isKhmer ? 'ការអប់រំអ្នកជំងឺ' : 'Patient education'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={restartConversation}
+                  className="flex h-7 items-center justify-center gap-1 rounded-md px-2 text-[11px] font-medium text-white/90 hover:bg-white/15 transition-colors"
+                  aria-label={isKhmer ? 'ចាប់ផ្តើមការសន្ទនាឡើងវិញ' : 'Restart conversation'}
+                  title={isKhmer ? 'ចាប់ផ្តើមការសន្ទនាឡើងវិញ' : 'Restart conversation'}
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span className="hidden min-[380px]:inline">
+                    {isKhmer ? 'ចាប់ផ្តើមឡើងវិញ' : 'Restart'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={closeAssistant}
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-white/90 hover:bg-white/15 transition-colors"
+                  aria-label={isKhmer ? 'បិទជំនួយការជំងឺទឹកនោមផ្អែម' : 'Close Diabetes Assistant'}
+                  title={isKhmer ? 'បិទ' : 'Close'}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              onClick={restartConversation}
-              className="flex h-7 items-center justify-center gap-1 rounded-md px-2 text-[11px] font-medium text-white/90 hover:bg-white/15 transition-colors"
-              aria-label="Restart conversation"
-              title="Restart conversation"
+          {/* Fixed wave bottom shape */}
+          <div className="pointer-events-none -mt-px w-full overflow-hidden leading-none select-none" aria-hidden="true">
+            <svg
+              className="block w-full h-4 sm:h-5 text-[#007aff] dark:text-blue-600"
+              viewBox="0 0 1200 120"
+              preserveAspectRatio="none"
             >
-              <RotateCcw className="h-3 w-3" />
-              <span className="hidden min-[380px]:inline">Restart</span>
-            </button>
-            <button
-              type="button"
-              onClick={closeAssistant}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-white/90 hover:bg-white/15 transition-colors"
-              aria-label="Close Diabetes Assistant"
-              title="Close"
-            >
-              <X className="h-4 w-4" />
-            </button>
+              {/* Subtle translucent wave layer */}
+              <path
+                d="M0,0 L1200,0 L1200,40 C1040,15 880,85 680,45 C480,10 260,80 0,35 Z"
+                fill="currentColor"
+                opacity="0.3"
+              />
+              {/* Primary wave shape forming the bottom of the blue container */}
+              <path
+                d="M0,0 L1200,0 L1200,20 C1020,70 820,15 600,55 C380,95 180,25 0,55 Z"
+                fill="currentColor"
+              />
+            </svg>
           </div>
         </header>
 
@@ -1049,14 +1213,17 @@ export function DiabetesAssistant() {
           role="log"
           aria-live="polite"
           aria-relevant="additions"
-          className="assistant-chat-scroll flex-1 overflow-y-auto overflow-x-hidden overscroll-contain bg-slate-50/50 dark:bg-slate-900/50 px-3.5 py-4 sm:p-4"
+          className="assistant-chat-scroll flex-1 overflow-y-auto overflow-x-hidden overscroll-contain bg-slate-50/50 dark:bg-slate-900/50 px-3.5 py-4 sm:p-4 flex flex-col"
         >
+          {/* Spacer pushing initial message to the bottom of the chat body */}
+          <div className="mt-auto" />
+
           <div className="space-y-3">
-            {conversation.messages.map((message, index) => (
+            {conversation.messages.map((message) => (
               <ChatMessage
                 key={message.id}
                 message={message}
-                onStreamingComplete={() => handleStreamingComplete(index)}
+                onStreamingComplete={() => handleStreamingComplete(message.id)}
                 onScrollToBottom={scrollToBottom}
               />
             ))}
@@ -1068,7 +1235,7 @@ export function DiabetesAssistant() {
 
           {/* Quick choices / Questions */}
           {conversation.stage !== CONVERSATION_STAGES.COMPLETE && (
-            <div className="mt-3.5">
+            <div className="mt-3">
               <ChatOptions
                 stage={conversation.stage}
                 disabled={isAiTyping}
@@ -1080,10 +1247,14 @@ export function DiabetesAssistant() {
             </div>
           )}
 
-          {/* Minimal disclaimer */}
-          <footer className="mt-5 pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500 text-center">
+          {/* Minimal disclaimer without divider line */}
+          <footer className="mt-4 pt-1 flex items-center justify-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500 text-center select-none">
             <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-            <span>Educational purposes only. Does not replace medical advice.</span>
+            <span>
+              {isKhmer
+                ? 'សម្រាប់គោលបំណងអប់រំប៉ុណ្ណោះ។ មិនជំនួសការប្រឹក្សាវេជ្ជសាស្រ្តឡើយ។'
+                : 'Educational purposes only. Does not replace medical advice.'}
+            </span>
           </footer>
         </div>
       </section>
@@ -1103,20 +1274,39 @@ export function DiabetesAssistant() {
           isOpen ? 'invisible pointer-events-none scale-90 opacity-0' : 'visible scale-100 opacity-100',
           isTriggerDragging ? 'assistant-mascot-button--dragging' : '',
         ].join(' ')}
-        aria-label={isOpen ? 'Close Diabetes Assistant' : 'Open Diabetes Assistant'}
+        aria-label={
+          isOpen
+            ? isKhmer
+              ? 'បិទជំនួយការជំងឺទឹកនោមផ្អែម'
+              : 'Close Diabetes Assistant'
+            : isKhmer
+              ? 'បើកជំនួយការជំងឺទឹកនោមផ្អែម'
+              : 'Open Diabetes Assistant'
+        }
         aria-expanded={isOpen}
         aria-controls="diabetes-assistant-panel"
-        title={isOpen ? 'Close Diabetes Assistant' : 'Open Diabetes Assistant'}
+        title={
+          isOpen
+            ? isKhmer
+              ? 'បិទជំនួយការជំងឺទឹកនោមផ្អែម'
+              : 'Close Diabetes Assistant'
+            : isKhmer
+              ? 'បើកជំនួយការជំងឺទឹកនោមផ្អែម'
+              : 'Open Diabetes Assistant'
+        }
       >
         {!isOpen && !isTriggerDragging && (
           <span
-            key={greetingIndex}
-            className={`assistant-mascot-bubble ${
-              triggerIsOnLeft ? 'assistant-mascot-bubble--right' : 'assistant-mascot-bubble--left'
-            }`}
+            key={`${isKhmer}-${greetingIndex}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleAssistant()
+            }}
+            className={`assistant-mascot-bubble cursor-pointer pointer-events-auto ${triggerIsOnLeft ? 'assistant-mascot-bubble--right' : 'assistant-mascot-bubble--left'
+              }`}
             aria-hidden="true"
           >
-            {MASCOT_GREETINGS[greetingIndex]}
+            {greetings[greetingIndex % greetings.length]}
           </span>
         )}
 

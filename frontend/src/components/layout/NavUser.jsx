@@ -110,17 +110,17 @@ export function NavUser({ user: propUser, collapsed = false, onLogout }) {
   const navigate = useNavigate()
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
-  // Provide realistic Doctor Lina defaults if empty
   const rawUser = { ...authUser, ...propUser }
+  const defaultRole = rawUser?.roles?.[0] || rawUser?.role || 'patient'
   const user = {
-    name: rawUser?.name || 'Dr. Lina',
-    email: rawUser?.email || 'dr.lina@diabetes-care.org',
+    name: rawUser?.name || (rawUser?.email ? rawUser.email.split('@')[0] : t('common.user', 'User')),
+    email: rawUser?.email || '',
     avatar_url: rawUser?.avatar_url,
-    role: rawUser?.roles?.[0] || rawUser?.role || 'doctor',
-    roles: rawUser?.roles || ['doctor'],
+    role: defaultRole,
+    roles: rawUser?.roles || [defaultRole],
   }
 
-  const activeRole = user?.role || 'doctor'
+  const activeRole = user?.role || 'patient'
   const roleMeta = getRoleMeta(activeRole, t)
 
   const handleNavigateProfile = () => {

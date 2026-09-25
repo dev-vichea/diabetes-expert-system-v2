@@ -20,6 +20,7 @@ import { EmptyState, ErrorAlert, UserAvatar, AppSelect } from '@/components/ui'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { notify } from '@/lib/toast'
+import { cn } from '@/lib/utils'
 
 function toCertaintyPercent(certainty) {
   const numeric = Number(certainty)
@@ -53,35 +54,550 @@ function getRiskTextColor(percent) {
   return 'text-emerald-600 dark:text-emerald-400'
 }
 
-function ClinicalReviewWorkspace({ t, tExact, selectedResult, selectedResultId, selectedPatientKey, selectedFacts, selectedCertaintyPercent, selectedBannerClasses, currentPatientAssessments, filteredPatientGroups, filteredSubmissions, viewMode, setViewMode, statusFilter, setStatusFilter, sortBy, setSortBy, sortOptions, searchQuery, setSearchQuery, loading, loadResults, totalSubmissionsCount, pendingCount, urgentCount, reviewedCount, selectPatientGroup, selectResult, error, downloadingPdf, handleDownloadPdf, saveReview, reviewNote, setReviewNote, quickPresetOptions, isUrgent, setIsUrgent, urgentReason, setUrgentReason, saving, navigate, user, canManageTreatmentPlans }) {
+function ClinicalReviewWorkspace({
+  t,
+  tExact,
+  selectedResult,
+  selectedResultId,
+  selectedPatientKey,
+  selectedFacts,
+  selectedCertaintyPercent,
+  selectedBannerClasses,
+  currentPatientAssessments,
+  filteredPatientGroups,
+  filteredSubmissions,
+  viewMode,
+  setViewMode,
+  statusFilter,
+  setStatusFilter,
+  sortBy,
+  setSortBy,
+  sortOptions,
+  searchQuery,
+  setSearchQuery,
+  loading,
+  loadResults,
+  totalSubmissionsCount,
+  pendingCount,
+  urgentCount,
+  reviewedCount,
+  selectPatientGroup,
+  selectResult,
+  error,
+  downloadingPdf,
+  handleDownloadPdf,
+  saveReview,
+  reviewNote,
+  setReviewNote,
+  quickPresetOptions,
+  applyPresetNote,
+  isUrgent,
+  setIsUrgent,
+  urgentReason,
+  setUrgentReason,
+  saving,
+  navigate,
+  user,
+  canManageTreatmentPlans,
+}) {
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col gap-5 xl:flex-row">
-      <aside className="flex min-h-0 w-full flex-col overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#070b1b] xl:w-[330px] xl:shrink-0">
-        <div className="border-b border-slate-200 p-5 dark:border-slate-800">
-          <div className="flex items-start justify-between gap-3"><div><p className="text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-600">Clinical workspace</p><h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950 dark:text-white">{t('reviewPage.queue.title', 'Patient Review Queue')}</h2><p className="mt-1 text-xs text-slate-500">{pendingCount} pending · {filteredPatientGroups.length} patients</p></div><button type="button" onClick={loadResults} className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-900"><Clock className={loading ? 'h-4 w-4 animate-spin text-cyan-600' : 'h-4 w-4'} /></button></div>
-          <div className="mt-5 flex rounded-xl bg-slate-100 p-1 dark:bg-slate-900"><button type="button" onClick={() => setViewMode('by-patient')} className={viewMode === 'by-patient' ? 'flex-1 rounded-lg bg-white py-2 text-xs font-bold text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'flex-1 py-2 text-xs font-semibold text-slate-500'}>By patient <span className="opacity-50">{filteredPatientGroups.length}</span></button><button type="button" onClick={() => setViewMode('all-submissions')} className={viewMode === 'all-submissions' ? 'flex-1 rounded-lg bg-white py-2 text-xs font-bold text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'flex-1 py-2 text-xs font-semibold text-slate-500'}>All records <span className="opacity-50">{totalSubmissionsCount}</span></button></div>
-          <div className="relative mt-3"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search patients or diagnoses" className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 text-xs outline-none focus:border-cyan-400 dark:border-slate-700 dark:bg-slate-900 dark:text-white" /></div>
-          <div className="mt-4 flex gap-1 overflow-x-auto border-b border-slate-100 pb-2 dark:border-slate-800">{[['all', 'All', totalSubmissionsCount], ['pending', 'Pending', pendingCount], ['urgent', 'Urgent', urgentCount], ['reviewed', 'Reviewed', reviewedCount]].map(([value, label, count]) => <button key={value} type="button" onClick={() => setStatusFilter(value)} className={statusFilter === value ? 'rounded-md bg-slate-900 px-2.5 py-1.5 text-[11px] font-bold text-white dark:bg-white dark:text-slate-900' : 'rounded-md px-2.5 py-1.5 text-[11px] font-semibold text-slate-500'}>{label} <span className="opacity-60">{count}</span></button>)}</div>
-          <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400"><span className="flex items-center gap-1"><ArrowUpDown className="h-3 w-3" /> Sort</span><AppSelect value={sortBy} onValueChange={setSortBy} options={sortOptions} className="h-7 min-w-[9rem] border-0 bg-transparent px-1 text-[11px] font-bold shadow-none" /></div>
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-4 xl:flex-row xl:h-[calc(100vh-6.5rem)]">
+      {/* ── Left Side: Scrollable Patient Queue ── */}
+      <aside className="flex min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-[#070b1b] xl:w-[320px] xl:shrink-0 xl:h-full">
+        {/* Sticky Header: Clean, compact, minimal unnecessary text */}
+        <div className="shrink-0 border-b border-slate-100 p-3.5 dark:border-slate-800">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-bold tracking-tight text-slate-950 dark:text-white">
+                {t('reviewPage.queue.title', 'Patient Review Queue')}
+              </h2>
+              <p className="text-[11px] text-slate-500">
+                {pendingCount} pending · {filteredPatientGroups.length} patients
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={loadResults}
+              title="Refresh queue"
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200/70 bg-slate-50 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              <Clock className={loading ? 'h-3.5 w-3.5 animate-spin text-cyan-600' : 'h-3.5 w-3.5'} />
+            </button>
+          </div>
+
+          {/* View Mode: By patient vs All records */}
+          <div className="mt-2.5 flex rounded-lg bg-slate-100/80 p-0.5 dark:bg-slate-900">
+            <button
+              type="button"
+              onClick={() => setViewMode('by-patient')}
+              className={cn(
+                'flex-1 rounded-md py-1 text-xs font-semibold transition-all',
+                viewMode === 'by-patient'
+                  ? 'bg-white font-bold text-slate-900 shadow-xs dark:bg-slate-800 dark:text-white'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+              )}
+            >
+              By patient <span className="text-[10px] opacity-60">({filteredPatientGroups.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('all-submissions')}
+              className={cn(
+                'flex-1 rounded-md py-1 text-xs font-semibold transition-all',
+                viewMode === 'all-submissions'
+                  ? 'bg-white font-bold text-slate-900 shadow-xs dark:bg-slate-800 dark:text-white'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+              )}
+            >
+              All records <span className="text-[10px] opacity-60">({totalSubmissionsCount})</span>
+            </button>
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative mt-2">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search patients..."
+              className="h-8 w-full rounded-lg border border-slate-200/80 bg-slate-50/70 pl-8 pr-3 text-xs outline-none focus:border-cyan-400 focus:bg-white dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            />
+          </div>
+
+          {/* Status Filter Badges (Equal-width, zero horizontal overflow) */}
+          <div className="mt-2.5 flex gap-1 no-scrollbar">
+            {[
+              ['all', t('reviewPage.filters.all', 'All')],
+              ['pending', t('reviewPage.filters.pending', 'Pending')],
+              ['urgent', t('reviewPage.filters.urgent', 'Urgent')],
+              ['reviewed', t('reviewPage.filters.reviewed', 'Reviewed')],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setStatusFilter(value)}
+                className={cn(
+                  'flex-1 rounded-lg py-1 text-center text-xs font-semibold transition-all',
+                  statusFilter === value
+                    ? 'bg-cyan-600 font-bold text-white shadow-xs shadow-cyan-600/20 dark:bg-cyan-500 dark:text-white'
+                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:text-slate-400'
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Sort Row */}
+          <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
+            <span className="flex items-center gap-1 font-medium text-slate-400">
+              <ArrowUpDown className="h-3 w-3" /> Sort
+            </span>
+            <AppSelect
+              value={sortBy}
+              onValueChange={setSortBy}
+              options={sortOptions}
+              className="h-6 w-auto border-0 bg-transparent px-1 text-[11px] font-medium text-slate-500 shadow-none dark:text-slate-400"
+            />
+          </div>
         </div>
-        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-slate-50/60 p-3 dark:bg-[#050816]">
-          {loading && !selectedResult && Array.from({ length: 5 }).map((_, index) => <div key={index} className="h-24 animate-pulse rounded-2xl bg-slate-200/70 dark:bg-slate-800/70" />)}
-          {viewMode === 'by-patient' && filteredPatientGroups.map((group) => <button key={group.key} type="button" onClick={() => selectPatientGroup(group)} className={selectedPatientKey === group.key ? 'w-full rounded-2xl border border-cyan-300 bg-cyan-50 p-3.5 text-left shadow-sm dark:border-cyan-800 dark:bg-cyan-950/40' : 'w-full rounded-2xl border border-slate-200 bg-white p-3.5 text-left dark:border-slate-800 dark:bg-slate-900/70'}><div className="flex gap-3"><UserAvatar name={group.patient_name} size="sm" /><div className="min-w-0 flex-1"><div className="flex justify-between gap-2"><p className="truncate text-sm font-bold text-slate-900 dark:text-white">{group.patient_name}</p><span className="text-[10px] text-slate-400">{group.latestDate ? formatDateTime(group.latestDate).split(',')[0] : ''}</span></div><p className="mt-1 truncate text-xs text-slate-500">{group.latestItem ? tExact(group.latestItem.diagnosis) : ''}</p><div className="mt-2 flex gap-2"><span className="rounded-md bg-slate-100 px-1.5 py-1 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">{group.hasUrgent ? 'Urgent' : group.hasPending ? group.pendingCount + ' pending' : 'Reviewed'}</span><span className={getRiskTextColor(group.maxCertainty) + ' text-[10px] font-bold'}>{group.maxCertainty}%</span></div></div></div></button>)}
-          {viewMode === 'all-submissions' && filteredSubmissions.map((result) => <button key={result.id} type="button" onClick={() => selectResult(result)} className={selectedResultId === result.id ? 'w-full rounded-2xl border border-cyan-300 bg-cyan-50 p-3.5 text-left shadow-sm dark:border-cyan-800 dark:bg-cyan-950/40' : 'w-full rounded-2xl border border-slate-200 bg-white p-3.5 text-left dark:border-slate-800 dark:bg-slate-900/70'}><div className="flex gap-3"><UserAvatar name={result.patient_name} size="sm" /><div className="min-w-0 flex-1"><div className="flex justify-between gap-2"><p className="truncate text-sm font-bold text-slate-900 dark:text-white">{result.patient_name || 'Unknown patient'}</p><span className="text-[10px] text-slate-400">{formatDateTime(result.created_at).split(',')[0]}</span></div><p className="mt-1 truncate text-xs text-slate-500">{tExact(result.diagnosis)}</p><div className="mt-2 flex gap-2"><span className="rounded-md bg-slate-100 px-1.5 py-1 text-[10px] font-bold text-slate-600">{result.is_urgent ? 'Urgent' : result.reviewed_at ? 'Reviewed' : 'Pending'}</span><span className={getRiskTextColor(toCertaintyPercent(result.certainty)) + ' text-[10px] font-bold'}>{toCertaintyPercent(result.certainty)}%</span></div></div></div></button>)}
-          {!loading && ((viewMode === 'by-patient' && !filteredPatientGroups.length) || (viewMode === 'all-submissions' && !filteredSubmissions.length)) && <div className="p-8 text-center text-xs text-slate-500">{searchQuery ? 'No records match your search.' : 'Your review queue is clear.'}</div>}
+
+        {/* Scrollable Patient Card List (no-scrollbar hides vertical bar while keeping smooth scrolling) */}
+        <div className="no-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto p-2 bg-slate-50/40 dark:bg-[#050816]/40">
+          {loading && !selectedResult && Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="h-14 animate-pulse rounded-xl bg-slate-200/60 dark:bg-slate-800/50" />
+          ))}
+
+          {viewMode === 'by-patient' && filteredPatientGroups.map((group) => {
+            const isSelected = selectedPatientKey === group.key
+            return (
+              <button
+                key={group.key}
+                type="button"
+                onClick={() => selectPatientGroup(group)}
+                className={cn(
+                  'group w-full rounded-xl p-2.5 text-left transition-all duration-150',
+                  isSelected
+                    ? 'bg-cyan-50/90 text-cyan-950 dark:bg-cyan-950/40 dark:text-cyan-100 shadow-xs ring-1 ring-cyan-500/25'
+                    : 'bg-white/70 hover:bg-slate-100/80 text-slate-800 dark:bg-slate-900/30 dark:hover:bg-slate-800/50 dark:text-slate-200'
+                )}
+              >
+                <div className="flex items-center gap-2.5">
+                  <UserAvatar name={group.patient_name} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="truncate text-xs font-bold text-slate-900 dark:text-white">
+                        {group.patient_name}
+                      </p>
+                      <span className="shrink-0 text-[10px] text-slate-400">
+                        {group.latestDate ? formatDateTime(group.latestDate).split(',')[0] : ''}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-2">
+                      <span
+                        className={cn(
+                          'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold',
+                          group.hasUrgent
+                            ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+                            : group.hasPending
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                            : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                        )}
+                      >
+                        {group.hasUrgent
+                          ? 'Urgent'
+                          : group.hasPending
+                          ? `${group.pendingCount} pending`
+                          : 'Reviewed'}
+                      </span>
+                      <span className={cn('text-[10px] font-bold', getRiskTextColor(group.maxCertainty))}>
+                        {group.maxCertainty}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            )
+          })}
+
+          {viewMode === 'all-submissions' && filteredSubmissions.map((result) => {
+            const isSelected = selectedResultId === result.id
+            const certPercent = toCertaintyPercent(result.certainty)
+            return (
+              <button
+                key={result.id}
+                type="button"
+                onClick={() => selectResult(result)}
+                className={cn(
+                  'group w-full rounded-xl p-2.5 text-left transition-all duration-150',
+                  isSelected
+                    ? 'bg-cyan-50/90 text-cyan-950 dark:bg-cyan-950/40 dark:text-cyan-100 shadow-xs ring-1 ring-cyan-500/25'
+                    : 'bg-white/70 hover:bg-slate-100/80 text-slate-800 dark:bg-slate-900/30 dark:hover:bg-slate-800/50 dark:text-slate-200'
+                )}
+              >
+                <div className="flex items-center gap-2.5">
+                  <UserAvatar name={result.patient_name} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="truncate text-xs font-bold text-slate-900 dark:text-white">
+                        {result.patient_name || 'Unknown patient'}
+                      </p>
+                      <span className="shrink-0 text-[10px] text-slate-400">
+                        {formatDateTime(result.created_at).split(',')[0]}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-2">
+                      <span
+                        className={cn(
+                          'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold',
+                          result.is_urgent
+                            ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+                            : !result.reviewed_at
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                            : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                        )}
+                      >
+                        {result.is_urgent
+                          ? 'Urgent'
+                          : !result.reviewed_at
+                          ? 'Pending'
+                          : 'Reviewed'}
+                      </span>
+                      <span className={cn('text-[10px] font-bold', getRiskTextColor(certPercent))}>
+                        {certPercent}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            )
+          })}
+
+          {!loading &&
+            ((viewMode === 'by-patient' && !filteredPatientGroups.length) ||
+              (viewMode === 'all-submissions' && !filteredSubmissions.length)) && (
+              <div className="p-8 text-center text-xs text-slate-500">
+                {searchQuery ? 'No records match your search.' : 'Your review queue is clear.'}
+              </div>
+            )}
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1 overflow-y-auto rounded-[1.5rem] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#070b1b]">
+      {/* ── Right Side: Main Detail & Full Doctor Review ── */}
+      <main className="custom-scrollbar min-w-0 flex-1 overflow-y-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-[#070b1b] xl:h-full">
         {error && <ErrorAlert message={error} className="m-4 border-rose-200" />}
-        {!selectedResult ? <div className="flex min-h-[560px] items-center justify-center p-8"><EmptyState icon={FileText} title="No Patient Selected" description="Select a patient from the queue to review the clinical output." /></div> : <div className="p-5 sm:p-8">
-          <header className="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-start sm:justify-between dark:border-slate-800"><div className="flex min-w-0 items-center gap-3.5"><UserAvatar name={selectedResult.patient_name} size="lg" /><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h1 className="truncate text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-3xl">{selectedResult.patient_name || 'Patient'}</h1><span className={selectedResult.reviewed_at ? 'rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700' : 'rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700'}>{selectedResult.reviewed_at ? 'Reviewed' : 'Pending review'}</span></div><p className="mt-1 text-xs text-slate-500">Record #{selectedResult.id} · {formatDateTime(selectedResult.created_at)}</p></div></div><div className="flex items-center gap-1"><button type="button" onClick={() => handleDownloadPdf(selectedResult.id)} disabled={downloadingPdf} className="inline-flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-semibold text-slate-500 hover:bg-slate-100"><Download className="h-4 w-4" /> PDF</button>{selectedResult.patient_id && <Link to={'/patients/' + selectedResult.patient_id} className="inline-flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-semibold text-slate-500 hover:bg-slate-100"><User className="h-4 w-4" /> Records</Link>}</div></header>
-          {currentPatientAssessments.length > 1 && <div className="border-b border-slate-200 py-4"><p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Assessment history</p><div className="flex gap-2 overflow-x-auto">{currentPatientAssessments.map((item) => <button key={item.id} type="button" onClick={() => selectResult(item)} className={item.id === selectedResultId ? 'shrink-0 rounded-xl border border-cyan-400 bg-cyan-50 px-3 py-2 text-xs font-bold text-cyan-900' : 'shrink-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600'}>#{item.id} · {toCertaintyPercent(item.certainty)}%</button>)}</div></div>}
-          <section className={selectedBannerClasses + ' relative mt-6 overflow-hidden rounded-[1.5rem] p-6 text-white shadow-lg'}><Activity className="absolute -right-5 -top-8 h-40 w-40 opacity-10" /><div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[11px] font-bold uppercase tracking-[0.18em] opacity-80">AI diagnostic output</p><h2 className="mt-2 text-2xl font-black tracking-tight sm:text-4xl">{tExact(selectedResult.diagnosis)}</h2></div><div className="sm:text-right"><p className="text-5xl font-black">{selectedCertaintyPercent}<span className="ml-1 text-base font-medium opacity-75">/100</span></p><p className="text-[10px] font-bold uppercase tracking-[0.16em] opacity-75">Confidence score</p></div></div>{selectedResult.is_urgent && <div className="relative mt-5 flex gap-2 rounded-xl border border-white/30 bg-white/15 p-3 text-xs font-semibold"><AlertCircle className="h-4 w-4 shrink-0" />{selectedResult.urgent_reason || 'Critical warning: prompt clinical attention required.'}</div>}</section>
-          <section className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">{[['Fasting glucose', selectedFacts.fasting_glucose ?? selectedFacts.fasting_plasma_glucose ?? '—', 'mg/dL'], ['HbA1c', selectedFacts.hba1c ?? '—', '%'], ['BMI', selectedFacts.bmi ?? '—', 'kg/m²'], ['Age / sex', selectedFacts.age ? selectedFacts.age + ' yrs' : '—', selectedFacts.gender || '—']].map(([label, value, unit]) => <div key={label} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"><p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400">{label}</p><p className="mt-2 text-lg font-bold text-slate-950">{value} <span className="text-xs font-medium text-slate-500">{unit}</span></p></div>)}</section>
-          <section className="mt-8 grid gap-7 lg:grid-cols-[1fr_0.9fr]"><div><div className="mb-3 flex items-center gap-2"><FileText className="h-4 w-4 text-cyan-600" /><h3 className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Clinical evidence</h3></div>{(selectedResult.patient_note || selectedResult.explanation_trace?.patient_note) && <div className="mb-3 rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4"><p className="text-[10px] font-bold uppercase tracking-[0.13em] text-cyan-700">Patient note</p><p className="mt-2 text-sm leading-relaxed text-slate-700">“{selectedResult.patient_note || selectedResult.explanation_trace?.patient_note}”</p></div>}<div className="rounded-2xl border border-slate-200 p-5"><p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400">Recommendations</p><p className="mt-2 text-sm leading-relaxed text-slate-700">{selectedResult.recommendation || 'No specific recommendations were provided.'}</p>{(selectedResult.triggered_rules || []).length > 0 && <ul className="mt-5 space-y-2 border-t border-slate-100 pt-4">{selectedResult.triggered_rules.map((rule) => <li key={rule.id} className="flex gap-2 text-xs text-slate-600"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-cyan-500" />{tExact(rule.name)}</li>)}</ul>}</div></div>
-            <div><div className="mb-3 flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-cyan-600" /><h3 className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Doctor review</h3></div><form onSubmit={saveReview} className="rounded-2xl border border-slate-200 p-5"><div className="flex items-center justify-between gap-3"><label className="text-sm font-bold text-slate-900">Clinical note</label><AppSelect value="" onValueChange={(value) => { const preset = quickPresetOptions.find((option) => option.value === value); if (preset) setReviewNote((current) => current ? current + '\n• ' + preset.note : preset.note) }} options={quickPresetOptions} includeEmpty emptyLabel="Add template" className="h-8 min-w-[8.5rem] rounded-lg border-slate-200 bg-slate-50 px-2 text-[11px] shadow-none" /></div><textarea value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} placeholder="Add assessment notes or follow-up instructions…" className="mt-3 min-h-[180px] w-full resize-y rounded-xl border border-slate-200 bg-slate-50/60 p-3 text-sm outline-none focus:border-cyan-400" /><div className={isUrgent ? 'mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-3.5' : 'mt-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-3.5'}><label className="flex cursor-pointer items-center gap-2.5 text-xs font-bold text-slate-700"><input type="checkbox" checked={isUrgent} onChange={(event) => setIsUrgent(event.target.checked)} className="h-4 w-4 rounded text-rose-600" />Flag as urgent</label>{isUrgent && <textarea rows={2} value={urgentReason} onChange={(event) => setUrgentReason(event.target.value)} placeholder="Why is this urgent? (Required)" className="mt-3 w-full rounded-xl border border-rose-200 bg-white p-3 text-xs" />}</div><div className="mt-5 flex justify-end border-t border-slate-100 pt-4">{!selectedResult.reviewed_at && <span className="mr-auto max-w-[13rem] self-center text-[10px] text-slate-400">Saving marks this assessment reviewed.</span>}<button type="submit" disabled={saving} className="btn-primary px-5 py-2.5 text-xs font-bold">{saving ? 'Saving…' : 'Sign & submit review'}</button></div></form>{canManageTreatmentPlans && <button type="button" onClick={() => navigate('/treatment-plans/create', { state: { initialData: { patientName: selectedResult.patient_name || 'Patient', patientId: selectedResult.patient_id ? 'P-00' + selectedResult.patient_id : 'P-' + selectedResult.id, doctorName: user?.name || 'Doctor', diagnosis: selectedResult.diagnosis || 'Diabetes', procedures: [] } } })} className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-cyan-700"><Stethoscope className="h-4 w-4" /> Open treatment planner <ChevronRight className="h-3.5 w-3.5" /></button>}</div></section>
-        </div>}
+
+        {!selectedResult ? (
+          <div className="flex min-h-[560px] items-center justify-center p-8">
+            <EmptyState
+              icon={FileText}
+              title="No Patient Selected"
+              description="Select a patient from the queue to review the clinical output."
+            />
+          </div>
+        ) : (
+          <div className="p-5 sm:p-7 space-y-6">
+            {/* Header: Patient Info + Compact Assessment History Dropdown + Actions */}
+            <header className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+              <div className="flex min-w-0 items-center gap-3.5">
+                <UserAvatar name={selectedResult.patient_name} size="lg" />
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="truncate text-xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
+                      {selectedResult.patient_name || 'Patient'}
+                    </h1>
+                    <span
+                      className={cn(
+                        'rounded-full px-2.5 py-0.5 text-[10px] font-bold',
+                        selectedResult.reviewed_at
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                          : 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                      )}
+                    >
+                      {selectedResult.reviewed_at ? 'Reviewed' : 'Pending review'}
+                    </span>
+                  </div>
+
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <span>Record #{selectedResult.id} · {formatDateTime(selectedResult.created_at)}</span>
+
+                    {/* Compact Assessment History Selector (No wide horizontal scroll bar) */}
+                    {currentPatientAssessments.length > 1 && (
+                      <div className="flex items-center gap-1.5 border-l border-slate-200 pl-2 dark:border-slate-700">
+                        <span className="text-[11px] font-semibold text-slate-400">History:</span>
+                        <select
+                          value={selectedResultId}
+                          onChange={(e) => {
+                            const found = currentPatientAssessments.find((a) => a.id === Number(e.target.value))
+                            if (found) selectResult(found)
+                          }}
+                          aria-label="Select patient assessment history"
+                          className="cursor-pointer rounded-md border border-slate-200/80 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-700 outline-none hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                        >
+                          {currentPatientAssessments.map((item) => (
+                            <option key={item.id} value={item.id} className="dark:bg-slate-900">
+                              #{item.id} • {toCertaintyPercent(item.certainty)}% ({item.created_at ? formatDateTime(item.created_at).split(',')[0] : ''})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons: PDF & Patient Records */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadPdf(selectedResult.id)}
+                  disabled={downloadingPdf}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                >
+                  <Download className="h-3.5 w-3.5 text-slate-500" /> PDF
+                </button>
+                {selectedResult.patient_id && (
+                  <Link
+                    to={`/patients/${selectedResult.patient_id}`}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  >
+                    <User className="h-3.5 w-3.5 text-slate-500" /> Records
+                  </Link>
+                )}
+              </div>
+            </header>
+
+            {/* AI Diagnostic Output Banner */}
+            <section className={cn(selectedBannerClasses, 'relative overflow-hidden rounded-2xl p-6 text-white shadow-md')}>
+              <Activity className="absolute -right-5 -top-8 h-40 w-40 opacity-10" />
+              <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] opacity-80">AI diagnostic output</p>
+                  <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">{tExact(selectedResult.diagnosis)}</h2>
+                </div>
+                <div className="sm:text-right">
+                  <p className="text-4xl font-black">
+                    {selectedCertaintyPercent}<span className="ml-1 text-base font-medium opacity-75">/100</span>
+                  </p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] opacity-75">Confidence score</p>
+                </div>
+              </div>
+              {selectedResult.is_urgent && (
+                <div className="relative mt-4 flex items-center gap-2 rounded-xl border border-white/30 bg-white/15 p-3 text-xs font-semibold">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  {selectedResult.urgent_reason || 'Critical warning: prompt clinical attention required.'}
+                </div>
+              )}
+            </section>
+
+            {/* Biomarkers / Key Metrics */}
+            <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                ['Fasting glucose', selectedFacts.fasting_glucose ?? selectedFacts.fasting_plasma_glucose ?? '—', 'mg/dL'],
+                ['HbA1c', selectedFacts.hba1c ?? '—', '%'],
+                ['BMI', selectedFacts.bmi ?? '—', 'kg/m²'],
+                ['Age / sex', selectedFacts.age ? `${selectedFacts.age} yrs` : '—', selectedFacts.gender || '—'],
+              ].map(([label, value, unit]) => (
+                <div key={label} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 dark:border-slate-800 dark:bg-slate-900/60">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400">{label}</p>
+                  <p className="mt-1.5 text-base font-bold text-slate-950 dark:text-white">
+                    {value} <span className="text-xs font-medium text-slate-500">{unit}</span>
+                  </p>
+                </div>
+              ))}
+            </section>
+
+            {/* Optional Patient Reported Note */}
+            {(selectedResult.patient_note || selectedResult.explanation_trace?.patient_note) && (
+              <div className="rounded-xl border border-cyan-100 bg-cyan-50/60 p-3.5 text-xs text-slate-700 dark:border-cyan-900/40 dark:bg-cyan-950/20 dark:text-slate-300">
+                <span className="font-bold text-cyan-800 dark:text-cyan-400">Patient reported: </span>
+                “{selectedResult.patient_note || selectedResult.explanation_trace?.patient_note}”
+              </div>
+            )}
+
+            {/* ── DOCTOR REVIEW - FULL WIDTH & CLEAN ── */}
+            <section className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900/50">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600 dark:bg-cyan-950/50 dark:text-cyan-400">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      Doctor Review & Clinical Notes
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Provide official medical sign-off, treatment notes, and triage flag.
+                    </p>
+                  </div>
+                </div>
+                {selectedResult.reviewed_at && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Reviewed on {formatDateTime(selectedResult.reviewed_at).split(',')[0]}
+                  </span>
+                )}
+              </div>
+
+              <form onSubmit={saveReview} className="space-y-4">
+                {/* Note Editor with Template Toolbar */}
+                <div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Clinical Note & Follow-up Instructions
+                    </label>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[11px] font-medium text-slate-400">Insert template:</span>
+                      {quickPresetOptions.map((preset) => (
+                        <button
+                          key={preset.value}
+                          type="button"
+                          onClick={() => applyPresetNote(preset.note)}
+                          className="rounded-md border border-slate-200/80 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-cyan-950/50"
+                        >
+                          + {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <textarea
+                    value={reviewNote}
+                    onChange={(event) => setReviewNote(event.target.value)}
+                    placeholder="Write your clinical evaluation, medical recommendations, medication adjustments, or next follow-up date..."
+                    rows={6}
+                    className="w-full rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 text-sm leading-relaxed text-slate-800 placeholder-slate-400 outline-none transition-all focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-500/10 dark:border-slate-700 dark:bg-slate-900/60 dark:text-white dark:focus:bg-slate-900"
+                  />
+                </div>
+
+                {/* Urgent Case Triage */}
+                <div
+                  className={cn(
+                    'rounded-xl border p-4 transition-all',
+                    isUrgent
+                      ? 'border-rose-200 bg-rose-50/60 dark:border-rose-900/50 dark:bg-rose-950/20'
+                      : 'border-slate-100 bg-slate-50/60 dark:border-slate-800/80 dark:bg-slate-900/40'
+                  )}
+                >
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={isUrgent}
+                      onChange={(event) => setIsUrgent(event.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500"
+                    />
+                    <div className="flex-1">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                        Flag as urgent clinical case
+                      </span>
+                      <p className="text-[11px] text-slate-500">
+                        Elevates this assessment to high priority for immediate patient notification and medical follow-up.
+                      </p>
+                    </div>
+                  </label>
+
+                  {isUrgent && (
+                    <div className="mt-3 pl-7">
+                      <label className="block text-[11px] font-bold text-rose-700 dark:text-rose-400 mb-1">
+                        Urgency Justification (Required)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={urgentReason}
+                        onChange={(event) => setUrgentReason(event.target.value)}
+                        placeholder="e.g. Severely elevated fasting glucose (>200 mg/dL), requires immediate endocrinology evaluation..."
+                        className="w-full rounded-lg border border-rose-300 bg-white p-2.5 text-xs text-slate-800 outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 dark:border-rose-800 dark:bg-slate-900 dark:text-white"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Controls: Treatment planner & Sign button */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
+                  <div>
+                    {canManageTreatmentPlans && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate('/treatment-plans/create', {
+                            state: {
+                              initialData: {
+                                patientName: selectedResult.patient_name || 'Patient',
+                                patientId: selectedResult.patient_id ? `P-00${selectedResult.patient_id}` : `P-${selectedResult.id}`,
+                                doctorName: user?.name || 'Doctor',
+                                diagnosis: selectedResult.diagnosis || 'Diabetes',
+                                procedures: [],
+                              },
+                            },
+                          })
+                        }
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-200/80 bg-cyan-50/50 px-3 py-2 text-xs font-bold text-cyan-700 transition hover:bg-cyan-100 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300 dark:hover:bg-cyan-900/50"
+                      >
+                        <Stethoscope className="h-4 w-4" /> Open Treatment Planner <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 ml-auto">
+                    {!selectedResult.reviewed_at && (
+                      <span className="text-[11px] text-slate-400 hidden sm:inline">
+                        Signing marks this assessment as reviewed.
+                      </span>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold shadow-xs shadow-cyan-600/20"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      {saving ? 'Saving...' : 'Sign & Submit Review'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </section>
+          </div>
+        )}
       </main>
     </div>
   )
@@ -166,7 +682,7 @@ export function ReviewPage() {
     setLoading(true)
     setError('')
     try {
-      const response = await api.get('/diagnosis/review?limit=300')
+      const response = await api.get('/diagnosis/review?limit=50')
       const loaded = getApiData(response) || []
       setResults(loaded)
 
@@ -452,6 +968,7 @@ export function ReviewPage() {
       reviewNote={reviewNote}
       setReviewNote={setReviewNote}
       quickPresetOptions={quickPresetOptions}
+      applyPresetNote={applyPresetNote}
       isUrgent={isUrgent}
       setIsUrgent={setIsUrgent}
       urgentReason={urgentReason}
