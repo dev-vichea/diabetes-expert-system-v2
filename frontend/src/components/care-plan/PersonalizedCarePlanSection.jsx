@@ -23,8 +23,6 @@ import {
   Info,
   Layers,
   Moon,
-  Printer,
-  RefreshCw,
   Scale,
   ShieldAlert,
   ShieldCheck,
@@ -549,49 +547,8 @@ export function PersonalizedCarePlanSection({
   const isItemExpanded = (key) => {
     return viewMode === 'detailed' || Boolean(expandedItems[key])
   }
-
-  const handlePrint = () => {
-    window.print()
-  }
-
   return (
     <div className={cn('space-y-6 animate-in fade-in duration-200', className)}>
-      {/* ── TOP HEADER / ACTION BAR ── */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl dark:text-slate-50">
-            {isKhmer ? 'ផែនការថែទាំសុខភាពផ្ទាល់ខ្លួន' : 'Personalized Care Plan'}
-          </h2>
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-            {isKhmer
-              ? 'ផែនការសកម្មភាពជាក់លាក់ របបអាហារ លំហាត់ប្រាណ និងកាលវិភាគតាមដានផ្អែកលើលទ្ធផលវាយតម្លៃរបស់អ្នក។'
-              : 'Tailored care recommendations, dietary strategies, physical activity, and follow-up schedule.'}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5">
-          {onRegenerate && (
-            <button
-              type="button"
-              onClick={onRegenerate}
-              disabled={regenerating}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-750"
-            >
-              <RefreshCw className={cn('h-3.5 w-3.5 text-slate-500', regenerating && 'animate-spin')} />
-              <span>{regenerating ? (isKhmer ? 'កំពុងបង្កើតឡើងវិញ...' : 'Regenerating...') : (isKhmer ? 'ធ្វើបច្ចុប្បន្នភាព' : 'Refresh Plan')}</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-750"
-          >
-            <Printer className="h-3.5 w-3.5 text-slate-500" />
-            <span>{isKhmer ? 'បោះពុម្ពផែនការ' : 'Print Plan'}</span>
-          </button>
-        </div>
-      </div>
 
       {/* ==================================================================== */}
       {/* 1. ASSESSMENT FINDINGS & HEALTH STATUS (STYLED LIKE RESULT HERO CARD) */}
