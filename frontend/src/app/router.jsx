@@ -34,6 +34,7 @@ const ProfilePage = lazyWithRetry(() => import('../pages/ProfilePage').then((m) 
 const AdminPage = lazyWithRetry(() => import('../pages/AdminPage').then((m) => ({ default: m.AdminPage })))
 const AdminUserEditPage = lazyWithRetry(() => import('../pages/AdminUserEditPage').then((m) => ({ default: m.AdminUserEditPage })))
 const RolePermissionsPage = lazyWithRetry(() => import('../pages/RolePermissionsPage').then((m) => ({ default: m.RolePermissionsPage })))
+const AuditLogPage = lazyWithRetry(() => import('../pages/AuditLogPage').then((m) => ({ default: m.AuditLogPage })))
 const DiabetesGuidePage = lazyWithRetry(() => import('../pages/DiabetesGuidePage').then((m) => ({ default: m.DiabetesGuidePage })))
 const TreatmentPlanningPage = lazyWithRetry(() => import('../pages/TreatmentPlanningPage').then((m) => ({ default: m.TreatmentPlanningPage })))
 const TreatmentPlanCreatePage = lazyWithRetry(() => import('../pages/TreatmentPlanCreatePage').then((m) => ({ default: m.TreatmentPlanCreatePage })))
@@ -181,7 +182,7 @@ function AuthenticatedRoutes() {
         <Route
           path="/care-plan"
           element={
-            <RoleGuard user={user} notRoles={['admin']} permissions={['care_plan.view_own']}>
+            <RoleGuard user={user} roles={['patient']} permissions={['care_plan.view_own']}>
               <CarePlanPage />
             </RoleGuard>
           }
@@ -195,7 +196,7 @@ function AuthenticatedRoutes() {
           path="/users"
           element={(
             <RoleGuard user={user} permissions={['user.view', 'permission.view']}>
-              <AdminPage />
+              <AdminPage view="users" />
             </RoleGuard>
           )}
         />
@@ -214,6 +215,15 @@ function AuthenticatedRoutes() {
           element={(
             <RoleGuard user={user} permissions={['permission.view']}>
               <RolePermissionsPage />
+            </RoleGuard>
+          )}
+        />
+
+        <Route
+          path="/audit-logs"
+          element={(
+            <RoleGuard user={user} permissions={['audit.view']}>
+              <AuditLogPage />
             </RoleGuard>
           )}
         />

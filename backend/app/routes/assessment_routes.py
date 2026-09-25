@@ -125,7 +125,7 @@ def generate_assessment_reasoning(diagnosis_result_id: int):
 
 
 @assessment_bp.get("/<int:diagnosis_result_id>/care-plan")
-@require_auth(permissions=["diagnosis.run", "diagnosis.view_own"], permission_mode="any")
+@require_auth(roles=["patient"], permissions=["care_plan.view_own"])
 def get_assessment_care_plan(diagnosis_result_id: int):
     """Retrieve or generate structured personalized AI care plan for an assessment result.
 
@@ -147,7 +147,7 @@ def get_assessment_care_plan(diagnosis_result_id: int):
 
 
 @assessment_bp.post("/<int:diagnosis_result_id>/care-plan")
-@require_auth(permissions=["diagnosis.run", "diagnosis.view_own"], permission_mode="any")
+@require_auth(roles=["patient"], permissions=["care_plan.view_own"])
 def generate_assessment_care_plan(diagnosis_result_id: int):
     """Generate or regenerate structured personalized AI care plan from an assessment result.
 
@@ -164,7 +164,7 @@ def generate_assessment_care_plan(diagnosis_result_id: int):
 
 
 @assessment_bp.post("/care-plan/generate")
-@require_auth(permissions=["diagnosis.run", "diagnosis.view_own"], permission_mode="any")
+@require_auth(roles=["patient"], permissions=["care_plan.view_own"])
 def generate_care_plan_direct():
     """Generate structured personalized care plan directly from an assessment result payload."""
     payload = request.get_json(silent=True) or {}

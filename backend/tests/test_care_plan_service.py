@@ -361,3 +361,20 @@ def test_care_plan_api_endpoints(client):
     assert direct_resp.status_code == 200
     direct_plan = direct_resp.get_json()["data"]
     assert direct_plan["assessment_findings"]["risk_level"] == "moderate"
+
+    # Personal care-plan endpoints are exclusive to patient accounts even
+    # when another role can run diagnoses or view clinical records.
+    doctor_login_resp = client.post(
+        "/api/auth/login",
+        json={"email": "doctor@example.com", "password": "doctor123"},
+    )
+    assert doctor_login_resp.status_code == 200
+    doctor_headers = {
+        "Authorization": f"Bearer {doctor_login_resp.get_json()['data']['access_token']}"
+    }
+    doctor_plan_resp = client.post(
+        "/api/assessment/care-plan/generate",
+        headers=doctor_headers,
+        json={"result": {"diagnosis": "Prediabetes", "certainty": 0.8}},
+    )
+    assert doctor_plan_resp.status_code == 403

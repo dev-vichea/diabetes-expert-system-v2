@@ -7,6 +7,7 @@ from app.utils.seed import DEFAULT_ROLES
 class AdminService:
     BUILT_IN_ROLE_NAMES = {'patient', 'doctor', 'admin'}
     RETIRED_ROLE_NAMES = {'super_admin'}
+    PATIENT_EXCLUSIVE_PERMISSIONS = {'care_plan.view_own'}
 
     def __init__(
         self,
@@ -177,6 +178,7 @@ class AdminService:
             raise ValidationError('Role already exists.')
 
         self._validate_permission_codes(permission_codes)
+        self._validate_role_permission_constraints(name, permission_codes)
         role = self.user_repository.create_role(
             name=name,
             description=description,
@@ -225,6 +227,7 @@ class AdminService:
         if 'permissions' in payload:
             permission_codes = self._normalize_permission_codes(payload.get('permissions'))
             self._validate_permission_codes(permission_codes)
+            self._validate_role_permission_constraints(name or role.name, permission_codes)
 
         if name is None and description is None and permission_codes is None:
             raise ValidationError('At least one updatable role field is required.')
@@ -315,6 +318,15 @@ class AdminService:
         if not user:
             raise NotFoundError('User not found.')
 
+        if 'patient' not in role_names:
+            allowed_direct_permissions = sorted(
+                set(self.user_repository.get_direct_permissions(user)) - self.PATIENT_EXCLUSIVE_PERMISSIONS
+            )
+            user = self.user_repository.update_user_direct_permissions(
+                user_id=user_id,
+                permission_codes=allowed_direct_permissions,
+            )
+
         updated = self.user_repository.to_public_dict(user)
 
         if self.audit_log_repository:
@@ -346,8 +358,6 @@ class AdminService:
         name = str(payload.get('name') or '').strip()
         email = str(payload.get('email') or '').strip().lower()
         role_name = str(payload.get('role_name') or '').strip().lower()
-        description = str(payload.get('role_description') or '').strip()
-        permission_codes = self._normalize_permission_codes(payload.get('permissions'))
         is_active = self._as_bool(payload.get('is_active', user.is_active))
 
         if not name:
@@ -357,41 +367,36 @@ class AdminService:
         if not role_name:
             raise ValidationError('role_name is required.')
         if role_name == 'custom':
-            raise ValidationError('Please enter a real name for the custom role.')
+            raise ValidationError('Select an existing role. Create new roles from the Roles page.')
 
         existing_user = self.user_repository.get_by_email_case_insensitive(email)
         if existing_user and existing_user.id != user_id:
             raise ValidationError('Email is already in use.')
 
-        self._validate_permission_codes(permission_codes)
-
         role = self.user_repository.get_role_by_name(role_name)
-        if role:
-            self._validate_assignable_role_names([role_name], actor_claims)
-            existing_permissions = sorted(permission.code for permission in role.permissions)
-            if existing_permissions != permission_codes:
-                raise ValidationError(
-                    'Role name already exists with different permissions. Use another role name or select the existing role permissions.'
-                )
+        if not role:
+            raise ValidationError('Select an existing role. Create new roles from the Roles page.')
+        self._validate_assignable_role_names([role_name], actor_claims)
+
+        role_permission_codes = {permission.code for permission in role.permissions}
+        if 'direct_permissions' in payload:
+            direct_permission_codes = self._normalize_permission_codes(payload.get('direct_permissions'))
         else:
-            self._validate_assignable_role_names([role_name], actor_claims)
-            role_description = description or f'Custom role created from user editor for {name}'
-            role = self.user_repository.create_role(
-                name=role_name,
-                description=role_description,
-                permission_codes=permission_codes,
-            )
-            if self.audit_log_repository:
-                self.audit_log_repository.create(
-                    action='role.create',
-                    entity_type='role',
-                    entity_id=str(role.id),
-                    actor_user_id=actor_user_id,
-                    metadata={'permissions': permission_codes, 'source': 'user_access_profile'},
-                )
+            # Backward compatibility for clients that submit the full effective
+            # permission list under ``permissions``.
+            submitted_permissions = self._normalize_permission_codes(payload.get('permissions'))
+            direct_permission_codes = sorted(set(submitted_permissions) - role_permission_codes)
+
+        self._validate_permission_codes(direct_permission_codes)
+        self._validate_role_permission_constraints(role_name, direct_permission_codes)
+        direct_permission_codes = sorted(set(direct_permission_codes) - role_permission_codes)
 
         updated_user = self.user_repository.update_user(user, {'name': name, 'email': email, 'is_active': is_active})
         updated_user = self.user_repository.update_user_roles(user_id=updated_user.id, role_names=[role.name])
+        updated_user = self.user_repository.update_user_direct_permissions(
+            user_id=updated_user.id,
+            permission_codes=direct_permission_codes,
+        )
         safe_user = self.user_repository.to_public_dict(updated_user)
 
         if self.audit_log_repository:
@@ -400,7 +405,12 @@ class AdminService:
                 entity_type='user',
                 entity_id=str(user_id),
                 actor_user_id=actor_user_id,
-                metadata={'role': role.name, 'permissions': permission_codes, 'is_active': is_active},
+                metadata={
+                    'role': role.name,
+                    'direct_permissions': direct_permission_codes,
+                    'effective_permissions': safe_user['permissions'],
+                    'is_active': is_active,
+                },
             )
 
         return safe_user
@@ -437,6 +447,8 @@ class AdminService:
     def list_audit_logs(
         self,
         *,
+        search: str | None = None,
+        category: str | None = None,
         action: str | None = None,
         entity_type: str | None = None,
         entity_id: str | None = None,
@@ -448,6 +460,8 @@ class AdminService:
             return [], 0
 
         return self.audit_log_repository.paginate_logs(
+            search=search,
+            category=category,
             action=action,
             entity_type=entity_type,
             entity_id=entity_id,
@@ -540,6 +554,17 @@ class AdminService:
         unknown = sorted(set(permission_codes) - available_permissions)
         if unknown:
             raise ValidationError('Unknown permission(s).', details={'unknown_permissions': unknown})
+
+    def _validate_role_permission_constraints(self, role_name: str, permission_codes: list[str]) -> None:
+        restricted = sorted(self.PATIENT_EXCLUSIVE_PERMISSIONS.intersection(permission_codes))
+        if restricted and role_name != 'patient':
+            raise ValidationError(
+                'Patient care-plan access can only be assigned to the patient role.',
+                details={
+                    'role': role_name,
+                    'patient_exclusive_permissions': restricted,
+                },
+            )
 
     @staticmethod
     def _normalize_role_names(role_names) -> list[str]:

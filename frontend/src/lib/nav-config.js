@@ -2,6 +2,7 @@ import {
   BookOpen,
   ClipboardCheck,
   FileSpreadsheet,
+  FileText,
   GraduationCap,
   HeartPulse,
   LayoutDashboard,
@@ -29,6 +30,7 @@ export const NAV_ITEMS = [
   // privileged account is not sent to a page that can only render errors.
   { to: '/users', labelKey: 'nav.users', icon: UserCog, section: 'system', permissions: ['user.view', 'permission.view'] },
   { to: '/roles-permissions', labelKey: 'nav.roles', icon: ShieldCheck, section: 'system', permissions: ['permission.view'] },
+  { to: '/audit-logs', labelKey: 'nav.auditLogs', icon: FileText, section: 'system', permissions: ['audit.view'] },
 ]
 
 export const PAGE_TITLE_BY_PATH = [
@@ -52,6 +54,7 @@ export const PAGE_TITLE_BY_PATH = [
   { pattern: '/care-plan', titleKey: 'page.carePlan.title', subtitleKey: 'page.carePlan.subtitle' },
   { pattern: '/users', titleKey: 'page.users.title', subtitleKey: 'page.users.subtitle' },
   { pattern: '/roles-permissions', titleKey: 'page.rolesPermissions.title', subtitleKey: 'page.rolesPermissions.subtitle' },
+  { pattern: '/audit-logs', titleKey: 'page.auditLogs.title', subtitleKey: 'page.auditLogs.subtitle' },
   { pattern: '/dashboard', titleKey: 'page.dashboard.title', subtitleKey: 'page.dashboard.subtitle' },
 ]
 

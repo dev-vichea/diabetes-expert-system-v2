@@ -909,7 +909,22 @@ def test_admin_can_manage_users_and_permissions(client, admin_auth, doctor_auth,
         "notification.view",
     }.issubset(permission_codes)
     admin_role = next(role for role in role_rows if role["name"] == "admin")
-    assert permission_codes.issubset(set(admin_role["permissions"]))
+    patient_role = next(role for role in role_rows if role["name"] == "patient")
+    assert "care_plan.view_own" not in admin_role["permissions"]
+    assert "care_plan.view_own" not in doctor_role["permissions"]
+    assert "care_plan.view_own" in patient_role["permissions"]
+    assert (permission_codes - {"care_plan.view_own"}).issubset(set(admin_role["permissions"]))
+
+    rejected_exclusive_role_response = client.post(
+        "/api/admin/roles",
+        headers=_auth_header(admin_auth["access_token"]),
+        json={
+            "name": "care_plan_manager",
+            "description": "Invalid personal care-plan access",
+            "permissions": ["patient.view", "care_plan.view_own"],
+        },
+    )
+    assert rejected_exclusive_role_response.status_code == 400
 
     create_role_response = client.post(
         "/api/admin/roles",
@@ -939,6 +954,46 @@ def test_admin_can_manage_users_and_permissions(client, admin_auth, doctor_auth,
     created_user_id = created_user["id"]
     assert created_user["is_active"] is True
     assert "triage_manager" in created_user["roles"]
+
+    rejected_access_profile_response = client.patch(
+        f"/api/admin/users/{created_user_id}/access-profile",
+        headers=_auth_header(admin_auth["access_token"]),
+        json={
+            "name": created_user["name"],
+            "email": created_user["email"],
+            "role_name": "triage_manager",
+            "permissions": ["patient.view", "diagnosis.review_any", "care_plan.view_own"],
+            "is_active": True,
+        },
+    )
+    assert rejected_access_profile_response.status_code == 400
+
+    individual_grant_response = client.patch(
+        f"/api/admin/users/{created_user_id}/access-profile",
+        headers=_auth_header(admin_auth["access_token"]),
+        json={
+            "name": created_user["name"],
+            "email": created_user["email"],
+            "role_name": "triage_manager",
+            "direct_permissions": ["rule.view"],
+            "is_active": True,
+        },
+    )
+    assert individual_grant_response.status_code == 200
+    individually_granted_user = individual_grant_response.get_json()["data"]
+    assert individually_granted_user["roles"] == ["triage_manager"]
+    assert individually_granted_user["direct_permissions"] == ["rule.view"]
+    assert "rule.view" in individually_granted_user["permissions"]
+    assert "rule.view" not in individually_granted_user["role_permissions"]
+
+    unchanged_role_response = client.get(
+        "/api/admin/roles",
+        headers=_auth_header(admin_auth["access_token"]),
+    )
+    unchanged_triage_role = next(
+        role for role in unchanged_role_response.get_json()["data"] if role["name"] == "triage_manager"
+    )
+    assert "rule.view" not in unchanged_triage_role["permissions"]
 
     filtered_users_response = client.get(
         "/api/admin/users?search=triage&role=triage_manager&status=active&limit=20",
@@ -975,6 +1030,15 @@ def test_admin_can_manage_users_and_permissions(client, admin_auth, doctor_auth,
         json={"email": "triage.qa@example.com", "password": "triage123"},
     )
     assert enabled_login_response.status_code == 200
+    enabled_user = enabled_login_response.get_json()["data"]["user"]
+    assert enabled_user["direct_permissions"] == ["rule.view"]
+    assert "rule.view" in enabled_user["permissions"]
+
+    individual_access_response = client.get(
+        "/api/facts",
+        headers=_auth_header(enabled_login_response.get_json()["data"]["access_token"]),
+    )
+    assert individual_access_response.status_code == 200
 
     update_role_response = client.patch(
         f"/api/admin/roles/{role_id}",
@@ -983,6 +1047,13 @@ def test_admin_can_manage_users_and_permissions(client, admin_auth, doctor_auth,
     )
     assert update_role_response.status_code == 200
     assert "diagnosis.run" in update_role_response.get_json()["data"]["permissions"]
+
+    rejected_role_update_response = client.patch(
+        f"/api/admin/roles/{role_id}",
+        headers=_auth_header(admin_auth["access_token"]),
+        json={"permissions": ["patient.view", "care_plan.view_own"]},
+    )
+    assert rejected_role_update_response.status_code == 400
 
     with app.app_context():
         doctor_user = User.query.filter_by(email="doctor@example.com").first()

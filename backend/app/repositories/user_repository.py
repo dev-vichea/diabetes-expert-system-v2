@@ -14,7 +14,10 @@ class UserRepository:
         return User.query.filter_by(email=email).first()
 
     def get_by_id(self, user_id: int) -> User | None:
-        return db.session.get(User, user_id)
+        # Direct grants are consulted on every authenticated request. Loading
+        # them with the user avoids adding a separate permission query to the
+        # authorization path for every API call.
+        return db.session.get(User, user_id, options=[joinedload(User.direct_permissions)])
 
     def paginate_users(
         self,
@@ -49,6 +52,7 @@ class UserRepository:
         users = (
             query.options(
                 selectinload(User.roles).selectinload(Role.permissions),
+                selectinload(User.direct_permissions),
                 joinedload(User.patient_profile),
             )
             .distinct()
@@ -144,6 +148,15 @@ class UserRepository:
         db.session.commit()
         return user
 
+    def update_user_direct_permissions(self, user_id: int, permission_codes: list[str]) -> User | None:
+        user = self.get_by_id(user_id)
+        if not user:
+            return None
+
+        user.direct_permissions = Permission.query.filter(Permission.code.in_(permission_codes)).all()
+        db.session.commit()
+        return user
+
     def update_user_status(self, user_id: int, is_active: bool) -> User | None:
         user = self.get_by_id(user_id)
         if not user:
@@ -207,7 +220,17 @@ class UserRepository:
 
     @staticmethod
     def get_permissions(user: User) -> list[str]:
+        role_permissions = {permission.code for role in user.roles for permission in role.permissions}
+        direct_permissions = {permission.code for permission in user.direct_permissions}
+        return sorted(role_permissions | direct_permissions)
+
+    @staticmethod
+    def get_role_permissions(user: User) -> list[str]:
         return sorted({permission.code for role in user.roles for permission in role.permissions})
+
+    @staticmethod
+    def get_direct_permissions(user: User) -> list[str]:
+        return sorted(permission.code for permission in user.direct_permissions)
 
     @staticmethod
     def to_role_dict(role: Role) -> dict:
@@ -260,6 +283,8 @@ class UserRepository:
 
     def to_public_dict(self, user: User) -> dict:
         role_names = sorted(role.name for role in user.roles)
+        role_permissions = self.get_role_permissions(user)
+        direct_permissions = self.get_direct_permissions(user)
         permissions = self.get_permissions(user)
 
         return {
@@ -277,6 +302,8 @@ class UserRepository:
             "roles": role_names,
             "role": role_names[0] if role_names else "patient",
             "permissions": permissions,
+            "role_permissions": role_permissions,
+            "direct_permissions": direct_permissions,
             "patient_id": user.patient_profile.id if user.patient_profile else None,
             "profile_completed": bool(user.patient_profile and user.patient_profile.profile_completed_at is not None),
             "created_at": serialize_datetime(user.created_at),

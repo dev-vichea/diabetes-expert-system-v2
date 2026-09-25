@@ -31,7 +31,7 @@ export function DashboardPage() {
   if (isAdminExperience) {
     return (
       <Suspense fallback={<RouteLoading />}>
-        <AdminPage />
+        <AdminPage view="dashboard" />
       </Suspense>
     )
   }

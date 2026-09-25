@@ -47,6 +47,7 @@ import { notify } from '@/lib/toast'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 const BUILT_IN_ROLE_NAMES = new Set(['patient', 'doctor', 'admin'])
+const PATIENT_EXCLUSIVE_PERMISSIONS = new Set(['care_plan.view_own'])
 const ROLE_SORT_ORDER = new Map([
   ['admin', 0],
   ['doctor', 1],
@@ -215,6 +216,8 @@ export function RolePermissionsPage() {
   const isBuiltInRole = selectedRole?.is_builtin ?? BUILT_IN_ROLE_NAMES.has(selectedRole?.name || '')
   const isReadOnly = !canManage
   const isEditableBuiltInRole = Boolean(selectedRole && isBuiltInRole)
+  const isPatientRole = selectedRole?.name === 'patient'
+  const isPermissionLocked = (code) => PATIENT_EXCLUSIVE_PERMISSIONS.has(code) && !isPatientRole
   const replacementRoleOptions = useMemo(
     () => roles.filter((role) => role.id !== selectedRole?.id),
     [roles, selectedRole?.id]
@@ -362,13 +365,16 @@ export function RolePermissionsPage() {
       id: null,
       name: `${baseName}_copy`,
       description: `Custom role duplicated from ${baseName}`,
-      permissions: normalizePermissionList(roleToCopy.permissions || []),
+      permissions: normalizePermissionList(
+        (roleToCopy.permissions || []).filter((code) => !PATIENT_EXCLUSIVE_PERMISSIONS.has(code))
+      ),
     })
     setError('')
     notify.info(t('rolesPage.notifications.duplicateSuccess'))
   }
 
   function togglePermission(code, checked) {
+    if (isPermissionLocked(code)) return
     setForm((current) => {
       const next = new Set(current.permissions)
       if (checked) next.add(code)
@@ -384,6 +390,7 @@ export function RolePermissionsPage() {
     if (isReadOnly) return
     const groupPermissionCodes = permissions
       .filter((p) => getPermissionGroup(p.code) === groupKey)
+      .filter((p) => !isPermissionLocked(p.code))
       .map((p) => p.code)
 
     setForm((current) => {
@@ -403,7 +410,9 @@ export function RolePermissionsPage() {
     if (isReadOnly) return
     setForm((current) => ({
       ...current,
-      permissions: normalizePermissionList(permissions.map((p) => p.code)),
+      permissions: normalizePermissionList(
+        permissions.filter((permission) => !isPermissionLocked(permission.code)).map((permission) => permission.code)
+      ),
     }))
   }
 
@@ -1021,9 +1030,12 @@ export function RolePermissionsPage() {
                   <div className="grid gap-4 md:grid-cols-2">
                     {filteredGroupedPermissions.map((group) => {
                       const GroupIcon = group.icon
-                      const groupCodes = group.items.map((p) => p.code)
+                      const groupCodes = group.items.map((permission) => permission.code)
+                      const assignableGroupCodes = groupCodes.filter((code) => !isPermissionLocked(code))
                       const groupSelectedCount = groupCodes.filter((code) => form.permissions.includes(code)).length
-                      const allGroupSelected = groupSelectedCount === groupCodes.length && groupCodes.length > 0
+                      const allGroupSelected =
+                        assignableGroupCodes.length > 0 &&
+                        assignableGroupCodes.every((code) => form.permissions.includes(code))
                       const someGroupSelected = groupSelectedCount > 0 && !allGroupSelected
 
                       return (
@@ -1054,7 +1066,7 @@ export function RolePermissionsPage() {
                               </span>
 
                               {/* Group quick toggle */}
-                              {!isReadOnly && (
+                              {!isReadOnly && assignableGroupCodes.length > 0 && (
                                 <button
                                   type="button"
                                   onClick={() => toggleGroupPermissions(group.key, !allGroupSelected)}
@@ -1072,6 +1084,7 @@ export function RolePermissionsPage() {
                           <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
                             {group.items.map((permission) => {
                               const checked = form.permissions.includes(permission.code)
+                              const permissionLocked = isPermissionLocked(permission.code)
                               const permissionLabel = t(`permissions.${permission.code}`, {
                                 defaultValue: permission.description || permission.code,
                               })
@@ -1079,22 +1092,31 @@ export function RolePermissionsPage() {
                               return (
                                 <label
                                   key={permission.code}
-                                  className={`group flex cursor-pointer select-none items-center justify-between gap-3 px-3.5 py-2.5 transition-colors ${
+                                  title={permissionLocked ? t('rolesPage.form.patientOnlyPermission') : undefined}
+                                  className={`group flex select-none items-center justify-between gap-3 px-3.5 py-2.5 transition-colors ${
                                     checked
                                       ? 'bg-primary-50/30 dark:bg-primary-950/15'
                                       : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/30'
-                                  } ${isReadOnly ? 'cursor-default opacity-85' : ''}`}
+                                  } ${isReadOnly || permissionLocked ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
                                 >
                                   <div className="flex items-center gap-2.5 min-w-0">
                                     <Checkbox
                                       checked={checked}
-                                      disabled={loading || saving || isReadOnly}
+                                      disabled={loading || saving || isReadOnly || permissionLocked}
                                       aria-label={permissionLabel}
                                       onCheckedChange={(value) => togglePermission(permission.code, value === true)}
                                     />
-                                    <span className="truncate text-xs font-medium text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white">
-                                      {permissionLabel}
-                                    </span>
+                                    <div className="min-w-0">
+                                      <span className="block truncate text-xs font-medium text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white">
+                                        {permissionLabel}
+                                      </span>
+                                      {permissionLocked && (
+                                        <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                                          <Lock className="h-2.5 w-2.5" />
+                                          {t('rolesPage.form.patientOnlyPermission')}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                   <span className="shrink-0 font-mono text-[10px] text-slate-400 dark:text-slate-500">
                                     {permission.code}

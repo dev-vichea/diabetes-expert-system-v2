@@ -158,8 +158,10 @@ def save_user_access_profile(user_id: int):
 
 
 @admin_bp.get('/audit-logs')
-@require_auth(permissions=['user.view'])
+@require_auth(permissions=['audit.view'])
 def list_audit_logs():
+    search = request.args.get('search', default='', type=str).strip() or None
+    category = request.args.get('category', default='', type=str).strip() or None
     action = request.args.get('action', default='', type=str).strip() or None
     entity_type = request.args.get('entity_type', default='', type=str).strip() or None
     entity_id = request.args.get('entity_id', default='', type=str).strip() or None
@@ -168,6 +170,8 @@ def list_audit_logs():
     limit = min(max(1, request.args.get('limit', default=100, type=int)), 200)
 
     logs, total = get_admin_service().list_audit_logs(
+        search=search,
+        category=category,
         action=action,
         entity_type=entity_type,
         entity_id=entity_id,

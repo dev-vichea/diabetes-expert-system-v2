@@ -109,6 +109,7 @@
     "carePlan": "Care Plan",
     "users": "Users",
     "roles": "Roles",
+    "auditLogs": "Audit Logs",
     "workspace": "Workspace",
     "system": "System",
     "documents": "Documents",
@@ -173,6 +174,10 @@
       "title": "Roles & Permissions",
       "subtitle": "Create role profiles and choose granted permissions"
     },
+    "auditLogs": {
+      "title": "Audit Logs",
+      "subtitle": "Review administrative actions and security events"
+    },
     "dashboard": {
       "title": "Dashboard",
       "subtitle": "Operational overview by role"
@@ -180,6 +185,113 @@
     "patientResults": {
       "title": "Patient Results",
       "subtitle": "All patient assessment results across the clinic"
+    }
+  },
+  "auditLogPage": {
+    "hero": {
+      "title": "Audit Logs",
+      "description": "See who signed in, completed an assessment, or made an important change in the system."
+    },
+    "refresh": "Refresh logs",
+    "loadFailed": "Unable to load audit logs.",
+    "metrics": {
+      "total": "Total matching events",
+      "actors": "People on this page",
+      "logins": "Logins on this page",
+      "assessments": "Assessment activity on this page"
+    },
+    "filters": {
+      "title": "Filter audit events",
+      "allActivity": "All activity",
+      "authentication": "Logins",
+      "assessments": "Assessments",
+      "patientActivity": "Patient activity",
+      "userManagement": "Users & roles",
+      "knowledgeBase": "Knowledge base",
+      "search": "Search activity",
+      "searchPlaceholder": "Search by person, email, or activity...",
+      "apply": "Search",
+      "clear": "Clear"
+    },
+    "table": {
+      "title": "System activity",
+      "description": "Newest events are shown first. Expand an event to inspect its recorded details.",
+      "action": "Action",
+      "actor": "Who",
+      "target": "Related item",
+      "details": "Details",
+      "time": "Date & time",
+      "system": "System",
+      "viewDetails": "View details ({{count}})",
+      "noDetails": "No additional details"
+    },
+    "actions": {
+      "registered": "Created an account",
+      "loggedIn": "Logged in",
+      "registeredWithGoogle": "Created an account with Google",
+      "loggedInWithGoogle": "Logged in with Google",
+      "linkedGoogle": "Linked a Google account",
+      "loggedOut": "Logged out",
+      "completedAssessment": "Completed an assessment",
+      "submittedAssessment": "Sent an assessment to the care team",
+      "reviewedAssessment": "Reviewed an assessment",
+      "createdPatient": "Created a patient record",
+      "updatedPatient": "Updated a patient record",
+      "updatedOwnProfile": "Updated their health profile",
+      "recordedSymptom": "Recorded a symptom",
+      "recordedLabResult": "Recorded a lab result",
+      "createdUser": "Created a user",
+      "updatedUser": "Updated a user",
+      "updatedProfile": "Updated their profile",
+      "changedUserRole": "Changed a user's role",
+      "changedUserAccess": "Changed a user's permissions",
+      "changedUserStatus": "Changed a user's account status",
+      "createdRole": "Created a role",
+      "updatedRole": "Updated a role",
+      "deletedRole": "Deleted a role",
+      "createdRule": "Created a medical rule",
+      "updatedRule": "Updated a medical rule",
+      "archivedRule": "Archived a medical rule",
+      "createdFact": "Created a knowledge item",
+      "updatedFact": "Updated a knowledge item"
+    },
+    "entities": {
+      "user": "User",
+      "role": "Role",
+      "patient": "Patient",
+      "assessment": "Assessment",
+      "symptom": "Symptom",
+      "labResult": "Lab result",
+      "rule": "Medical rule",
+      "knowledgeItem": "Knowledge item"
+    },
+    "details": {
+      "email": "Email",
+      "roles": "Role",
+      "assessmentResult": "Assessment result",
+      "confidence": "Confidence",
+      "confidenceLevel": "Confidence level",
+      "urgency": "Urgency",
+      "urgent": "Urgent",
+      "patient": "Patient",
+      "assessment": "Assessment",
+      "updatedInformation": "Updated information",
+      "permissions": "Permissions",
+      "individualPermissions": "Individual permissions",
+      "effectivePermissions": "Effective permissions",
+      "accountStatus": "Account active",
+      "name": "Name",
+      "knowledgeItem": "Knowledge item",
+      "symptom": "Symptom",
+      "labTest": "Lab test",
+      "assessmentType": "Assessment type",
+      "completed": "Enough information collected",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "empty": {
+      "title": "No audit events found",
+      "description": "Try clearing the filters or check back after new administrative activity."
     }
   },
   "usersPage": {
@@ -250,21 +362,25 @@
       "editPage": {
         "title": "Edit {{name}}",
         "titleFallback": "Edit User",
-        "description": "Update user information, choose a role, or create a new role from permission selections.",
+        "description": "Update user information, assign a role, and grant additional permissions to this user only.",
         "detailsTitle": "User Details",
         "detailsDescription": "Edit account identity, status, and role assignment from one form.",
         "loading": "Loading user details...",
-        "roleLabel": "Role / Custom Role Name",
+        "roleLabel": "Assigned Role",
         "rolePlaceholder": "Select or type role name",
         "createRoleOption": "Create role \"{{name}}\"",
         "noMatchingRoles": "No matching roles.",
         "noRolesAvailable": "No roles available.",
         "permissionsTitle": "Permissions",
-        "permissionsDescription": "Check permissions for this role. If they differ from an existing role, save with a new role name.",
+        "permissionsDescription": "Role permissions are inherited and locked. Select additional permissions to grant them only to this user.",
+        "patientOnlyPermission": "Patient role only",
+        "inheritedPermission": "Inherited from assigned role",
+        "individualPermission": "Granted to this user only",
         "noPermissions": "No permissions are available.",
         "saveFailed": "Failed to update user",
         "loadFailed": "Failed to load user details",
         "enterCustomRoleName": "Enter a name for the custom role before saving.",
+        "selectExistingRole": "Select an existing role. Create new roles from the Roles page.",
         "roleNameConflict": "That role name already exists with different permissions. Use another name.",
         "savingProfile": "Saving user access profile...",
         "saved": "User updated successfully.",
@@ -363,6 +479,7 @@
       "noPermissionsTitle": "No permissions found",
       "noPermissionsDesc": "Permission options will appear here once they are available.",
       "noSearchMatch": "No permissions match your search query.",
+      "patientOnlyPermission": "Exclusive to the Patient role",
       "selfLockoutWarning": "You are removing permission-management access from your own role. After your session refreshes, you may not be able to restore it. Continue?"
     },
     "groups": {

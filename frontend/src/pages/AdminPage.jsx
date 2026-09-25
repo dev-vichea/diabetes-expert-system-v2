@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Area,
@@ -33,7 +33,6 @@ import {
   ShieldCheck,
   Stethoscope,
   TrendingUp,
-  UserRound,
   Users,
   X,
   XCircle,
@@ -54,7 +53,28 @@ import {
   UserAvatar,
 } from '@/components/ui'
 
-const ROLE_FILTERS = ['all', 'admin', 'doctor', 'patient']
+const FALLBACK_ROLES = [
+  { name: 'admin', description: 'Full system and user access' },
+  { name: 'doctor', description: 'Clinical reviews and care plans' },
+  { name: 'patient', description: 'Self-assessment and personal care plan' },
+]
+
+const ROLE_COLOR_MAP = {
+  admin: '#8b5cf6',
+  doctor: '#3b82f6',
+  patient: '#10b981',
+}
+
+const ROLE_COLOR_PALETTE = ['#06b6d4', '#f59e0b', '#ec4899', '#14b8a6', '#6366f1', '#f97316']
+
+const CLINICAL_PERMISSION_CODES = new Set([
+  'patient.view',
+  'patient.manage',
+  'diagnosis.run',
+  'diagnosis.review_any',
+  'treatment_plan.view',
+  'treatment_plan.manage',
+])
 
 function formatRoleName(roleName, t = null) {
   if (!roleName) return 'Patient'
@@ -62,7 +82,7 @@ function formatRoleName(roleName, t = null) {
   if (t) {
     const key = `roles.${norm}`
     const translated = t(key, null)
-    if (translated) return translated
+    if (translated && translated !== key) return translated
   }
   return String(roleName)
     .replace(/[_-]/g, ' ')
@@ -91,7 +111,24 @@ function activityTone(action) {
   return { icon: Activity, classes: 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400' }
 }
 
-function readableAction(action) {
+function readableAction(action, isKhmer = false) {
+  const labels = {
+    'auth.login': isKhmer ? 'បានចូលប្រើ' : 'Logged in',
+    'auth.google_login': isKhmer ? 'បានចូលប្រើតាម Google' : 'Logged in with Google',
+    'auth.logout': isKhmer ? 'បានចាកចេញ' : 'Logged out',
+    'auth.register': isKhmer ? 'បានបង្កើតគណនី' : 'Created an account',
+    'assessment.evaluate': isKhmer ? 'បានបំពេញការវាយតម្លៃ' : 'Completed an assessment',
+    'diagnosis.create': isKhmer ? 'បានបំពេញការវាយតម្លៃ' : 'Completed an assessment',
+    'diagnosis.submit_to_care_team': isKhmer ? 'បានផ្ញើការវាយតម្លៃទៅក្រុមថែទាំ' : 'Sent an assessment to the care team',
+    'diagnosis.review': isKhmer ? 'បានពិនិត្យការវាយតម្លៃ' : 'Reviewed an assessment',
+    'user.create': isKhmer ? 'បានបង្កើតអ្នកប្រើប្រាស់' : 'Created a user',
+    'user.access_profile.save': isKhmer ? 'បានប្ដូរសិទ្ធិអ្នកប្រើប្រាស់' : "Changed a user's permissions",
+    'user.status.update': isKhmer ? 'បានប្ដូរស្ថានភាពគណនី' : "Changed a user's account status",
+    'role.create': isKhmer ? 'បានបង្កើតតួនាទី' : 'Created a role',
+    'role.update': isKhmer ? 'បានកែប្រែតួនាទី' : 'Updated a role',
+    'role.delete': isKhmer ? 'បានលុបតួនាទី' : 'Deleted a role',
+  }
+  if (labels[action]) return labels[action]
   return String(action || 'System activity')
     .replace(/[._]/g, ' ')
     .replace(/\b\w/g, (letter) => letter.toUpperCase())
@@ -120,11 +157,10 @@ function AdminPageSkeleton() {
   )
 }
 
-export function AdminPage() {
+export function AdminPage({ view = 'users' }) {
   const { user: currentUser } = useAuth()
   const { t, isKhmer, language } = useLanguage()
   const navigate = useNavigate()
-  const activityRef = useRef(null)
 
   const [stats, setStats] = useState(null)
   const [activity, setActivity] = useState([])
@@ -224,13 +260,39 @@ export function AdminPage() {
   const byRole = userCounts.by_role || {}
   const totalUsers = Number(userCounts.total || totalCount || users.length || 0)
   const doctors = Number(byRole.doctor || 0)
-  const admins = Number(byRole.admin || 0)
-  const patients = Number(stats?.patients?.total || byRole.patient || 0)
   const assessments = Number(stats?.assessments?.total ?? stats?.diagnosis?.total ?? 0)
   const treatmentPlans = Number(stats?.treatment_plans?.total ?? stats?.diagnosis?.treatment_plans ?? 0)
   const reviews = Number(stats?.diagnosis?.reviewed ?? 0)
+  const diagnosisTotal = Number(stats?.diagnosis?.total ?? 0)
+  const pendingReviews = Math.max(0, diagnosisTotal - reviews)
+  const urgentReviews = Number(stats?.diagnosis?.urgent ?? 0)
   const rulesCount = Number(stats?.rules?.total ?? 0)
-  const events24h = Number(stats?.audit?.events_24h ?? activity.length ?? 0)
+  const events24h = Number(stats?.activity?.events_24h ?? activity.length ?? 0)
+
+  const roleOptions = useMemo(
+    () => (roles.length ? roles : FALLBACK_ROLES),
+    [roles]
+  )
+
+  const roleFilters = useMemo(
+    () => ['all', ...roleOptions.map((role) => String(role.name || '').toLowerCase()).filter(Boolean)],
+    [roleOptions]
+  )
+
+  const clinicalStaff = useMemo(() => {
+    if (!roles.length) return doctors
+
+    const clinicalUserIds = new Set()
+    roles.forEach((role) => {
+      const hasClinicalAccess = (role.permissions || []).some((permission) =>
+        CLINICAL_PERMISSION_CODES.has(permission)
+      )
+      if (!hasClinicalAccess) return
+      const assignedUsers = role.users || []
+      assignedUsers.forEach((roleUser) => clinicalUserIds.add(roleUser.id))
+    })
+    return clinicalUserIds.size
+  }, [roles, doctors])
 
   // Chart Data: Platform Operations (Horizontal Bar Chart)
   const operationsChartData = useMemo(() => [
@@ -317,23 +379,10 @@ export function AdminPage() {
 
   // Chart Data: Roles Distribution Bar Chart
   const roleChartData = useMemo(() => {
-    const roleColors = {
-      admin: '#8b5cf6',
-      doctor: '#3b82f6',
-      patient: '#10b981',
-    }
-    const roleList = roles.length
-      ? roles
-      : [
-          { name: 'admin', user_count: admins },
-          { name: 'doctor', user_count: doctors },
-          { name: 'patient', user_count: patients },
-        ]
-
-    return roleList.map((r) => {
+    return roleOptions.map((r, index) => {
       const normRole = String(r.name || '').toLowerCase()
       const count = Number(r.user_count ?? byRole[normRole] ?? byRole[r.name] ?? 0)
-      const roleColor = roleColors[normRole] || '#06b6d4'
+      const roleColor = ROLE_COLOR_MAP[normRole] || ROLE_COLOR_PALETTE[index % ROLE_COLOR_PALETTE.length]
       return {
         name: formatRoleName(r.name, t),
         roleKey: normRole,
@@ -342,7 +391,7 @@ export function AdminPage() {
         fill: roleColor,
       }
     })
-  }, [roles, admins, doctors, patients, byRole, t])
+  }, [roleOptions, byRole, t])
 
   // Toggle user status
   async function toggleUserStatus(target) {
@@ -381,14 +430,12 @@ export function AdminPage() {
     }
   }
 
-  function scrollToActivity() {
-    activityRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }
-
   if (loading && !stats) return <AdminPageSkeleton />
 
   return (
     <div className="admin-dashboard-shell space-y-6 pb-12">
+      {view === 'dashboard' && (
+        <>
       {/* ==================================================================== */}
       {/* 1. HERO HEADER BANNER                                                */}
       {/* ==================================================================== */}
@@ -429,7 +476,7 @@ export function AdminPage() {
             <button
               type="button"
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-2xs transition hover:border-sky-300 hover:text-sky-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-600 cursor-pointer"
-              onClick={scrollToActivity}
+              onClick={() => navigate('/audit-logs')}
             >
               <FileText className="h-4 w-4 text-emerald-500" />
               <span>{isKhmer ? 'កំណត់ហេតុសវនកម្ម' : 'Audit Logs'}</span>
@@ -457,32 +504,32 @@ export function AdminPage() {
           {
             title: isKhmer ? 'អ្នកប្រើប្រាស់សរុប' : 'Total Users',
             value: totalUsers,
-            detail: isKhmer ? 'គណនីក្នុងប្រព័ន្ធទាំងអស់' : 'Active directory accounts',
+            detail: isKhmer ? 'គណនីដែលបានចុះឈ្មោះទាំងអស់' : 'All registered system accounts',
             icon: Users,
             accent: 'text-sky-700 bg-sky-50 ring-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:ring-sky-800',
             tone: 'admin-kpi-blue bg-gradient-to-br from-sky-50/70 via-white to-white dark:from-sky-950/20 dark:via-slate-900 dark:to-slate-900',
           },
           {
-            title: isKhmer ? 'វេជ្ជបណ្ឌិត និងគិលានុបដ្ឋាក' : 'Doctors & Clinicians',
-            value: doctors,
-            detail: isKhmer ? 'បុគ្គលិកគ្លីនិកមានសិទ្ធិ' : 'Clinical staff members',
-            icon: Stethoscope,
+            title: isKhmer ? 'គណនីសកម្ម' : 'Active Accounts',
+            value: activeUsers,
+            detail: isKhmer ? `${inactiveUsers} គណនីអសកម្ម` : `${inactiveUsers} inactive accounts`,
+            icon: BadgeCheck,
             accent: 'text-indigo-700 bg-indigo-50 ring-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:ring-indigo-800',
             tone: 'admin-kpi-indigo bg-gradient-to-br from-indigo-50/70 via-white to-white dark:from-indigo-950/20 dark:via-slate-900 dark:to-slate-900',
           },
           {
-            title: isKhmer ? 'អ្នកជំងឺបានចុះឈ្មោះ' : 'Registered Patients',
-            value: patients,
-            detail: patients ? (isKhmer ? 'ទម្រង់អ្នកជំងឺសកម្ម' : 'Active patient records') : (isKhmer ? 'មិនទាន់មានទិន្នន័យ' : 'No records yet'),
-            icon: UserRound,
+            title: isKhmer ? 'ក្រុមការងារគ្លីនិក' : 'Clinical Staff',
+            value: clinicalStaff,
+            detail: isKhmer ? 'ផ្អែកលើសិទ្ធិគ្លីនិក' : 'Calculated from clinical permissions',
+            icon: Stethoscope,
             accent: 'text-emerald-700 bg-emerald-50 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-800',
             tone: 'admin-kpi-green bg-gradient-to-br from-emerald-50/70 via-white to-white dark:from-emerald-950/20 dark:via-slate-900 dark:to-slate-900',
           },
           {
-            title: isKhmer ? 'អ្នកគ្រប់គ្រងប្រព័ន្ធ' : 'System Admins',
-            value: admins,
-            detail: isKhmer ? 'សិទ្ធិគ្រប់គ្រងពេញលេញ' : 'Full access privileges',
-            icon: ShieldCheck,
+            title: isKhmer ? 'រង់ចាំការពិនិត្យ' : 'Pending Reviews',
+            value: pendingReviews,
+            detail: isKhmer ? `${urgentReviews} ករណីបន្ទាន់` : `${urgentReviews} urgent cases`,
+            icon: ClipboardCheck,
             accent: 'text-violet-700 bg-violet-50 ring-violet-200 dark:bg-violet-950/40 dark:text-violet-400 dark:ring-violet-800',
             tone: 'admin-kpi-violet bg-gradient-to-br from-violet-50/70 via-white to-white dark:from-violet-950/20 dark:via-slate-900 dark:to-slate-900',
           },
@@ -577,14 +624,14 @@ export function AdminPage() {
             </div>
           </div>
 
-          <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
-            <span className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-violet-500" />
-              {isKhmer ? 'អ្នកគ្រប់គ្រង' : 'Admin'}
-              <span className="h-2 w-2 rounded-full bg-blue-500 ml-1" />
-              {isKhmer ? 'វេជ្ជបណ្ឌិត' : 'Doctor'}
-              <span className="h-2 w-2 rounded-full bg-emerald-500 ml-1" />
-              {isKhmer ? 'អ្នកជំងឺ' : 'Patient'}
+          <div className="mt-2.5 flex items-start justify-between gap-3 border-t border-slate-100 pt-2.5 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+            <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
+              {roleChartData.map((role) => (
+                <span key={role.roleKey} className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: role.color }} />
+                  {role.name}
+                </span>
+              ))}
             </span>
             <Link to="/roles-permissions" className="font-semibold text-primary-600 hover:underline dark:text-primary-400">
               {isKhmer ? 'មើលលម្អិត' : 'Details'} &rarr;
@@ -678,7 +725,7 @@ export function AdminPage() {
             </span>
             <button
               type="button"
-              onClick={scrollToActivity}
+              onClick={() => navigate('/audit-logs')}
               className="inline-flex items-center gap-1 font-semibold text-emerald-600 hover:underline dark:text-emerald-400 cursor-pointer"
             >
               <span>{isKhmer ? 'មើលកំណត់ហេតុ' : 'Audit Stream'}</span>
@@ -780,10 +827,13 @@ export function AdminPage() {
           </div>
         </section>
       </div>
+        </>
+      )}
 
       {/* ==================================================================== */}
       {/* 4. MAIN USER MANAGEMENT TABLE SECTION (MATCHING OTHER SCREENS)       */}
       {/* ==================================================================== */}
+      {view === 'users' && (
       <section className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs dark:border-slate-800/80 dark:bg-slate-900">
         {/* Table Title Bar */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -847,9 +897,11 @@ export function AdminPage() {
                 className="h-10 rounded-xl border border-slate-200/90 bg-white px-3 text-xs sm:text-sm font-medium text-slate-700 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 cursor-pointer"
               >
                 <option value="all">{isKhmer ? 'គ្រប់តួនាទី' : 'All Roles'}</option>
-                <option value="admin">{isKhmer ? 'អ្នកគ្រប់គ្រង (Admin)' : 'Admin'}</option>
-                <option value="doctor">{isKhmer ? 'វេជ្ជបណ្ឌិត (Doctor)' : 'Doctor'}</option>
-                <option value="patient">{isKhmer ? 'អ្នកជំងឺ (Patient)' : 'Patient'}</option>
+                {roleOptions.map((role) => (
+                  <option key={role.id || role.name} value={role.name}>
+                    {formatRoleName(role.name, t)}
+                  </option>
+                ))}
               </select>
 
               {/* Status Filter Select */}
@@ -867,16 +919,12 @@ export function AdminPage() {
 
           {/* Quick Segmented Role Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-            {ROLE_FILTERS.map((filter) => {
+            {roleFilters.map((filter) => {
               const isActive = roleFilter === filter
-              const count =
-                filter === 'all'
-                  ? totalUsers
-                  : filter === 'admin'
-                  ? admins
-                  : filter === 'doctor'
-                  ? doctors
-                  : patients
+              const matchingRole = roleOptions.find((role) => String(role.name).toLowerCase() === filter)
+              const count = filter === 'all'
+                ? totalUsers
+                : Number(matchingRole?.user_count ?? byRole[filter] ?? 0)
               return (
                 <button
                   key={filter}
@@ -1175,11 +1223,13 @@ export function AdminPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ==================================================================== */}
       {/* 5. AUDIT LOG & RECENT SYSTEM ACTIVITY (BELOW TABLE)                 */}
       {/* ==================================================================== */}
-      <div ref={activityRef} className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
+      {view === 'dashboard' && (
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
         {/* Recent Admin Activity Timeline */}
         <section className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs dark:border-slate-800/80 dark:bg-slate-900">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 dark:border-slate-800">
@@ -1209,7 +1259,7 @@ export function AdminPage() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                        {readableAction(event.action)}
+                        {readableAction(event.action, isKhmer)}
                       </p>
                       <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400 font-mono">
                         {event.entity_type ? `${event.entity_type} #${event.entity_id || '—'}` : 'System event'}
@@ -1230,7 +1280,7 @@ export function AdminPage() {
           </div>
         </section>
 
-        {/* Built-in Roles Quick Overview & Security */}
+        {/* Dynamic Roles Quick Overview & Security */}
         <section className="space-y-4">
           <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800/80 dark:bg-slate-900">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -1238,27 +1288,25 @@ export function AdminPage() {
               <span>{isKhmer ? 'សេចក្តីសង្ខេបតួនាទី' : 'Role Specifications'}</span>
             </h3>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-              {isKhmer ? 'កម្រិតសិទ្ធិចម្បងទាំង ៣' : 'Primary access tiers and definitions'}
+              {isKhmer ? 'តួនាទី និងកម្រិតសិទ្ធិដែលបានកំណត់' : 'Configured access tiers and definitions'}
             </p>
 
-            <div className="mt-4 space-y-2.5">
-              {[
-                { name: 'admin', count: admins, tone: 'violet', label: 'Admin', desc: isKhmer ? 'សិទ្ធិប្រព័ន្ធ និងគ្រប់គ្រងអ្នកប្រើ' : 'Full system & user access' },
-                { name: 'doctor', count: doctors, tone: 'info', label: 'Doctor', desc: isKhmer ? 'ពិនិត្យ និងវាយតម្លៃអ្នកជំងឺ' : 'Clinical reviews & care plans' },
-                { name: 'patient', count: patients, tone: 'success', label: 'Patient', desc: isKhmer ? 'ទិន្នន័យសុខភាពផ្ទាល់ខ្លួន' : 'Self-assessment & care plan' },
-              ].map((role) => (
+            <div className="mt-4 max-h-72 space-y-2.5 overflow-y-auto pr-1">
+              {roleOptions.map((role) => (
                 <div
-                  key={role.name}
+                  key={role.id || role.name}
                   className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/40 flex items-center justify-between"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <StatusBadge tone={role.tone} size="sm">
-                      {role.label}
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <StatusBadge tone={getRoleBadgeTone(role.name)} size="sm">
+                      {formatRoleName(role.name, t)}
                     </StatusBadge>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">{role.desc}</span>
+                    <span className="truncate text-xs text-slate-500 dark:text-slate-400">
+                      {role.description || `${role.permissions?.length || 0} permissions`}
+                    </span>
                   </div>
-                  <span className="text-xs font-bold text-slate-900 dark:text-white tabular-nums">
-                    {role.count} {isKhmer ? 'នាក់' : 'users'}
+                  <span className="ml-3 shrink-0 text-xs font-bold text-slate-900 dark:text-white tabular-nums">
+                    {Number(role.user_count ?? byRole[role.name] ?? 0)} {isKhmer ? 'នាក់' : 'users'}
                   </span>
                 </div>
               ))}
@@ -1275,6 +1323,7 @@ export function AdminPage() {
           </div>
         </section>
       </div>
+      )}
 
       {/* ==================================================================== */}
       {/* 6. CREATE USER MODAL DIALOG                                          */}
@@ -1358,9 +1407,11 @@ export function AdminPage() {
                   onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
                   className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-pointer"
                 >
-                  <option value="patient">{isKhmer ? 'អ្នកជំងឺ (Patient)' : 'Patient'}</option>
-                  <option value="doctor">{isKhmer ? 'វេជ្ជបណ្ឌិត (Doctor)' : 'Doctor'}</option>
-                  <option value="admin">{isKhmer ? 'អ្នកគ្រប់គ្រង (Admin)' : 'Admin'}</option>
+                  {roleOptions.map((role) => (
+                    <option key={role.id || role.name} value={role.name}>
+                      {formatRoleName(role.name, t)}
+                    </option>
+                  ))}
                 </select>
               </label>
             </div>
