@@ -202,26 +202,6 @@ class CarePlanService:
             is_provisional=is_provisional,
         )
 
-        tailored_insights = self._generate_tailored_insights(
-            condition=condition,
-            risk_level=risk_level,
-            certainty_pct=certainty_pct,
-            symptoms=symptoms,
-            risk_factors=risk_factors,
-            labs=labs,
-            demographics=demographics,
-            is_urgent=is_urgent,
-            is_provisional=is_provisional,
-        )
-        personalized_metrics = self._calculate_personalized_metrics(
-            condition=condition,
-            risk_level=risk_level,
-            demographics=demographics,
-            is_pregnant=is_pregnant,
-        )
-        symptom_responses = self._generate_symptom_responses(symptoms)
-        risk_interventions = self._generate_risk_factor_interventions(risk_factors)
-
         return {
             "condition": condition,
             "risk_level": risk_level,
@@ -236,254 +216,7 @@ class CarePlanService:
             "risk_factors": risk_factors,
             "key_labs": labs,
             "demographics": demographics,
-            "tailored_insights": tailored_insights,
-            "personalized_metrics": personalized_metrics,
-            "symptom_responses": symptom_responses,
-            "risk_factor_interventions": risk_interventions,
         }
-
-    def _generate_tailored_insights(
-        self,
-        *,
-        condition: str,
-        risk_level: str,
-        certainty_pct: int,
-        symptoms: List[str],
-        risk_factors: List[str],
-        labs: dict,
-        demographics: dict,
-        is_urgent: bool,
-        is_provisional: bool,
-    ) -> List[str]:
-        """Dynamically generate clinical reasoning insights explaining why this plan fits the user."""
-        insights = []
-        bmi = demographics.get("bmi")
-        age = demographics.get("age")
-
-        # Lab-based insight
-        fpg = labs.get("fasting_glucose") or labs.get("fasting_plasma_glucose")
-        hba1c = labs.get("hba1c")
-        if fpg and hba1c:
-            insights.append(
-                f"Your measured fasting glucose ({fpg['value']} mg/dL) and HbA1c ({hba1c['value']}%) directly establish your glycemic target ranges and monitoring cadence."
-            )
-        elif fpg:
-            insights.append(
-                f"Your fasting glucose of {fpg['value']} mg/dL indicates the need for targeted carbohydrate timing and post-meal activity to blunt glycemic excursions."
-            )
-
-        # BMI & Weight insight
-        if bmi:
-            if bmi >= 30.0:
-                insights.append(
-                    f"With a BMI of {bmi} (Class I Obesity), achieving a gradual 7–10% body weight reduction provides the single highest impact intervention for restoring insulin sensitivity."
-                )
-            elif bmi >= 25.0:
-                insights.append(
-                    f"With a BMI of {bmi} (Overweight range), a sustainable 5–7% weight optimization target reduces disease progression risk by over 58%."
-                )
-            elif bmi < 18.5:
-                insights.append(
-                    f"With a BMI of {bmi} (Underweight range), your nutrition focuses on nutrient-dense calorie-positive composition and lean muscle mass preservation, avoiding caloric restriction."
-                )
-            else:
-                insights.append(
-                    f"With a healthy BMI of {bmi}, dietary focus is on glycemic stability, nutrient diversity, and muscle mass maintenance."
-                )
-
-        # Symptom-specific insight
-        symptoms_lower = [s.lower() for s in symptoms]
-        if any("thirst" in s or "urination" in s for s in symptoms_lower):
-            insights.append(
-                "Reported osmotic symptoms (thirst or frequent urination) have prioritized structured daily hydration (2.5L clean water) and immediate elimination of refined liquid sugars."
-            )
-        if any("fatigue" in s for s in symptoms_lower):
-            insights.append(
-                "Reported fatigue has prioritized consistent meal intervals with protein-carbohydrate pairing to avoid postprandial reactive hypoglycemic drops."
-            )
-        if any("tingling" in s or "numbness" in s for s in symptoms_lower):
-            insights.append(
-                "Reported peripheral sensations (tingling or numbness) trigger immediate daily foot inspection vigilance and protective, joint-friendly physical movement."
-            )
-
-        # Risk factor insight
-        risks_lower = [r.lower() for r in risk_factors]
-        if any("hypertension" in r or "blood pressure" in r for r in risks_lower):
-            insights.append(
-                "Hypertension risk factor has tailored your nutrition to the cardioprotective DASH pattern with dietary sodium strictly capped at <2,000 mg/day."
-            )
-        if any("cholesterol" in r or "lipid" in r for r in risks_lower):
-            insights.append(
-                "Lipid profile concerns incorporate daily viscous soluble fiber (beans, oats, psyllium) and heart-healthy unsaturated fats."
-            )
-        if any("sedentary" in r or "inactivity" in r for r in risks_lower):
-            insights.append(
-                "Sedentary lifestyle history is counteracted with a progressive step plan and a mandatory 2-minute movement reset every 45 minutes of sitting."
-            )
-        if any("smok" in r for r in risks_lower):
-            insights.append(
-                "Tobacco exposure doubles microvascular risk; clinical smoking cessation support is prioritized as a primary health goal."
-            )
-
-        # Age insight
-        if age and age >= 65:
-            insights.append(
-                f"Age-adapted exercise ({age} years) incorporates balance drills, fall prevention, and low-impact joint conditioning."
-            )
-
-        if not insights:
-            insights.append(
-                f"Plan synthesized dynamically from your assessment profile ({condition}, {certainty_pct}% certainty) prioritizing evidence-based metabolic wellness."
-            )
-
-        return insights
-
-    def _calculate_personalized_metrics(
-        self,
-        *,
-        condition: str,
-        risk_level: str,
-        demographics: dict,
-        is_pregnant: bool,
-    ) -> dict:
-        """Derive individualized daily targets based on patient demographics and risk level."""
-        bmi = demographics.get("bmi", 24.0)
-        gender = demographics.get("gender", "unknown")
-        age = demographics.get("age", 45)
-
-        # Water intake estimation
-        water_liters = 2.5
-        if gender == "male":
-            water_liters = 2.8
-        elif gender == "female":
-            water_liters = 2.2
-        if bmi and bmi > 28:
-            water_liters = round(water_liters + 0.3, 1)
-
-        # Step goal
-        step_goal = 8500
-        if age and age >= 65:
-            step_goal = 6500
-        elif risk_level in ("high", "urgent"):
-            step_goal = 7500
-
-        # Glycemic targets
-        if is_pregnant:
-            fasting_range = "< 95 mg/dL"
-            post_meal_range = "< 140 mg/dL (1-hr)"
-            hba1c_target = "< 6.0%"
-        elif risk_level == "low":
-            fasting_range = "70 – 99 mg/dL"
-            post_meal_range = "< 140 mg/dL"
-            hba1c_target = "< 5.7%"
-        elif risk_level == "moderate":
-            fasting_range = "80 – 115 mg/dL"
-            post_meal_range = "< 140 – 160 mg/dL"
-            hba1c_target = "< 5.7% – 6.0%"
-        else:
-            fasting_range = "80 – 130 mg/dL"
-            post_meal_range = "< 180 mg/dL"
-            hba1c_target = "< 7.0%"
-
-        weight_goal = None
-        if bmi and bmi >= 30.0:
-            weight_goal = "Target 7–10% gradual weight loss"
-        elif bmi and bmi >= 25.0:
-            weight_goal = "Target 5–7% gradual weight loss"
-
-        return {
-            "daily_water_liters": water_liters,
-            "daily_step_goal": step_goal,
-            "weekly_activity_minutes": 150 if risk_level != "urgent" else 0,
-            "target_fasting_glucose": fasting_range,
-            "target_post_meal_glucose": post_meal_range,
-            "target_hba1c": hba1c_target,
-            "weight_management_goal": weight_goal,
-        }
-
-    def _generate_symptom_responses(self, symptoms: List[str]) -> List[dict]:
-        """Generate targeted clinical action tips for each reported symptom."""
-        responses = []
-        for s in symptoms:
-            s_lower = s.lower()
-            if "thirst" in s_lower:
-                responses.append({
-                    "symptom": s,
-                    "action": "Maintain optimal hydration with 2.5L clean water daily; strictly avoid juices and sweetened beverages.",
-                })
-            elif "urination" in s_lower:
-                responses.append({
-                    "symptom": s,
-                    "action": "Log urination frequency alongside evening fluid intake; check fasting glucose upon waking.",
-                })
-            elif "fatigue" in s_lower:
-                responses.append({
-                    "symptom": s,
-                    "action": "Pair complex carbohydrates with protein every 3–4 hours to prevent reactive glycemic drops.",
-                })
-            elif "tingling" in s_lower or "numbness" in s_lower:
-                responses.append({
-                    "symptom": s,
-                    "action": "Inspect feet daily under good lighting for abrasions; wear seamless cushioned socks.",
-                })
-            elif "blur" in s_lower or "vision" in s_lower:
-                responses.append({
-                    "symptom": s,
-                    "action": "Avoid sudden sugary food spikes that cause osmotic lens swelling; schedule a dilated eye examination.",
-                })
-            elif "wound" in s_lower or "heal" in s_lower or "infection" in s_lower:
-                responses.append({
-                    "symptom": s,
-                    "action": "Maintain strict skin hygiene and prompt clinical attention for any skin lesions.",
-                })
-            else:
-                responses.append({
-                    "symptom": s,
-                    "action": "Discuss symptom progression and personalized monitoring targets with your clinician.",
-                })
-        return responses
-
-    def _generate_risk_factor_interventions(self, risk_factors: List[str]) -> List[dict]:
-        """Generate targeted preventive interventions for each identified risk factor."""
-        interventions = []
-        for r in risk_factors:
-            r_lower = r.lower()
-            if "hypertension" in r_lower or "blood pressure" in r_lower:
-                interventions.append({
-                    "risk_factor": r,
-                    "intervention": "DASH nutrition pattern with dietary sodium capped at <2,000 mg/day and regular blood pressure logging.",
-                })
-            elif "cholesterol" in r_lower or "lipid" in r_lower:
-                interventions.append({
-                    "risk_factor": r,
-                    "intervention": "Daily soluble viscous fiber (oats, legumes, psyllium) and elimination of industrial trans fats.",
-                })
-            elif "sedentary" in r_lower or "inactivity" in r_lower:
-                interventions.append({
-                    "risk_factor": r,
-                    "intervention": "Progressive step habituation (goal 8,500+ steps/day) plus 2-minute movement breaks every 45 minutes of sitting.",
-                })
-            elif "smok" in r_lower:
-                interventions.append({
-                    "risk_factor": r,
-                    "intervention": "Prioritized tobacco cessation roadmap to reduce compounded microvascular and coronary risks.",
-                })
-            elif "family" in r_lower:
-                interventions.append({
-                    "risk_factor": r,
-                    "intervention": "Proactive metabolic vigilance through whole-food nutrition and early glycemic screening for close relatives.",
-                })
-            elif "overweight" in r_lower or "obesity" in r_lower:
-                interventions.append({
-                    "risk_factor": r,
-                    "intervention": "Structured 500 kcal daily deficit targeting 5–7% weight loss to significantly restore peripheral insulin sensitivity.",
-                })
-            else:
-                interventions.append({
-                    "risk_factor": r,
-                    "intervention": "Lifestyle modifications targeted to mitigate progression risk factors in collaboration with your care team.",
-                })
-        return interventions
 
     def _build_findings_summary(
         self,
@@ -715,6 +448,34 @@ class CarePlanService:
                 "tag": "Cardioprotection",
             })
 
+        has_family_history = any("family" in r.lower() for r in findings.get("risk_factors", []))
+        if has_family_history and risk_level in ("moderate", "high"):
+            action_items.append({
+                "title": "Counter Genetic Risk with Polyphenol & Fiber-Rich Nutrition",
+                "description": "While family history elevates hereditary susceptibility, clinical trials demonstrate that an antioxidant-rich, low-glycemic dietary pattern counteracts genetic risk and reduces diabetes progression by over 58%.",
+                "priority": "high",
+                "tag": "Genetic Defense",
+            })
+
+        has_dyslipidemia = any("cholesterol" in r.lower() or "lipid" in r.lower() for r in findings.get("risk_factors", []))
+        if has_dyslipidemia:
+            action_items.append({
+                "title": "Cardioprotective Viscous Fiber & Healthy Fats",
+                "description": "Increase soluble viscous fiber (oats, barley, chia seeds, lentils) to bind bile acids and support healthy cholesterol levels, while substituting butter with extra virgin olive oil.",
+                "priority": "high",
+                "tag": "Lipid Optimization",
+            })
+            foods_to_prioritize.extend(["Oat bran and barley", "Chia and flax seeds", "Avocado and extra virgin olive oil"])
+
+        has_thirst = any("thirst" in s.lower() or "polydipsia" in s.lower() for s in findings.get("symptoms", []))
+        if has_thirst and not any("Hydration" in item.get("tag", "") for item in action_items):
+            action_items.append({
+                "title": "Targeted Osmotic Rehydration Strategy",
+                "description": "Drink pure water or plain herbal teas consistently throughout the day. Avoid fruit juices, sweetened teas, and sports drinks which trigger rebound glucose spikes.",
+                "priority": "high",
+                "tag": "Hydration Balance",
+            })
+
         return {
             "category": "Diet & Nutrition",
             "summary": summary,
@@ -860,6 +621,23 @@ class CarePlanService:
                 "Carry a water bottle and stop if you feel dizzy or lightheaded.",
             ])
 
+        has_vision = any("vision" in s.lower() or "blur" in s.lower() for s in findings.get("symptoms", []))
+        if has_vision and not findings["is_urgent"]:
+            precautions.append("Avoid heavy overhead lifting and intense breath-holding (Valsalva maneuvers) until an eye examination rules out retinal microvascular stress.")
+
+        bmi = findings["demographics"].get("bmi")
+        if bmi and bmi >= 30.0 and not findings["is_urgent"]:
+            precautions.append("Choose joint-friendly low-impact modalities (water aerobics, swimming, recumbent cycling) to protect knees and hips while maximizing metabolic calorie expenditure.")
+
+        has_sedentary = any("sedentary" in r.lower() or "inactiv" in r.lower() for r in findings.get("risk_factors", []))
+        if has_sedentary and not findings["is_urgent"] and not any("Gradual" in item["title"] for item in action_items):
+            action_items.append({
+                "title": "Gradual Step-Up Physical Conditioning",
+                "description": "If returning from a sedentary routine, start with 10-15 minutes of comfortable daily walking, increasing by 5 minutes each week to build cardiorespiratory capacity safely.",
+                "priority": "medium",
+                "tag": "Habit Building",
+            })
+
         return {
             "category": "Physical Activity",
             "summary": summary,
@@ -961,6 +739,24 @@ class CarePlanService:
             "tag": "Alcohol Moderation",
         })
 
+        has_fatigue = any("fatigue" in s.lower() or "tired" in s.lower() for s in findings.get("symptoms", []))
+        if has_fatigue and not any("Fatigue" in item.get("tag", "") or "Energy" in item.get("tag", "") for item in action_items):
+            action_items.append({
+                "title": "Circadian Energy Pacing & Fatigue Management",
+                "description": "Combat metabolic fatigue with 10-15 minutes of natural morning sunlight exposure, steady hydration, and consistent meal timing to eliminate afternoon glucose dips.",
+                "priority": "medium",
+                "tag": "Energy Management",
+            })
+
+        has_wounds = any("wound" in s.lower() or "heal" in s.lower() or "sore" in s.lower() for s in findings.get("symptoms", []))
+        if has_wounds and not any("Wound" in item.get("tag", "") or "Skin" in item.get("tag", "") for item in action_items):
+            action_items.append({
+                "title": "Vigilant Skin & Wound Care Protocol",
+                "description": "Clean any skin abrasions gently with mild soap and water, keep dry, and inspect daily for warmth or redness. Seek immediate medical attention for non-healing lesions.",
+                "priority": "high",
+                "tag": "Skin Protection",
+            })
+
         return {
             "category": "Lifestyle & Well-being",
             "summary": "Holistic lifestyle habits targeting restorative sleep, stress reduction, foot vigilance, and weight regulation.",
@@ -976,11 +772,17 @@ class CarePlanService:
         is_pregnant = findings["is_pregnant"]
         has_hypertension = any("hypertension" in r.lower() or "blood pressure" in r.lower() for r in findings["risk_factors"])
 
+        fpg_data = findings.get("key_labs", {}).get("fasting_glucose") or findings.get("key_labs", {}).get("fasting_plasma_glucose")
+        hba1c_data = findings.get("key_labs", {}).get("hba1c")
+
+        fpg_note = f" (Your lab: {fpg_data['value']} mg/dL)" if fpg_data else ""
+        hba1c_note = f" (Your lab: {hba1c_data['value']}%)" if hba1c_data else ""
+
         action_items = []
         target_ranges = {
-            "fasting_glucose": "80 - 130 mg/dL (ADA standard adult non-pregnant target)",
+            "fasting_glucose": f"80 - 130 mg/dL (ADA standard adult non-pregnant target){fpg_note}",
             "post_meal_glucose": "< 180 mg/dL (1-2 hours after meal start)",
-            "hba1c": "< 7.0% (individualized clinical target determined with physician)",
+            "hba1c": f"< 7.0% (individualized clinical target determined with physician){hba1c_note}",
         }
 
         if findings.get("is_provisional"):

@@ -32,6 +32,7 @@ import {
   FileText,
   Footprints,
   HeartPulse,
+  Pill,
   PlusCircle,
   Scale,
   Sparkles,
@@ -201,20 +202,41 @@ function buildPatientDailySchedule(patientPlan, latestResult, isNewUser = false,
     icon: Droplets,
   })
 
-  // 2. Morning Hydration & Balanced Nutrition
-  items.push({
-    id: 'sched_nutrition_am',
-    time: '08:30',
-    timeEnd: '08:45',
-    category: isKhmer ? 'អាហារូបត្ថម្ភ' : 'Nutrition',
-    badgeTone: 'sky',
-    title: isKhmer ? 'ការទទួលទានទឹក និងអាហារពេលព្រឹកមានតុល្យភាព' : 'Morning Hydration & Balanced Breakfast',
-    subtitle: isKhmer
-      ? 'ទទួលទានទឹកមួយកែវពេញ និងអាហារសន្ទស្សន៍ Glycemic ទាប ដើម្បីរក្សាជាតិស្ករមានលំនឹង'
-      : 'Start your day with a tall glass of water and balanced low-glycemic nutrients',
-    location: isKhmer ? 'ទម្លាប់ប្រចាំថ្ងៃ' : 'Morning Routine',
-    icon: HeartPulse,
-  })
+  // 2. Prescribed Pharmacotherapy or Morning Nutrition
+  if (patientPlan?.medications?.length) {
+    patientPlan.medications.forEach((med, idx) => {
+      const isBedtime =
+        (med.frequency || '').toLowerCase().includes('bedtime') ||
+        (med.frequency || '').toLowerCase().includes('night') ||
+        (med.frequency || '').toLowerCase().includes('dinner')
+
+      items.push({
+        id: `sched_med_${idx}`,
+        time: isBedtime ? '20:30' : idx === 0 ? '08:30' : '09:00',
+        timeEnd: isBedtime ? '20:45' : idx === 0 ? '08:45' : '09:15',
+        category: isKhmer ? 'ថ្នាំពេទ្យ' : 'Medication',
+        badgeTone: 'sky',
+        title: `${med.name} ${med.dosage || ''}`.trim(),
+        subtitle: `${med.frequency || (isKhmer ? 'ពិសារជាមួយទឹក' : 'Take with water')} • ${med.status || 'Active Rx'}`,
+        location: isKhmer ? 'វេជ្ជបញ្ជាប្រចាំថ្ងៃ' : 'Daily Prescription',
+        icon: Pill,
+      })
+    })
+  } else {
+    items.push({
+      id: 'sched_nutrition_am',
+      time: '08:30',
+      timeEnd: '08:45',
+      category: isKhmer ? 'អាហារូបត្ថម្ភ' : 'Nutrition',
+      badgeTone: 'sky',
+      title: isKhmer ? 'ការទទួលទានទឹក និងអាហារពេលព្រឹកមានតុល្យភាព' : 'Morning Hydration & Balanced Breakfast',
+      subtitle: isKhmer
+        ? 'ទទួលទានទឹកមួយកែវពេញ និងអាហារសន្ទស្សន៍ Glycemic ទាប ដើម្បីរក្សាជាតិស្ករមានលំនឹង'
+        : 'Start your day with a tall glass of water and balanced low-glycemic nutrients',
+      location: isKhmer ? 'ទម្លាប់ប្រចាំថ្ងៃ' : 'Morning Routine',
+      icon: HeartPulse,
+    })
+  }
 
   // 3. Physical Activity & Exercise
   const activityProc = patientPlan?.procedures?.find(
@@ -744,8 +766,8 @@ export function PatientDashboardPage() {
       return (
         latestResult.urgent_reason ||
         (isKhmer
-          ? 'សូចនាករមេតាបូលីកថ្មីៗរបស់អ្នកលើសពីកម្រិតគោលដៅស្តង់ដារ។ សូមពិគ្រោះជាមួយគ្រូពេទ្យ និងអនុវត្តតាមផែនការថែទាំ។'
-          : 'Your recent metabolic indicators exceed standard target thresholds. Clinical check-in and care plan adherence are recommended.')
+          ? 'សូចនាករមេតាបូលីកថ្មីៗរបស់អ្នកលើសពីកម្រិតគោលដៅស្តង់ដារ។ សូមពិគ្រោះជាមួយគ្រូពេទ្យ និងអនុវត្តតាមការណែនាំថ្នាំ។'
+          : 'Your recent metabolic indicators exceed standard target thresholds. Clinical check-in and medication adherence are recommended.')
       )
     }
     const recText = typeof latestResult.recommendation === 'string'
@@ -1000,11 +1022,13 @@ export function PatientDashboardPage() {
       activityScore = 52
     }
 
-    // 4. Care Plan Adherence Score
-    let carePlanScore = 92
+    // 4. Medication Adherence Score
+    let medScore = 90
     if (patientPlan?.adherenceRate) {
       const parsed = parseInt(patientPlan.adherenceRate, 10)
-      if (!Number.isNaN(parsed)) carePlanScore = parsed
+      if (!Number.isNaN(parsed)) medScore = parsed
+    } else if (!patientPlan?.pharmacotherapy && !patientPlan?.medications?.length) {
+      medScore = 95
     }
 
     // 5. Sleep & Energy Score
@@ -1020,7 +1044,7 @@ export function PatientDashboardPage() {
     cardioScore = Math.max(45, Math.min(98, cardioScore))
 
     const overall = Math.round(
-      (glucoseScore + dietScore + activityScore + carePlanScore + sleepScore + cardioScore) / 6
+      (glucoseScore + dietScore + activityScore + medScore + sleepScore + cardioScore) / 6
     )
 
     return {
@@ -1028,14 +1052,14 @@ export function PatientDashboardPage() {
         { metric: isKhmer ? 'កម្រិតជាតិស្ករ' : 'Glucose Control', value: glucoseScore, fullMark: 100 },
         { metric: isKhmer ? 'របបអាហារ' : 'Diet Balance', value: dietScore, fullMark: 100 },
         { metric: isKhmer ? 'សកម្មភាព' : 'Activity', value: activityScore, fullMark: 100 },
-        { metric: isKhmer ? 'ផែនការថែទាំ' : 'Care Plan', value: carePlanScore, fullMark: 100 },
+        { metric: isKhmer ? 'ថ្នាំពេទ្យ' : 'Medication', value: medScore, fullMark: 100 },
         { metric: isKhmer ? 'ការគេង' : 'Sleep Quality', value: sleepScore, fullMark: 100 },
         { metric: isKhmer ? 'បេះដូង' : 'Cardiovascular', value: cardioScore, fullMark: 100 },
       ],
       overall,
       glucoseScore,
       dietScore,
-      carePlanScore,
+      medScore,
     }
   }, [currentA1c, currentGlucose, currentBmi, isUrgent, facts, patientProfile, patientPlan, latestResult, isKhmer])
 
@@ -1556,16 +1580,17 @@ export function PatientDashboardPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 py-1 border-t border-slate-100 dark:border-slate-800/60">
-                <span className="sm:col-span-3 font-semibold text-slate-400">{isKhmer ? 'ពិធីការថែទាំ' : 'Care Protocol'}</span>
+                <span className="sm:col-span-3 font-semibold text-slate-400">{isKhmer ? 'វេជ្ជបញ្ជា / ពិធីការ' : 'Prescription / Protocol'}</span>
                 <div className="sm:col-span-9 space-y-0.5 font-medium text-slate-800 dark:text-slate-200">
                   <p>
-                    {latestResult?.recommendation
-                      ? (typeof latestResult.recommendation === 'string'
-                          ? latestResult.recommendation.split('.')[0] + '.'
-                          : Array.isArray(latestResult.recommendation) && latestResult.recommendation.length > 0
-                          ? String(latestResult.recommendation[0])
-                          : (isKhmer ? 'ការថែទាំរបបអាហារ និងលំហាត់ប្រាណជាប្រចាំ។' : 'Routine dietary and physical activity maintenance.'))
-                      : (isKhmer ? 'ការថែទាំរបបអាហារ និងលំហាត់ប្រាណជាប្រចាំ។' : 'Routine dietary and physical activity maintenance.')}
+                    {patientPlan?.pharmacotherapy ||
+                      (latestResult?.recommendation
+                        ? (typeof latestResult.recommendation === 'string'
+                            ? latestResult.recommendation.split('.')[0] + '.'
+                            : Array.isArray(latestResult.recommendation) && latestResult.recommendation.length > 0
+                            ? String(latestResult.recommendation[0])
+                            : (isKhmer ? 'ការថែទាំរបបអាហារ និងលំហាត់ប្រាណជាប្រចាំ។' : 'Routine dietary and physical activity maintenance.'))
+                        : (isKhmer ? 'ការថែទាំរបបអាហារ និងលំហាត់ប្រាណជាប្រចាំ។' : 'Routine dietary and physical activity maintenance.'))}
                   </p>
                   <p className="text-slate-500">
                     {isKhmer

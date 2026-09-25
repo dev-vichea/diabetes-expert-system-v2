@@ -309,8 +309,8 @@ export function PersonalizedCarePlanSection({
           </h2>
           <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
             {isKhmer
-              ? 'ផែនការសកម្មភាពជាក់លាក់ របបអាហារ លំហាត់ប្រាណ និងកាលវិភាគតាមដានផ្ទាល់ខ្លួនរបស់អ្នក។'
-              : 'Tailored clinical care recommendations, dietary strategies, physical activity, and follow-up timeline.'}
+              ? 'ផែនការសកម្មភាពជាក់លាក់ របបអាហារ លំហាត់ប្រាណ និងកាលវិភាគតាមដានផ្អែកលើលទ្ធផលវាយតម្លៃរបស់អ្នក។'
+              : 'Tailored clinical care recommendations, dietary strategies, physical activity, and follow-up timeline based on your assessment results.'}
           </p>
         </div>
 
@@ -517,74 +517,6 @@ export function PersonalizedCarePlanSection({
             </div>
           </div>
         </div>
-      )}
-
-      {/* Dynamic AI Personalization Insights */}
-      {findings.tailored_insights?.length > 0 && (
-        <section className="rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50/60 via-white to-blue-50/40 p-5 shadow-xs dark:border-sky-950/60 dark:from-slate-900/90 dark:via-slate-900 dark:to-blue-950/20">
-          <div className="flex items-center gap-2.5 pb-3 border-b border-sky-100/80 dark:border-slate-800">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-950/80 dark:text-sky-300">
-              <Sparkles className="h-4 w-4" />
-            </span>
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                {isKhmer ? 'ការវិភាគ និងការកែសម្រួលផ្ទាល់ខ្លួនពី AI' : 'AI Clinical Personalization Insights'}
-              </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                {isKhmer
-                  ? 'ផែនការនេះត្រូវបានកែសម្រួលជាក់លាក់ផ្អែកលើរោគសញ្ញា កត្តាហានិភ័យ និងលទ្ធផលតេស្តរបស់អ្នក'
-                  : 'Synthesized dynamically from your reported symptoms, clinical risk factors, and biometric metrics'}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-3.5 grid grid-cols-1 md:grid-cols-2 gap-3">
-            {findings.tailored_insights.map((insight, idx) => (
-              <div
-                key={idx}
-                className="flex items-start gap-2.5 rounded-xl border border-slate-100/80 bg-white/80 p-3 shadow-2xs dark:border-slate-800/60 dark:bg-slate-850/60"
-              >
-                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-500 dark:text-sky-400" />
-                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
-                  {insight}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {/* Quick Target Chips */}
-          {findings.personalized_metrics && (
-            <div className="mt-3 pt-3 border-t border-sky-100/60 dark:border-slate-800/60 flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                {isKhmer ? 'គោលដៅសំខាន់ៗ:' : 'Key Targets:'}
-              </span>
-              {findings.personalized_metrics.daily_water_liters && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-700 border border-sky-200/50 dark:bg-sky-950/50 dark:text-sky-300">
-                  <Droplets className="h-3 w-3" />
-                  {isKhmer ? `ទឹក ${findings.personalized_metrics.daily_water_liters}L/ថ្ងៃ` : `${findings.personalized_metrics.daily_water_liters}L Water/Day`}
-                </span>
-              )}
-              {findings.personalized_metrics.daily_step_goal && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/50 dark:text-emerald-300">
-                  <Footprints className="h-3 w-3" />
-                  {isKhmer ? `${findings.personalized_metrics.daily_step_goal.toLocaleString()} ជំហាន/ថ្ងៃ` : `${findings.personalized_metrics.daily_step_goal.toLocaleString()} Steps/Day`}
-                </span>
-              )}
-              {findings.personalized_metrics.target_fasting_glucose && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 border border-indigo-200/50 dark:bg-indigo-950/50 dark:text-indigo-300">
-                  <HeartPulse className="h-3 w-3" />
-                  {isKhmer ? `ជាតិស្ករពេលព្រឹក: ${findings.personalized_metrics.target_fasting_glucose}` : `Fasting: ${findings.personalized_metrics.target_fasting_glucose}`}
-                </span>
-              )}
-              {findings.personalized_metrics.weight_management_goal && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 border border-amber-200/50 dark:bg-amber-950/50 dark:text-amber-300">
-                  <Scale className="h-3 w-3" />
-                  {findings.personalized_metrics.weight_management_goal}
-                </span>
-              )}
-            </div>
-          )}
-        </section>
       )}
 
       {/* ==================================================================== */}
