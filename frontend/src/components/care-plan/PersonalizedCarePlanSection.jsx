@@ -10,22 +10,29 @@ import {
   Calendar,
   CalendarClock,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Clock,
   Droplets,
+  Eye,
   FileText,
   Flame,
   Footprints,
   HeartPulse,
+  Info,
+  Layers,
   Moon,
   Printer,
   RefreshCw,
   Scale,
   ShieldAlert,
   ShieldCheck,
+  SlidersHorizontal,
   Sparkles,
   Stethoscope,
   User,
   Utensils,
+  Zap,
 } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { cn } from '@/lib/utils'
@@ -169,6 +176,166 @@ function DropletIllustration({ className = 'h-8 w-8' }) {
   )
 }
 
+function getActionItemMeta(item, category) {
+  const title = (item.title || '').toLowerCase()
+  const tag = (item.tag || item.frequency || '').toLowerCase()
+
+  if (title.includes('water') || title.includes('hydrat') || tag.includes('hydrat')) {
+    return { icon: Droplets, color: 'sky', keyStat: '2.0–2.5L / Day' }
+  }
+  if (title.includes('plate') || tag.includes('plate')) {
+    return { icon: Utensils, color: 'emerald', keyStat: '50% Veg · 25% Protein · 25% Carbs' }
+  }
+  if (title.includes('sugar') || tag.includes('sugar')) {
+    return { icon: Apple, color: 'amber', keyStat: '< 25g Daily' }
+  }
+  if (title.includes('fiber') || tag.includes('fiber')) {
+    return { icon: Apple, color: 'emerald', keyStat: '≥ 30g Daily' }
+  }
+  if (title.includes('walk') || title.includes('aerobic') || tag.includes('aerobic')) {
+    return { icon: Footprints, color: 'emerald', keyStat: '30 Min / Day' }
+  }
+  if (title.includes('resistance') || title.includes('strength') || tag.includes('muscle')) {
+    return { icon: Activity, color: 'indigo', keyStat: '2–3x / Week' }
+  }
+  if (title.includes('post-meal') || title.includes('prandial') || tag.includes('post-meal')) {
+    return { icon: Clock, color: 'sky', keyStat: '10–15 Min Post-Meal' }
+  }
+  if (title.includes('sedentary') || tag.includes('sedentary')) {
+    return { icon: Zap, color: 'amber', keyStat: 'Break Every 30m' }
+  }
+  if (title.includes('sleep') || tag.includes('sleep')) {
+    return { icon: Moon, color: 'indigo', keyStat: '7–8 Hours Nightly' }
+  }
+  if (title.includes('foot') || tag.includes('foot')) {
+    return { icon: Footprints, color: 'rose', keyStat: 'Daily Inspection' }
+  }
+  if (title.includes('stress') || tag.includes('stress')) {
+    return { icon: HeartPulse, color: 'purple', keyStat: '10 Min Daily' }
+  }
+  if (title.includes('smbg') || title.includes('fasting blood sugar') || title.includes('glucose check')) {
+    return { icon: Droplets, color: 'amber', keyStat: 'Fasting AM' }
+  }
+  if (title.includes('hba1c') || tag.includes('hba1c')) {
+    return { icon: Stethoscope, color: 'purple', keyStat: 'Every 3–6 Mo' }
+  }
+  if (title.includes('blood pressure') || title.includes('hypertension')) {
+    return { icon: HeartPulse, color: 'rose', keyStat: '< 130/80 mmHg' }
+  }
+  if (title.includes('weight') || tag.includes('weight')) {
+    return { icon: Scale, color: 'emerald', keyStat: '5–7% Target' }
+  }
+
+  // Fallback by category
+  if (category === 'diet') return { icon: Utensils, color: 'emerald', keyStat: item.tag || null }
+  if (category === 'activity') return { icon: Activity, color: 'sky', keyStat: item.tag || null }
+  if (category === 'lifestyle') return { icon: Moon, color: 'indigo', keyStat: item.tag || null }
+  return { icon: HeartPulse, color: 'purple', keyStat: item.frequency || item.tag || null }
+}
+
+function ActionItemRow({
+  item,
+  category,
+  isExpanded,
+  onToggle,
+  isKhmer,
+  tExact,
+}) {
+  const meta = getActionItemMeta(item, category)
+  const Icon = meta.icon
+
+  const colorStyles = {
+    emerald: {
+      iconBg: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400',
+      badge: 'bg-emerald-50 text-emerald-700 border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/40',
+      hoverBorder: 'hover:border-emerald-200 dark:hover:border-emerald-800/60',
+    },
+    sky: {
+      iconBg: 'bg-sky-50 text-sky-600 dark:bg-sky-950/60 dark:text-sky-400',
+      badge: 'bg-sky-50 text-sky-700 border-sky-200/60 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800/40',
+      hoverBorder: 'hover:border-sky-200 dark:hover:border-sky-800/60',
+    },
+    indigo: {
+      iconBg: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400',
+      badge: 'bg-indigo-50 text-indigo-700 border-indigo-200/60 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800/40',
+      hoverBorder: 'hover:border-indigo-200 dark:hover:border-indigo-800/60',
+    },
+    purple: {
+      iconBg: 'bg-purple-50 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400',
+      badge: 'bg-purple-50 text-purple-700 border-purple-200/60 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800/40',
+      hoverBorder: 'hover:border-purple-200 dark:hover:border-purple-800/60',
+    },
+    amber: {
+      iconBg: 'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400',
+      badge: 'bg-amber-50 text-amber-700 border-amber-200/60 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/40',
+      hoverBorder: 'hover:border-amber-200 dark:hover:border-amber-800/60',
+    },
+    rose: {
+      iconBg: 'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400',
+      badge: 'bg-rose-50 text-rose-700 border-rose-200/60 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800/40',
+      hoverBorder: 'hover:border-rose-200 dark:hover:border-rose-800/60',
+    },
+  }[meta.color] || {
+    iconBg: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+    badge: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300',
+    hoverBorder: 'hover:border-slate-300',
+  }
+
+  const rawTitle = item.title || ''
+  const displayTitle = tExact(rawTitle) || rawTitle
+  const rawTag = item.tag || item.frequency || ''
+  const displayTag = tExact(rawTag) || rawTag
+
+  return (
+    <div
+      onClick={onToggle}
+      className={cn(
+        'group cursor-pointer rounded-xl border border-slate-100 bg-white p-3 shadow-2xs transition-all duration-150',
+        colorStyles.hoverBorder,
+        'dark:border-slate-800/80 dark:bg-slate-900/80 dark:hover:bg-slate-800/40'
+      )}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', colorStyles.iconBg)}>
+            <Icon className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-xs sm:text-sm font-semibold text-slate-900 truncate dark:text-slate-100">
+              {displayTitle}
+            </h4>
+            {meta.keyStat && !isExpanded && (
+              <p className="text-[11px] font-medium text-slate-400 truncate dark:text-slate-500">
+                {meta.keyStat}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {displayTag && (
+            <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold border', colorStyles.badge)}>
+              {displayTag}
+            </span>
+          )}
+          <ChevronDown
+            className={cn(
+              'h-3.5 w-3.5 text-slate-400 transition-transform duration-200 dark:text-slate-500',
+              isExpanded && 'rotate-180 text-slate-700 dark:text-slate-300'
+            )}
+          />
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800 text-xs leading-relaxed text-slate-600 dark:text-slate-300 animate-in fade-in duration-150">
+          {item.description}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function PersonalizedCarePlanSection({
   carePlan,
   latestResult,
@@ -176,8 +343,11 @@ export function PersonalizedCarePlanSection({
   regenerating = false,
   className = '',
 }) {
-  const { isKhmer, t, tExact } = useLanguage()
+  const { isKhmer, tExact } = useLanguage()
   const [activeRecTab, setActiveRecTab] = useState('all')
+  const [viewMode, setViewMode] = useState('compact') // 'compact' | 'detailed'
+  const [expandedItems, setExpandedItems] = useState({})
+  const [isSafetyExpanded, setIsSafetyExpanded] = useState(false)
 
   if (!carePlan) {
     return null
@@ -246,53 +416,15 @@ export function PersonalizedCarePlanSection({
     return LAB_LABELS_KM[key] || tExact(defaultLabel) || defaultLabel
   }
 
-  const localizeFrequency = (freq) => {
-    if (!freq) return ''
-    if (!isKhmer) return freq
-    const freqMap = {
-      '4 times daily': '៤ ដងក្នុងមួយថ្ងៃ',
-      '1-2 times daily or as prescribed': '១-២ ដង/ថ្ងៃ (ឬតាមវេជ្ជបញ្ជា)',
-      'Every 3 months': 'រៀងរាល់ ៣ ខែម្ដង',
-      'Annually': 'រៀងរាល់ឆ្នាំ',
-      'Every 3 to 6 months': 'រៀងរាល់ ៣–៦ ខែ',
-      'Weekly': 'រៀងរាល់សប្តាហ៍',
-      '2-3 times weekly': '២-៣ ដង/សប្តាហ៍',
-      'Annually (every 12 months)': 'រៀងរាល់ ១២ ខែ',
-    }
-    return freqMap[freq] || tExact(freq) || freq
+  const toggleItem = (key) => {
+    setExpandedItems((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }))
   }
 
-  const localizeRedFlag = (flag) => {
-    if (!isKhmer) return flag
-    const flagMap = {
-      'Persistent blood glucose above 250 mg/dL or below 70 mg/dL':
-        'ជាតិស្ករក្នុងឈាមលើស ២៥០ mg/dL ជាប់ៗគ្នា ឬធ្លាក់ចុះក្រោម ៧០ mg/dL',
-      'Persistent nausea, vomiting, or inability to retain fluids':
-        'អាការៈចង្អោរ ក្អួតជាប់រហូត ឬមិនអាចទទួលទានជាតិទឹកបាន',
-      'Deep, rapid breathing or distinct fruity-smelling breath (signs of ketosis)':
-        'ដកដង្ហើមវែងៗ ញាប់ខុសធម្មតា ឬមានក្លិនផ្លែឈើជូរចេញពីមាត់ (សញ្ញា Ketosis)',
-      'Confusion, extreme weakness, slurred speech, or loss of consciousness':
-        'ការវង្វេងវង្វាន់ ខ្សោយកម្លាំងខ្លាំង និយាយមិនច្បាស់ ឬបាត់បង់ស្មារតី',
-      'Non-healing foot sores, sudden severe numbness, swelling, or signs of localized infection':
-        'ស្នាមរបួសបាតជើងមិនជាសះស្បើយ ស្ពឹកខ្លាំងភ្លាមៗ ហើម ឬមានសញ្ញាឆ្លងមេរោគ',
-      'Chest pain, acute shortness of breath, or sudden vision changes':
-        'ឈឺទ្រូង ពិបាកដកដង្ហើមស្រួចស្រាវ ឬស្រវាំងភ្នែកភ្លាមៗ',
-      'Decreased fetal movement or severe headache with blurred vision during pregnancy':
-        'ទារកកម្រើកតិចជាងមុន ឬឈឺក្បាលខ្លាំងរួមជាមួយស្រវាំងភ្នែកអំឡុងពេលមានផ្ទៃពោះ',
-    }
-    return flagMap[flag] || tExact(flag) || flag
-  }
-
-  const localizeTargetRangeKey = (key) => {
-    if (!isKhmer) return key.replace(/_/g, ' ')
-    const keyMap = {
-      fasting_glucose: 'ជាតិស្ករពេលតមអាហារ (FPG)',
-      post_meal_glucose: 'ជាតិស្ករក្រោយអាហារ (Post-meal)',
-      hba1c: 'កម្រិតជាតិស្ករសរុប (HbA1c)',
-      one_hour_post_meal: 'ជាតិស្ករ ១ ម៉ោងក្រោយអាហារ',
-      two_hour_post_meal: 'ជាតិស្ករ ២ ម៉ោងក្រោយអាហារ',
-    }
-    return keyMap[key] || tExact(key) || key.replace(/_/g, ' ')
+  const isItemExpanded = (key) => {
+    return viewMode === 'detailed' || Boolean(expandedItems[key])
   }
 
   const handlePrint = () => {
@@ -307,10 +439,10 @@ export function PersonalizedCarePlanSection({
           <h2 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl dark:text-slate-50">
             {isKhmer ? 'ផែនការថែទាំសុខភាពផ្ទាល់ខ្លួន' : 'Personalized Care Plan'}
           </h2>
-          <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
             {isKhmer
               ? 'ផែនការសកម្មភាពជាក់លាក់ របបអាហារ លំហាត់ប្រាណ និងកាលវិភាគតាមដានផ្អែកលើលទ្ធផលវាយតម្លៃរបស់អ្នក។'
-              : 'Tailored clinical care recommendations, dietary strategies, physical activity, and follow-up timeline based on your assessment results.'}
+              : 'Tailored care recommendations, dietary strategies, physical activity, and follow-up schedule.'}
           </p>
         </div>
 
@@ -341,57 +473,55 @@ export function PersonalizedCarePlanSection({
       {/* ==================================================================== */}
       {/* 1. ASSESSMENT FINDINGS & HEALTH STATUS (STYLED LIKE RESULT HERO CARD) */}
       {/* ==================================================================== */}
-      <section className="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-7 shadow-xs dark:border-slate-800/80 dark:bg-slate-900/90 relative overflow-hidden transition-all">
+      <section className="rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs dark:border-slate-800/80 dark:bg-slate-900/90 relative overflow-hidden transition-all">
         {/* Droplet Illustration as Stylized Background Watermark */}
         <div className="pointer-events-none absolute -top-4 -left-4 sm:top-0 sm:left-0 h-28 w-28 sm:h-32 sm:w-32 opacity-10 dark:opacity-15 text-primary-500 select-none rotate-12 transition-transform duration-500">
           <DropletIllustration className="h-full w-full drop-shadow-xs" />
         </div>
-        {/* Ambient soft glow behind background icon */}
         <div className="pointer-events-none absolute -left-6 -top-6 h-36 w-36 rounded-full bg-primary-500/8 blur-2xl dark:bg-primary-500/10" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           {/* Left Content */}
-          <div className="flex-1 space-y-3.5 min-w-0">
-            {/* Condition Headline & Narrative Summary */}
+          <div className="flex-1 space-y-3 min-w-0">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white leading-tight">
+              <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white leading-tight">
                 {conditionName}
               </h2>
-              <p className="mt-1.5 text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
                 {localizedSummary}
               </p>
             </div>
 
-            {/* Mini Stat Pills with Icon Backdrops (Styled Like Result Page) */}
-            <div className="flex flex-wrap items-center gap-2.5 pt-1">
+            {/* Mini Stat Pills */}
+            <div className="flex flex-wrap items-center gap-2 pt-0.5">
               {findings.demographics?.age && (
-                <div className="inline-flex items-center gap-2.5 rounded-2xl border border-slate-100 bg-slate-50/80 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100/80 text-indigo-600 dark:bg-indigo-950/70 dark:text-indigo-400">
-                    <User className="h-3.5 w-3.5" />
+                <div className="inline-flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100/80 text-indigo-600 dark:bg-indigo-950/70 dark:text-indigo-400">
+                    <User className="h-3 w-3" />
                   </div>
                   <span>{findings.demographics.age} {isKhmer ? 'ឆ្នាំ' : 'yrs'}</span>
                 </div>
               )}
               {findings.demographics?.bmi && (
-                <div className="inline-flex items-center gap-2.5 rounded-2xl border border-slate-100 bg-slate-50/80 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100/80 text-emerald-600 dark:bg-emerald-950/70 dark:text-emerald-400">
-                    <Scale className="h-3.5 w-3.5" />
+                <div className="inline-flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100/80 text-emerald-600 dark:bg-emerald-950/70 dark:text-emerald-400">
+                    <Scale className="h-3 w-3" />
                   </div>
                   <span>BMI {findings.demographics.bmi} {bmiStatus ? `(${bmiStatus})` : ''}</span>
                 </div>
               )}
               {findings.symptoms && findings.symptoms.length > 0 && (
-                <div className="inline-flex items-center gap-2.5 rounded-2xl border border-slate-100 bg-slate-50/80 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-100/80 text-rose-600 dark:bg-rose-950/70 dark:text-rose-400">
-                    <ShieldCheck className="h-3.5 w-3.5" />
+                <div className="inline-flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-100/80 text-rose-600 dark:bg-rose-950/70 dark:text-rose-400">
+                    <ShieldCheck className="h-3 w-3" />
                   </div>
-                  <span>{findings.symptoms.length} {isKhmer ? 'រោគសញ្ញាត្រូវគ្នា' : 'Symptoms matched'}</span>
+                  <span>{findings.symptoms.length} {isKhmer ? 'រោគសញ្ញា' : 'Symptoms'}</span>
                 </div>
               )}
               {findings.risk_factors && findings.risk_factors.length > 0 && (
-                <div className="inline-flex items-center gap-2.5 rounded-2xl border border-slate-100 bg-slate-50/80 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-100/80 text-amber-600 dark:bg-amber-950/70 dark:text-amber-400">
-                    <Award className="h-3.5 w-3.5" />
+                <div className="inline-flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-100/80 text-amber-600 dark:bg-amber-950/70 dark:text-amber-400">
+                    <Award className="h-3 w-3" />
                   </div>
                   <span>{findings.risk_factors.length} {isKhmer ? 'កត្តាហានិភ័យ' : 'Risk factors'}</span>
                 </div>
@@ -399,35 +529,17 @@ export function PersonalizedCarePlanSection({
             </div>
 
             {/* Findings Evidence Chips (Symptoms, Risk Factors, Key Labs) */}
-            <div className="pt-1.5 space-y-2">
-              {/* Symptoms */}
-              {findings.symptoms && findings.symptoms.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                  <span className="font-semibold text-slate-500 dark:text-slate-400">
-                    {isKhmer ? 'រោគសញ្ញា៖' : 'Symptoms:'}
-                  </span>
-                  {findings.symptoms.map((s, idx) => (
-                    <span
-                      key={idx}
-                      className="inline-flex items-center gap-1 rounded-lg border border-rose-200/60 bg-rose-50/70 px-2.5 py-0.5 text-[11px] font-medium text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300"
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
-                      {tExact(s)}
-                    </span>
-                  ))}
-                </div>
-              )}
-
+            <div className="pt-1 space-y-1.5">
               {/* Risk Factors */}
               {findings.risk_factors && findings.risk_factors.length > 0 && (
                 <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                  <span className="font-semibold text-slate-500 dark:text-slate-400">
+                  <span className="font-semibold text-slate-400 dark:text-slate-500 text-[11px]">
                     {isKhmer ? 'កត្តាហានិភ័យ៖' : 'Risk Factors:'}
                   </span>
                   {findings.risk_factors.map((r, idx) => (
                     <span
                       key={idx}
-                      className="inline-flex items-center gap-1 rounded-lg border border-amber-200/60 bg-amber-50/70 px-2.5 py-0.5 text-[11px] font-medium text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300"
+                      className="inline-flex items-center gap-1 rounded-md border border-amber-200/60 bg-amber-50/70 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300"
                     >
                       <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
                       {tExact(r)}
@@ -442,13 +554,13 @@ export function PersonalizedCarePlanSection({
                   {Object.entries(findings.key_labs).map(([k, lab]) => (
                     <div
                       key={k}
-                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3 py-1.5 text-xs shadow-2xs dark:border-slate-700 dark:bg-slate-800"
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-2.5 py-1 text-xs shadow-2xs dark:border-slate-700 dark:bg-slate-800"
                     >
-                      <Droplets className="h-3.5 w-3.5 text-sky-500" />
-                      <span className="text-slate-500 dark:text-slate-400">
+                      <Droplets className="h-3 w-3 text-sky-500" />
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">
                         {getLabLabel(k, lab.label)}:
                       </span>
-                      <span className="font-bold text-slate-800 dark:text-slate-100">
+                      <span className="font-bold text-slate-800 dark:text-slate-100 text-[11px]">
                         {lab.value} {lab.unit}
                       </span>
                     </div>
@@ -458,83 +570,60 @@ export function PersonalizedCarePlanSection({
             </div>
 
             {/* Action Buttons Row */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center gap-3 pt-1">
               {latestResult?.id && (
                 <Link
                   to={`/diagnosis/result?diagnosis_result_id=${latestResult.id}`}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-primary-700 transition active:scale-[0.98]"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-primary-700 transition active:scale-[0.98]"
                 >
-                  <FileText className="h-4 w-4" />
+                  <FileText className="h-3.5 w-3.5" />
                   <span>{isKhmer ? 'មើលរបាយការណ៍គ្លីនិកពេញលេញ' : 'View Full Clinical Report'}</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  <ArrowRight className="h-3 w-3" />
                 </Link>
               )}
             </div>
           </div>
 
-          {/* Right: Stepped Progression Risk Scale with Evidence Agreement */}
+          {/* Right: Stepped Progression Risk Scale */}
           <div className="shrink-0 flex items-center justify-center pt-2 lg:pt-0">
-            <RiskProgressionBars
-              percent={certaintyPct}
-              isKhmer={isKhmer}
-            />
+            <RiskProgressionBars percent={certaintyPct} isKhmer={isKhmer} />
           </div>
         </div>
       </section>
 
       {/* Dynamic Provisional / Low-Confidence Banner */}
       {isProvisional && (
-        <div className="rounded-2xl border border-amber-200/90 bg-amber-50/70 p-4 sm:p-5 dark:border-amber-900/60 dark:bg-amber-950/30">
-          <div className="flex items-start gap-3.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
-              <AlertCircle className="h-5 w-5" />
+        <div className="rounded-2xl border border-amber-200/90 bg-amber-50/70 p-4 dark:border-amber-900/60 dark:bg-amber-950/30">
+          <div className="flex items-start gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+              <AlertCircle className="h-4.5 w-4.5" />
             </div>
             <div className="flex-1">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h4 className="text-sm font-bold text-amber-950 dark:text-amber-200">
-                  {isKhmer
-                    ? 'ការណែនាំដំណាក់កាលពិនិត្យបឋម (កម្រិតទំនុកចិត្ត < ៥០%)'
-                    : 'Preliminary Screening Phase (Certainty < 50%)'}
+                <h4 className="text-xs sm:text-sm font-bold text-amber-950 dark:text-amber-200">
+                  {isKhmer ? 'ដំណាក់កាលពិនិត្យបឋម (កម្រិតទំនុកចិត្ត < ៥០%)' : 'Preliminary Screening Phase (Certainty < 50%)'}
                 </h4>
-                <span className="rounded-full bg-amber-200/80 px-2.5 py-0.5 text-[10px] font-bold text-amber-900 dark:bg-amber-900/80 dark:text-amber-200 uppercase tracking-wider">
+                <span className="rounded-full bg-amber-200/80 px-2 py-0.5 text-[10px] font-bold text-amber-900 dark:bg-amber-900/80 dark:text-amber-200 uppercase tracking-wider">
                   {isKhmer ? 'ផែនការបឋម' : 'Provisional Plan'}
                 </span>
               </div>
               <p className="mt-1 text-xs text-amber-900/85 dark:text-amber-300/85 leading-relaxed">
                 {isKhmer
-                  ? 'ដោយសារការវាយតម្លៃនេះមិនទាន់មានលទ្ធផលមន្ទីរពិសោធន៍ច្បាស់លាស់ (កម្រិតទំនុកចិត្ត < ៥០%) ប្រព័ន្ធបានកែសម្រួលផែនការថែទាំនេះដោយផ្តោតលើការបញ្ជាក់តាមតេស្តឈាមមន្ទីរពិសោធន៍ និងការរស់នៅប្រកបដោយសុខភាពល្អជាមូលដ្ឋាន ដោយមិនទាន់បង្ហាញផែនការព្យាបាលវេជ្ជសាស្ត្រធ្ងន់ធ្ងរនៅឡើយទេ។ ផែនការលម្អិតពេញលេញនឹងបើកដំណើរការនៅពេលមានលទ្ធផលតេស្តឈាម (HbA1c ឬ ជាតិស្ករពេលព្រឹក)។'
-                  : 'Because clinical evidence from this screening is preliminary (< 50% certainty), this care plan is dynamically tailored for laboratory confirmation and baseline healthy living rather than aggressive medical intervention. Full comprehensive management protocols unlock once confirmatory laboratory tests (HbA1c / FPG) are recorded.'}
+                  ? 'ផែនការនេះផ្តោតលើការបញ្ជាក់តាមតេស្តឈាមមន្ទីរពិសោធន៍ និងការរស់នៅប្រកបដោយសុខភាពល្អជាមូលដ្ឋាន។'
+                  : 'This care plan prioritizes confirmatory laboratory blood tests and baseline healthy lifestyle habits.'}
               </p>
-              <div className="mt-3 flex items-center gap-2">
-                <Link
-                  to="/assessment"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-amber-700 transition"
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  <span>{isKhmer ? 'បញ្ចូលលទ្ធផលតេស្តឈាម ដើម្បីទទួលបានផែនការពេញលេញ' : 'Retake with Lab Tests to Unlock Full Plan'}</span>
-                </Link>
-              </div>
             </div>
           </div>
         </div>
       )}
 
       {/* ==================================================================== */}
-      {/* 2. CARE RECOMMENDATIONS                                              */}
-      {/*    (Diet, Physical Activity, Lifestyle, Monitoring)                  */}
+      {/* 2. CARE RECOMMENDATIONS (CLEAN, FUNCTIONAL, MODERN DASHBOARD)        */}
       {/* ==================================================================== */}
       <section className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
-              <CheckCircle2 className="h-4 w-4" />
-            </span>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-              {isKhmer ? 'ផែនការសកម្មភាព និងការណែនាំសុខភាព' : 'Actionable Care Recommendations'}
-            </h3>
-          </div>
-
-          {/* Filter Pills */}
+        {/* Controls Bar: Category Pills + View Mode Toggle */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          {/* Category Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
             {[
               { id: 'all', label: isKhmer ? 'ទាំងអស់' : 'All Recommendations', icon: Sparkles },
@@ -563,223 +652,289 @@ export function PersonalizedCarePlanSection({
               )
             })}
           </div>
+
+          {/* View Mode Toggle (Compact vs Detailed) */}
+          <div className="inline-flex items-center self-start md:self-auto rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">
+            <button
+              type="button"
+              onClick={() => setViewMode('compact')}
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition',
+                viewMode === 'compact'
+                  ? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-white'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+              )}
+            >
+              <Zap className="h-3 w-3" />
+              <span>{isKhmer ? 'ទិដ្ឋភាពសង្ខេប' : 'Compact'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('detailed')}
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition',
+                viewMode === 'detailed'
+                  ? 'bg-white text-slate-900 shadow-2xs dark:bg-slate-700 dark:text-white'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+              )}
+            >
+              <SlidersHorizontal className="h-3 w-3" />
+              <span>{isKhmer ? 'ទិដ្ឋភាពលម្អិត' : 'Detailed'}</span>
+            </button>
+          </div>
         </div>
 
+        {/* 2-Column Responsive Card Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* PILLAR 1: DIET & NUTRITION */}
           {(activeRecTab === 'all' || activeRecTab === 'diet') && (
             <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] dark:border-slate-800 dark:bg-slate-900">
-              <div>
-                <div className="flex items-center justify-between">
+              <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
                   <div className="flex items-center gap-2.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300">
-                      <Utensils className="h-5 w-5" />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300">
+                      <Utensils className="h-4 w-4" />
                     </span>
                     <div>
-                      <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                        {isKhmer ? 'អាហារូបត្ថម្ភ និងរបបអាហារ' : diet.category || 'Diet & Nutrition Strategy'}
+                      <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+                        {isKhmer ? 'អាហារូបត្ថម្ភ និងរបបអាហារ' : diet.category || 'Diet & Nutrition'}
                       </h3>
                       <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                        {isKhmer ? 'ការណែនាំអំពីកាបូអ៊ីដ្រាត និងកម្រិតជាតិស្ករ' : 'Glycemic load, fiber targets & portion balance'}
+                        {isKhmer ? 'តុល្យភាពជាតិស្ករ និងកាបូអ៊ីដ្រាត' : 'Low Glycemic · Plate Method'}
                       </p>
                     </div>
                   </div>
+
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    {isKhmer ? 'ជាតិស្ករទាប' : 'Low Glycemic'}
+                  </span>
                 </div>
 
-                <p className="mt-3.5 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
-                  {diet.summary}
-                </p>
+                {/* Compact Action Items */}
+                <div className="space-y-2">
+                  {diet.action_items?.map((item, idx) => {
+                    const key = `diet_${idx}`
+                    return (
+                      <ActionItemRow
+                        key={idx}
+                        item={item}
+                        category="diet"
+                        isExpanded={isItemExpanded(key)}
+                        onToggle={() => toggleItem(key)}
+                        isKhmer={isKhmer}
+                        tExact={tExact}
+                      />
+                    )
+                  })}
+                </div>
 
-                {/* Action Items */}
-                <div className="mt-4 space-y-2.5">
-                  {diet.action_items?.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="rounded-xl border border-slate-100 bg-slate-50/60 p-3 dark:border-slate-800/80 dark:bg-slate-800/40"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                          {tExact(item.title) || item.title}
-                        </h4>
-                        {item.tag && (
-                          <span className="shrink-0 rounded-full bg-emerald-100/70 px-2 py-0.5 text-[10px] font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-                            {tExact(item.tag) || item.tag}
-                          </span>
-                        )}
+                {/* Modern Food Chips (Prioritize & Limit) */}
+                {(diet.foods_to_prioritize || diet.foods_to_limit) && (
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
+                    {diet.foods_to_prioritize && diet.foods_to_prioritize.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 mb-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                          <span>{isKhmer ? 'អាហារគួរទទួលទាន' : 'Foods to Prioritize'}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {diet.foods_to_prioritize.map((food, i) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center rounded-lg bg-emerald-50/80 px-2.5 py-1 text-[11px] font-medium text-emerald-800 border border-emerald-200/50 dark:bg-emerald-950/40 dark:border-emerald-800/40 dark:text-emerald-200"
+                            >
+                              + {tExact(food) || food}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        {item.description}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                    )}
+
+                    {diet.foods_to_limit && diet.foods_to_limit.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800 dark:text-rose-300 mb-1.5">
+                          <AlertTriangle className="h-3.5 w-3.5 text-rose-600" />
+                          <span>{isKhmer ? 'អាហារគួរកាត់បន្ថយ' : 'Foods to Limit / Avoid'}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {diet.foods_to_limit.map((food, i) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center rounded-lg bg-rose-50/80 px-2.5 py-1 text-[11px] font-medium text-rose-800 border border-rose-200/50 dark:bg-rose-950/40 dark:border-rose-800/40 dark:text-rose-200"
+                            >
+                              – {tExact(food) || food}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-
-              {/* Foods to Prioritize & Foods to Limit */}
-              {(diet.foods_to_prioritize || diet.foods_to_limit) && (
-                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  {diet.foods_to_prioritize && (
-                    <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/40 p-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-                      <div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        <span>{isKhmer ? 'អាហារគួរទទួលទាន' : 'Foods to Prioritize'}</span>
-                      </div>
-                      <ul className="mt-2 space-y-1 text-[11px] text-emerald-900/80 dark:text-emerald-200/80">
-                        {diet.foods_to_prioritize.map((food, i) => (
-                          <li key={i} className="flex items-start gap-1.5">
-                            <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-emerald-500" />
-                            <span>{tExact(food) || food}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {diet.foods_to_limit && (
-                    <div className="rounded-xl border border-rose-200/60 bg-rose-50/40 p-3 dark:border-rose-900/40 dark:bg-rose-950/20">
-                      <div className="flex items-center gap-1.5 font-bold text-rose-800 dark:text-rose-300">
-                        <AlertTriangle className="h-3.5 w-3.5" />
-                        <span>{isKhmer ? 'អាហារគួរកាត់បន្ថយ/ចៀសវាង' : 'Foods to Limit / Avoid'}</span>
-                      </div>
-                      <ul className="mt-2 space-y-1 text-[11px] text-rose-900/80 dark:text-rose-200/80">
-                        {diet.foods_to_limit.map((food, i) => (
-                          <li key={i} className="flex items-start gap-1.5">
-                            <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-rose-500" />
-                            <span>{tExact(food) || food}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           )}
 
           {/* PILLAR 2: PHYSICAL ACTIVITY */}
           {(activeRecTab === 'all' || activeRecTab === 'activity') && (
             <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] dark:border-slate-800 dark:bg-slate-900">
-              <div>
-                <div className="flex items-center justify-between">
+              <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
                   <div className="flex items-center gap-2.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/50 dark:text-sky-300">
-                      <Activity className="h-5 w-5" />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/50 dark:text-sky-300">
+                      <Activity className="h-4 w-4" />
                     </span>
                     <div>
-                      <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                        {isKhmer ? 'សកម្មភាពរាងកាយ និងលំហាត់ប្រាណ' : activity.category || 'Physical Activity Regimen'}
+                      <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+                        {isKhmer ? 'សកម្មភាពរាងកាយ និងលំហាត់ប្រាណ' : activity.category || 'Physical Activity'}
                       </h3>
                       <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                        {isKhmer ? 'បង្កើនការឆ្លើយតបអាំងស៊ុយលីន និងសុខភាពបេះដូង' : 'Aerobic conditioning, strength & glycemic control'}
+                        {isKhmer ? 'លំហាត់ប្រាណបេះដូង និងកម្លាំងសាច់ដុំ' : 'Aerobic & Muscle Sensitivity'}
                       </p>
                     </div>
                   </div>
 
                   {activity.weekly_target_minutes !== undefined && activity.weekly_target_minutes > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-sky-200/80 bg-sky-50 px-2.5 py-1 text-xs font-bold text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300">
-                      <Flame className="h-3.5 w-3.5 text-sky-500" />
+                    <span className="inline-flex items-center gap-1 rounded-full border border-sky-200/80 bg-sky-50 px-2.5 py-0.5 text-xs font-bold text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300">
+                      <Flame className="h-3 w-3 text-sky-500" />
                       <span>{isKhmer ? `${activity.weekly_target_minutes} នាទី/សប្តាហ៍` : `${activity.weekly_target_minutes} min/wk`}</span>
                     </span>
                   )}
                 </div>
 
-                <p className="mt-3.5 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
-                  {activity.summary}
-                </p>
-
-                {/* Action Items */}
-                <div className="mt-4 space-y-2.5">
-                  {activity.action_items?.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="rounded-xl border border-slate-100 bg-slate-50/60 p-3 dark:border-slate-800/80 dark:bg-slate-800/40"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                          {tExact(item.title) || item.title}
-                        </h4>
-                        {item.tag && (
-                          <span className="shrink-0 rounded-full bg-sky-100/70 px-2 py-0.5 text-[10px] font-semibold text-sky-800 dark:bg-sky-950/60 dark:text-sky-300">
-                            {tExact(item.tag) || item.tag}
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        {item.description}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Safety Precautions Box */}
-              {activity.safety_precautions && activity.safety_precautions.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <div className="rounded-xl border border-amber-200/60 bg-amber-50/40 p-3 dark:border-amber-900/40 dark:bg-amber-950/20">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800 dark:text-amber-300">
-                      <Footprints className="h-3.5 w-3.5 text-amber-600" />
-                      <span>{isKhmer ? 'ការប្រុងប្រយ័ត្ន និងការការពារបាតជើង' : 'Safety & Foot Protection'}</span>
-                    </div>
-                    <ul className="mt-1.5 space-y-1 text-[11px] text-amber-900/80 dark:text-amber-200/80">
-                      {activity.safety_precautions.map((p, i) => (
-                        <li key={i} className="flex items-start gap-1.5">
-                          <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-amber-500" />
-                          <span>{tExact(p) || p}</span>
-                        </li>
-                      ))}
-                    </ul>
+                {/* Visual Metric Strip */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-xl bg-sky-50/70 p-2 border border-sky-100 dark:bg-sky-950/30 dark:border-sky-900/30">
+                    <span className="block text-xs font-bold text-sky-800 dark:text-sky-200">
+                      {isKhmer ? '៣០ នាទី/ថ្ងៃ' : '30 Min / Day'}
+                    </span>
+                    <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                      {isKhmer ? 'ដើរលឿន ៥ ថ្ងៃ' : 'Brisk Walk 5d/wk'}
+                    </span>
+                  </div>
+                  <div className="rounded-xl bg-indigo-50/70 p-2 border border-indigo-100 dark:bg-indigo-950/30 dark:border-indigo-900/30">
+                    <span className="block text-xs font-bold text-indigo-800 dark:text-indigo-200">
+                      {isKhmer ? '២–៣ ដង/សប្តាហ៍' : '2–3x / Week'}
+                    </span>
+                    <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                      {isKhmer ? 'កម្លាំងសាច់ដុំ' : 'Strength Training'}
+                    </span>
+                  </div>
+                  <div className="rounded-xl bg-emerald-50/70 p-2 border border-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-900/30">
+                    <span className="block text-xs font-bold text-emerald-800 dark:text-emerald-200">
+                      {isKhmer ? '១០–១៥ នាទី' : '10–15 Min'}
+                    </span>
+                    <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                      {isKhmer ? 'ដើរក្រោយអាហារ' : 'Post-Meal Walk'}
+                    </span>
                   </div>
                 </div>
-              )}
+
+                {/* Compact Action Items */}
+                <div className="space-y-2">
+                  {activity.action_items?.map((item, idx) => {
+                    const key = `activity_${idx}`
+                    return (
+                      <ActionItemRow
+                        key={idx}
+                        item={item}
+                        category="activity"
+                        isExpanded={isItemExpanded(key)}
+                        onToggle={() => toggleItem(key)}
+                        isKhmer={isKhmer}
+                        tExact={tExact}
+                      />
+                    )
+                  })}
+                </div>
+
+                {/* Compact Safety Precautions Alert */}
+                {activity.safety_precautions && activity.safety_precautions.length > 0 && (
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2 rounded-xl bg-amber-50/60 border border-amber-200/50 p-2.5 text-[11px] text-amber-900 dark:bg-amber-950/30 dark:border-amber-900/40 dark:text-amber-200">
+                      <Footprints className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                      <span className="font-medium">
+                        {isKhmer
+                          ? 'សុវត្ថិភាព៖ ប្រើប្រាស់ស្បែកជើងសមរម្យ កម្តៅសាច់ដុំ ៥ នាទី និងទទួលទានទឹកឱ្យបានគ្រប់គ្រាន់'
+                          : 'Safety Tip: Wear supportive footwear, warm up for 5 mins, and stay hydrated.'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
           {/* PILLAR 3: LIFESTYLE & WELL-BEING */}
           {(activeRecTab === 'all' || activeRecTab === 'lifestyle') && (
             <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] dark:border-slate-800 dark:bg-slate-900">
-              <div>
-                <div className="flex items-center justify-between">
+              <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
                   <div className="flex items-center gap-2.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-300">
-                      <Moon className="h-5 w-5" />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-300">
+                      <Moon className="h-4 w-4" />
                     </span>
                     <div>
-                      <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                        {isKhmer ? 'របៀបរស់នៅ និងទម្លាប់ប្រចាំថ្ងៃ' : lifestyle.category || 'Lifestyle & Well-being Interventions'}
+                      <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+                        {isKhmer ? 'របៀបរស់នៅ និងទម្លាប់ប្រចាំថ្ងៃ' : lifestyle.category || 'Lifestyle & Well-being'}
                       </h3>
                       <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                        {isKhmer ? 'ការគ្រប់គ្រងទម្ងន់ ការគេង ភាពតានតឹង និងការថែទាំជើង' : 'Weight management, sleep, stress & foot exams'}
+                        {isKhmer ? 'ការគេង ភាពតានតឹង និងការថែទាំជើង' : 'Sleep, Stress & Foot Vigilance'}
                       </p>
                     </div>
                   </div>
+
+                  <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 border border-indigo-200/60 dark:bg-indigo-950/60 dark:text-indigo-300">
+                    {isKhmer ? 'ទម្លាប់ប្រចាំថ្ងៃ' : 'Daily Habits'}
+                  </span>
                 </div>
 
-                <p className="mt-3.5 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
-                  {lifestyle.summary}
-                </p>
+                {/* Visual Metric Strip */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-xl bg-indigo-50/70 p-2 border border-indigo-100 dark:bg-indigo-950/30 dark:border-indigo-900/30">
+                    <span className="block text-xs font-bold text-indigo-800 dark:text-indigo-200">
+                      {isKhmer ? '៧–៨ ម៉ោង' : '7–8 Hours'}
+                    </span>
+                    <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                      {isKhmer ? 'គេងលក់ស្រួល' : 'Quality Sleep'}
+                    </span>
+                  </div>
+                  <div className="rounded-xl bg-rose-50/70 p-2 border border-rose-100 dark:bg-rose-950/30 dark:border-rose-900/30">
+                    <span className="block text-xs font-bold text-rose-800 dark:text-rose-200">
+                      {isKhmer ? 'ប្រចាំថ្ងៃ' : 'Daily Check'}
+                    </span>
+                    <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                      {isKhmer ? 'ពិនិត្យបាតជើង' : 'Foot & Skin Care'}
+                    </span>
+                  </div>
+                  <div className="rounded-xl bg-purple-50/70 p-2 border border-purple-100 dark:bg-purple-950/30 dark:border-purple-900/30">
+                    <span className="block text-xs font-bold text-purple-800 dark:text-purple-200">
+                      {isKhmer ? '១០ នាទី' : '10 Min Daily'}
+                    </span>
+                    <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                      {isKhmer ? 'កាត់បន្ថយស្ត្រេស' : 'Stress Reset'}
+                    </span>
+                  </div>
+                </div>
 
-                {/* Action Items */}
-                <div className="mt-4 space-y-2.5">
-                  {lifestyle.action_items?.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="rounded-xl border border-slate-100 bg-slate-50/60 p-3 dark:border-slate-800/80 dark:bg-slate-800/40"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                          {tExact(item.title) || item.title}
-                        </h4>
-                        {item.tag && (
-                          <span className="shrink-0 rounded-full bg-indigo-100/70 px-2 py-0.5 text-[10px] font-semibold text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300">
-                            {tExact(item.tag) || item.tag}
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        {item.description}
-                      </p>
-                    </div>
-                  ))}
+                {/* Compact Action Items */}
+                <div className="space-y-2">
+                  {lifestyle.action_items?.map((item, idx) => {
+                    const key = `lifestyle_${idx}`
+                    return (
+                      <ActionItemRow
+                        key={idx}
+                        item={item}
+                        category="lifestyle"
+                        isExpanded={isItemExpanded(key)}
+                        onToggle={() => toggleItem(key)}
+                        isKhmer={isKhmer}
+                        tExact={tExact}
+                      />
+                    )
+                  })}
                 </div>
               </div>
             </div>
@@ -788,74 +943,74 @@ export function PersonalizedCarePlanSection({
           {/* PILLAR 4: BIOMARKER & GLYCEMIC MONITORING */}
           {(activeRecTab === 'all' || activeRecTab === 'monitoring') && (
             <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] dark:border-slate-800 dark:bg-slate-900">
-              <div>
-                <div className="flex items-center justify-between">
+              <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
                   <div className="flex items-center gap-2.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-300">
-                      <HeartPulse className="h-5 w-5" />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-300">
+                      <HeartPulse className="h-4 w-4" />
                     </span>
                     <div>
-                      <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                        {isKhmer ? 'ការតាមដានជាតិស្ករ និងសូចនាករសុខភាព' : monitoring.category || 'Glycemic & Biomarker Monitoring'}
+                      <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+                        {isKhmer ? 'ការតាមដានជាតិស្ករ និងសូចនាករសុខភាព' : monitoring.category || 'Biomarker Monitoring'}
                       </h3>
                       <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                        {isKhmer ? 'កាលវិភាគវាស់ជាតិស្ករ និងគោលដៅសុខភាព' : 'Self-monitoring protocol & clinical target ranges'}
+                        {isKhmer ? 'គោលដៅជាតិស្ករ និងកាលវិភាគតេស្ត' : 'Target Ranges & Testing Cadence'}
                       </p>
                     </div>
                   </div>
+
+                  <span className="rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-700 border border-purple-200/60 dark:bg-purple-950/60 dark:text-purple-300">
+                    {isKhmer ? 'គោលដៅ ADA' : 'ADA Target'}
+                  </span>
                 </div>
 
-                <p className="mt-3.5 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
-                  {monitoring.summary}
-                </p>
+                {/* Target Ranges Strip */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-xl bg-emerald-50/70 p-2 border border-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-900/30">
+                    <span className="block text-xs font-bold text-emerald-800 dark:text-emerald-200">
+                      80–130
+                    </span>
+                    <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                      {isKhmer ? 'ជាតិស្ករពេលព្រឹក' : 'Fasting (mg/dL)'}
+                    </span>
+                  </div>
+                  <div className="rounded-xl bg-sky-50/70 p-2 border border-sky-100 dark:bg-sky-950/30 dark:border-sky-900/30">
+                    <span className="block text-xs font-bold text-sky-800 dark:text-sky-200">
+                      &lt; 180
+                    </span>
+                    <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                      {isKhmer ? '២ ម៉ោងក្រោយអាហារ' : 'Post-Meal (mg/dL)'}
+                    </span>
+                  </div>
+                  <div className="rounded-xl bg-purple-50/70 p-2 border border-purple-100 dark:bg-purple-950/30 dark:border-purple-900/30">
+                    <span className="block text-xs font-bold text-purple-800 dark:text-purple-200">
+                      &lt; 7.0%
+                    </span>
+                    <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                      {isKhmer ? 'កម្រិត HbA1c' : 'HbA1c Target'}
+                    </span>
+                  </div>
+                </div>
 
-                {/* Action Items */}
-                <div className="mt-4 space-y-2.5">
-                  {monitoring.action_items?.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="rounded-xl border border-slate-100 bg-slate-50/60 p-3 dark:border-slate-800/80 dark:bg-slate-800/40"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                          {tExact(item.title) || item.title}
-                        </h4>
-                        {item.frequency && (
-                          <span className="shrink-0 rounded-full bg-purple-100/70 px-2 py-0.5 text-[10px] font-semibold text-purple-800 dark:bg-purple-950/60 dark:text-purple-300">
-                            {localizeFrequency(item.frequency)}
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        {item.description}
-                      </p>
-                    </div>
-                  ))}
+                {/* Compact Action Items */}
+                <div className="space-y-2">
+                  {monitoring.action_items?.map((item, idx) => {
+                    const key = `monitoring_${idx}`
+                    return (
+                      <ActionItemRow
+                        key={idx}
+                        item={item}
+                        category="monitoring"
+                        isExpanded={isItemExpanded(key)}
+                        onToggle={() => toggleItem(key)}
+                        isKhmer={isKhmer}
+                        tExact={tExact}
+                      />
+                    )
+                  })}
                 </div>
               </div>
-
-              {/* Target Ranges Reference Box */}
-              {monitoring.target_ranges && (
-                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 dark:border-slate-700/80 dark:bg-slate-800/50">
-                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                      {isKhmer ? 'គោលដៅជាតិស្ករយោង (Target Ranges)' : 'Standard Glycemic Targets Reference'}
-                    </span>
-                    <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                      {Object.entries(monitoring.target_ranges).map(([k, range]) => (
-                        <div key={k} className="flex flex-col">
-                          <span className="text-[10px] uppercase font-semibold text-slate-400 dark:text-slate-500">
-                            {localizeTargetRangeKey(k)}
-                          </span>
-                          <span className="font-medium text-slate-800 dark:text-slate-200">
-                            {range}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -881,37 +1036,33 @@ export function PersonalizedCarePlanSection({
           </span>
         </div>
 
-        <div className="mt-4 space-y-4">
-          <div className="rounded-xl border border-sky-100 bg-sky-50/50 p-4 dark:border-sky-950/70 dark:bg-sky-950/20">
-            <div className="flex items-start gap-3">
-              <Stethoscope className="mt-0.5 h-5 w-5 shrink-0 text-sky-600 dark:text-sky-400" />
-              <div>
-                <h4 className="text-sm font-bold text-sky-900 dark:text-sky-100">
-                  {isKhmer ? 'សកម្មភាពចម្បងដែលត្រូវធ្វើ (Primary Action)' : 'Primary Milestone Action'}
-                </h4>
-                <p className="mt-1 text-xs sm:text-sm text-sky-800 dark:text-sky-200 leading-relaxed">
-                  {followUp.milestone_action}
-                </p>
-              </div>
+        <div className="mt-4 space-y-3.5">
+          {/* Primary Action Callout */}
+          {followUp.milestone_action && (
+            <div className="flex items-center gap-3 rounded-xl border border-sky-100 bg-sky-50/50 p-3.5 dark:border-sky-950/70 dark:bg-sky-950/20">
+              <Stethoscope className="h-4.5 w-4.5 shrink-0 text-sky-600 dark:text-sky-400" />
+              <p className="text-xs font-medium text-sky-900 dark:text-sky-100 leading-relaxed">
+                {followUp.milestone_action}
+              </p>
             </div>
-          </div>
+          )}
 
           {/* Timeline Milestones Stepper */}
           {followUp.schedule && followUp.schedule.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
               {followUp.schedule.map((item, idx) => (
                 <div
                   key={idx}
-                  className="relative rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 dark:border-slate-800 dark:bg-slate-800/40"
+                  className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-800/40"
                 >
-                  <div className="flex items-center gap-2 text-xs font-bold text-primary-700 dark:text-primary-300">
-                    <Calendar className="h-3.5 w-3.5 text-primary-500" />
+                  <span className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-0.5 text-[10px] font-bold text-primary-700 shadow-2xs border border-slate-200/60 dark:bg-slate-700 dark:text-primary-300 dark:border-slate-650">
+                    <Calendar className="h-2.5 w-2.5" />
                     <span>{tExact(item.timeframe) || item.timeframe}</span>
-                  </div>
+                  </span>
                   <h5 className="mt-2 text-xs font-bold text-slate-800 dark:text-slate-200">
                     {tExact(item.title) || item.title}
                   </h5>
-                  <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                  <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 line-clamp-2">
                     {item.description}
                   </p>
                 </div>
@@ -921,77 +1072,78 @@ export function PersonalizedCarePlanSection({
 
           {/* Specialist Referrals */}
           {followUp.specialists_to_consult && followUp.specialists_to_consult.length > 0 && (
-            <div className="pt-2">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                {isKhmer ? 'អ្នកជំនាញវេជ្ជសាស្ត្រដែលគួរពិគ្រោះយោបល់៖' : 'Recommended Specialists to Consult:'}
+            <div className="pt-1 flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+                {isKhmer ? 'អ្នកជំនាញពិគ្រោះ៖' : 'Specialists to Consult:'}
               </span>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {followUp.specialists_to_consult.map((s, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-2xs dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                  >
-                    <Stethoscope className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
-                    <span>{tExact(s) || s}</span>
-                  </span>
-                ))}
-              </div>
+              {followUp.specialists_to_consult.map((s, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200/80 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-2xs dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                >
+                  <Stethoscope className="h-3 w-3 text-primary-600 dark:text-primary-400" />
+                  <span>{tExact(s) || s}</span>
+                </span>
+              ))}
             </div>
           )}
         </div>
       </section>
 
       {/* ==================================================================== */}
-      {/* 4. CLINICAL SAFETY & EMERGENCY GUIDANCE                              */}
+      {/* 4. CLINICAL SAFETY DISCLAIMER (CLEAN COLLAPSIBLE ACCORDION)          */}
       {/* ==================================================================== */}
-      <section className="rounded-2xl border border-rose-200/90 bg-rose-50/40 p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] sm:p-6 dark:border-rose-900/60 dark:bg-rose-950/20">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-900/60 dark:text-rose-300">
-            <ShieldAlert className="h-5 w-5" />
-          </span>
-          <div>
-            <h3 className="text-sm sm:text-base font-bold text-rose-900 dark:text-rose-100">
-              {isKhmer ? 'ការណែនាំសុវត្ថិភាព និងសញ្ញាអាសន្ន' : disclaimer.title || 'Clinical Safety & Emergency Guidance'}
-            </h3>
-            <p className="text-[11px] text-rose-700/80 dark:text-rose-300/80">
-              {isKhmer
-                ? 'ការណែនាំសុខភាពនេះមិនជំនួសវេជ្ជបញ្ជា ឬការពិគ្រោះផ្ទាល់ជាមួយគ្រូពេទ្យឡើយ'
-                : 'Strict clinical decision-support boundaries'}
-            </p>
-          </div>
-        </div>
-
-        <p className="mt-3 text-xs sm:text-sm leading-relaxed text-rose-900/90 dark:text-rose-200/90">
-          {isKhmer
-            ? 'ផែនការថែទាំផ្ទាល់ខ្លួននេះ ត្រូវបានបង្កើតឡើងដោយប្រព័ន្ធជំនួយការសម្រេចចិត្តគ្លីនិកឆ្លាតវៃ ដើម្បីជាការណែនាំអំពីរបៀបរស់នៅ និងការអប់រំសុខភាពផ្អែកលើការវាយតម្លៃរបស់អ្នក។ វាមិនជំនួសការវិនិច្ឆ័យរោគផ្លូវការ ឬការចេញវេជ្ជបញ្ជាថ្នាំឡើយ។ រាល់ការសម្រេចចិត្តលើការព្យាបាលវេជ្ជសាស្ត្រ និងការប្រើប្រាស់ថ្នាំ ត្រូវតែធ្វើឡើងដោយមានការពិគ្រោះយោបល់ផ្ទាល់ជាមួយវេជ្ជបណ្ឌិតជំនាញ។'
-            : disclaimer.content}
-        </p>
-
-        {/* Emergency Red Flags */}
-        {disclaimer.red_flags && disclaimer.red_flags.length > 0 && (
-          <div className="mt-4 rounded-xl border border-rose-200/80 bg-white/70 p-4 dark:border-rose-900/50 dark:bg-slate-900/70">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800 dark:text-rose-300">
-              <AlertCircle className="h-4 w-4 text-rose-600" />
-              <span>
-                {isKhmer
-                  ? 'សញ្ញាអាសន្នដែលត្រូវទៅមន្ទីរពេទ្យជាបន្ទាន់ (Red-Flag Emergencies):'
-                  : 'Emergency Red Flags — Seek Urgent Medical Care If:'}
-              </span>
-            </div>
-            <ul className="mt-2.5 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-rose-900 dark:text-rose-200">
-              {disclaimer.red_flags.map((flag, idx) => (
-                <li key={idx} className="flex items-start gap-2">
-                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-500" />
-                  <span className="leading-snug">{localizeRedFlag(flag)}</span>
-                </li>
-              ))}
-            </ul>
-            {disclaimer.emergency_instruction && (
-              <p className="mt-3 border-t border-rose-100 pt-2 text-[11px] font-semibold text-rose-700 dark:border-rose-900/50 dark:text-rose-300">
-                {isKhmer
-                  ? 'ប្រសិនបើអ្នកជួបប្រទះសញ្ញាអាសន្នណាមួយខាងលើ សូមស្វែងរកការព្យាបាលបន្ទាន់នៅមន្ទីរពេទ្យ ឬទាក់ទងលេខសង្គ្រោះបន្ទាន់ភ្លាមៗ។'
-                  : disclaimer.emergency_instruction}
+      <section className="rounded-2xl border border-rose-200/90 bg-rose-50/40 p-4 sm:p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all dark:border-rose-900/60 dark:bg-rose-950/20">
+        <button
+          type="button"
+          onClick={() => setIsSafetyExpanded((prev) => !prev)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-100 text-rose-600 dark:bg-rose-900/60 dark:text-rose-300">
+              <ShieldAlert className="h-4 w-4" />
+            </span>
+            <div>
+              <h3 className="text-xs sm:text-sm font-bold text-rose-900 dark:text-rose-100">
+                {isKhmer ? 'ការណែនាំសុវត្ថិភាពគ្លីនិក និងសញ្ញាអាសន្ន' : disclaimer.title || 'Clinical Safety & Emergency Disclaimer'}
+              </h3>
+              <p className="text-[10px] sm:text-[11px] text-rose-700/80 dark:text-rose-300/80">
+                {isKhmer ? 'ជំនួយការសម្រេចចិត្តគ្លីនិក · ចុចដើម្បីមើលសញ្ញាអាសន្ន' : 'Decision-support only · Click to view emergency red flags'}
               </p>
+            </div>
+          </div>
+
+          <ChevronDown
+            className={cn(
+              'h-4 w-4 text-rose-600 transition-transform duration-200 dark:text-rose-400',
+              isSafetyExpanded ? 'rotate-180' : 'rotate-0'
+            )}
+          />
+        </button>
+
+        {isSafetyExpanded && (
+          <div className="mt-3.5 pt-3.5 border-t border-rose-200/60 dark:border-rose-900/40 space-y-3 animate-in fade-in duration-150">
+            <p className="text-xs leading-relaxed text-rose-900/90 dark:text-rose-200/90">
+              {isKhmer
+                ? 'ផែនការថែទាំផ្ទាល់ខ្លួននេះ ត្រូវបានបង្កើតឡើងដោយប្រព័ន្ធជំនួយការសម្រេចចិត្តគ្លីនិកឆ្លាតវៃ ដើម្បីជាការណែនាំអំពីរបៀបរស់នៅ និងការអប់រំសុខភាពផ្អែកលើការវាយតម្លៃរបស់អ្នក។ វាមិនជំនួសការវិនិច្ឆ័យរោគផ្លូវការ ឬការចេញវេជ្ជបញ្ជាថ្នាំឡើយ។'
+                : disclaimer.content}
+            </p>
+
+            {disclaimer.red_flags && disclaimer.red_flags.length > 0 && (
+              <div className="rounded-xl border border-rose-200/80 bg-white/80 p-3.5 dark:border-rose-900/50 dark:bg-slate-900/80">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800 dark:text-rose-300">
+                  <AlertCircle className="h-3.5 w-3.5 text-rose-600" />
+                  <span>{isKhmer ? 'សញ្ញាអាសន្នដែលត្រូវទៅមន្ទីរពេទ្យបន្ទាន់៖' : 'Emergency Red Flags — Seek Urgent Medical Care If:'}</span>
+                </div>
+                <ul className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-1.5 text-xs text-rose-900 dark:text-rose-200">
+                  {disclaimer.red_flags.map((flag, idx) => (
+                    <li key={idx} className="flex items-start gap-1.5">
+                      <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-rose-500" />
+                      <span className="leading-snug text-[11px]">{flag}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         )}
