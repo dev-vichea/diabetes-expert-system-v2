@@ -16,6 +16,7 @@ import {
   FileText,
   Footprints,
   HeartPulse,
+  LayoutDashboard,
   MessageSquare,
   Moon,
   Play,
@@ -45,9 +46,9 @@ import {
 } from '@/components/dashboard/patient/patient-dashboard-utils'
 
 const TABS = [
-  { id: 'Overview', labelEn: 'Overview', labelKm: 'ទិដ្ឋភាពទូទៅ' },
-  { id: 'Care Plan', labelEn: 'Care Plan', labelKm: 'ផែនការថែទាំ' },
-  { id: 'Appointments', labelEn: 'Appointments', labelKm: 'ការណាត់ជួប' },
+  { id: 'Overview', labelEn: 'Overview', labelKm: 'ទិដ្ឋភាពទូទៅ', icon: LayoutDashboard },
+  { id: 'Care Plan', labelEn: 'Care Plan', labelKm: 'ផែនការថែទាំ', icon: HeartPulse },
+  { id: 'Appointments', labelEn: 'Appointments', labelKm: 'ការណាត់ជួប', icon: Calendar },
 ]
 
 const TASK_TRANSLATIONS = {
@@ -376,25 +377,35 @@ export function CarePlanPage() {
       <ErrorAlert message={error} />
 
       {/* ==================================================================== */}
+      {/* ==================================================================== */}
       {/* 1. TOP TAB NAVIGATION BAR                                             */}
       {/* ==================================================================== */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3 dark:border-slate-800">
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 pb-4 dark:border-slate-800">
+        <div className="inline-flex max-w-full items-center gap-1.5 overflow-x-auto rounded-2xl bg-slate-100/90 p-1.5 dark:bg-slate-800/60 scrollbar-none">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id
+            const Icon = tab.icon
             return (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'rounded-full px-5 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-150',
+                  'flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer',
                   isActive
-                    ? 'bg-primary-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800/60'
+                    ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-900 dark:text-white'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/40 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700/40'
                 )}
               >
-                {isKhmer ? tab.labelKm : tab.labelEn}
+                {Icon && (
+                  <Icon
+                    className={cn(
+                      'h-4 w-4 shrink-0 transition-colors',
+                      isActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-500 dark:text-slate-400'
+                    )}
+                  />
+                )}
+                <span>{isKhmer ? tab.labelKm : tab.labelEn}</span>
               </button>
             )
           })}
@@ -435,74 +446,68 @@ export function CarePlanPage() {
             <div className="pointer-events-none absolute right-1/4 -bottom-12 h-40 w-40 rounded-full bg-gradient-to-tr from-sky-50/60 to-transparent blur-xl dark:from-sky-950/10 dark:to-transparent" />
 
             <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              {/* Left Block: Avatar, Title, Status & Actions */}
-              <div className="flex items-start gap-4 sm:gap-5 min-w-0">
-                <div className="flex h-13 w-13 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full bg-blue-100/70 text-primary-600 shadow-2xs dark:bg-blue-950/70 dark:text-primary-300">
-                  <User className="h-6 w-6 sm:h-7 sm:w-7" />
+              {/* Left Block: Title, Status & Actions (No person icon) */}
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
+                    {t('carePlanPage.overview.title', isKhmer ? 'ផែនការថែទាំរបស់ខ្ញុំ' : 'My Care Plan')}
+                  </h1>
+
+                  {isUrgent ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-600 border border-rose-200/80 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-900/50">
+                      <AlertCircle className="h-3.5 w-3.5" />
+                      <span>{t('carePlanPage.overview.attentionRequired', isKhmer ? 'ត្រូវការការយកចិត្តទុកដាក់' : 'Attention Required')}</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900/50">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      <span>{t('carePlanPage.overview.stable', isKhmer ? 'មានលំនឹង' : 'Stable')}</span>
+                    </span>
+                  )}
+
+                  <span className="text-slate-300 dark:text-slate-600 hidden sm:inline select-none">•</span>
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                    {t('carePlanPage.overview.updatedToday', isKhmer ? 'បានធ្វើបច្ចុប្បន្នភាពថ្ងៃនេះ' : 'Updated today')}
+                  </span>
+
+                  <span className="text-slate-300 dark:text-slate-600 hidden sm:inline select-none">•</span>
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                    {latestResult?.review_note
+                      ? t('carePlanPage.overview.doctorReviewed', isKhmer ? 'បានពិនិត្យដោយវេជ្ជបណ្ឌិត' : 'Doctor reviewed')
+                      : t('carePlanPage.overview.doctorReviewPending', isKhmer ? 'រង់ចាំការពិនិត្យពីវេជ្ជបណ្ឌិត' : 'Doctor review pending')}
+                  </span>
                 </div>
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
-                      {t('carePlanPage.overview.title', isKhmer ? 'ផែនការថែទាំរបស់ខ្ញុំ' : 'My Care Plan')}
-                    </h1>
+                <p className="mt-1.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl">
+                  {t('carePlanPage.overview.heroDescription', isKhmer ? 'ផែនការថែទាំផ្ទាល់ខ្លួនដើម្បីជួយគ្រប់គ្រងជំងឺទឹកនោមផ្អែម និងរក្សាសុខភាពល្អ។' : 'Your personalized care plan to help manage diabetes and stay healthy.')}
+                </p>
 
-                    {isUrgent ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-600 border border-rose-200/80 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-900/50">
-                        <AlertCircle className="h-3.5 w-3.5" />
-                        <span>{t('carePlanPage.overview.attentionRequired', isKhmer ? 'ត្រូវការការយកចិត្តទុកដាក់' : 'Attention Required')}</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900/50">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        <span>{t('carePlanPage.overview.stable', isKhmer ? 'មានលំនឹង' : 'Stable')}</span>
-                      </span>
-                    )}
+                {/* Action Buttons Row */}
+                <div className="mt-5 flex flex-wrap items-center gap-2.5 sm:gap-3">
+                  <Link
+                    to="/diagnosis"
+                    className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs transition hover:bg-primary-700 active:scale-[0.98] dark:bg-primary-500 dark:hover:bg-primary-600"
+                  >
+                    <Play className="h-3.5 w-3.5 fill-current" />
+                    <span>{t('carePlanPage.overview.startAssessment', isKhmer ? 'ចាប់ផ្តើមការវាយតម្លៃ' : 'Start Assessment')}</span>
+                  </Link>
 
-                    <span className="text-slate-300 dark:text-slate-600 hidden sm:inline select-none">•</span>
-                    <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                      {t('carePlanPage.overview.updatedToday', isKhmer ? 'បានធ្វើបច្ចុប្បន្នភាពថ្ងៃនេះ' : 'Updated today')}
-                    </span>
+                  <Link
+                    to={reportUrl}
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                  >
+                    <FileText className="h-4 w-4 text-slate-400 dark:text-slate-400" />
+                    <span>{t('carePlanPage.overview.fullReport', isKhmer ? 'របាយការណ៍ពេញលេញ' : 'Full Report')}</span>
+                  </Link>
 
-                    <span className="text-slate-300 dark:text-slate-600 hidden sm:inline select-none">•</span>
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                      {latestResult?.review_note
-                        ? t('carePlanPage.overview.doctorReviewed', isKhmer ? 'បានពិនិត្យដោយវេជ្ជបណ្ឌិត' : 'Doctor reviewed')
-                        : t('carePlanPage.overview.doctorReviewPending', isKhmer ? 'រង់ចាំការពិនិត្យពីវេជ្ជបណ្ឌិត' : 'Doctor review pending')}
-                    </span>
-                  </div>
-
-                  <p className="mt-1.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl">
-                    {t('carePlanPage.overview.heroDescription', isKhmer ? 'ផែនការថែទាំផ្ទាល់ខ្លួនដើម្បីជួយគ្រប់គ្រងជំងឺទឹកនោមផ្អែម និងរក្សាសុខភាពល្អ។' : 'Your personalized care plan to help manage diabetes and stay healthy.')}
-                  </p>
-
-                  {/* Action Buttons Row */}
-                  <div className="mt-5 flex flex-wrap items-center gap-2.5 sm:gap-3">
-                    <Link
-                      to="/diagnosis"
-                      className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs transition hover:bg-primary-700 active:scale-[0.98] dark:bg-primary-500 dark:hover:bg-primary-600"
-                    >
-                      <Play className="h-3.5 w-3.5 fill-current" />
-                      <span>{t('carePlanPage.overview.startAssessment', isKhmer ? 'ចាប់ផ្តើមការវាយតម្លៃ' : 'Start Assessment')}</span>
-                    </Link>
-
-                    <Link
-                      to={reportUrl}
-                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                    >
-                      <FileText className="h-4 w-4 text-slate-400 dark:text-slate-400" />
-                      <span>{t('carePlanPage.overview.fullReport', isKhmer ? 'របាយការណ៍ពេញលេញ' : 'Full Report')}</span>
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('Care Plan')}
-                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                    >
-                      <HeartPulse className="h-4 w-4 text-primary-500 dark:text-primary-400" />
-                      <span>{t('carePlanPage.overview.carePlanDetails', isKhmer ? 'ផែនការថែទាំលម្អិត' : 'Care Plan Details')}</span>
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('Care Plan')}
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                  >
+                    <HeartPulse className="h-4 w-4 text-primary-500 dark:text-primary-400" />
+                    <span>{t('carePlanPage.overview.carePlanDetails', isKhmer ? 'ផែនការថែទាំលម្អិត' : 'Care Plan Details')}</span>
+                  </button>
                 </div>
               </div>
 
