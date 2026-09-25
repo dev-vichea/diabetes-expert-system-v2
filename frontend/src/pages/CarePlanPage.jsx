@@ -541,10 +541,81 @@ export function CarePlanPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* ================================================================ */}
-          {/* Left Column (8 cols): Today's Care, Glucose, Meds, Nutrition, Alert */}
+          {/* Left Column (8 cols): Doctor Review, Today's Care, Glucose, etc.  */}
           {/* ================================================================ */}
           <div className="lg:col-span-8 space-y-6 min-w-0">
-            {/* Row 1: Today's Care + Current Glucose (2 columns) */}
+            {/* 1. Doctor Review Card (Placed at top so user easily sees doctor's review first) */}
+            <section
+              className={cn(
+                'rounded-2xl border p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all',
+                latestResult?.review_note
+                  ? 'border-emerald-200/90 bg-gradient-to-br from-emerald-50/40 via-white to-sky-50/20 dark:border-emerald-900/60 dark:from-emerald-950/20 dark:via-slate-900 dark:to-slate-900'
+                  : 'border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900'
+              )}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={cn(
+                      'flex h-9 w-9 items-center justify-center rounded-xl',
+                      latestResult?.review_note
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300'
+                        : 'bg-blue-50 text-primary-600 dark:bg-blue-950/60 dark:text-primary-400'
+                    )}
+                  >
+                    <Stethoscope className="h-4.5 w-4.5" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                      {t('carePlanPage.overview.doctorReview.title', isKhmer ? 'ការពិនិត្យពីវេជ្ជបណ្ឌិត' : 'Doctor Review')}
+                    </h2>
+                    {reviewerName && (
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {t(
+                          'carePlanPage.overview.doctorReview.reviewedBy',
+                          isKhmer ? 'ពិនិត្យដោយ {{doctor}}' : 'Reviewed by {{doctor}}',
+                          { doctor: reviewerName }
+                        )}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {latestResult?.review_note ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/70 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    <CheckCircle2 className="h-3 w-3" />
+                    <span>{t('carePlanPage.overview.doctorReview.verified', isKhmer ? 'ការពិនិត្យផ្លូវការ' : 'Verified Review')}</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 border border-amber-200/70 dark:bg-amber-950/60 dark:text-amber-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    <span>{t('carePlanPage.overview.doctorReview.awaiting', isKhmer ? 'រង់ចាំការពិនិត្យ' : 'Awaiting review')}</span>
+                  </span>
+                )}
+              </div>
+
+              {latestResult?.review_note ? (
+                <div className="mt-3.5 rounded-xl border border-primary-200/60 bg-gradient-to-br from-primary-50/30 to-sky-50/20 p-4 text-xs leading-relaxed text-slate-800 dark:border-primary-900/50 dark:from-primary-950/30 dark:to-slate-900/40 dark:text-slate-200">
+                  <div className="flex items-start gap-2.5">
+                    <UserCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-serif italic font-medium">&ldquo;{latestResult.review_note}&rdquo;</p>
+                      {latestResult.reviewed_at && (
+                        <p className="mt-1 text-right text-[10px] font-sans text-slate-400">
+                          {new Date(latestResult.reviewed_at).toLocaleDateString(isKhmer ? 'km-KH' : 'en-US')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-2.5 text-xs text-slate-500 leading-relaxed dark:text-slate-400">
+                  {t('carePlanPage.overview.doctorReview.empty', isKhmer ? 'វេជ្ជបណ្ឌិតរបស់អ្នកមិនទាន់បានពិនិត្យផែនការថែទាំនេះនៅឡើយទេ។ អ្នកនឹងឃើញកំណត់ចំណាំរបស់ពួកគេនៅទីនេះនៅពេលការពិនិត្យរួចរាល់។' : "Your doctor hasn't reviewed this care plan yet. You'll see their notes here once the review is complete.")}
+                </p>
+              )}
+            </section>
+
+            {/* Row 2: Today's Care + Current Glucose (2 columns) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Card 1: Today's Care */}
               <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all dark:border-slate-800 dark:bg-slate-900">
@@ -864,63 +935,6 @@ export function CarePlanPage() {
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
             </div>
-
-            {/* Row 4: Doctor Review Card */}
-            <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all dark:border-slate-800 dark:bg-slate-900">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-primary-600 dark:bg-blue-950/60 dark:text-primary-400">
-                    <User className="h-4.5 w-4.5" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                      {t('carePlanPage.overview.doctorReview.title', isKhmer ? 'ការពិនិត្យពីវេជ្ជបណ្ឌិត' : 'Doctor Review')}
-                    </h2>
-                    {reviewerName && (
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        {t(
-                          'carePlanPage.overview.doctorReview.reviewedBy',
-                          isKhmer ? 'ពិនិត្យដោយ {{doctor}}' : 'Reviewed by {{doctor}}',
-                          { doctor: reviewerName }
-                        )}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {latestResult?.review_note ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/70 dark:bg-emerald-950/60 dark:text-emerald-300">
-                    <CheckCircle2 className="h-3 w-3" />
-                    <span>{t('carePlanPage.overview.doctorReview.verified', isKhmer ? 'ការពិនិត្យផ្លូវការ' : 'Verified Review')}</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 border border-amber-200/70 dark:bg-amber-950/60 dark:text-amber-300">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                    <span>{t('carePlanPage.overview.doctorReview.awaiting', isKhmer ? 'រង់ចាំការពិនិត្យ' : 'Awaiting review')}</span>
-                  </span>
-                )}
-              </div>
-
-              {latestResult?.review_note ? (
-                <div className="mt-3.5 rounded-xl border border-primary-200/60 bg-gradient-to-br from-primary-50/30 to-sky-50/20 p-4 text-xs leading-relaxed text-slate-800 dark:border-primary-900/50 dark:from-primary-950/30 dark:to-slate-900/40 dark:text-slate-200">
-                  <div className="flex items-start gap-2.5">
-                    <UserCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-serif italic">&ldquo;{latestResult.review_note}&rdquo;</p>
-                      {latestResult.reviewed_at && (
-                        <p className="mt-1 text-right text-[10px] font-sans text-slate-400">
-                          {new Date(latestResult.reviewed_at).toLocaleDateString(isKhmer ? 'km-KH' : 'en-US')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="mt-2.5 text-xs text-slate-500 leading-relaxed dark:text-slate-400">
-                  {t('carePlanPage.overview.doctorReview.empty', isKhmer ? 'វេជ្ជបណ្ឌិតរបស់អ្នកមិនទាន់បានពិនិត្យផែនការថែទាំនេះនៅឡើយទេ។ អ្នកនឹងឃើញកំណត់ចំណាំរបស់ពួកគេនៅទីនេះនៅពេលការពិនិត្យរួចរាល់។' : "Your doctor hasn't reviewed this care plan yet. You'll see their notes here once the review is complete.")}
-                </p>
-              )}
-            </section>
           </div>
 
           {/* ================================================================ */}
