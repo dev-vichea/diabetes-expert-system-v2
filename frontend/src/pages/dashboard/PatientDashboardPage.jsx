@@ -1040,41 +1040,83 @@ export function PatientDashboardPage() {
   // REAL METABOLIC BALANCE RADAR CHART (COMPUTED DYNAMICALLY)
   // ============================================================================
   const radarMetrics = useMemo(() => {
+    const hasClinicalData = Boolean(
+      latestResult ||
+      (patientResults && patientResults.length > 0) ||
+      (patientPlan && patientPlan.patientName) ||
+      currentGlucose !== null ||
+      currentA1c !== null ||
+      currentBmi !== null
+    )
+
+    if (!hasClinicalData) {
+      return {
+        hasData: false,
+        overall: null,
+        glucoseScore: null,
+        dietScore: null,
+        medScore: null,
+        data: [],
+      }
+    }
+
     // 1. Glucose Control Score (0 - 100)
-    let glucoseScore = 80
+    let glucoseScore = 75
     if (currentA1c !== null || currentGlucose !== null) {
       if ((currentA1c !== null && currentA1c < 5.7) && (currentGlucose !== null && currentGlucose < 100)) {
         glucoseScore = 95
       } else if ((currentA1c !== null && currentA1c <= 6.4) || (currentGlucose !== null && currentGlucose <= 125)) {
-        glucoseScore = 82
+        glucoseScore = 78
       } else if ((currentA1c !== null && currentA1c <= 7.9) || (currentGlucose !== null && currentGlucose <= 160)) {
-        glucoseScore = 65
+        glucoseScore = 58
       } else {
-        glucoseScore = 48
+        glucoseScore = 38
       }
     } else if (latestResult) {
       const conditionKey = getCarePlanConditionKey(latestResult)
+      const rawCert = latestResult.certainty_percent != null
+        ? Number(latestResult.certainty_percent)
+        : Number(latestResult.certainty != null ? latestResult.certainty * 100 : 50)
+      const cert = Math.max(0, Math.min(100, Math.round(Number.isNaN(rawCert) ? 50 : rawCert)))
+
       if (conditionKey === 'type1' || conditionKey === 'type2' || isUrgent) {
-        glucoseScore = 48
+        glucoseScore = Math.max(25, Math.min(50, Math.round(100 - cert * 0.65)))
       } else if (conditionKey === 'prediabetes' || conditionKey === 'gestational') {
-        glucoseScore = 72
+        glucoseScore = Math.max(55, Math.min(75, Math.round(100 - cert * 0.45)))
       } else {
-        glucoseScore = 92
+        glucoseScore = Math.max(82, Math.min(96, Math.round(75 + cert * 0.2)))
       }
     }
 
     // 2. Diet Balance Score
-    let dietScore = 85
-    if (currentBmi && currentBmi >= 30) dietScore -= 18
-    else if (currentBmi && currentBmi >= 25) dietScore -= 10
-    if (facts.high_cholesterol || patientProfile?.high_cholesterol) dietScore -= 10
-    if (facts.excessive_hunger || facts.symptom_excessive_hunger) dietScore -= 8
-    dietScore = Math.max(40, Math.min(98, dietScore))
+    let dietScore = 80
+    if (currentBmi && currentBmi >= 30) {
+      dietScore = 50
+    } else if (currentBmi && currentBmi >= 25) {
+      dietScore = 68
+    } else if (currentBmi && currentBmi >= 18.5) {
+      dietScore = 88
+    } else if (latestResult) {
+      const d = String(latestResult.diagnosis || '').toLowerCase()
+      if (d.includes('normal') || d.includes('low risk')) dietScore = 86
+      else if (d.includes('prediabetes')) dietScore = 72
+      else dietScore = 60
+    }
+    if (facts.high_cholesterol || patientProfile?.high_cholesterol) dietScore -= 12
+    if (facts.excessive_hunger || facts.symptom_excessive_hunger || facts.polyphagia) dietScore -= 10
+    if (facts.excessive_thirst || facts.symptom_excessive_thirst || facts.polydipsia) dietScore -= 8
+    dietScore = Math.max(30, Math.min(98, dietScore))
 
     // 3. Physical Activity Score
-    let activityScore = 85
+    let activityScore = 75
     if (facts.sedentary_lifestyle || facts.physical_activity_low || patientProfile?.sedentary_lifestyle) {
-      activityScore = 52
+      activityScore = 45
+    } else if (patientPlan?.procedures?.some((p) => (p.title || '').toLowerCase().includes('walk') || (p.title || '').toLowerCase().includes('exercise'))) {
+      activityScore = 82
+    } else if (latestResult) {
+      const d = String(latestResult.diagnosis || '').toLowerCase()
+      if (d.includes('normal') || d.includes('low risk')) activityScore = 85
+      else activityScore = 68
     }
 
     // 4. Medication Adherence Score
@@ -1082,27 +1124,38 @@ export function PatientDashboardPage() {
     if (patientPlan?.adherenceRate) {
       const parsed = parseInt(patientPlan.adherenceRate, 10)
       if (!Number.isNaN(parsed)) medScore = parsed
-    } else if (!patientPlan?.pharmacotherapy && !patientPlan?.medications?.length) {
-      medScore = 95
+    } else if (patientPlan?.medications?.length) {
+      medScore = 85
+    } else if (latestResult) {
+      const d = String(latestResult.diagnosis || '').toLowerCase()
+      if (d.includes('normal') || d.includes('low risk') || d.includes('prediabetes')) {
+        medScore = 95
+      } else {
+        medScore = 60
+      }
     }
 
     // 5. Sleep & Energy Score
-    let sleepScore = 84
-    if (facts.fatigue || facts.symptom_fatigue) sleepScore -= 14
-    if (facts.dizziness || facts.symptom_dizziness) sleepScore -= 8
-    sleepScore = Math.max(45, Math.min(95, sleepScore))
+    let sleepScore = 85
+    if (facts.fatigue || facts.symptom_fatigue) sleepScore -= 18
+    if (facts.dizziness || facts.symptom_dizziness) sleepScore -= 10
+    if (facts.frequent_urination || facts.symptom_frequent_urination || facts.polyuria) sleepScore -= 12
+    sleepScore = Math.max(35, Math.min(95, sleepScore))
 
     // 6. Cardiovascular & Prevention Score
-    let cardioScore = 90
-    if (facts.hypertension || patientProfile?.hypertension) cardioScore -= 20
-    if (facts.smoking || patientProfile?.smoking) cardioScore -= 15
-    cardioScore = Math.max(45, Math.min(98, cardioScore))
+    let cardioScore = 88
+    if (facts.hypertension || patientProfile?.hypertension) cardioScore -= 22
+    if (facts.smoking || patientProfile?.smoking) cardioScore -= 18
+    if (facts.high_cholesterol || patientProfile?.high_cholesterol) cardioScore -= 12
+    if (facts.age && Number(facts.age) >= 55) cardioScore -= 8
+    cardioScore = Math.max(30, Math.min(98, cardioScore))
 
     const overall = Math.round(
       (glucoseScore + dietScore + activityScore + medScore + sleepScore + cardioScore) / 6
     )
 
     return {
+      hasData: true,
       data: [
         { metric: isKhmer ? 'កម្រិតជាតិស្ករ' : 'Glucose Control', value: glucoseScore, fullMark: 100 },
         { metric: isKhmer ? 'របបអាហារ' : 'Diet Balance', value: dietScore, fullMark: 100 },
@@ -1116,7 +1169,7 @@ export function PatientDashboardPage() {
       dietScore,
       medScore,
     }
-  }, [currentA1c, currentGlucose, currentBmi, isUrgent, facts, patientProfile, patientPlan, latestResult, isKhmer])
+  }, [currentA1c, currentGlucose, currentBmi, isUrgent, facts, patientProfile, patientPlan, latestResult, patientResults, isKhmer])
 
   // Reported symptoms for the latest assessment details card
   const reportedSymptoms = useMemo(() => {
@@ -1509,31 +1562,60 @@ export function PatientDashboardPage() {
                       {isKhmer ? 'សន្ទស្សន៍គ្រប់គ្រងជំងឺទឹកនោមផ្អែមសរុប' : 'Holistic diabetes management index'}
                     </p>
                   </div>
-                  <span className="text-xs font-bold text-primary-600 bg-primary-50 dark:bg-primary-950/50 px-2 py-0.5 rounded-md">
-                    {radarMetrics.overall} / 100
-                  </span>
+                  {radarMetrics.hasData ? (
+                    <span className="text-xs font-bold text-primary-600 bg-primary-50 dark:bg-primary-950/50 px-2 py-0.5 rounded-md">
+                      {radarMetrics.overall} / 100
+                    </span>
+                  ) : (
+                    <span className="text-xs font-semibold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                      -- / 100
+                    </span>
+                  )}
                 </div>
 
-                {/* Radar Chart */}
-                <div className="h-52 w-full mt-2">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarMetrics.data}>
-                      <PolarGrid stroke="#e2e8f0" strokeOpacity={0.6} />
-                      <PolarAngleAxis
-                        dataKey="metric"
-                        tick={{ fill: '#64748b', fontSize: 10, fontWeight: 500 }}
-                      />
-                      <Radar
-                        name="Health Score"
-                        dataKey="value"
-                        stroke="#10b981"
-                        fill="#10b981"
-                        fillOpacity={0.25}
-                        strokeWidth={2}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
+                {/* Radar Chart or Clean Empty State */}
+                {radarMetrics.hasData ? (
+                  <div className="h-52 w-full mt-2">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarMetrics.data}>
+                        <PolarGrid stroke="#e2e8f0" strokeOpacity={0.6} />
+                        <PolarAngleAxis
+                          dataKey="metric"
+                          tick={{ fill: '#64748b', fontSize: 10, fontWeight: 500 }}
+                        />
+                        <Radar
+                          name="Health Score"
+                          dataKey="value"
+                          stroke="#10b981"
+                          fill="#10b981"
+                          fillOpacity={0.25}
+                          strokeWidth={2}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="flex h-52 w-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50 mt-2">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400 mb-2.5">
+                      <Scale className="h-5 w-5" />
+                    </div>
+                    <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      {isKhmer ? 'មិនទាន់មានទិន្នន័យតុល្យភាព' : 'No Balance Data Yet'}
+                    </h4>
+                    <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 max-w-[220px] leading-relaxed">
+                      {isKhmer
+                        ? 'បំពេញការវាយតម្លៃគ្លីនិកដំបូងរបស់អ្នក ដើម្បីគណនាតុល្យភាពមេតាបូលីកលើកម្រិតជាតិស្ករ និងរបៀបរស់នៅ។'
+                        : 'Complete your initial clinical assessment to calculate your holistic metabolic balance index.'}
+                    </p>
+                    <Link
+                      to="/diagnosis"
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700 shadow-xs transition-colors"
+                    >
+                      <Play className="h-3 w-3 fill-current" />
+                      <span>{isKhmer ? 'ចាប់ផ្តើមការវាយតម្លៃ' : 'Start Assessment'}</span>
+                    </Link>
+                  </div>
+                )}
               </div>
 
               {/* Metric Breakdown Strip */}
@@ -1541,19 +1623,22 @@ export function PatientDashboardPage() {
                 <div className="rounded-lg bg-slate-50/70 dark:bg-slate-800/40 p-1.5">
                   <p className="text-[10px] text-slate-400 uppercase font-bold">{isKhmer ? 'ជាតិស្ករ' : 'Glucose'}</p>
                   <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                    {radarMetrics.glucoseScore}%
+                    {radarMetrics.hasData ? `${radarMetrics.glucoseScore}%` : '--'}
                   </p>
                 </div>
                 <div className="rounded-lg bg-slate-50/70 dark:bg-slate-800/40 p-1.5">
                   <p className="text-[10px] text-slate-400 uppercase font-bold">{isKhmer ? 'របបអាហារ' : 'Diet'}</p>
                   <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                    {radarMetrics.dietScore}%
+                    {radarMetrics.hasData ? `${radarMetrics.dietScore}%` : '--'}
                   </p>
                 </div>
                 <div className="rounded-lg bg-slate-50/70 dark:bg-slate-800/40 p-1.5">
                   <p className="text-[10px] text-slate-400 uppercase font-bold">{isKhmer ? 'ថ្នាំពេទ្យ' : 'Meds'}</p>
-                  <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                    {radarMetrics.medScore}%
+                  <p className={cn(
+                    "text-xs font-bold",
+                    radarMetrics.hasData ? "text-emerald-600 dark:text-emerald-400" : "text-slate-800 dark:text-slate-200"
+                  )}>
+                    {radarMetrics.hasData ? `${radarMetrics.medScore}%` : '--'}
                   </p>
                 </div>
               </div>
