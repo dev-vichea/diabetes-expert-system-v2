@@ -18,9 +18,12 @@ import {
 import {
   Activity,
   AlertCircle,
+  ArrowDown,
   ArrowRight,
+  ArrowUp,
   BookOpen,
   Calendar,
+  CalendarDays,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -33,6 +36,7 @@ import {
   Footprints,
   HeartPulse,
   Pill,
+  Play,
   PlusCircle,
   Scale,
   Sparkles,
@@ -101,89 +105,13 @@ function extractMetricHistory(results, keys) {
 
 /** Builds real dynamic daily schedule from patient's treatment plan and assessments */
 function buildPatientDailySchedule(patientPlan, latestResult, isNewUser = false, isKhmer = false) {
-  // ========================================================================
-  // CASE A: NEW USER (No clinical assessment yet, or first day onboarding)
-  // ========================================================================
-  if (isNewUser) {
-    return [
-      {
-        id: 'new_sched_screening',
-        time: '09:00',
-        timeEnd: '09:30',
-        category: isKhmer ? 'ការវាយតម្លៃ' : 'Assessment',
-        badgeTone: 'purple',
-        title: isKhmer ? 'បំពេញការវាយតម្លៃហានិភ័យទឹកនោមផ្អែម' : 'Complete Diabetes Risk Screening',
-        subtitle: isKhmer
-          ? 'ឆ្លើយសំណួរអំពី រោគសញ្ញា និងប្រវត្តិគ្រួសារ ដើម្បីទទួលបានការវិភាគ AI ភ្លាមៗ'
-          : 'Answer quick questions about symptoms and family history for instant AI analysis',
-        location: isKhmer ? 'ប្រព័ន្ធវិភាគរោគវិនិច្ឆ័យ' : 'AI Diagnostic Engine',
-        icon: ClipboardList,
-        actionLink: '/diagnosis',
-        actionLabel: isKhmer ? 'ចាប់ផ្តើមឥឡូវនេះ' : 'Start Screening',
-      },
-      {
-        id: 'new_sched_profile',
-        time: '10:30',
-        timeEnd: '11:00',
-        category: isKhmer ? 'ប្រវត្តិរូប' : 'Profile',
-        badgeTone: 'sky',
-        title: isKhmer ? 'បំពេញប្រវត្តិរូបអ្នកជំងឺ និងទិន្នន័យសុខភាព' : 'Complete Health Profile & Vitals',
-        subtitle: isKhmer
-          ? 'បញ្ចូលអាយុ ទម្ងន់ កម្ពស់ ដើម្បីគណនាសន្ទស្សន៍ BMI និងកម្រិតហានិភ័យមូលដ្ឋាន'
-          : 'Record age, height, and weight to establish your baseline BMI and risk category',
-        location: isKhmer ? 'ការកំណត់ប្រវត្តិរូប' : 'Patient Profile Setup',
-        icon: User,
-        actionLink: '/profile-setup',
-        actionLabel: isKhmer ? 'កំណត់ប្រវត្តិរូប' : 'Set Up Profile',
-      },
-      {
-        id: 'new_sched_glucose',
-        time: '12:00',
-        timeEnd: '12:20',
-        category: isKhmer ? 'កម្រិតជាតិស្ករ' : 'Biomarkers',
-        badgeTone: 'amber',
-        title: isKhmer ? 'កត់ត្រាកម្រិតជាតិស្ករក្នុងឈាមដំបូង' : 'Log Baseline Fasting Glucose',
-        subtitle: isKhmer
-          ? 'ប្រសិនបើមានលទ្ធផលតេស្តជាតិស្ករ ឬ HbA1c ថ្មីៗ សូមបញ្ចូលដើម្បីបង្កើនភាពជាក់លាក់'
-          : 'Enter your recent fasting glucose or HbA1c lab result if available to sharpen results',
-        location: isKhmer ? 'ឧបករណ៍តាមដានសុខភាព' : 'Biomarker Tracker',
-        icon: Droplets,
-        actionLink: '/diagnosis',
-        actionLabel: isKhmer ? 'បញ្ចូលទិន្នន័យ' : 'Log Reading',
-      },
-      {
-        id: 'new_sched_drbot',
-        time: '15:00',
-        timeEnd: '15:30',
-        category: isKhmer ? 'ជំនួយការ AI' : 'Orientation',
-        badgeTone: 'emerald',
-        title: isKhmer ? 'ជជែកជាមួយ Dr. Bot AI Health Assistant' : 'Consult Dr. Bot AI Health Assistant',
-        subtitle: isKhmer
-          ? 'ស្វែងយល់ពីរបៀបរស់នៅដែលមានសុខភាពល្អ អាហារូបត្ថម្ភ និងការការពារជំងឺទឹកនោមផ្អែម'
-          : 'Ask questions about diabetes prevention, nutrition tips, and symptom signs',
-        location: isKhmer ? 'ជំនួយការ Dr. Bot' : 'Dr. Bot Assistant',
-        icon: Sparkles,
-      },
-      {
-        id: 'new_sched_guide',
-        time: '18:30',
-        timeEnd: '19:00',
-        category: isKhmer ? 'របៀបរស់នៅ' : 'Lifestyle',
-        badgeTone: 'slate',
-        title: isKhmer ? 'អានមគ្គុទ្ទេសក៍អប់រំអំពីជំងឺទឹកនោមផ្អែម' : 'Review Diabetes Education Guide',
-        subtitle: isKhmer
-          ? 'ស្វែងយល់ពីសន្ទស្សន៍ Glycemic ការទទួលទានទឹក និងការធ្វើលំហាត់ប្រាណស្រាលៗ'
-          : 'Learn foundational concepts on glycemic index, healthy hydration, and light cardio',
-        location: isKhmer ? 'បណ្ណាល័យសុខភាព' : 'Care Library',
-        icon: BookOpen,
-        actionLink: '/diabetes-guide',
-        actionLabel: isKhmer ? 'អានមគ្គុទ្ទេសក៍' : 'View Guide',
-      },
-    ]
+  // If the patient is new or has no assessments and no assigned care plan, return empty schedule
+  if (isNewUser || (!latestResult && !patientPlan)) {
+    return []
   }
 
   // ========================================================================
-  // CASE B: PATIENT WITH CLINICAL ASSESSMENT / ACTIVE CARE PLAN
+  // PATIENT WITH CLINICAL ASSESSMENT / ACTIVE CARE PLAN
   // ========================================================================
   const items = []
 
@@ -426,37 +354,86 @@ function MiniSparkline({ points = [], strokeColor = '#3b82f6', fillColor = '#3b8
   )
 }
 
-/** Linear-style minimalist chart tooltip */
-function ChartCustomTooltip({ active, payload }) {
+/** Linear-style minimalist chart tooltip for health assessment progression */
+function ChartCustomTooltip({ active, payload, isKhmer = false }) {
   if (!active || !payload?.length) return null
   const data = payload[0].payload
-  const val = data.glucose
-  const inRange = val >= TARGET_GLUCOSE_MIN && val <= TARGET_GLUCOSE_MAX
-  const isHigh = val > TARGET_GLUCOSE_MAX
+  const score = data.score
+  const isLowRisk = score < 35
+  const isModerateRisk = score >= 35 && score < 65
+
+  const statusLabel = isLowRisk
+    ? (isKhmer ? 'ហានិភ័យទាប' : 'Low Risk')
+    : isModerateRisk
+      ? (isKhmer ? 'ហានិភ័យមធ្យម' : 'Moderate Risk')
+      : (isKhmer ? 'ហានិភ័យខ្ពស់' : 'High Risk')
 
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-white/95 px-3 py-2 shadow-lg backdrop-blur-xs dark:border-slate-800 dark:bg-slate-900/95">
+    <div className="rounded-xl border border-slate-200/80 bg-white/95 px-3.5 py-2.5 shadow-lg backdrop-blur-xs dark:border-slate-800 dark:bg-slate-900/95 min-w-[200px]">
       <div className="flex items-center justify-between gap-3 text-xs">
         <span className="font-medium text-slate-500 dark:text-slate-400">{data.fullDate || data.day}</span>
         <span
           className={cn(
             'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
-            inRange
+            isLowRisk
               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300'
-              : isHigh
-                ? 'bg-rose-50 text-rose-700 border border-rose-200/60 dark:bg-rose-950/60 dark:text-rose-300'
-                : 'bg-amber-50 text-amber-700 border border-amber-200/60 dark:bg-amber-950/60 dark:text-amber-300'
+              : isModerateRisk
+                ? 'bg-amber-50 text-amber-700 border border-amber-200/60 dark:bg-amber-950/60 dark:text-amber-300'
+                : 'bg-rose-50 text-rose-700 border border-rose-200/60 dark:bg-rose-950/60 dark:text-rose-300'
           )}
         >
-          {inRange ? 'In Target' : isHigh ? 'Above Target' : 'Below Target'}
+          {statusLabel}
         </span>
       </div>
-      <div className="mt-1.5 flex items-baseline gap-1">
-        <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{val}</span>
-        <span className="text-xs font-medium text-slate-400">mg/dL</span>
+
+      <div className="mt-2 flex items-baseline justify-between gap-2">
+        <div className="flex items-baseline gap-1">
+          <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{score}%</span>
+          <span className="text-xs font-medium text-slate-400">{isKhmer ? 'ហានិភ័យ' : 'Risk Score'}</span>
+        </div>
+
+        {data.delta != null ? (
+          <span
+            className={cn(
+              'inline-flex items-center gap-0.5 text-[11px] font-semibold',
+              data.delta < 0
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : data.delta > 0
+                  ? 'text-rose-600 dark:text-rose-400'
+                  : 'text-slate-500 dark:text-slate-400'
+            )}
+          >
+            {data.delta < 0 ? (
+              <>↓ {Math.abs(data.delta)}% {isKhmer ? 'ធ្លាក់ចុះ' : 'vs prev'}</>
+            ) : data.delta > 0 ? (
+              <>↑ +{data.delta}% {isKhmer ? 'កើនឡើង' : 'vs prev'}</>
+            ) : (
+              <>±0% {isKhmer ? 'មានលំនឹង' : 'vs prev'}</>
+            )}
+          </span>
+        ) : (
+          <span className="text-[10px] font-medium text-slate-400">
+            {isKhmer ? 'កម្រិតគោលដំបូង' : 'Baseline'}
+          </span>
+        )}
       </div>
+
       {data.diagnosis && (
-        <p className="mt-1 text-[11px] text-slate-400 truncate max-w-[200px]">{data.diagnosis}</p>
+        <p className="mt-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate max-w-[220px]">
+          {data.diagnosis}
+        </p>
+      )}
+
+      {(data.glucose != null || data.hba1c != null) && (
+        <div className="mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2 text-[10px] text-slate-400">
+          {data.glucose != null && (
+            <span>{isKhmer ? 'ជាតិស្ករ៖' : 'Glucose:'} <strong className="text-slate-700 dark:text-slate-200">{data.glucose} mg/dL</strong></span>
+          )}
+          {data.glucose != null && data.hba1c != null && <span>•</span>}
+          {data.hba1c != null && (
+            <span>HbA1c: <strong className="text-slate-700 dark:text-slate-200">{data.hba1c}%</strong></span>
+          )}
+        </div>
       )}
     </div>
   )
@@ -809,25 +786,25 @@ export function PatientDashboardPage() {
   }, [isKhmer])
 
   // ============================================================================
-  // REAL HISTORICAL GLUCOSE TREND DATA
+  // REAL HISTORICAL HEALTH ASSESSMENT TREND & PROGRESSION DATA
   // ============================================================================
-  const trendData = useMemo(() => {
-    if (!glucoseHistory.length) return []
+  const healthTrendData = useMemo(() => {
+    if (!patientResults || patientResults.length === 0) return []
 
     // Take up to 10 most recent records and sort chronologically (oldest to newest)
-    const recent = [...glucoseHistory.slice(0, 10)].reverse()
+    const chronological = [...patientResults.slice(0, 10)].reverse()
 
     // Deduplicate or label with time if on the same day
     const dayCounts = {}
-    recent.forEach((item) => {
-      const d = new Date(item.date)
+    chronological.forEach((item) => {
+      const d = item.created_at ? new Date(item.created_at) : new Date()
       const dayKey = d.toLocaleDateString(isKhmer ? 'km-KH' : 'en-US', { month: 'short', day: 'numeric' })
       dayCounts[dayKey] = (dayCounts[dayKey] || 0) + 1
     })
 
     const daySeen = {}
-    return recent.map((item) => {
-      const d = new Date(item.date)
+    return chronological.map((item, idx) => {
+      const d = item.created_at ? new Date(item.created_at) : new Date()
       const dayKey = d.toLocaleDateString(isKhmer ? 'km-KH' : 'en-US', { month: 'short', day: 'numeric' })
       const hasMultiple = dayCounts[dayKey] > 1
       daySeen[dayKey] = (daySeen[dayKey] || 0) + 1
@@ -840,23 +817,101 @@ export function PatientDashboardPage() {
         weekday: 'short',
         month: 'short',
         day: 'numeric',
+        year: 'numeric',
         hour: 'numeric',
         minute: '2-digit',
       })
 
+      // Standardized assessment risk score (0-100%)
+      const diagStr = String(item.diagnosis || '').toLowerCase()
+      const rawCert = item.certainty_percent != null
+        ? Number(item.certainty_percent)
+        : Number(item.certainty != null ? item.certainty * 100 : 50)
+      const cert = Math.max(0, Math.min(100, Math.round(Number.isNaN(rawCert) ? 50 : rawCert)))
+
+      const isNormal = diagStr.includes('normal') || diagStr.includes('low risk') || diagStr.includes('healthy') || diagStr.includes('no strong') || diagStr.includes('negative')
+      const isPrediabetes = diagStr.includes('prediabetes') || (diagStr.includes('elevated') && diagStr.includes('risk')) || diagStr.includes('early')
+      const isUrgent = diagStr.includes('urgent') || diagStr.includes('emergency') || Boolean(item.is_urgent)
+
+      let score = 50
+      if (isNormal) {
+        score = Math.max(5, Math.min(30, Math.round(100 - cert * 0.75)))
+      } else if (isPrediabetes) {
+        score = Math.max(35, Math.min(65, Math.round(cert * 0.55 + 20)))
+      } else if (isUrgent) {
+        score = Math.max(82, Math.min(98, Math.round(cert * 0.25 + 72)))
+      } else {
+        score = Math.max(68, Math.min(95, Math.round(cert * 0.45 + 50)))
+      }
+
+      const prevItem = idx > 0 ? chronological[idx - 1] : null
+      let prevScore = null
+      if (prevItem) {
+        const prevDiag = String(prevItem.diagnosis || '').toLowerCase()
+        const prevRawCert = prevItem.certainty_percent != null
+          ? Number(prevItem.certainty_percent)
+          : Number(prevItem.certainty != null ? prevItem.certainty * 100 : 50)
+        const prevCert = Math.max(0, Math.min(100, Math.round(Number.isNaN(prevRawCert) ? 50 : prevRawCert)))
+        if (prevDiag.includes('normal') || prevDiag.includes('low risk') || prevDiag.includes('healthy') || prevDiag.includes('no strong') || prevDiag.includes('negative')) {
+          prevScore = Math.max(5, Math.min(30, Math.round(100 - prevCert * 0.75)))
+        } else if (prevDiag.includes('prediabetes') || (prevDiag.includes('elevated') && prevDiag.includes('risk')) || prevDiag.includes('early')) {
+          prevScore = Math.max(35, Math.min(65, Math.round(prevCert * 0.55 + 20)))
+        } else if (prevDiag.includes('urgent') || prevDiag.includes('emergency') || Boolean(prevItem.is_urgent)) {
+          prevScore = Math.max(82, Math.min(98, Math.round(prevCert * 0.25 + 72)))
+        } else {
+          prevScore = Math.max(68, Math.min(95, Math.round(prevCert * 0.45 + 50)))
+        }
+      }
+
+      const delta = prevScore != null ? score - prevScore : null
+
+      const facts = item.facts || {}
+      const glucose = facts.fasting_glucose != null
+        ? Math.round(Number(facts.fasting_glucose))
+        : facts.blood_glucose != null
+          ? Math.round(Number(facts.blood_glucose))
+          : null
+      const hba1c = facts.hba1c != null ? Number(Number(facts.hba1c).toFixed(1)) : null
+
       return {
+        id: item.id,
         day: label,
         fullDate,
-        glucose: Math.round(item.value),
+        score,
+        delta,
         diagnosis: item.diagnosis,
+        isReviewed: Boolean(item.is_reviewed),
+        glucose,
+        hba1c,
       }
     })
-  }, [glucoseHistory, isKhmer])
+  }, [patientResults, isKhmer])
 
-  const avgGlucose = useMemo(() => {
-    if (!trendData.length) return currentGlucose ?? '--'
-    return Math.round(trendData.reduce((acc, curr) => acc + curr.glucose, 0) / trendData.length)
-  }, [trendData, currentGlucose])
+  const latestAssessmentPoint = healthTrendData[healthTrendData.length - 1] || null
+  const prevAssessmentPoint = healthTrendData.length > 1 ? healthTrendData[healthTrendData.length - 2] : null
+
+  const assessmentComparison = useMemo(() => {
+    if (!latestAssessmentPoint) return null
+    if (!prevAssessmentPoint) {
+      return {
+        isBaseline: true,
+        text: isKhmer ? 'ការវាយតម្លៃដំបូង' : 'Initial Baseline',
+      }
+    }
+    const delta = latestAssessmentPoint.score - prevAssessmentPoint.score
+    return {
+      isBaseline: false,
+      delta,
+      isImproved: delta < 0,
+      isWorsened: delta > 0,
+      isStable: delta === 0,
+      text: delta < 0
+        ? (isKhmer ? `↓ ${Math.abs(delta)}% ធៀបលើកមុន` : `↓ ${Math.abs(delta)}% vs previous`)
+        : delta > 0
+          ? (isKhmer ? `↑ +${delta}% ធៀបលើកមុន` : `↑ +${delta}% vs previous`)
+          : (isKhmer ? `±0% ធៀបលើកមុន` : `±0% vs previous`),
+    }
+  }, [latestAssessmentPoint, prevAssessmentPoint, isKhmer])
 
   // Dynamic 7-day calendar strip
   const calendarWeek = useMemo(() => {
@@ -1265,37 +1320,80 @@ export function PatientDashboardPage() {
 
           {/* 3. CHARTS ROW: Real Glucose Trend + Metabolic Balance Radar */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-            {/* Blood Glucose Trend (7 cols) */}
+            {/* Health Assessment Trend (7 cols) */}
             <div className="lg:col-span-7 min-w-0 rounded-2xl border border-slate-200/70 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] dark:border-slate-800 dark:bg-slate-900 flex flex-col justify-between">
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3.5 dark:border-slate-800">
                   <div>
                     <h2 className="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-                      {isKhmer ? 'ប្រវត្តិនិន្នាការជាតិស្ករ' : 'Glucose Trend History'}
+                      {isKhmer ? 'ប្រវត្តិនិន្នាការសុខភាព' : 'Health Assessment Trend'}
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {isKhmer ? 'ការវាស់វែងជាតិស្ករធៀបនឹងកម្រិតគោលដៅ ADA' : 'Fasting readings vs ADA target range'}
+                      {isKhmer ? 'ការវិវត្តហានិភ័យ និងការប្រៀបធៀបតាមការវាយតម្លៃនីមួយៗ' : 'Risk progression & comparison across evaluations'}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/70 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      80–130 mg/dL
-                    </span>
+                  {latestAssessmentPoint ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold',
+                          latestAssessmentPoint.score < 35
+                            ? 'border-emerald-200/70 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300'
+                            : latestAssessmentPoint.score < 65
+                              ? 'border-amber-200/70 bg-amber-50 text-amber-700 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300'
+                              : 'border-rose-200/70 bg-rose-50 text-rose-700 dark:border-rose-800/60 dark:bg-rose-950/40 dark:text-rose-300'
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'h-1.5 w-1.5 rounded-full',
+                            latestAssessmentPoint.score < 35
+                              ? 'bg-emerald-500'
+                              : latestAssessmentPoint.score < 65
+                                ? 'bg-amber-500'
+                                : 'bg-rose-500'
+                          )}
+                        />
+                        {latestAssessmentPoint.score < 35
+                          ? (isKhmer ? 'ហានិភ័យទាប' : 'Low Risk')
+                          : latestAssessmentPoint.score < 65
+                            ? (isKhmer ? 'ហានិភ័យមធ្យម' : 'Moderate Risk')
+                            : (isKhmer ? 'ហានិភ័យខ្ពស់' : 'High Risk')}{' '}
+                        ({latestAssessmentPoint.score}%)
+                      </span>
+
+                      {assessmentComparison && (
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border',
+                            assessmentComparison.isBaseline
+                              ? 'bg-slate-100 text-slate-600 border-slate-200/70 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                              : assessmentComparison.isImproved
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                                : assessmentComparison.isWorsened
+                                  ? 'bg-rose-50 text-rose-700 border-rose-200/60 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800'
+                                  : 'bg-slate-100 text-slate-600 border-slate-200/70 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                          )}
+                        >
+                          {assessmentComparison.text}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
                     <span className="text-xs text-slate-400">
-                      {isKhmer ? 'មធ្យម៖ ' : 'Avg: '}<strong className="text-slate-800 dark:text-slate-200">{avgGlucose}</strong>
+                      {isKhmer ? 'មិនទាន់មានទិន្នន័យ' : 'No evaluations yet'}
                     </span>
-                  </div>
+                  )}
                 </div>
 
-                {trendData.length > 0 ? (
+                {healthTrendData.length > 0 ? (
                   <div className="mt-4 h-56 sm:h-64 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={trendData} margin={{ top: 12, right: 8, left: -22, bottom: 0 }}>
+                      <AreaChart data={healthTrendData} margin={{ top: 12, right: 8, left: -20, bottom: 0 }}>
                         <defs>
-                          <linearGradient id="glucoseMainGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.18} />
+                          <linearGradient id="healthMainGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.20} />
                             <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.0} />
                           </linearGradient>
                         </defs>
@@ -1311,19 +1409,20 @@ export function PatientDashboardPage() {
                         />
 
                         <YAxis
-                          domain={[60, 200]}
-                          ticks={[80, 100, 130, 160]}
+                          domain={[0, 100]}
+                          ticks={[0, 25, 50, 75, 100]}
+                          tickFormatter={(v) => `${v}%`}
                           tickLine={false}
                           axisLine={false}
                           tick={{ fontSize: 11, fill: '#94a3b8' }}
                         />
 
-                        <Tooltip content={<ChartCustomTooltip />} />
+                        <Tooltip content={<ChartCustomTooltip isKhmer={isKhmer} />} />
 
-                        {/* Green Shaded Target Zone (80–130 mg/dL) */}
+                        {/* Green Shaded Target Low Risk Zone (0–35%) */}
                         <ReferenceArea
-                          y1={TARGET_GLUCOSE_MIN}
-                          y2={TARGET_GLUCOSE_MAX}
+                          y1={0}
+                          y2={35}
                           fill="#10b981"
                           fillOpacity={0.08}
                           stroke="#10b981"
@@ -1331,34 +1430,28 @@ export function PatientDashboardPage() {
                           strokeDasharray="3 3"
                         />
 
+                        {/* Red Alert Line (70%) */}
                         <ReferenceLine
-                          y={TARGET_GLUCOSE_MAX}
-                          stroke="#10b981"
+                          y={70}
+                          stroke="#f43f5e"
                           strokeDasharray="3 3"
-                          strokeOpacity={0.4}
-                        />
-
-                        <ReferenceLine
-                          y={TARGET_GLUCOSE_MIN}
-                          stroke="#10b981"
-                          strokeDasharray="3 3"
-                          strokeOpacity={0.4}
+                          strokeOpacity={0.45}
                         />
 
                         <Area
                           type="monotone"
-                          dataKey="glucose"
+                          dataKey="score"
                           stroke="#3b82f6"
-                          strokeWidth={2}
-                          fill="url(#glucoseMainGradient)"
+                          strokeWidth={2.5}
+                          fill="url(#healthMainGradient)"
                           dot={{
-                            r: 3.5,
+                            r: 4,
                             fill: '#3b82f6',
                             strokeWidth: 2,
                             stroke: '#ffffff',
                           }}
                           activeDot={{
-                            r: 5.5,
+                            r: 6,
                             fill: '#2563eb',
                             stroke: '#ffffff',
                             strokeWidth: 2,
@@ -1370,15 +1463,15 @@ export function PatientDashboardPage() {
                 ) : (
                   <div className="flex h-56 sm:h-64 w-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50 mt-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-50 text-primary-600 dark:bg-primary-950/50 dark:text-primary-400 mb-3">
-                      <Droplets className="h-6 w-6" />
+                      <HeartPulse className="h-6 w-6" />
                     </div>
                     <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                      {isKhmer ? 'មិនទាន់មានការកត់ត្រាជាតិស្ករនៅឡើយទេ' : 'No Glucose Tests Logged Yet'}
+                      {isKhmer ? 'មិនទាន់មានការវាយតម្លៃសុខភាពនៅឡើយទេ' : 'No Health Assessments Yet'}
                     </h4>
                     <p className="mt-1 text-xs text-slate-500 max-w-xs leading-relaxed">
                       {isKhmer
-                        ? 'បំពេញការវាយតម្លៃគ្លីនិកដំបូងរបស់អ្នក ដើម្បីចាប់ផ្តើមតាមដាននិន្នាការជាតិស្ករធៀបនឹងកម្រិតគោលដៅ។'
-                        : 'Complete your first clinical assessment to start plotting real fasting glucose trends against the target zone.'}
+                        ? 'បំពេញការវាយតម្លៃគ្លីនិកដំបូងរបស់អ្នក ដើម្បីចាប់ផ្តើមតាមដាននិន្នាការសុខភាព និងប្រៀបធៀបការវាយតម្លៃបន្តបន្ទាប់។'
+                        : 'Complete your first clinical assessment to start plotting your health trend and compare future evaluations.'}
                     </p>
                     <Link
                       to="/diagnosis"
@@ -1393,13 +1486,13 @@ export function PatientDashboardPage() {
 
               <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px] text-slate-400 dark:border-slate-800">
                 <span>
-                  {trendData.length > 0
-                    ? (isKhmer ? `បង្ហាញលទ្ធផលតេស្តដែលបានកត់ត្រា ${trendData.length} លើក` : `Showing ${trendData.length} recorded lab readings`)
-                    : (isKhmer ? 'រង់ចាំកំណត់ត្រាមន្ទីរពិសោធន៍' : 'Awaiting lab log')}
+                  {healthTrendData.length > 0
+                    ? (isKhmer ? `បង្ហាញការវាយតម្លៃសុខភាព ${healthTrendData.length} លើក` : `Showing ${healthTrendData.length} clinical evaluations`)
+                    : (isKhmer ? 'រង់ចាំការវាយតម្លៃដំបូង' : 'Awaiting first evaluation')}
                 </span>
                 <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
                   <span className="inline-block h-2 w-2 rounded-xs bg-emerald-500/20 border border-emerald-500/50" />
-                  {isKhmer ? 'តំបន់គោលដៅ (80–130)' : 'Target zone (80–130)'}
+                  {isKhmer ? 'តំបន់ហានិភ័យទាប (< ៣៥%)' : 'Low risk target zone (< 35%)'}
                 </span>
               </div>
             </div>
@@ -1702,222 +1795,262 @@ export function PatientDashboardPage() {
           {/* 2. TIMELINE HEADER: Selected Date & Category Filter */}
           <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3">
             <div className="space-y-0.5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                  {selectedDateLabel}
-                </h3>
-                {isNewUser && (
-                  <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800">
-                    {isKhmer ? 'ផែនការចាប់ផ្តើមដំបូង' : 'Onboarding Plan'}
-                  </span>
-                )}
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                {selectedDateLabel}
+              </h3>
+            </div>
+
+            {/* Filter Dropdown (only when daily tasks exist) */}
+            {dailySchedule.length > 0 && (
+              <div className="relative shrink-0">
+                <select
+                  value={timelineFilter}
+                  onChange={(e) => setTimelineFilter(e.target.value)}
+                  className="appearance-none rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-1 pr-6 text-xs font-semibold text-slate-700 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                >
+                  <option value="all">{isKhmer ? 'ទាំងអស់' : 'All'}</option>
+                  <option value="glucose">{isKhmer ? 'ជាតិស្ករ' : 'Glucose'}</option>
+                  <option value="meds">{isKhmer ? 'ថ្នាំ' : 'Meds'}</option>
+                  <option value="activity">{isKhmer ? 'សកម្មភាព' : 'Activity'}</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
               </div>
-              {isNewUser && (
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                  {isKhmer ? 'បំពេញការពិនិត្យដំបូង ដើម្បីបើកកាលវិភាគថែទាំគ្លីនិកផ្ទាល់ខ្លួន' : 'Complete your initial screening to unlock personalized clinical care.'}
-                </p>
-              )}
-            </div>
-
-            {/* Filter Dropdown */}
-            <div className="relative shrink-0">
-              <select
-                value={timelineFilter}
-                onChange={(e) => setTimelineFilter(e.target.value)}
-                className="appearance-none rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-1 pr-6 text-xs font-semibold text-slate-700 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-              >
-                <option value="all">{isKhmer ? 'ទាំងអស់' : 'All'}</option>
-                <option value="glucose">{isKhmer ? 'ជាតិស្ករ' : 'Glucose'}</option>
-                <option value="meds">{isKhmer ? 'ថ្នាំ/ប្រវត្តិរូប' : 'Meds'}</option>
-                <option value="activity">{isKhmer ? 'សកម្មភាព' : 'Activity'}</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
-            </div>
-          </div>
-
-          {/* 3. VERTICAL TIMELINE RAIL (Dashed Line & Centered Node Dots) */}
-          <div className="mt-5 relative">
-            <div className="flex flex-col">
-              {/* If viewing today and live time is before the first scheduled item */}
-              {isViewingToday && liveTimeInsertionIndex === 0 && (
-                <div className="grid grid-cols-[48px_20px_1fr] gap-3 items-center pb-3 z-10 relative">
-                  <div className="text-right">
-                    <span className="inline-block rounded-md bg-slate-900 px-1.5 py-0.5 text-[10px] font-mono font-bold text-white shadow-xs dark:bg-white dark:text-slate-900">
-                      {liveTime}
-                    </span>
-                  </div>
-                  <div className="relative flex justify-center items-center h-6">
-                    <div className="absolute top-1/2 bottom-0 left-1/2 -translate-x-1/2 w-0 border-l-2 border-dashed border-slate-200 dark:border-slate-800" />
-                    <span className="relative z-10 h-2.5 w-2.5 rounded-full bg-slate-900 dark:bg-white ring-4 ring-white dark:ring-slate-900 animate-pulse" />
-                  </div>
-                  <div className="h-0 border-t border-dashed border-slate-200 dark:border-slate-800" />
-                </div>
-              )}
-
-              {/* Timeline Task Cards */}
-              {filteredSchedule.map((item, idx) => {
-                const isCompleted = completedTasks.includes(item.id)
-                const isFirstTask = idx === 0
-                const isLastTask = idx === filteredSchedule.length - 1
-                const isFirstOverall = isFirstTask && (!isViewingToday || liveTimeInsertionIndex > 0)
-                const isLastOverall = isLastTask && (!isViewingToday || liveTimeInsertionIndex <= filteredSchedule.length - 1)
-                const showLiveMarkerAfter = isViewingToday && liveTimeInsertionIndex === idx + 1
-
-                return (
-                  <Fragment key={item.id}>
-                    <div className="grid grid-cols-[48px_20px_1fr] gap-3 pb-4 last:pb-0 relative group">
-                      {/* 1. Left Time Column (Fixed 48px, right-aligned) */}
-                      <div className="text-right pt-3">
-                        <span className="font-mono text-xs font-semibold text-slate-400 dark:text-slate-500 tabular-nums select-none">
-                          {item.time}
-                        </span>
-                      </div>
-
-                      {/* 2. Timeline Center Track & Node Dot (Exact Center Aligned) */}
-                      <div className="relative flex justify-center h-full pt-3.5">
-                        <div
-                          className={cn(
-                            'absolute left-1/2 -translate-x-1/2 w-0 border-l-2 border-dashed border-slate-200 dark:border-slate-800 pointer-events-none',
-                            isFirstOverall && isLastOverall
-                              ? 'top-3.5 h-0'
-                              : isFirstOverall
-                              ? 'top-3.5 bottom-0'
-                              : isLastOverall
-                              ? 'top-0 h-3.5'
-                              : 'top-0 bottom-0'
-                          )}
-                        />
-
-                        {/* Connector Dot directly on the dashed line */}
-                        <div
-                          className={cn(
-                            'relative z-10 h-3 w-3 rounded-full transition-all ring-4 ring-white dark:ring-slate-900',
-                            isCompleted
-                              ? 'bg-emerald-500 ring-emerald-50 dark:ring-emerald-950/60'
-                              : 'border-2 border-slate-900 bg-white dark:border-slate-100 dark:bg-slate-900 group-hover:scale-125'
-                          )}
-                        />
-                      </div>
-
-                      {/* 3. Event / Action Card */}
-                      <div
-                        onClick={() => toggleTask(item.id)}
-                        className={cn(
-                          'cursor-pointer rounded-2xl border p-4 transition-all duration-150 select-none shadow-2xs min-w-0',
-                          isCompleted
-                            ? 'border-slate-200/60 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/40'
-                            : 'border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-xs dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700'
-                        )}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          {/* Category Badge */}
-                          <span
-                            className={cn(
-                              'rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
-                              item.badgeTone === 'amber' && 'bg-amber-50 text-amber-700 border border-amber-200/60 dark:bg-amber-950/60 dark:text-amber-300',
-                              item.badgeTone === 'sky' && 'bg-sky-50 text-sky-700 border border-sky-200/60 dark:bg-sky-950/60 dark:text-sky-300',
-                              item.badgeTone === 'emerald' && 'bg-emerald-50 text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300',
-                              item.badgeTone === 'purple' && 'bg-purple-50 text-purple-700 border border-purple-200/60 dark:bg-purple-950/60 dark:text-purple-300',
-                              item.badgeTone === 'slate' && 'bg-slate-100 text-slate-700 border border-slate-200/60 dark:bg-slate-800 dark:text-slate-300'
-                            )}
-                          >
-                            {item.category}
-                          </span>
-
-                          {/* Interactive Checkbox */}
-                          <div
-                            className={cn(
-                              'flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded border transition-colors',
-                              isCompleted
-                                ? 'border-slate-900 bg-slate-900 text-white dark:border-emerald-500 dark:bg-emerald-500'
-                                : 'border-slate-300 bg-white group-hover:border-slate-400 dark:border-slate-600 dark:bg-slate-800'
-                            )}
-                          >
-                            {isCompleted && <Check className="h-3 w-3 stroke-[3]" />}
-                          </div>
-                        </div>
-
-                        {/* Card Title & Subtitle */}
-                        <div className="mt-2.5">
-                          <h4
-                            className={cn(
-                              'text-xs sm:text-sm font-bold tracking-tight transition-colors',
-                              isCompleted
-                                ? 'text-slate-400 line-through dark:text-slate-500'
-                                : 'text-slate-900 dark:text-slate-100'
-                            )}
-                          >
-                            {item.title}
-                          </h4>
-                          <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400 leading-normal line-clamp-2">
-                            {item.subtitle}
-                          </p>
-                        </div>
-
-                        {/* Card Footer Info */}
-                        <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] text-slate-400 dark:border-slate-800">
-                          {item.actionLink && !isCompleted ? (
-                            <Link
-                              to={item.actionLink}
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1 font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline cursor-pointer"
-                            >
-                              <span>{item.actionLabel || (isKhmer ? 'ចាប់ផ្តើម' : 'Start now')}</span>
-                              <ArrowRight className="h-3 w-3" />
-                            </Link>
-                          ) : (
-                            <span className="truncate max-w-[170px]">{item.location}</span>
-                          )}
-                          <span className="font-mono text-[10px] font-medium text-slate-500 dark:text-slate-400 shrink-0">
-                            {item.time} – {item.timeEnd}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Dynamic Live Current Time Marker inserted chronologically between tasks */}
-                    {showLiveMarkerAfter && (
-                      <div className="grid grid-cols-[48px_20px_1fr] gap-3 items-center py-2 pb-3.5 z-10 relative">
-                        <div className="text-right">
-                          <span className="inline-block rounded-md bg-slate-900 px-1.5 py-0.5 text-[10px] font-mono font-bold text-white shadow-xs dark:bg-white dark:text-slate-900">
-                            {liveTime}
-                          </span>
-                        </div>
-                        <div className="relative flex justify-center items-center h-6">
-                          <div
-                            className={cn(
-                              'absolute left-1/2 -translate-x-1/2 w-0 border-l-2 border-dashed border-slate-200 dark:border-slate-800 pointer-events-none',
-                              isLastTask ? 'top-0 bottom-1/2' : 'top-0 bottom-0'
-                            )}
-                          />
-                          <span className="relative z-10 h-2.5 w-2.5 rounded-full bg-slate-900 dark:bg-white ring-4 ring-white dark:ring-slate-900 animate-pulse" />
-                        </div>
-                        <div className="h-0 border-t border-dashed border-slate-200 dark:border-slate-800" />
-                      </div>
-                    )}
-                  </Fragment>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Timeline Bottom CTA */}
-          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-            <span className="text-slate-400">
-              {isKhmer
-                ? `បានបញ្ចប់ ${completedTasks.length} ក្នុងចំណោម ${dailySchedule.length}`
-                : `${completedTasks.length} of ${dailySchedule.length} completed`}
-            </span>
-            {(isNewUser || canViewOwnCarePlan) && (
-              <Link
-                to={isNewUser ? '/diagnosis' : '/care-plan'}
-                className="font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white inline-flex items-center gap-1 transition-colors"
-              >
-                <span>{isNewUser ? (isKhmer ? 'ចាប់ផ្តើមវាយតម្លៃ' : 'Start Assessment') : (isKhmer ? 'ផែនការថែទាំពេញលេញ' : 'Full Care Plan')}</span>
-                <ArrowRight className="h-3 w-3" />
-              </Link>
             )}
           </div>
+
+          {/* 3. TIMELINE BODY: Empty State for New Users vs Live Schedule Rail */}
+          {dailySchedule.length === 0 ? (
+            <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center dark:border-slate-800 dark:bg-slate-900/50 flex flex-col items-center justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400 mb-3">
+                <CalendarDays className="h-6 w-6" />
+              </div>
+              <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                {isNewUser
+                  ? (isKhmer ? 'មិនទាន់មានកាលវិភាគថែទាំនៅឡើយទេ' : 'No Care Schedule Yet')
+                  : (isKhmer ? 'មិនមានសកម្មភាពសម្រាប់ថ្ងៃនេះទេ' : 'No Activities Scheduled for This Day')}
+              </h4>
+              <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
+                {isNewUser
+                  ? (isKhmer
+                      ? 'សូមបំពេញការវាយតម្លៃគ្លីនិកដំបូងរបស់អ្នក ដើម្បីបង្កើតកាលវិភាគថែទាំផ្ទាល់ខ្លួន ការរំលឹកថ្នាំ និងសកម្មភាពសុខភាពប្រចាំថ្ងៃ។'
+                      : 'Complete your initial clinical assessment to generate your personalized daily care schedule, reminders, and health milestones.')
+                  : (isKhmer
+                      ? 'អ្នកមិនមានកិច្ចការថែទាំដែលបានកំណត់សម្រាប់កាលបរិច្ឆេទនេះទេ។ អ្នកអាចពិនិត្យមើលផែនការថែទាំទាំងមូលបានគ្រប់ពេល។'
+                      : 'You have no scheduled care tasks for this date. You can review your overall care plan anytime.')}
+              </p>
+              {isNewUser ? (
+                <Link
+                  to="/diagnosis"
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-primary-700 shadow-xs transition-colors"
+                >
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                  <span>{isKhmer ? 'ចាប់ផ្តើមការវាយតម្លៃ' : 'Start Assessment'}</span>
+                </Link>
+              ) : canViewOwnCarePlan ? (
+                <Link
+                  to="/care-plan"
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 transition-colors"
+                >
+                  <span>{isKhmer ? 'មើលផែនការថែទាំ' : 'View Care Plan'}</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              ) : null}
+            </div>
+          ) : (
+            <>
+              {/* VERTICAL TIMELINE RAIL (Dashed Line & Centered Node Dots) */}
+              <div className="mt-5 relative">
+                <div className="flex flex-col">
+                  {filteredSchedule.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-slate-400 dark:text-slate-500">
+                      {isKhmer ? 'មិនមានកិច្ចការក្នុងប្រភេទនេះទេ' : 'No tasks in this category'}
+                    </div>
+                  ) : (
+                    <>
+                      {/* If viewing today and live time is before the first scheduled item */}
+                      {isViewingToday && liveTimeInsertionIndex === 0 && (
+                        <div className="grid grid-cols-[48px_20px_1fr] gap-3 items-center pb-3 z-10 relative">
+                          <div className="text-right">
+                            <span className="inline-block rounded-md bg-slate-900 px-1.5 py-0.5 text-[10px] font-mono font-bold text-white shadow-xs dark:bg-white dark:text-slate-900">
+                              {liveTime}
+                            </span>
+                          </div>
+                          <div className="relative flex justify-center items-center h-6">
+                            <div className="absolute top-1/2 bottom-0 left-1/2 -translate-x-1/2 w-0 border-l-2 border-dashed border-slate-200 dark:border-slate-800" />
+                            <span className="relative z-10 h-2.5 w-2.5 rounded-full bg-slate-900 dark:bg-white ring-4 ring-white dark:ring-slate-900 animate-pulse" />
+                          </div>
+                          <div className="h-0 border-t border-dashed border-slate-200 dark:border-slate-800" />
+                        </div>
+                      )}
+
+                      {/* Timeline Task Cards */}
+                      {filteredSchedule.map((item, idx) => {
+                        const isCompleted = completedTasks.includes(item.id)
+                        const isFirstTask = idx === 0
+                        const isLastTask = idx === filteredSchedule.length - 1
+                        const isFirstOverall = isFirstTask && (!isViewingToday || liveTimeInsertionIndex > 0)
+                        const isLastOverall = isLastTask && (!isViewingToday || liveTimeInsertionIndex <= filteredSchedule.length - 1)
+                        const showLiveMarkerAfter = isViewingToday && liveTimeInsertionIndex === idx + 1
+
+                        return (
+                          <Fragment key={item.id}>
+                            <div className="grid grid-cols-[48px_20px_1fr] gap-3 pb-4 last:pb-0 relative group">
+                              {/* 1. Left Time Column (Fixed 48px, right-aligned) */}
+                              <div className="text-right pt-3">
+                                <span className="font-mono text-xs font-semibold text-slate-400 dark:text-slate-500 tabular-nums select-none">
+                                  {item.time}
+                                </span>
+                              </div>
+
+                              {/* 2. Timeline Center Track & Node Dot (Exact Center Aligned) */}
+                              <div className="relative flex justify-center h-full pt-3.5">
+                                <div
+                                  className={cn(
+                                    'absolute left-1/2 -translate-x-1/2 w-0 border-l-2 border-dashed border-slate-200 dark:border-slate-800 pointer-events-none',
+                                    isFirstOverall && isLastOverall
+                                      ? 'top-3.5 h-0'
+                                      : isFirstOverall
+                                      ? 'top-3.5 bottom-0'
+                                      : isLastOverall
+                                      ? 'top-0 h-3.5'
+                                      : 'top-0 bottom-0'
+                                  )}
+                                />
+
+                                {/* Connector Dot directly on the dashed line */}
+                                <div
+                                  className={cn(
+                                    'relative z-10 h-3 w-3 rounded-full transition-all ring-4 ring-white dark:ring-slate-900',
+                                    isCompleted
+                                      ? 'bg-emerald-500 ring-emerald-50 dark:ring-emerald-950/60'
+                                      : 'border-2 border-slate-900 bg-white dark:border-slate-100 dark:bg-slate-900 group-hover:scale-125'
+                                  )}
+                                />
+                              </div>
+
+                              {/* 3. Event / Action Card */}
+                              <div
+                                onClick={() => toggleTask(item.id)}
+                                className={cn(
+                                  'cursor-pointer rounded-2xl border p-4 transition-all duration-150 select-none shadow-2xs min-w-0',
+                                  isCompleted
+                                    ? 'border-slate-200/60 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/40'
+                                    : 'border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-xs dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700'
+                                )}
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  {/* Category Badge */}
+                                  <span
+                                    className={cn(
+                                      'rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+                                      item.badgeTone === 'amber' && 'bg-amber-50 text-amber-700 border border-amber-200/60 dark:bg-amber-950/60 dark:text-amber-300',
+                                      item.badgeTone === 'sky' && 'bg-sky-50 text-sky-700 border border-sky-200/60 dark:bg-sky-950/60 dark:text-sky-300',
+                                      item.badgeTone === 'emerald' && 'bg-emerald-50 text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300',
+                                      item.badgeTone === 'purple' && 'bg-purple-50 text-purple-700 border border-purple-200/60 dark:bg-purple-950/60 dark:text-purple-300',
+                                      item.badgeTone === 'slate' && 'bg-slate-100 text-slate-700 border border-slate-200/60 dark:bg-slate-800 dark:text-slate-300'
+                                    )}
+                                  >
+                                    {item.category}
+                                  </span>
+
+                                  {/* Interactive Checkbox */}
+                                  <div
+                                    className={cn(
+                                      'flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded border transition-colors',
+                                      isCompleted
+                                        ? 'border-slate-900 bg-slate-900 text-white dark:border-emerald-500 dark:bg-emerald-500'
+                                        : 'border-slate-300 bg-white group-hover:border-slate-400 dark:border-slate-600 dark:bg-slate-800'
+                                    )}
+                                  >
+                                    {isCompleted && <Check className="h-3 w-3 stroke-[3]" />}
+                                  </div>
+                                </div>
+
+                                {/* Card Title & Subtitle */}
+                                <div className="mt-2.5">
+                                  <h4
+                                    className={cn(
+                                      'text-xs sm:text-sm font-bold tracking-tight transition-colors',
+                                      isCompleted
+                                        ? 'text-slate-400 line-through dark:text-slate-500'
+                                        : 'text-slate-900 dark:text-slate-100'
+                                    )}
+                                  >
+                                    {item.title}
+                                  </h4>
+                                  <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400 leading-normal line-clamp-2">
+                                    {item.subtitle}
+                                  </p>
+                                </div>
+
+                                {/* Card Footer Info */}
+                                <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] text-slate-400 dark:border-slate-800">
+                                  {item.actionLink && !isCompleted ? (
+                                    <Link
+                                      to={item.actionLink}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="inline-flex items-center gap-1 font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline cursor-pointer"
+                                    >
+                                      <span>{item.actionLabel || (isKhmer ? 'ចាប់ផ្តើម' : 'Start now')}</span>
+                                      <ArrowRight className="h-3 w-3" />
+                                    </Link>
+                                  ) : (
+                                    <span className="truncate max-w-[170px]">{item.location}</span>
+                                  )}
+                                  <span className="font-mono text-[10px] font-medium text-slate-500 dark:text-slate-400 shrink-0">
+                                    {item.time} – {item.timeEnd}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Dynamic Live Current Time Marker inserted chronologically between tasks */}
+                            {showLiveMarkerAfter && (
+                              <div className="grid grid-cols-[48px_20px_1fr] gap-3 items-center py-2 pb-3.5 z-10 relative">
+                                <div className="text-right">
+                                  <span className="inline-block rounded-md bg-slate-900 px-1.5 py-0.5 text-[10px] font-mono font-bold text-white shadow-xs dark:bg-white dark:text-slate-900">
+                                    {liveTime}
+                                  </span>
+                                </div>
+                                <div className="relative flex justify-center items-center h-6">
+                                  <div
+                                    className={cn(
+                                      'absolute left-1/2 -translate-x-1/2 w-0 border-l-2 border-dashed border-slate-200 dark:border-slate-800 pointer-events-none',
+                                      isLastTask ? 'top-0 bottom-1/2' : 'top-0 bottom-0'
+                                    )}
+                                  />
+                                  <span className="relative z-10 h-2.5 w-2.5 rounded-full bg-slate-900 dark:bg-white ring-4 ring-white dark:ring-slate-900 animate-pulse" />
+                                </div>
+                                <div className="h-0 border-t border-dashed border-slate-200 dark:border-slate-800" />
+                              </div>
+                            )}
+                          </Fragment>
+                        )
+                      })}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Timeline Bottom CTA */}
+              <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                <span className="text-slate-400">
+                  {isKhmer
+                    ? `បានបញ្ចប់ ${completedTasks.length} ក្នុងចំណោម ${dailySchedule.length}`
+                    : `${completedTasks.length} of ${dailySchedule.length} completed`}
+                </span>
+                {canViewOwnCarePlan && (
+                  <Link
+                    to="/care-plan"
+                    className="font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white inline-flex items-center gap-1 transition-colors"
+                  >
+                    <span>{isKhmer ? 'ផែនការថែទាំពេញលេញ' : 'Full Care Plan'}</span>
+                    <ArrowRight className="h-3 w-3" />
+                  </Link>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
