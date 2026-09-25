@@ -117,12 +117,34 @@ class AuditLogRepository:
             or 0
         )
 
+        daily_map = {}
+        for d in range(safe_days - 1, -1, -1):
+            day_dt = (utc_now() - timedelta(days=d)).date()
+            day_iso = day_dt.isoformat()
+            daily_map[day_iso] = {
+                "date": day_iso,
+                "day": day_dt.strftime("%a"),
+                "events": 0,
+            }
+
+        daily_rows = (
+            db.session.query(AuditLog.created_at)
+            .filter(AuditLog.created_at >= since)
+            .all()
+        )
+        for (created_at,) in daily_rows:
+            if created_at:
+                day_iso = created_at.date().isoformat()
+                if day_iso in daily_map:
+                    daily_map[day_iso]["events"] += 1
+
         return {
             "days": safe_days,
             "events_total": int(events_total),
             "active_actor_count": int(unique_actor_count),
             "top_actions": [{"action": action, "count": int(count)} for action, count in actions],
             "top_entities": [{"entity_type": entity_type, "count": int(count)} for entity_type, count in entities],
+            "daily_trend": list(daily_map.values()),
         }
 
     def _serialize_many(self, logs: list[AuditLog]) -> list[dict]:

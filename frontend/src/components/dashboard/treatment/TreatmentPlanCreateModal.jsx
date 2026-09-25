@@ -23,7 +23,7 @@ export function TreatmentPlanCreateModal({
   const [formData, setFormData] = useState({
     patientName: initialData.patientName || '',
     patientId: initialData.patientId || `P-${Math.floor(1000 + Math.random() * 9000)}`,
-    doctorName: initialData.doctorName || 'Dr. Lina',
+    doctorName: initialData.doctorName || 'Diabetes Care Team',
     protocolName: initialData.protocolName || 'Targeted Glycemic Stabilization Protocol',
     diagnosis: initialData.diagnosis || 'Type 2 Diabetes Mellitus',
     targetGlucose: initialData.targetGlucose || '80–130 mg/dL',
@@ -57,7 +57,7 @@ export function TreatmentPlanCreateModal({
       setFormData({
         patientName: initialData.patientName || '',
         patientId: initialData.patientId || `P-${Math.floor(1000 + Math.random() * 9000)}`,
-        doctorName: initialData.doctorName || 'Dr. Lina',
+        doctorName: initialData.doctorName || 'Diabetes Care Team',
         protocolName: initialData.protocolName || 'Targeted Glycemic Stabilization Protocol',
         diagnosis: initialData.diagnosis || 'Type 2 Diabetes Mellitus',
         targetGlucose: initialData.targetGlucose || '80–130 mg/dL',

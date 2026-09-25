@@ -651,7 +651,11 @@
       "urgent": "Your latest assessment was flagged for urgent follow-up.",
       "urgentReason": "Reason: {{reason}}",
       "noResult": "You haven't completed an assessment yet. Start your first one to see your situation here.",
-      "ageLabel": "Age"
+      "ageLabel": "Age",
+      "highA1cDesc": "Your recent HbA1c is {{hba1c}}, above the 5.7% target. Staying consistent with daily habits and your doctor will help guide your levels lower.",
+      "urgentDesc": "Your recent readings are higher than standard target ranges. Follow your care plan and consult your doctor.",
+      "stableDesc": "Your latest metabolic indicators and blood sugar levels look stable. Keep maintaining your daily routine.",
+      "noResultDesc": "Take your first assessment to receive personalized guidance, risk evaluation, and customized health targets."
     },
     "health": {
       "title": "Health snapshot",
@@ -827,6 +831,131 @@
       "balancedDietText": "Half vegetables, a quarter protein, a quarter whole grains — and water instead of sweet drinks. Simple habits, big effect on glucose."
     },
     "carePlanPage": {
+      "overview": {
+        "title": "My Care Plan",
+        "stable": "Stable",
+        "attentionRequired": "Attention Required",
+        "updatedToday": "Updated today",
+        "doctorReviewed": "Doctor reviewed",
+        "doctorReviewPending": "Doctor review pending",
+        "heroDescription": "Your personalized care plan to help manage diabetes and stay healthy.",
+        "startAssessment": "Start Assessment",
+        "fullReport": "Full Report",
+        "doctorsPlan": "Doctor's Plan",
+        "phase2": "Phase 2",
+        "activeIntervention": "Active Intervention",
+        "dayProgress": "Day 14 / 30",
+        "tabs": {
+          "overview": "Overview",
+          "treatmentPlan": "Treatment Plan",
+          "medications": "Medications",
+          "appointments": "Appointments"
+        },
+        "todaysCare": {
+          "title": "Today's Care",
+          "subtitle": "Complete your daily tasks",
+          "completedCount": "{{done}} of {{total}} completed",
+          "completed": "Completed",
+          "next": "Next",
+          "later": "Later",
+          "tasks": {
+            "glucose": {
+              "title": "Morning glucose check",
+              "subtitle": "08:00 AM · Fasting reading"
+            },
+            "nutrition": {
+              "title": "Morning Hydration & Balanced Nutrition",
+              "subtitle": "08:30 AM · Low glycemic breakfast"
+            },
+            "walk": {
+              "title": "30-min walk",
+              "subtitle": "12:30 PM · Light aerobic activity"
+            },
+            "foot": {
+              "title": "Foot & skin check",
+              "subtitle": "08:00 PM · Check for pressure spots"
+            }
+          }
+        },
+        "currentGlucose": {
+          "title": "Current Glucose",
+          "trendStable": "Trend: Stable",
+          "fastingLabel": "Fasting glucose",
+          "targetZone": "✓ Target zone",
+          "aboveTarget": "↑ Above target",
+          "pendingTest": "Pending test",
+          "targetRange": "Target: 80 - 130 mg/dL"
+        },
+        "nextMedication": {
+          "title": "Next Medication",
+          "scheduled": "Scheduled",
+          "name": "Metformin 500 mg",
+          "time": "Today · 7:00 PM",
+          "instruction": "Take with dinner",
+          "viewAll": "View all medications"
+        },
+        "nutritionGuide": {
+          "title": "Nutrition & Diet Guide",
+          "badge": "Low Glycemic",
+          "methodTitle": "Healthy Plate Method",
+          "vegPlate": "50% Non-starchy veg",
+          "proteinPlate": "25% Lean protein",
+          "grainPlate": "25% Whole grains",
+          "targetNutrients": "Carbs: 45–60g / meal · Fiber: ≥ 28g daily",
+          "viewPlan": "View nutrition plan"
+        },
+        "lifestyleTarget": {
+          "title": "Lifestyle & Activity Target",
+          "badge": "Daily Goals",
+          "activityTitle": "30-Min Brisk Walk",
+          "activitySubtitle": "Moderate aerobic activity · 5 days/wk",
+          "activityStatus": "4/5 days",
+          "hydrationTitle": "2.0L Hydration",
+          "hydrationSubtitle": "Zero sugary drinks · Boosts metabolism",
+          "hydrationStatus": "1.6 / 2.0L",
+          "sleepTitle": "7–8 Hours Sleep",
+          "sleepSubtitle": "Regulates cortisol & insulin sensitivity",
+          "sleepStatus": "Optimal",
+          "viewGuide": "Explore lifestyle guide"
+        },
+        "quickActions": {
+          "title": "Quick Actions",
+          "fullReport": "View Full Report",
+          "fullReportSub": "See complete details",
+          "askQuestion": "Ask a Question",
+          "askQuestionSub": "Get help from your care team",
+          "treatmentPlan": "View Treatment Plan",
+          "treatmentPlanSub": "Goals, nutrition, activity & more"
+        },
+        "doctorReview": {
+          "title": "Doctor Review",
+          "reviewedBy": "Reviewed by {{doctor}}",
+          "verified": "Verified Review",
+          "awaiting": "Awaiting review",
+          "empty": "Your doctor hasn't reviewed this care plan yet. You'll see their notes here once the review is complete."
+        },
+        "needsAttention": {
+          "title": "Needs attention",
+          "description": "Your latest fasting glucose result is above your recommended target. Follow your current treatment plan and contact your care team if symptoms worsen.",
+          "warningSigns": "View warning signs"
+        },
+        "yourProgress": {
+          "title": "Your Progress",
+          "glucose": "Blood Glucose",
+          "aboveTarget": "Above target",
+          "medications": "Medications",
+          "onTrack": "On track",
+          "activity": "Activity",
+          "nutrition": "Nutrition"
+        },
+        "safety": {
+          "title": "Seek care urgently if",
+          "item1": "You develop confusion, drowsiness or fainting",
+          "item2": "You have rapid breathing with fruity-smelling breath",
+          "item3": "Vomiting or diarrhea stops you keeping fluids down",
+          "item4": "A wound is red, swollen, or not healing"
+        }
+      },
       "loading": "Loading your care plan...",
       "loadFailed": "Failed to load your care plan",
       "hero": {
@@ -2098,6 +2227,7 @@
     "back": "Back",
     "restartAssessment": "Restart Assessment",
     "openCarePlan": "Open Care Plan",
+    "generateCarePlan": "Generate Care Plan",
     "currentPatient": "Current patient",
     "assessmentComplete": "Assessment complete! Your results have been saved.",
     "viewReport": "View Report →",

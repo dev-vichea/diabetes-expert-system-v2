@@ -10,16 +10,16 @@ import { Navigate, useLocation } from 'react-router-dom'
  */
 export function RoleGuard({ user, roles, notRoles, permissions, permissionMode = 'all', children }) {
   const location = useLocation()
-  const userRoles = new Set(user?.roles || (user?.role ? [user.role] : []))
+  const userRoles = new Set((user?.roles || (user?.role ? [user.role] : [])).map((r) => String(r).toLowerCase()))
   const userPermissions = new Set(user?.permissions || [])
 
   // Disallowed roles check – user must NOT have any of these roles
-  if (notRoles?.length && notRoles.some((roleName) => userRoles.has(roleName))) {
+  if (notRoles?.length && notRoles.some((roleName) => userRoles.has(String(roleName).toLowerCase()))) {
     return <Navigate to="/unauthorized" replace state={{ from: location.pathname }} />
   }
 
   // Role check – user must have at least ONE of the specified roles
-  if (roles?.length && roles.every((roleName) => !userRoles.has(roleName))) {
+  if (roles?.length && roles.every((roleName) => !userRoles.has(String(roleName).toLowerCase()))) {
     return <Navigate to="/unauthorized" replace state={{ from: location.pathname }} />
   }
 

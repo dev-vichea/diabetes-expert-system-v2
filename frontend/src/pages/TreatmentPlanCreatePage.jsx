@@ -230,9 +230,9 @@ export function TreatmentPlanCreatePage() {
       return user.name?.startsWith('Dr.') ? user.name : `Dr. ${user.name}`
     }
     if (user?.permissions?.includes('treatment_plan.manage')) {
-      return user.name || 'Dr. Marco Rossi'
+      return user.name || 'Diabetes Care Team'
     }
-    return 'Dr. Marco Rossi'
+    return user?.name || 'Diabetes Care Team'
   }
 
   const [selectedKBProtocolId, setSelectedKBProtocolId] = useState(

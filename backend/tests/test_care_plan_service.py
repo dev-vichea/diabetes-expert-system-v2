@@ -247,6 +247,50 @@ def test_safety_guardrails_no_prescriptions():
     assert "nor does it prescribe or adjust medications" in disclaimer
 
 
+def test_care_plan_low_confidence_provisional():
+    """Verify care plan dynamic adaptation for low confidence screening (<50% certainty)."""
+    service = CarePlanService()
+    result = {
+        "id": 107,
+        "diagnosis": "Prediabetes Risk Pattern",
+        "certainty": 0.38,  # 38% < 50%
+        "is_urgent": False,
+        "matched_symptoms": ["Mild fatigue"],
+        "matched_risk_factors": ["Overweight"],
+        "facts": {
+            "age": 30,
+            "bmi": 26.5,
+            "gender": "male",
+        },
+    }
+
+    plan = service.generate_care_plan(result)
+    findings = plan["assessment_findings"]
+
+    # Must be marked provisional
+    assert findings["is_provisional"] is True
+    assert findings["plan_scope"] == "provisional_screening"
+    assert findings["certainty_percent"] == 38
+
+    recs = plan["recommendations"]
+
+    # Diet should be baseline wellness, not strict diabetic plate counting
+    assert recs["diet"]["category"] == "Diet & Nutrition Guidance"
+    assert any("Hydration" in item.get("tag", "") or "Fresh" in item["title"] for item in recs["diet"]["action_items"])
+
+    # Monitoring should prioritize laboratory confirmation (FPG / HbA1c) rather than capillary SMBG fingersticks
+    monitoring = recs["monitoring"]
+    assert monitoring["category"] == "Diagnostic Confirmatory Testing"
+    assert any("Laboratory Blood Testing" in item["title"] for item in monitoring["action_items"])
+    assert not any("SMBG" in item["title"] or "4x Daily" in item["title"] for item in monitoring["action_items"])
+
+    # Follow-up must focus on confirmatory blood tests
+    follow_up = plan["follow_up"]
+    assert follow_up["urgency"] == "routine"
+    assert "2 to 4 Weeks" in follow_up["timeline"]
+    assert any("Confirmatory" in item["title"] for item in follow_up["schedule"])
+
+
 def test_care_plan_api_endpoints(client):
     """Test GET and POST care plan API routes."""
     # 1. Login as patient to run an assessment

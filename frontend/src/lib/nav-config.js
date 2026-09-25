@@ -22,7 +22,7 @@ export const NAV_ITEMS = [
   { to: '/review', labelKey: 'nav.patientReview', icon: ClipboardCheck, section: 'documents', permissions: ['diagnosis.review_any'] },
   { to: '/my-results', labelKey: 'nav.myResults', icon: FileSpreadsheet, section: 'documents', roles: ['patient'], permissions: ['diagnosis.view_own'] },
   { to: '/my-results', labelKey: 'nav.patientResults', icon: FileSpreadsheet, section: 'documents', notRoles: ['patient'], permissions: ['diagnosis.view_own'] },
-  { to: '/care-plan', labelKey: 'nav.carePlan', icon: HeartPulse, section: 'workspace', permissions: ['care_plan.view_own'] },
+  { to: '/care-plan', labelKey: 'nav.carePlan', icon: HeartPulse, section: 'workspace', notRoles: ['admin'], permissions: ['care_plan.view_own'] },
   { to: '/guide', labelKey: 'nav.diabetesGuide', icon: GraduationCap, section: 'documents', permissions: ['guide.view'] },
   // The users dashboard combines user, role, and permission data. Keep its
   // navigation gate aligned with the API calls the page makes so a partially
@@ -82,14 +82,14 @@ export function userHasStaffRole(user) {
 }
 
 function hasAccess(user, item) {
-  const userRoles = new Set(user?.roles || (user?.role ? [user.role] : []))
+  const userRoles = new Set((user?.roles || (user?.role ? [user.role] : [])).map((r) => String(r).toLowerCase()))
   const userPermissions = new Set(user?.permissions || [])
 
-  if (item.roles?.length && item.roles.every((role) => !userRoles.has(role))) {
+  if (item.roles?.length && item.roles.every((role) => !userRoles.has(String(role).toLowerCase()))) {
     return false
   }
 
-  if (item.notRoles?.length && item.notRoles.some((role) => userRoles.has(role))) {
+  if (item.notRoles?.length && item.notRoles.some((role) => userRoles.has(String(role).toLowerCase()))) {
     return false
   }
 

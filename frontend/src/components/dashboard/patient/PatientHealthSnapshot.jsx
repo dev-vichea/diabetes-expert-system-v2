@@ -32,30 +32,30 @@ export function PatientHealthSnapshot({ results }) {
   const facts = getLatestFacts(results)
 
   const rawA1c = toNumberOrNull(facts.hba1c)
-  const a1c = rawA1c !== null ? rawA1c : 10.5
+  const a1c = rawA1c
 
   const rawGlucose = toNumberOrNull(facts.fasting_glucose ?? facts.fasting_plasma_glucose)
-  const glucose = rawGlucose !== null ? Math.round(rawGlucose) : 142
+  const glucose = rawGlucose !== null ? Math.round(rawGlucose) : null
 
   const rawBmi = toNumberOrNull(facts.bmi)
-  const bmi = rawBmi !== null ? Number(rawBmi.toFixed(1)) : 23.5
+  const bmi = rawBmi !== null ? Number(rawBmi.toFixed(1)) : null
 
   // 7-day trend series for each metric
   const a1cHistory = extractMetricSeries(results, 'hba1c')
   const a1cSeries = useMemo(
-    () => (a1cHistory.length >= 2 ? a1cHistory : generateRealisticTrend(a1c, 0.03)),
+    () => (a1cHistory.length >= 2 ? a1cHistory : a1c !== null ? generateRealisticTrend(a1c, 0.03) : []),
     [a1cHistory, a1c]
   )
 
   const glucoseHistory = extractMetricSeries(results, ['fasting_glucose', 'fasting_plasma_glucose'])
   const glucoseSeries = useMemo(
-    () => (glucoseHistory.length >= 2 ? glucoseHistory : generateRealisticTrend(glucose, 0.06)),
+    () => (glucoseHistory.length >= 2 ? glucoseHistory : glucose !== null ? generateRealisticTrend(glucose, 0.06) : []),
     [glucoseHistory, glucose]
   )
 
   const bmiHistory = extractMetricSeries(results, 'bmi')
   const bmiSeries = useMemo(
-    () => (bmiHistory.length >= 2 ? bmiHistory : generateRealisticTrend(bmi, 0.015)),
+    () => (bmiHistory.length >= 2 ? bmiHistory : bmi !== null ? generateRealisticTrend(bmi, 0.015) : []),
     [bmiHistory, bmi]
   )
 
@@ -91,14 +91,16 @@ export function PatientHealthSnapshot({ results }) {
               <span
                 className={cn(
                   'rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
-                  a1c >= 6.5
+                  a1c === null
+                    ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                    : a1c >= 6.5
                     ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300'
                     : a1c >= 5.7
                       ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300'
                       : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300'
                 )}
               >
-                {a1c >= 6.5 ? 'Elevated' : a1c >= 5.7 ? 'Borderline' : 'Normal'}
+                {a1c === null ? 'Not Tested' : a1c >= 6.5 ? 'Elevated' : a1c >= 5.7 ? 'Borderline' : 'Normal'}
               </span>
             </div>
 
@@ -108,9 +110,9 @@ export function PatientHealthSnapshot({ results }) {
               </p>
               <div className="mt-1 flex items-baseline gap-1">
                 <span className="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">
-                  {a1c.toFixed(1)}
+                  {a1c !== null ? a1c.toFixed(1) : '--'}
                 </span>
-                <span className="text-sm font-bold text-slate-400">%</span>
+                {a1c !== null && <span className="text-sm font-bold text-slate-400">%</span>}
               </div>
               <p className="mt-1 text-[11px] font-medium text-slate-400 dark:text-slate-500">
                 Target: &lt; 5.7%
@@ -134,14 +136,16 @@ export function PatientHealthSnapshot({ results }) {
               <span
                 className={cn(
                   'rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
-                  glucose >= 126
+                  glucose === null
+                    ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                    : glucose >= 126
                     ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300'
                     : glucose >= 100
                       ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300'
                       : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300'
                 )}
               >
-                {glucose >= 126 ? 'High' : glucose >= 100 ? 'Pre-meal High' : 'In Range'}
+                {glucose === null ? 'Not Tested' : glucose >= 126 ? 'High' : glucose >= 100 ? 'Pre-meal High' : 'In Range'}
               </span>
             </div>
 
@@ -151,9 +155,9 @@ export function PatientHealthSnapshot({ results }) {
               </p>
               <div className="mt-1 flex items-baseline gap-1">
                 <span className="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">
-                  {glucose}
+                  {glucose !== null ? glucose : '--'}
                 </span>
-                <span className="text-xs font-bold text-slate-400">mg/dL</span>
+                {glucose !== null && <span className="text-xs font-bold text-slate-400">mg/dL</span>}
               </div>
               <p className="mt-1 text-[11px] font-medium text-slate-400 dark:text-slate-500">
                 Target: 70–99 mg/dL
@@ -177,14 +181,16 @@ export function PatientHealthSnapshot({ results }) {
               <span
                 className={cn(
                   'rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
-                  bmi >= 30
+                  bmi === null
+                    ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                    : bmi >= 30
                     ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300'
                     : bmi >= 25
                       ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300'
                       : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300'
                 )}
               >
-                {bmi >= 25 ? 'Overweight' : 'Normal Range'}
+                {bmi === null ? 'Not Provided' : bmi >= 25 ? 'Overweight' : 'Normal Range'}
               </span>
             </div>
 
@@ -194,9 +200,9 @@ export function PatientHealthSnapshot({ results }) {
               </p>
               <div className="mt-1 flex items-baseline gap-1">
                 <span className="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">
-                  {bmi.toFixed(1)}
+                  {bmi !== null ? bmi.toFixed(1) : '--'}
                 </span>
-                <span className="text-xs font-bold text-slate-400">kg/m²</span>
+                {bmi !== null && <span className="text-xs font-bold text-slate-400">kg/m²</span>}
               </div>
               <p className="mt-1 text-[11px] font-medium text-slate-400 dark:text-slate-500">
                 Target: 18.5–24.9

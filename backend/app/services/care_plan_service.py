@@ -132,6 +132,9 @@ class CarePlanService:
         urgent_reason: Optional[str],
     ) -> dict:
         """Extract structured clinical findings without patient PII."""
+        # Detect low-confidence preliminary screening (certainty < 50% and not acute/urgent)
+        is_provisional = bool(certainty_pct < 50 and not is_urgent)
+
         # Symptoms
         raw_symptoms = (
             result.get("matched_symptoms")
@@ -196,6 +199,7 @@ class CarePlanService:
             labs=labs,
             demographics=demographics,
             is_urgent=is_urgent,
+            is_provisional=is_provisional,
         )
 
         return {
@@ -205,6 +209,8 @@ class CarePlanService:
             "is_urgent": is_urgent,
             "urgent_reason": urgent_reason,
             "is_pregnant": is_pregnant,
+            "is_provisional": is_provisional,
+            "plan_scope": "provisional_screening" if is_provisional else "comprehensive",
             "summary": summary,
             "symptoms": symptoms,
             "risk_factors": risk_factors,
@@ -222,6 +228,7 @@ class CarePlanService:
         labs: dict,
         demographics: dict,
         is_urgent: bool,
+        is_provisional: bool = False,
     ) -> str:
         """Create a clinical synopsis of the assessment findings."""
         if is_urgent:
@@ -240,6 +247,13 @@ class CarePlanService:
             lab_snippets.append(f"HbA1c {hba1c['value']}%")
 
         lab_str = f" with {', '.join(lab_snippets)}" if lab_snippets else " (symptom & risk-factor screening)"
+
+        if is_provisional:
+            return (
+                f"Preliminary screening identifies a potential {condition} pattern with limited certainty ({certainty_pct}%){lab_str}. "
+                "Because clinical evidence is incomplete (pending confirmatory laboratory blood tests), "
+                "this plan provides foundational wellness guidance and prioritizes diagnostic lab confirmation over intensive medical therapy."
+            )
 
         if risk_level == "high":
             return (
@@ -271,6 +285,39 @@ class CarePlanService:
         action_items = []
         foods_to_prioritize = []
         foods_to_limit = []
+
+        if findings.get("is_provisional"):
+            summary = "Foundational healthy nutrition emphasizing fresh whole foods, regular hydration, and limiting sweetened drinks while awaiting lab confirmation."
+            action_items.append({
+                "title": "Prioritize Fresh Whole Foods & Regular Hydration",
+                "description": "Drink plenty of water and build meals around whole vegetables, lean proteins, and fiber-rich unrefined foods.",
+                "priority": "medium",
+                "tag": "Healthy Eating",
+            })
+            action_items.append({
+                "title": "Limit Sugar-Sweetened Beverages & Confections",
+                "description": "Minimize sugary sodas, commercial juices, and sweet desserts to maintain steady daily energy levels.",
+                "priority": "medium",
+                "tag": "Sugar Moderation",
+            })
+            foods_to_prioritize.extend([
+                "Fresh vegetables and leafy greens",
+                "Water and unsweetened beverages",
+                "Lean proteins (poultry, fish, eggs, tofu, legumes)",
+                "Whole grains in moderate portions",
+            ])
+            foods_to_limit.extend([
+                "Sugar-sweetened sodas and fruit drinks",
+                "Candy, sweet pastries, and ultra-processed snacks",
+                "Deep-fried foods",
+            ])
+            return {
+                "category": "Diet & Nutrition Guidance",
+                "summary": summary,
+                "action_items": action_items,
+                "foods_to_prioritize": foods_to_prioritize,
+                "foods_to_limit": foods_to_limit,
+            }
 
         if is_pregnant:
             summary = "Gestational diabetes nutrition therapy emphasizing controlled carbohydrate distribution across 3 meals and 2-3 snacks."
@@ -441,6 +488,32 @@ class CarePlanService:
                 "safety_precautions": precautions,
             }
 
+        if findings.get("is_provisional"):
+            summary = "Consistent moderate physical activity to sustain overall metabolic health and cardiovascular fitness."
+            action_items.append({
+                "title": "Daily Brisk Walking Routine",
+                "description": "Engage in 20-30 minutes of brisk walking or light aerobic exercise 4-5 days a week.",
+                "priority": "medium",
+                "tag": "Daily Movement",
+            })
+            action_items.append({
+                "title": "Break Up Prolonged Inactivity",
+                "description": "Stand up and walk around for 1-2 minutes every hour during prolonged periods of sitting.",
+                "priority": "routine",
+                "tag": "Sedentary Reset",
+            })
+            precautions.extend([
+                "Stay hydrated before, during, and after physical activities.",
+                "Wear comfortable, supportive walking shoes.",
+            ])
+            return {
+                "category": "Physical Activity",
+                "summary": summary,
+                "weekly_target_minutes": weekly_target_minutes,
+                "action_items": action_items,
+                "safety_precautions": precautions,
+            }
+
         if is_pregnant:
             summary = "Gentle, pregnancy-approved aerobic movement to enhance maternal glycemic control."
             weekly_target_minutes = 150
@@ -541,6 +614,34 @@ class CarePlanService:
 
         action_items = []
 
+        if findings.get("is_provisional"):
+            action_items = [
+                {
+                    "title": "Prioritize 7-8 Hours Restorative Sleep",
+                    "description": "Consistent quality sleep supports balanced evening cortisol and steady daytime energy levels.",
+                    "priority": "medium",
+                    "tag": "Sleep Hygiene",
+                },
+                {
+                    "title": "Daily Stress Reduction & Balance",
+                    "description": "Practice brief mindfulness, slow breathing, or quiet evening walks to maintain autonomic balance.",
+                    "priority": "routine",
+                    "tag": "Stress Regulation",
+                },
+            ]
+            if has_smoking:
+                action_items.append({
+                    "title": "Tobacco Cessation Program",
+                    "description": "Reducing or quitting smoking provides significant cardiometabolic advantages.",
+                    "priority": "high",
+                    "tag": "Smoking Cessation",
+                })
+            return {
+                "category": "Lifestyle & Well-being",
+                "summary": "Foundational sleep hygiene and stress balance supporting overall wellness.",
+                "action_items": action_items,
+            }
+
         # Weight management
         if bmi and bmi >= 25.0:
             target_pct = "7-10%" if bmi >= 30.0 else "5-7%"
@@ -614,6 +715,26 @@ class CarePlanService:
             "post_meal_glucose": "< 180 mg/dL (1-2 hours after meal start)",
             "hba1c": "< 7.0% (individualized clinical target determined with physician)",
         }
+
+        if findings.get("is_provisional"):
+            return {
+                "category": "Diagnostic Confirmatory Testing",
+                "summary": "Clinical laboratory blood testing is the recommended next step to evaluate your glycemic status with diagnostic precision.",
+                "action_items": [
+                    {
+                        "title": "Complete Laboratory Blood Testing (FPG or HbA1c)",
+                        "description": "Schedule a venous blood draw at an accredited clinical laboratory for Fasting Plasma Glucose (FPG) and/or HbA1c to obtain definitive diagnostic clarity.",
+                        "frequency": "Within 2 to 4 weeks",
+                        "priority": "high",
+                    }
+                ],
+                "target_ranges": {
+                    "fasting_glucose_normal": "< 100 mg/dL (Normal fasting glucose)",
+                    "hba1c_normal": "< 5.7% (Normal HbA1c)",
+                    "prediabetes_fasting": "100 - 125 mg/dL",
+                    "prediabetes_hba1c": "5.7% - 6.4%",
+                },
+            }
 
         if is_pregnant:
             target_ranges = {
@@ -720,6 +841,20 @@ class CarePlanService:
                 "Emergency Physician / Urgent Care Clinician",
                 "Endocrinologist",
                 "Certified Diabetes Care & Education Specialist (CDCES)",
+            ])
+        elif findings.get("is_provisional"):
+            urgency_str = "routine"
+            timeline = "Within 2 to 4 Weeks"
+            milestone = "Outpatient clinic visit for confirmatory blood draw (FPG / HbA1c) and physician review."
+            schedule.append({
+                "timeframe": "Within 2-4 weeks",
+                "title": "Confirmatory Clinic & Lab Visit",
+                "description": "Consult with a primary care clinician to complete formal blood tests and verify glycemic health.",
+                "priority": "medium",
+            })
+            specialists.extend([
+                "Primary Care Physician (PCP)",
+                "General Practitioner",
             ])
         elif is_pregnant:
             urgency_str = "high"
@@ -850,6 +985,12 @@ class CarePlanService:
             "diagnosis, nor does it prescribe or adjust medications. All pharmacotherapy, diagnostic verification, and "
             "clinical treatment decisions must be made in consultation with a qualified, licensed healthcare professional."
         )
+
+        if findings.get("is_provisional"):
+            content += (
+                " Note: This plan is provisional based on preliminary screening indicators with limited certainty (< 50%). "
+                "Full clinical intervention protocols require formal venous laboratory blood testing."
+            )
 
         return {
             "title": "Clinical & Safety Disclaimer",

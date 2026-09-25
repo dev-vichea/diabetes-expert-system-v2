@@ -48,6 +48,7 @@ import { getTreatmentPlanForUser } from '@/lib/treatmentPlanStore'
 import {
   getReportedSymptomLabels,
   getRelativeCheckAge,
+  getCarePlanConditionKey,
 } from '@/components/dashboard/patient/patient-dashboard-utils'
 
 // ============================================================================
@@ -65,8 +66,12 @@ function toNumber(val) {
   return Number.isNaN(num) ? null : num
 }
 
-function getGreeting(name) {
+function getGreeting(name, isKhmer = false) {
   const hour = new Date().getHours()
+  if (isKhmer) {
+    const greeting = hour < 12 ? 'អរុណសួស្តី' : hour < 17 ? 'ទិវាសួស្តី' : 'សាយណ្ហសួស្តី'
+    return name ? `${greeting}, ${name}` : greeting
+  }
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   return name ? `${greeting}, ${name}` : greeting
 }
@@ -268,24 +273,58 @@ function buildPatientDailySchedule(patientPlan, latestResult, isNewUser = false,
     })
   }
 
-  // 4. Clinical Consultation / Physician Review Follow-up
+  // 4. Clinical Consultation / Care Follow-up / Afternoon Wellness Break
   const docName = latestResult?.reviewed_by_name
     ? (latestResult.reviewed_by_name.startsWith('Dr.') ? latestResult.reviewed_by_name : `Dr. ${latestResult.reviewed_by_name}`)
-    : (patientPlan?.doctorName || 'Dr. Lina')
+    : patientPlan?.doctorName
+      ? (patientPlan.doctorName.startsWith('Dr.') ? patientPlan.doctorName : `Dr. ${patientPlan.doctorName}`)
+      : null
 
-  items.push({
-    id: 'sched_doctor_pm',
-    time: '15:00',
-    timeEnd: '15:30',
-    category: isKhmer ? 'ការពិគ្រោះ' : 'Consultation',
-    badgeTone: 'purple',
-    title: latestResult?.review_note
-      ? (isKhmer ? 'ការតាមដានការត្រួតពិនិត្យគ្លីនិក' : 'Clinical Review Follow-up')
-      : (isKhmer ? 'ការពិនិត្យតាមដាន Endocrinology' : 'Endocrinology Check-in'),
-    subtitle: `${docName} • ${isKhmer ? 'ក្រុមថែទាំជំងឺទឹកនោមផ្អែម' : 'Diabetes Care Team Review'}`,
-    location: isKhmer ? 'វិបផតថលថែទាំគ្លីនិក' : 'Clinical Care Portal',
-    icon: Stethoscope,
-  })
+  if (latestResult?.is_urgent) {
+    items.push({
+      id: 'sched_doctor_pm',
+      time: '15:00',
+      timeEnd: '15:30',
+      category: isKhmer ? 'ការពិគ្រោះ' : 'Consultation',
+      badgeTone: 'purple',
+      title: isKhmer ? 'ការពិគ្រោះសុខភាពបន្ទាន់' : 'Urgent Clinical Consultation',
+      subtitle: docName
+        ? `${docName} • ${isKhmer ? 'ក្រុមថែទាំជំងឺទឹកនោមផ្អែម' : 'Diabetes Care Team'}`
+        : (isKhmer ? 'ពិគ្រោះជាមួយគ្រូពេទ្យជំនាញ ឬផ្នែកសង្គ្រោះបន្ទាន់' : 'Consult attending endocrinologist or care team'),
+      location: isKhmer ? 'វិបផតថលថែទាំគ្លីនិក' : 'Clinical Care Portal',
+      icon: Stethoscope,
+    })
+  } else if (docName || latestResult?.review_note) {
+    items.push({
+      id: 'sched_doctor_pm',
+      time: '15:00',
+      timeEnd: '15:30',
+      category: isKhmer ? 'ការពិគ្រោះ' : 'Consultation',
+      badgeTone: 'purple',
+      title: latestResult?.review_note
+        ? (isKhmer ? 'ការតាមដានការត្រួតពិនិត្យគ្លីនិក' : 'Clinical Review Follow-up')
+        : (isKhmer ? 'ការពិគ្រោះតាមដានសុខភាព' : 'Care Team Check-in'),
+      subtitle: docName
+        ? `${docName} • ${isKhmer ? 'ក្រុមថែទាំជំងឺទឹកនោមផ្អែម' : 'Diabetes Care Team'}`
+        : (isKhmer ? 'ក្រុមថែទាំជំងឺទឹកនោមផ្អែម' : 'Diabetes Care Team Review'),
+      location: isKhmer ? 'វិបផតថលថែទាំគ្លីនិក' : 'Clinical Care Portal',
+      icon: Stethoscope,
+    })
+  } else {
+    items.push({
+      id: 'sched_wellness_pm',
+      time: '15:00',
+      timeEnd: '15:20',
+      category: isKhmer ? 'សុខុមាលភាព' : 'Wellness',
+      badgeTone: 'purple',
+      title: isKhmer ? 'ការសម្រាក និងពិនិត្យកម្រិតជាតិទឹកពេលរសៀល' : 'Afternoon Hydration & Movement Break',
+      subtitle: isKhmer
+        ? 'ទទួលទានទឹក និងឈរសម្រាកដើម្បីចៀសវាងការអង្គុយយូរ និងជួយដល់ចរន្តឈាម'
+        : 'Take a stretch break and hydrate to support healthy circulation',
+      location: isKhmer ? 'ទម្លាប់ប្រចាំថ្ងៃ' : 'Daily Routine',
+      icon: HeartPulse,
+    })
+  }
 
   // 5. Post-Dinner Glucose Log
   items.push({
@@ -307,7 +346,7 @@ function buildPatientDailySchedule(patientPlan, latestResult, isNewUser = false,
     timeEnd: '22:00',
     category: isKhmer ? 'ទម្លាប់រាត្រី' : 'Routine',
     badgeTone: 'slate',
-    title: isKhmer ? 'ការទទួលទានទឹក និងការសម្រាក' : 'Evening Hydration & Meds',
+    title: isKhmer ? 'ការទទួលទានទឹក និងការសម្រាក' : 'Evening Hydration & Routine',
     subtitle: isKhmer ? 'ពិនិត្យសៀវភៅតាមដានប្រចាំថ្ងៃ និងរៀបចំចូលគេង' : 'Review daily diary and prepare for sleep',
     location: isKhmer ? 'ទម្លាប់ថែទាំសុខភាព' : 'Care Regimen',
     icon: CheckCircle2,
@@ -429,7 +468,7 @@ function ChartCustomTooltip({ active, payload }) {
 export function PatientDashboardPage() {
   const { user } = useAuth()
   const canViewOwnCarePlan = user?.permissions?.includes('care_plan.view_own')
-  const { t, language, isKhmer } = useLanguage()
+  const { t, tExact, language, isKhmer } = useLanguage()
   const [patientResults, setPatientResults] = useState([])
   const [patientProfile, setPatientProfile] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -541,8 +580,8 @@ export function PatientDashboardPage() {
         ? `+${glucoseDelta}`
         : `${glucoseDelta}`
       : currentGlucose !== null
-      ? 'Baseline'
-      : 'Pending'
+      ? (isKhmer ? 'កម្រិតគោល' : 'Baseline')
+      : (isKhmer ? 'រង់ចាំ' : 'Pending')
 
   const glucoseDeltaTone =
     glucoseDelta !== null
@@ -556,11 +595,11 @@ export function PatientDashboardPage() {
   const glucoseStatus =
     currentGlucose !== null
       ? currentGlucose >= 126
-        ? { label: 'High', color: 'rose' }
+        ? { label: isKhmer ? 'ខ្ពស់' : 'High', color: 'rose' }
         : currentGlucose >= 100
-        ? { label: 'Impaired / Pre-meal', color: 'amber' }
-        : { label: 'In Range', color: 'emerald' }
-      : { label: 'Not Tested', color: 'slate' }
+        ? { label: isKhmer ? 'លើសកម្រិត' : 'Impaired / Pre-meal', color: 'amber' }
+        : { label: isKhmer ? 'ក្នុងកម្រិតធម្មតា' : 'In Range', color: 'emerald' }
+      : { label: isKhmer ? 'មិនទាន់តេស្ត' : 'Not Tested', color: 'slate' }
 
   // 2. HbA1c history
   const a1cHistory = useMemo(() => {
@@ -582,8 +621,8 @@ export function PatientDashboardPage() {
         ? `+${a1cDelta}%`
         : `${a1cDelta}%`
       : currentA1c !== null
-      ? 'Baseline'
-      : 'Pending'
+      ? (isKhmer ? 'កម្រិតគោល' : 'Baseline')
+      : (isKhmer ? 'រង់ចាំ' : 'Pending')
 
   const a1cDeltaTone =
     a1cDelta !== null
@@ -597,11 +636,11 @@ export function PatientDashboardPage() {
   const a1cStatus =
     currentA1c !== null
       ? currentA1c >= 6.5
-        ? { label: 'Elevated', color: 'rose' }
+        ? { label: isKhmer ? 'ខ្ពស់' : 'Elevated', color: 'rose' }
         : currentA1c >= 5.7
-        ? { label: 'Borderline', color: 'amber' }
-        : { label: 'Optimal', color: 'emerald' }
-      : { label: 'Not Tested', color: 'slate' }
+        ? { label: isKhmer ? 'ប្រឈម' : 'Borderline', color: 'amber' }
+        : { label: isKhmer ? 'ល្អប្រសើរ' : 'Optimal', color: 'emerald' }
+      : { label: isKhmer ? 'មិនទាន់តេស្ត' : 'Not Tested', color: 'slate' }
 
   // 3. BMI history & profile calculation
   const bmiHistory = useMemo(() => {
@@ -633,8 +672,8 @@ export function PatientDashboardPage() {
         ? `+${bmiDelta}`
         : `${bmiDelta}`
       : currentBmi !== null
-      ? 'Baseline'
-      : 'Pending'
+      ? (isKhmer ? 'កម្រិតគោល' : 'Baseline')
+      : (isKhmer ? 'រង់ចាំ' : 'Pending')
 
   const bmiDeltaTone =
     bmiDelta !== null
@@ -648,13 +687,13 @@ export function PatientDashboardPage() {
   const bmiStatus =
     currentBmi !== null
       ? currentBmi >= 30
-        ? { label: 'Obese', color: 'rose' }
+        ? { label: isKhmer ? 'ធាត់លើសទម្ងន់ខ្លាំង' : 'Obese', color: 'rose' }
         : currentBmi >= 25
-        ? { label: 'Overweight', color: 'amber' }
+        ? { label: isKhmer ? 'លើសទម្ងន់' : 'Overweight', color: 'amber' }
         : currentBmi < 18.5
-        ? { label: 'Underweight', color: 'amber' }
-        : { label: 'Normal', color: 'emerald' }
-      : { label: 'Not Provided', color: 'slate' }
+        ? { label: isKhmer ? 'ស្គមពេក' : 'Underweight', color: 'amber' }
+        : { label: isKhmer ? 'ធម្មតា' : 'Normal', color: 'emerald' }
+      : { label: isKhmer ? 'មិនបានផ្តល់' : 'Not Provided', color: 'slate' }
 
   // Real Sparkline Points from clinical history
   const a1cTrendPoints = useMemo(() => {
@@ -683,8 +722,8 @@ export function PatientDashboardPage() {
 
   // Patient Greeting & Name
   const patientDisplayName = patientProfile?.full_name || user?.name || ''
-  const firstName = patientDisplayName.trim().split(/\s+/)[0] || 'Patient'
-  const greeting = getGreeting(firstName)
+  const firstName = patientDisplayName.trim().split(/\s+/)[0] || (isKhmer ? 'អ្នកជំងឺ' : 'Patient')
+  const greeting = getGreeting(firstName, isKhmer)
 
   // Patient Demographics (Age & Gender)
   const patientAge = useMemo(() => {
@@ -703,14 +742,22 @@ export function PatientDashboardPage() {
 
   const patientGender = useMemo(() => {
     const raw = patientProfile?.gender || facts.gender
-    if (!raw) return 'Adult'
+    if (!raw) return isKhmer ? 'មនុស្សពេញវ័យ' : 'Adult'
+    if (isKhmer) {
+      const lower = raw.toLowerCase()
+      if (lower.includes('female') || lower.includes('f') || lower.includes('ស្រី')) return 'ស្រី'
+      if (lower.includes('male') || lower.includes('m') || lower.includes('ប្រុស')) return 'ប្រុស'
+      return 'មនុស្សពេញវ័យ'
+    }
     return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
-  }, [patientProfile, facts.gender])
+  }, [patientProfile, facts.gender, isKhmer])
 
   // 1-Sentence Diagnostic Note
   const diagnosticNote = useMemo(() => {
     if (!latestResult) {
-      return 'Complete your initial health assessment to establish your personal metabolic baseline and target metrics.'
+      return isKhmer
+        ? 'បំពេញការវាយតម្លៃសុខភាពដំបូងរបស់អ្នក ដើម្បីកំណត់សូចនាករមូលដ្ឋាន និងគោលដៅសុខភាពផ្ទាល់ខ្លួន។'
+        : 'Complete your initial health assessment to establish your personal metabolic baseline and target metrics.'
     }
     if (latestResult.review_note) {
       return latestResult.review_note
@@ -718,21 +765,30 @@ export function PatientDashboardPage() {
     if (isUrgent) {
       return (
         latestResult.urgent_reason ||
-        'Your recent metabolic indicators exceed standard target thresholds. Clinical check-in and medication adherence are recommended.'
+        (isKhmer
+          ? 'សូចនាករមេតាបូលីកថ្មីៗរបស់អ្នកលើសពីកម្រិតគោលដៅស្តង់ដារ។ សូមពិគ្រោះជាមួយគ្រូពេទ្យ និងអនុវត្តតាមការណែនាំថ្នាំ។'
+          : 'Your recent metabolic indicators exceed standard target thresholds. Clinical check-in and medication adherence are recommended.')
       )
     }
+    const recText = typeof latestResult.recommendation === 'string'
+      ? latestResult.recommendation.split('.')[0] + '.'
+      : Array.isArray(latestResult.recommendation) && latestResult.recommendation.length > 0
+      ? String(latestResult.recommendation[0])
+      : null
     return (
-      latestResult.recommendation?.split('.')[0] + '.' ||
-      'Your latest metabolic indicators and fasting blood sugar levels remain stable within your personal target zones.'
+      recText ||
+      (isKhmer
+        ? 'សូចនាករមេតាបូលីក និងកម្រិតជាតិស្ករពេលព្រឹកចុងក្រោយរបស់អ្នកមានលំនឹងល្អក្នុងកម្រិតគោលដៅផ្ទាល់ខ្លួន។'
+        : 'Your latest metabolic indicators and fasting blood sugar levels remain stable within your personal target zones.')
     )
-  }, [latestResult, isUrgent])
+  }, [latestResult, isUrgent, isKhmer])
 
   // Relative / formatted last assessment date
   const lastAssessmentDate = useMemo(() => {
     if (!latestResult?.created_at) return null
     try {
       const date = new Date(latestResult.created_at)
-      return date.toLocaleDateString('en-US', {
+      return date.toLocaleDateString(isKhmer ? 'km-KH' : 'en-US', {
         month: 'short',
         day: 'numeric',
         hour: 'numeric',
@@ -741,16 +797,16 @@ export function PatientDashboardPage() {
     } catch {
       return null
     }
-  }, [latestResult])
+  }, [latestResult, isKhmer])
 
   // Current calendar day string
   const formattedToday = useMemo(() => {
-    return new Intl.DateTimeFormat('en-US', {
+    return new Intl.DateTimeFormat(isKhmer ? 'km-KH' : 'en-US', {
       weekday: 'long',
       month: 'short',
       day: 'numeric',
     }).format(new Date())
-  }, [])
+  }, [isKhmer])
 
   // ============================================================================
   // REAL HISTORICAL GLUCOSE TREND DATA
@@ -765,14 +821,14 @@ export function PatientDashboardPage() {
     const dayCounts = {}
     recent.forEach((item) => {
       const d = new Date(item.date)
-      const dayKey = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      const dayKey = d.toLocaleDateString(isKhmer ? 'km-KH' : 'en-US', { month: 'short', day: 'numeric' })
       dayCounts[dayKey] = (dayCounts[dayKey] || 0) + 1
     })
 
     const daySeen = {}
     return recent.map((item) => {
       const d = new Date(item.date)
-      const dayKey = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      const dayKey = d.toLocaleDateString(isKhmer ? 'km-KH' : 'en-US', { month: 'short', day: 'numeric' })
       const hasMultiple = dayCounts[dayKey] > 1
       daySeen[dayKey] = (daySeen[dayKey] || 0) + 1
 
@@ -780,7 +836,7 @@ export function PatientDashboardPage() {
         ? `${dayKey} (#${daySeen[dayKey]})`
         : dayKey
 
-      const fullDate = d.toLocaleDateString('en-US', {
+      const fullDate = d.toLocaleDateString(isKhmer ? 'km-KH' : 'en-US', {
         weekday: 'short',
         month: 'short',
         day: 'numeric',
@@ -795,7 +851,7 @@ export function PatientDashboardPage() {
         diagnosis: item.diagnosis,
       }
     })
-  }, [glucoseHistory])
+  }, [glucoseHistory, isKhmer])
 
   const avgGlucose = useMemo(() => {
     if (!trendData.length) return currentGlucose ?? '--'
@@ -810,9 +866,13 @@ export function PatientDashboardPage() {
     const monday = new Date(today)
     monday.setDate(today.getDate() - distToMon + weekOffset * 7)
 
-    const monthName = monday.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    const locale = isKhmer ? 'km-KH' : 'en-US'
+    const monthName = monday.toLocaleDateString(locale, { month: 'short', year: 'numeric' })
+    const dayNames = isKhmer
+      ? ['ចន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហ', 'សុក្រ', 'សៅរ៍', 'អាទិត្យ']
+      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((name, idx) => {
+    const days = dayNames.map((name, idx) => {
       const d = new Date(monday)
       d.setDate(monday.getDate() + idx)
       const isToday = d.toDateString() === today.toDateString()
@@ -826,7 +886,7 @@ export function PatientDashboardPage() {
     })
 
     return { monthName, days }
-  }, [weekOffset])
+  }, [weekOffset, isKhmer])
 
   // Selected date label in timeline header
   const selectedDateLabel = useMemo(() => {
@@ -834,11 +894,15 @@ export function PatientDashboardPage() {
     if (!selectedObj) return formattedToday
     const d = selectedObj.fullDate
     const isToday = selectedObj.isToday
-    const month = d.toLocaleDateString('en-US', { month: 'long' })
+    const locale = isKhmer ? 'km-KH' : 'en-US'
+    const month = d.toLocaleDateString(locale, { month: 'long' })
     const day = d.getDate()
     const weekday = selectedObj.dayName
+    if (isKhmer) {
+      return `${weekday}, ${day} ${month}${isToday ? ' (ថ្ងៃនេះ)' : ''}`
+    }
     return `${month} ${day}, ${isToday ? 'Today, ' : ''}${weekday}`
-  }, [calendarWeek, selectedDayIndex, formattedToday])
+  }, [calendarWeek, selectedDayIndex, formattedToday, isKhmer])
 
   // Whether currently viewing today's schedule
   const isViewingToday = useMemo(() => {
@@ -933,8 +997,15 @@ export function PatientDashboardPage() {
       } else {
         glucoseScore = 48
       }
-    } else if (isUrgent) {
-      glucoseScore = 55
+    } else if (latestResult) {
+      const conditionKey = getCarePlanConditionKey(latestResult)
+      if (conditionKey === 'type1' || conditionKey === 'type2' || isUrgent) {
+        glucoseScore = 48
+      } else if (conditionKey === 'prediabetes' || conditionKey === 'gestational') {
+        glucoseScore = 72
+      } else {
+        glucoseScore = 92
+      }
     }
 
     // 2. Diet Balance Score
@@ -952,10 +1023,12 @@ export function PatientDashboardPage() {
     }
 
     // 4. Medication Adherence Score
-    let medScore = 92
+    let medScore = 90
     if (patientPlan?.adherenceRate) {
       const parsed = parseInt(patientPlan.adherenceRate, 10)
       if (!Number.isNaN(parsed)) medScore = parsed
+    } else if (!patientPlan?.pharmacotherapy && !patientPlan?.medications?.length) {
+      medScore = 95
     }
 
     // 5. Sleep & Energy Score
@@ -976,19 +1049,19 @@ export function PatientDashboardPage() {
 
     return {
       data: [
-        { metric: 'Glucose Control', value: glucoseScore, fullMark: 100 },
-        { metric: 'Diet Balance', value: dietScore, fullMark: 100 },
-        { metric: 'Activity', value: activityScore, fullMark: 100 },
-        { metric: 'Medication', value: medScore, fullMark: 100 },
-        { metric: 'Sleep Quality', value: sleepScore, fullMark: 100 },
-        { metric: 'Cardiovascular', value: cardioScore, fullMark: 100 },
+        { metric: isKhmer ? 'កម្រិតជាតិស្ករ' : 'Glucose Control', value: glucoseScore, fullMark: 100 },
+        { metric: isKhmer ? 'របបអាហារ' : 'Diet Balance', value: dietScore, fullMark: 100 },
+        { metric: isKhmer ? 'សកម្មភាព' : 'Activity', value: activityScore, fullMark: 100 },
+        { metric: isKhmer ? 'ថ្នាំពេទ្យ' : 'Medication', value: medScore, fullMark: 100 },
+        { metric: isKhmer ? 'ការគេង' : 'Sleep Quality', value: sleepScore, fullMark: 100 },
+        { metric: isKhmer ? 'បេះដូង' : 'Cardiovascular', value: cardioScore, fullMark: 100 },
       ],
       overall,
       glucoseScore,
       dietScore,
       medScore,
     }
-  }, [currentA1c, currentGlucose, currentBmi, isUrgent, facts, patientProfile, patientPlan])
+  }, [currentA1c, currentGlucose, currentBmi, isUrgent, facts, patientProfile, patientPlan, latestResult, isKhmer])
 
   // Reported symptoms for the latest assessment details card
   const reportedSymptoms = useMemo(() => {
@@ -1022,12 +1095,12 @@ export function PatientDashboardPage() {
                 {isUrgent ? (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-200/90 bg-rose-50/90 px-3 py-1 text-xs font-semibold text-rose-700 shadow-2xs dark:border-rose-800/70 dark:bg-rose-950/60 dark:text-rose-300">
                     <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
-                    Attention Required
+                    {isKhmer ? 'ត្រូវការការយកចិត្តទុកដាក់' : 'Attention Required'}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/90 bg-emerald-50/90 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-2xs dark:border-emerald-800/70 dark:bg-emerald-950/60 dark:text-emerald-300">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    Optimal • Routine Monitoring
+                    {isKhmer ? 'ល្អប្រសើរ • ការតាមដានជាប្រចាំ' : 'Optimal • Routine Monitoring'}
                   </span>
                 )}
               </div>
@@ -1048,7 +1121,7 @@ export function PatientDashboardPage() {
                   className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm transition-all hover:bg-primary-700 hover:shadow active:scale-[0.98] dark:bg-primary-500 dark:hover:bg-primary-600"
                 >
                   <PlusCircle className="h-4 w-4" />
-                  <span>Start Assessment</span>
+                  <span>{isKhmer ? 'ចាប់ផ្តើមការវាយតម្លៃ' : 'Start Assessment'}</span>
                 </Link>
 
                 <Link
@@ -1060,14 +1133,14 @@ export function PatientDashboardPage() {
                   className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-slate-50 px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                 >
                   <FileText className="h-4 w-4 text-slate-400" />
-                  <span>View Full Report</span>
+                  <span>{isKhmer ? 'មើលរបាយការណ៍ពេញលេញ' : 'View Full Report'}</span>
                 </Link>
               </div>
 
               {lastAssessmentDate && (
                 <span className="text-xs font-medium text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
                   <Clock className="h-3.5 w-3.5" />
-                  <span>Last check: {lastAssessmentDate}</span>
+                  <span>{isKhmer ? `ពិនិត្យចុងក្រោយ៖ ${lastAssessmentDate}` : `Last check: ${lastAssessmentDate}`}</span>
                 </span>
               )}
             </div>
@@ -1078,7 +1151,7 @@ export function PatientDashboardPage() {
             {/* Metric 1: HbA1c */}
             <div className="flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all duration-150 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">HbA1c Level</span>
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{isKhmer ? 'កម្រិត HbA1c' : 'HbA1c Level'}</span>
                 <span
                   className={cn(
                     'rounded-full px-2 py-0.5 text-[11px] font-semibold',
@@ -1100,7 +1173,7 @@ export function PatientDashboardPage() {
               </div>
 
               <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
-                <span>Target: &lt; 5.7%</span>
+                <span>{isKhmer ? 'គោលដៅ: < 5.7%' : 'Target: < 5.7%'}</span>
                 <span className="font-medium text-slate-600 dark:text-slate-300">{a1cStatus.label}</span>
               </div>
 
@@ -1116,7 +1189,7 @@ export function PatientDashboardPage() {
             {/* Metric 2: Fasting Blood Glucose */}
             <div className="flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all duration-150 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Fasting Glucose</span>
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{isKhmer ? 'ជាតិស្ករពេលព្រឹក' : 'Fasting Glucose'}</span>
                 <span
                   className={cn(
                     'rounded-full px-2 py-0.5 text-[11px] font-semibold',
@@ -1138,7 +1211,7 @@ export function PatientDashboardPage() {
               </div>
 
               <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
-                <span>Target: 70–99</span>
+                <span>{isKhmer ? 'គោលដៅ: 70–99' : 'Target: 70–99'}</span>
                 <span className="font-medium text-slate-600 dark:text-slate-300">{glucoseStatus.label}</span>
               </div>
 
@@ -1154,7 +1227,7 @@ export function PatientDashboardPage() {
             {/* Metric 3: BMI */}
             <div className="flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all duration-150 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Body Mass Index</span>
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{isKhmer ? 'សន្ទស្សន៍ម៉ាសរាងកាយ' : 'Body Mass Index'}</span>
                 <span
                   className={cn(
                     'rounded-full px-2 py-0.5 text-[11px] font-semibold',
@@ -1176,7 +1249,7 @@ export function PatientDashboardPage() {
               </div>
 
               <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
-                <span>Target: 18.5–24.9</span>
+                <span>{isKhmer ? 'គោលដៅ: 18.5–24.9' : 'Target: 18.5–24.9'}</span>
                 <span className="font-medium text-slate-600 dark:text-slate-300">{bmiStatus.label}</span>
               </div>
 
@@ -1198,10 +1271,10 @@ export function PatientDashboardPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3.5 dark:border-slate-800">
                   <div>
                     <h2 className="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-                      Glucose Trend History
+                      {isKhmer ? 'ប្រវត្តិនិន្នាការជាតិស្ករ' : 'Glucose Trend History'}
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Fasting readings vs ADA target range
+                      {isKhmer ? 'ការវាស់វែងជាតិស្ករធៀបនឹងកម្រិតគោលដៅ ADA' : 'Fasting readings vs ADA target range'}
                     </p>
                   </div>
 
@@ -1211,7 +1284,7 @@ export function PatientDashboardPage() {
                       80–130 mg/dL
                     </span>
                     <span className="text-xs text-slate-400">
-                      Avg: <strong className="text-slate-800 dark:text-slate-200">{avgGlucose}</strong>
+                      {isKhmer ? 'មធ្យម៖ ' : 'Avg: '}<strong className="text-slate-800 dark:text-slate-200">{avgGlucose}</strong>
                     </span>
                   </div>
                 </div>
@@ -1300,17 +1373,19 @@ export function PatientDashboardPage() {
                       <Droplets className="h-6 w-6" />
                     </div>
                     <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                      No Glucose Tests Logged Yet
+                      {isKhmer ? 'មិនទាន់មានការកត់ត្រាជាតិស្ករនៅឡើយទេ' : 'No Glucose Tests Logged Yet'}
                     </h4>
                     <p className="mt-1 text-xs text-slate-500 max-w-xs leading-relaxed">
-                      Complete your first clinical assessment to start plotting real fasting glucose trends against the target zone.
+                      {isKhmer
+                        ? 'បំពេញការវាយតម្លៃគ្លីនិកដំបូងរបស់អ្នក ដើម្បីចាប់ផ្តើមតាមដាននិន្នាការជាតិស្ករធៀបនឹងកម្រិតគោលដៅ។'
+                        : 'Complete your first clinical assessment to start plotting real fasting glucose trends against the target zone.'}
                     </p>
                     <Link
                       to="/diagnosis"
                       className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-primary-700 shadow-xs transition-colors"
                     >
                       <PlusCircle className="h-3.5 w-3.5" />
-                      <span>Start Assessment</span>
+                      <span>{isKhmer ? 'ចាប់ផ្តើមការវាយតម្លៃ' : 'Start Assessment'}</span>
                     </Link>
                   </div>
                 )}
@@ -1319,12 +1394,12 @@ export function PatientDashboardPage() {
               <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px] text-slate-400 dark:border-slate-800">
                 <span>
                   {trendData.length > 0
-                    ? `Showing ${trendData.length} recorded lab readings`
-                    : 'Awaiting lab log'}
+                    ? (isKhmer ? `បង្ហាញលទ្ធផលតេស្តដែលបានកត់ត្រា ${trendData.length} លើក` : `Showing ${trendData.length} recorded lab readings`)
+                    : (isKhmer ? 'រង់ចាំកំណត់ត្រាមន្ទីរពិសោធន៍' : 'Awaiting lab log')}
                 </span>
                 <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
                   <span className="inline-block h-2 w-2 rounded-xs bg-emerald-500/20 border border-emerald-500/50" />
-                  Target zone (80–130)
+                  {isKhmer ? 'តំបន់គោលដៅ (80–130)' : 'Target zone (80–130)'}
                 </span>
               </div>
             </div>
@@ -1335,10 +1410,10 @@ export function PatientDashboardPage() {
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3.5 dark:border-slate-800">
                   <div>
                     <h2 className="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-                      Health Balance
+                      {isKhmer ? 'តុល្យភាពសុខភាព' : 'Health Balance'}
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Holistic diabetes management index
+                      {isKhmer ? 'សន្ទស្សន៍គ្រប់គ្រងជំងឺទឹកនោមផ្អែមសរុប' : 'Holistic diabetes management index'}
                     </p>
                   </div>
                   <span className="text-xs font-bold text-primary-600 bg-primary-50 dark:bg-primary-950/50 px-2 py-0.5 rounded-md">
@@ -1371,19 +1446,19 @@ export function PatientDashboardPage() {
               {/* Metric Breakdown Strip */}
               <div className="mt-2 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 text-center dark:border-slate-800">
                 <div className="rounded-lg bg-slate-50/70 dark:bg-slate-800/40 p-1.5">
-                  <p className="text-[10px] text-slate-400 uppercase font-bold">Glucose</p>
+                  <p className="text-[10px] text-slate-400 uppercase font-bold">{isKhmer ? 'ជាតិស្ករ' : 'Glucose'}</p>
                   <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
                     {radarMetrics.glucoseScore}%
                   </p>
                 </div>
                 <div className="rounded-lg bg-slate-50/70 dark:bg-slate-800/40 p-1.5">
-                  <p className="text-[10px] text-slate-400 uppercase font-bold">Diet</p>
+                  <p className="text-[10px] text-slate-400 uppercase font-bold">{isKhmer ? 'របបអាហារ' : 'Diet'}</p>
                   <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
                     {radarMetrics.dietScore}%
                   </p>
                 </div>
                 <div className="rounded-lg bg-slate-50/70 dark:bg-slate-800/40 p-1.5">
-                  <p className="text-[10px] text-slate-400 uppercase font-bold">Meds</p>
+                  <p className="text-[10px] text-slate-400 uppercase font-bold">{isKhmer ? 'ថ្នាំពេទ្យ' : 'Meds'}</p>
                   <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                     {radarMetrics.medScore}%
                   </p>
@@ -1397,10 +1472,10 @@ export function PatientDashboardPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
               <div>
                 <h3 className="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-                  Latest Assessment Details
+                  {isKhmer ? 'ព័ត៌មានលម្អិតនៃការវាយតម្លៃចុងក្រោយ' : 'Latest Assessment Details'}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Clinical expert system findings and physician notes
+                  {isKhmer ? 'លទ្ធផលប្រព័ន្ធជំនាញគ្លីនិក និងកំណត់ចំណាំវេជ្ជបណ្ឌិត' : 'Clinical expert system findings and physician notes'}
                 </p>
               </div>
 
@@ -1411,7 +1486,9 @@ export function PatientDashboardPage() {
                     : '#DIAG-BASELINE'}
                 </span>
                 <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
-                  {latestResult?.reviewed_at ? 'Physician Verified' : 'Complete'}
+                  {latestResult?.reviewed_at
+                    ? (isKhmer ? 'បានផ្ទៀងផ្ទាត់ដោយគ្រូពេទ្យ' : 'Physician Verified')
+                    : (isKhmer ? 'បានបញ្ចប់' : 'Complete')}
                 </span>
               </div>
             </div>
@@ -1420,10 +1497,10 @@ export function PatientDashboardPage() {
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  {patientDisplayName || 'Patient Profile'}
+                  {patientDisplayName || (isKhmer ? 'ប្រវត្តិរូបអ្នកជំងឺ' : 'Patient Profile')}
                 </h4>
                 <p className="text-xs text-slate-500">
-                  {patientAge ? `${patientAge} years` : 'Adult'} • {patientGender}
+                  {patientAge ? (isKhmer ? `${patientAge} ឆ្នាំ` : `${patientAge} years`) : (isKhmer ? 'មនុស្សពេញវ័យ' : 'Adult')} • {patientGender}
                 </p>
               </div>
 
@@ -1440,16 +1517,16 @@ export function PatientDashboardPage() {
                   ))
                 ) : (
                   <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                    Routine Check
+                    {isKhmer ? 'ការពិនិត្យតាមកាលកំណត់' : 'Routine Check'}
                   </span>
                 )}
                 {isUrgent ? (
                   <span className="rounded-full bg-rose-100 text-rose-700 px-2.5 py-0.5 text-xs font-semibold dark:bg-rose-950/60 dark:text-rose-300">
-                    High Risk
+                    {isKhmer ? 'ហានិភ័យខ្ពស់' : 'High Risk'}
                   </span>
                 ) : (
                   <span className="rounded-full bg-emerald-100 text-emerald-700 px-2.5 py-0.5 text-xs font-semibold dark:bg-emerald-950/60 dark:text-emerald-300">
-                    Stable
+                    {isKhmer ? 'មានលំនឹងល្អ' : 'Stable'}
                   </span>
                 )}
               </div>
@@ -1458,73 +1535,97 @@ export function PatientDashboardPage() {
             {/* Structured Medical Record Rows */}
             <div className="mt-5 space-y-3.5 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 py-1">
-                <span className="sm:col-span-3 font-semibold text-slate-400">Last Checked</span>
+                <span className="sm:col-span-3 font-semibold text-slate-400">{isKhmer ? 'ពិនិត្យចុងក្រោយ' : 'Last Checked'}</span>
                 <span className="sm:col-span-9 font-medium text-slate-800 dark:text-slate-200">
                   {latestResult?.reviewed_by_name
                     ? (latestResult.reviewed_by_name.startsWith('Dr.')
                         ? latestResult.reviewed_by_name
                         : `Dr. ${latestResult.reviewed_by_name}`)
                     : latestResult?.diagnosed_by_name
-                    ? `Evaluated by ${latestResult.diagnosed_by_name}`
-                    : 'Diabetes Expert Clinical System'}{' '}
-                  on {lastAssessmentDate || 'Recent Baseline'}
+                    ? (isKhmer ? `វាយតម្លៃដោយ ${latestResult.diagnosed_by_name}` : `Evaluated by ${latestResult.diagnosed_by_name}`)
+                    : (isKhmer ? 'ប្រព័ន្ធជំនាញគ្លីនិកជំងឺទឹកនោមផ្អែម' : 'Diabetes Expert Clinical System')}{' '}
+                  {isKhmer ? 'នៅថ្ងៃ ' : 'on '} {lastAssessmentDate || (isKhmer ? 'កម្រិតគោលថ្មីៗ' : 'Recent Baseline')}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 py-1 border-t border-slate-100 dark:border-slate-800/60">
-                <span className="sm:col-span-3 font-semibold text-slate-400">Observation</span>
+                <span className="sm:col-span-3 font-semibold text-slate-400">{isKhmer ? 'ការសង្កេត' : 'Observation'}</span>
                 <span className="sm:col-span-9 font-medium text-slate-800 dark:text-slate-200 leading-relaxed">
-                  Fasting plasma glucose recorded at{' '}
-                  {currentGlucose !== null ? `${currentGlucose} mg/dL` : 'pending test'}. Recent HbA1c at{' '}
-                  {currentA1c !== null ? `${currentA1c}%` : 'pending lab'}. Calculated BMI is{' '}
-                  {currentBmi !== null ? `${currentBmi} kg/m²` : 'unspecified'}.
-                  {reportedSymptoms.length > 0 &&
-                    ` Patient reported symptoms including: ${reportedSymptoms.slice(0, 3).join(', ')}.`}
+                  {isKhmer ? (
+                    <>
+                      កម្រិតជាតិស្ករក្នុងប្លាស្មាពេលព្រឹកកត់ត្រាបាន {currentGlucose !== null ? `${currentGlucose} mg/dL` : 'រង់ចាំការធ្វើតេស្ត'}។ កម្រិត HbA1c ថ្មីៗ {currentA1c !== null ? `${currentA1c}%` : 'រង់ចាំលទ្ធផលមន្ទីរពិសោធន៍'}។ សន្ទស្សន៍ BMI គណនាបាន {currentBmi !== null ? `${currentBmi} kg/m²` : 'មិនបានបញ្ជាក់'}។
+                      {reportedSymptoms.length > 0 &&
+                        ` អ្នកជំងឺបានរាយការណ៍អំពីរោគសញ្ញារួមមាន៖ ${reportedSymptoms.slice(0, 3).join(', ')}.`}
+                    </>
+                  ) : (
+                    <>
+                      Fasting plasma glucose recorded at{' '}
+                      {currentGlucose !== null ? `${currentGlucose} mg/dL` : 'pending test'}. Recent HbA1c at{' '}
+                      {currentA1c !== null ? `${currentA1c}%` : 'pending lab'}. Calculated BMI is{' '}
+                      {currentBmi !== null ? `${currentBmi} kg/m²` : 'unspecified'}.
+                      {reportedSymptoms.length > 0 &&
+                        ` Patient reported symptoms including: ${reportedSymptoms.slice(0, 3).join(', ')}.`}
+                    </>
+                  )}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 py-1 border-t border-slate-100 dark:border-slate-800/60">
-                <span className="sm:col-span-3 font-semibold text-slate-400">Diagnosis</span>
+                <span className="sm:col-span-3 font-semibold text-slate-400">{isKhmer ? 'រោគវិនិច្ឆ័យ' : 'Diagnosis'}</span>
                 <span className="sm:col-span-9 font-semibold text-slate-900 dark:text-slate-100">
-                  {latestResult?.diagnosis || 'Initial screening recommended'}
+                  {latestResult?.diagnosis
+                    ? (tExact ? tExact(latestResult.diagnosis) : latestResult.diagnosis)
+                    : (isKhmer ? 'ណែនាំឱ្យធ្វើការពិនិត្យដំបូង' : 'Initial screening recommended')}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 py-1 border-t border-slate-100 dark:border-slate-800/60">
-                <span className="sm:col-span-3 font-semibold text-slate-400">Prescription / Protocol</span>
+                <span className="sm:col-span-3 font-semibold text-slate-400">{isKhmer ? 'វេជ្ជបញ្ជា / ពិធីការ' : 'Prescription / Protocol'}</span>
                 <div className="sm:col-span-9 space-y-0.5 font-medium text-slate-800 dark:text-slate-200">
                   <p>
                     {patientPlan?.pharmacotherapy ||
                       (latestResult?.recommendation
-                        ? latestResult.recommendation.split('.')[0] + '.'
-                        : 'Routine dietary and physical activity maintenance.')}
+                        ? (typeof latestResult.recommendation === 'string'
+                            ? latestResult.recommendation.split('.')[0] + '.'
+                            : Array.isArray(latestResult.recommendation) && latestResult.recommendation.length > 0
+                            ? String(latestResult.recommendation[0])
+                            : (isKhmer ? 'ការថែទាំរបបអាហារ និងលំហាត់ប្រាណជាប្រចាំ។' : 'Routine dietary and physical activity maintenance.'))
+                        : (isKhmer ? 'ការថែទាំរបបអាហារ និងលំហាត់ប្រាណជាប្រចាំ។' : 'Routine dietary and physical activity maintenance.'))}
                   </p>
                   <p className="text-slate-500">
-                    Lifestyle: 30-min brisk walk daily • Target fasting glucose{' '}
-                    {patientPlan?.targetGlucose || '80–130 mg/dL'}
+                    {isKhmer
+                      ? `របៀបរស់នៅ៖ ដើរលឿន ៣០ នាទីរាល់ថ្ងៃ • គោលដៅជាតិស្ករពេលព្រឹក ${patientPlan?.targetGlucose || '80–130 mg/dL'}`
+                      : `Lifestyle: 30-min brisk walk daily • Target fasting glucose ${patientPlan?.targetGlucose || '80–130 mg/dL'}`}
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 py-1 border-t border-slate-100 dark:border-slate-800/60">
-                <span className="sm:col-span-3 font-semibold text-slate-400">Doctor Notes</span>
+                <span className="sm:col-span-3 font-semibold text-slate-400">{isKhmer ? 'កំណត់ចំណាំគ្រូពេទ្យ' : 'Doctor Notes'}</span>
                 <span className="sm:col-span-9 text-slate-600 dark:text-slate-300 leading-relaxed">
                   {latestResult?.review_note
                     ? `“${latestResult.review_note}”`
                     : latestResult?.explanation_trace?.evidence_summary ||
-                      latestResult?.recommendation ||
-                      'Assessment logged in clinical review queue. Official physician sign-off will appear upon review.'}
+                      (typeof latestResult?.recommendation === 'string'
+                        ? latestResult.recommendation
+                        : Array.isArray(latestResult?.recommendation)
+                        ? latestResult.recommendation.join(' ')
+                        : (isKhmer
+                            ? 'ការវាយតម្លៃត្រូវបានកត់ត្រាក្នុងបញ្ជីត្រួតពិនិត្យគ្លីនិក។ ការចុះហត្ថលេខាផ្លូវការរបស់គ្រូពេទ្យនឹងបង្ហាញនៅពេលពិនិត្យរួច។'
+                            : 'Assessment logged in clinical review queue. Official physician sign-off will appear upon review.'))}
                 </span>
               </div>
             </div>
 
             <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <span className="text-xs text-slate-400">Updated automatically from clinical consultations</span>
+              <span className="text-xs text-slate-400">
+                {isKhmer ? 'ធ្វើបច្ចុប្បន្នភាពដោយស្វ័យប្រវត្តិពីការពិគ្រោះគ្លីនិក' : 'Updated automatically from clinical consultations'}
+              </span>
               <Link
                 to={latestResult?.id ? `/diagnosis/result?diagnosis_result_id=${latestResult.id}` : '/my-results'}
                 className="text-xs font-semibold text-slate-900 dark:text-slate-100 hover:underline inline-flex items-center gap-1"
               >
-                <span>View Complete Clinical Documentation</span>
+                <span>{isKhmer ? 'មើលឯកសារគ្លីនិកពេញលេញ' : 'View Complete Clinical Documentation'}</span>
                 <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
@@ -1803,7 +1904,9 @@ export function PatientDashboardPage() {
           {/* Timeline Bottom CTA */}
           <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
             <span className="text-slate-400">
-              {completedTasks.length} of {dailySchedule.length} completed
+              {isKhmer
+                ? `បានបញ្ចប់ ${completedTasks.length} ក្នុងចំណោម ${dailySchedule.length}`
+                : `${completedTasks.length} of ${dailySchedule.length} completed`}
             </span>
             {(isNewUser || canViewOwnCarePlan) && (
               <Link

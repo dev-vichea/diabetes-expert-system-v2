@@ -72,9 +72,9 @@ function splitNavGroups(navItems) {
 export function Sidebar({
   navItems,
   user,
-  userName = 'Dr. Lina',
-  userEmail = 'dr.lina@diabetes-care.org',
-  activeRole = 'doctor',
+  userName = '',
+  userEmail = '',
+  activeRole = 'patient',
   onLogout,
   onClose,
   collapsed = false,

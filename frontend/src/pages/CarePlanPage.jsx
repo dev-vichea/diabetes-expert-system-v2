@@ -14,8 +14,10 @@ import {
   ChevronRight,
   Droplets,
   FileText,
+  Footprints,
   HeartPulse,
   MessageSquare,
+  Moon,
   Pill,
   Play,
   PlusCircle,
@@ -24,6 +26,7 @@ import {
   Target,
   User,
   UserCheck,
+  Utensils,
   Zap,
 } from 'lucide-react'
 import api, { getApiData, getApiErrorMessage } from '@/api/client'
@@ -39,42 +42,73 @@ import { CarePlanPrevention } from '@/components/dashboard/patient/CarePlanPreve
 import { PersonalizedCarePlanSection } from '@/components/care-plan/PersonalizedCarePlanSection'
 import { CarePlanGlucoseChart } from '@/components/care-plan/CarePlanGlucoseChart'
 import { getTreatmentPlanForUser } from '@/lib/treatmentPlanStore'
-import { TreatmentPlanDetailView } from '@/components/dashboard/treatment/TreatmentPlanDetailView'
 import {
   getLatestFacts,
   toNumberOrNull,
 } from '@/components/dashboard/patient/patient-dashboard-utils'
 
-const TABS = ['Overview', 'Treatment Plan', 'Medications', 'Appointments']
+const TABS = [
+  { id: 'Overview', labelEn: 'Overview', labelKm: 'ទិដ្ឋភាពទូទៅ' },
+  { id: 'Treatment Plan', labelEn: 'Treatment Plan', labelKm: 'ផែនការព្យាបាល' },
+  { id: 'Medications', labelEn: 'Medications', labelKm: 'ថ្នាំពេទ្យ' },
+  { id: 'Appointments', labelEn: 'Appointments', labelKm: 'ការណាត់ជួប' },
+]
+
+const TASK_TRANSLATIONS = {
+  'task-glucose-am': {
+    titleEn: 'Morning glucose check',
+    titleKm: 'ពិនិត្យជាតិស្ករពេលព្រឹក',
+    subEn: '08:00 AM · Fasting reading',
+    subKm: '០៨:០០ ព្រឹក · ពិនិត្យមុនអាហារ',
+  },
+  'task-nutrition-am': {
+    titleEn: 'Morning Hydration & Balanced Nutrition',
+    titleKm: 'ជាតិទឹកពេលព្រឹក និងអាហារមានតុល្យភាព',
+    subEn: '08:30 AM · Low glycemic breakfast',
+    subKm: '០៨:៣០ ព្រឹក · អាហារពេលព្រឹកជាតិស្ករទាប',
+  },
+  'task-walk-pm': {
+    titleEn: '30-min walk',
+    titleKm: 'ដើរលឿន ៣០ នាទី',
+    subEn: '12:30 PM · Light aerobic activity',
+    subKm: '១២:៣០ ថ្ងៃត្រង់ · លំហាត់ប្រាណកម្រិតស្រាល',
+  },
+  'task-foot-pm': {
+    titleEn: 'Foot & skin check',
+    titleKm: 'ពិនិត្យស្បែក និងបាតជើង',
+    subEn: '08:00 PM · Check for pressure spots',
+    subKm: '០៨:០០ យប់ · ពិនិត្យស្នាមរបួស និងសម្ពាធ',
+  },
+}
 
 const DEFAULT_TODAY_TASKS = [
   {
     id: 'task-glucose-am',
     title: 'Morning glucose check',
-    subtitle: '08:00 AM',
-    completed: true,
-    status: 'Completed',
+    subtitle: '08:00 AM · Fasting reading',
+    completed: false,
+    status: 'Scheduled',
   },
   {
-    id: 'task-metformin-am',
-    title: 'Metformin 500 mg',
-    subtitle: '08:30 AM · Take with breakfast',
-    completed: true,
-    status: 'Completed',
+    id: 'task-nutrition-am',
+    title: 'Morning Hydration & Balanced Nutrition',
+    subtitle: '08:30 AM · Low glycemic breakfast',
+    completed: false,
+    status: 'Scheduled',
   },
   {
     id: 'task-walk-pm',
     title: '30-min walk',
-    subtitle: '12:30 PM · Light activity',
+    subtitle: '12:30 PM · Light aerobic activity',
     completed: false,
-    status: 'Next',
+    status: 'Scheduled',
   },
   {
     id: 'task-foot-pm',
     title: 'Foot & skin check',
     subtitle: '08:00 PM · Check for pressure spots',
     completed: false,
-    status: 'Later',
+    status: 'Scheduled',
   },
 ]
 
@@ -112,11 +146,31 @@ export function CarePlanPage() {
     return getTreatmentPlanForUser(user?.name, user?.email)
   }, [user])
 
+  const followUpDateMonth = useMemo(() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 14)
+    return d.toLocaleDateString(isKhmer ? 'km-KH' : 'en-US', { month: 'short' }).toUpperCase()
+  }, [isKhmer])
+
+  const followUpDateDay = useMemo(() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 14)
+    return String(d.getDate()).padStart(2, '0')
+  }, [])
+
   useEffect(() => {
     try {
       window.localStorage.setItem('care_plan_daily_tasks:v2', JSON.stringify(todayTasks))
     } catch {}
   }, [todayTasks])
+
+  useEffect(() => {
+    if (incomingAssessmentId) {
+      try {
+        window.localStorage.setItem(`care_plan_generated_${incomingAssessmentId}`, 'true')
+      } catch {}
+    }
+  }, [incomingAssessmentId])
 
   useEffect(() => {
     let cancelled = false
@@ -137,15 +191,37 @@ export function CarePlanPage() {
         if (target) {
           if (target.care_plan) {
             setCarePlan(target.care_plan)
-          } else if (target.id) {
-            try {
-              const cpResp = await api.get(`/diagnosis/${target.id}/care-plan`)
-              const cpData = getApiData(cpResp)
-              if (!cancelled && cpData) {
-                setCarePlan(cpData)
+          } else {
+            const targetId = target.id || target.diagnosis_result_id
+            if (targetId) {
+              try {
+                const cpResp = await api.get(`/diagnosis/${targetId}/care-plan`)
+                const cpData = getApiData(cpResp)
+                if (!cancelled && cpData) {
+                  setCarePlan(cpData)
+                }
+              } catch (cpErr) {
+                console.warn('Failed to load care plan from backend, generating directly:', cpErr)
+                try {
+                  const genResp = await api.post(`/diagnosis/${targetId}/care-plan`, { result: target })
+                  const genData = getApiData(genResp)
+                  if (!cancelled && genData) {
+                    setCarePlan(genData)
+                  }
+                } catch (genErr) {
+                  console.error('Failed to generate care plan:', genErr)
+                }
               }
-            } catch (cpErr) {
-              console.warn('Failed to load care plan from backend:', cpErr)
+            } else {
+              try {
+                const genResp = await api.post('/diagnosis/care-plan/generate', { result: target })
+                const genData = getApiData(genResp)
+                if (!cancelled && genData) {
+                  setCarePlan(genData)
+                }
+              } catch (genErr) {
+                console.error('Failed to generate care plan directly:', genErr)
+              }
             }
           }
         }
@@ -217,6 +293,31 @@ export function CarePlanPage() {
     window.dispatchEvent(new CustomEvent('open-diabetes-assistant'))
   }
 
+  // Pre-calculate all display metrics and values unconditionally
+  const latestResult = incomingResult || results[0]
+  const facts = getLatestFacts(results)
+  const rawGlucose = toNumberOrNull(facts.fasting_glucose ?? facts.fasting_plasma_glucose)
+  const currentGlucose = rawGlucose !== null ? Math.round(rawGlucose) : null
+  const isGlucoseElevated = currentGlucose !== null && currentGlucose > 130
+  const isUrgent = Boolean(latestResult?.is_urgent) || isGlucoseElevated
+
+  const reviewer = latestResult?.reviewed_by_user
+  const reviewerName = latestResult?.reviewed_by_name
+    ? (latestResult.reviewed_by_name.startsWith('Dr.') ? latestResult.reviewed_by_name : `Dr. ${latestResult.reviewed_by_name}`)
+    : reviewer?.name
+    ? (reviewer.name.startsWith('Dr.') ? reviewer.name : `Dr. ${reviewer.name}`)
+    : patientPlan?.doctorName || null
+
+  const followUpDoctor = reviewerName || (isKhmer ? 'ក្រុមថែទាំជំងឺទឹកនោមផ្អែម' : 'Diabetes Care Team')
+  const followUpLocation = patientPlan?.doctorRole || (isKhmer ? 'វិបផតថលថែទាំគ្លីនិក' : 'Clinical Care Portal')
+
+  const reportUrl = latestResult?.id
+    ? `/diagnosis/result?diagnosis_result_id=${latestResult.id}`
+    : '/my-results'
+
+  const completedTasksCount = todayTasks.filter((t) => t.completed).length
+  const progressPercent = Math.round((completedTasksCount / (todayTasks.length || 1)) * 100)
+
   if (loading) {
     return (
       <div className="space-y-6 pb-12 animate-in fade-in duration-150">
@@ -239,23 +340,6 @@ export function CarePlanPage() {
       </div>
     )
   }
-
-  const latestResult = incomingResult || results[0]
-  const facts = getLatestFacts(results)
-  const rawGlucose = toNumberOrNull(facts.fasting_glucose ?? facts.fasting_plasma_glucose)
-  const currentGlucose = rawGlucose !== null ? Math.round(rawGlucose) : 260
-  const isGlucoseElevated = currentGlucose > 130
-  const isUrgent = Boolean(latestResult?.is_urgent) || isGlucoseElevated
-
-  const reviewer = latestResult?.reviewed_by_user
-  const reviewerName = reviewer?.name ? (reviewer.name.startsWith('Dr.') ? reviewer.name : `Dr. ${reviewer.name}`) : null
-
-  const reportUrl = latestResult?.id
-    ? `/diagnosis/result?diagnosis_result_id=${latestResult.id}`
-    : '/my-results'
-
-  const completedTasksCount = todayTasks.filter((t) => t.completed).length
-  const progressPercent = Math.round((completedTasksCount / todayTasks.length) * 100)
 
   // Empty state if user has never taken an assessment
   if (!latestResult && !carePlan) {
@@ -308,34 +392,36 @@ export function CarePlanPage() {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
                 <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
-                  My Care Plan
+                  {t('carePlanPage.overview.title', isKhmer ? 'ផែនការថែទាំរបស់ខ្ញុំ' : 'My Care Plan')}
                 </h1>
 
                 {isUrgent ? (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-600 border border-rose-200/80 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-900/50">
                     <AlertCircle className="h-3.5 w-3.5" />
-                    <span>Attention Required</span>
+                    <span>{t('carePlanPage.overview.attentionRequired', isKhmer ? 'ត្រូវការការយកចិត្តទុកដាក់' : 'Attention Required')}</span>
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900/50">
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    <span>Stable</span>
+                    <span>{t('carePlanPage.overview.stable', isKhmer ? 'មានលំនឹង' : 'Stable')}</span>
                   </span>
                 )}
 
                 <span className="text-slate-300 dark:text-slate-600 hidden sm:inline select-none">•</span>
                 <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                  Updated today
+                  {t('carePlanPage.overview.updatedToday', isKhmer ? 'បានធ្វើបច្ចុប្បន្នភាពថ្ងៃនេះ' : 'Updated today')}
                 </span>
 
                 <span className="text-slate-300 dark:text-slate-600 hidden sm:inline select-none">•</span>
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                  {latestResult?.review_note ? 'Doctor reviewed' : 'Doctor review pending'}
+                  {latestResult?.review_note
+                    ? t('carePlanPage.overview.doctorReviewed', isKhmer ? 'បានពិនិត្យដោយវេជ្ជបណ្ឌិត' : 'Doctor reviewed')
+                    : t('carePlanPage.overview.doctorReviewPending', isKhmer ? 'រង់ចាំការពិនិត្យពីវេជ្ជបណ្ឌិត' : 'Doctor review pending')}
                 </span>
               </div>
 
               <p className="mt-1.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl">
-                Your personalized care plan to help manage diabetes and stay healthy.
+                {t('carePlanPage.overview.heroDescription', isKhmer ? 'ផែនការថែទាំផ្ទាល់ខ្លួនដើម្បីជួយគ្រប់គ្រងជំងឺទឹកនោមផ្អែម និងរក្សាសុខភាពល្អ។' : 'Your personalized care plan to help manage diabetes and stay healthy.')}
               </p>
 
               {/* Action Buttons Row */}
@@ -345,7 +431,7 @@ export function CarePlanPage() {
                   className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs transition hover:bg-primary-700 active:scale-[0.98] dark:bg-primary-500 dark:hover:bg-primary-600"
                 >
                   <Play className="h-3.5 w-3.5 fill-current" />
-                  <span>Start Assessment</span>
+                  <span>{t('carePlanPage.overview.startAssessment', isKhmer ? 'ចាប់ផ្តើមការវាយតម្លៃ' : 'Start Assessment')}</span>
                 </Link>
 
                 <Link
@@ -353,7 +439,7 @@ export function CarePlanPage() {
                   className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                 >
                   <FileText className="h-4 w-4 text-slate-400 dark:text-slate-400" />
-                  <span>Full Report</span>
+                  <span>{t('carePlanPage.overview.fullReport', isKhmer ? 'របាយការណ៍ពេញលេញ' : 'Full Report')}</span>
                 </Link>
 
                 <button
@@ -362,7 +448,7 @@ export function CarePlanPage() {
                   className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                 >
                   <Stethoscope className="h-4 w-4 text-slate-400 dark:text-slate-400" />
-                  <span>Doctor's Plan</span>
+                  <span>{t('carePlanPage.overview.doctorsPlan', isKhmer ? 'ផែនការរបស់វេជ្ជបណ្ឌិត' : "Doctor's Plan")}</span>
                 </button>
               </div>
             </div>
@@ -372,10 +458,12 @@ export function CarePlanPage() {
           <div className="shrink-0 lg:self-center">
             <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 min-w-[200px] sm:min-w-[220px] shadow-2xs dark:border-slate-800/80 dark:bg-slate-800/40">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Phase 2</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                  {t('carePlanPage.overview.phase2', isKhmer ? 'ដំណាក់កាលទី ២' : 'Phase 2')}
+                </span>
               </div>
               <p className="mt-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                Active Intervention
+                {t('carePlanPage.overview.activeIntervention', isKhmer ? 'ការអន្តរាគមន៍សកម្ម' : 'Active Intervention')}
               </p>
 
               {/* Progress bar */}
@@ -387,7 +475,7 @@ export function CarePlanPage() {
               </div>
 
               <div className="mt-2 flex items-center justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                <span>Day 14 / 30</span>
+                <span>{t('carePlanPage.overview.dayProgress', isKhmer ? 'ថ្ងៃ ១៤ / ៣០' : 'Day 14 / 30')}</span>
               </div>
             </div>
           </div>
@@ -399,12 +487,12 @@ export function CarePlanPage() {
       {/* ==================================================================== */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         {TABS.map((tab) => {
-          const isActive = activeTab === tab
+          const isActive = activeTab === tab.id
           return (
             <button
-              key={tab}
+              key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab)}
+              onClick={() => setActiveTab(tab.id)}
               className={cn(
                 'rounded-full px-5 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-150',
                 isActive
@@ -412,7 +500,7 @@ export function CarePlanPage() {
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800/60'
               )}
             >
-              {tab}
+              {isKhmer ? tab.labelKm : tab.labelEn}
             </button>
           )
         })}
@@ -424,7 +512,7 @@ export function CarePlanPage() {
       {activeTab === 'Overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* ================================================================ */}
-          {/* Left Column (8 cols): Today's Care, Glucose, Meds, Appt, Alert    */}
+          {/* Left Column (8 cols): Today's Care, Glucose, Meds, Nutrition, Alert */}
           {/* ================================================================ */}
           <div className="lg:col-span-8 space-y-6 min-w-0">
             {/* Row 1: Today's Care + Current Glucose (2 columns) */}
@@ -439,17 +527,21 @@ export function CarePlanPage() {
                       </div>
                       <div>
                         <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                          Today's Care
+                          {t('carePlanPage.overview.todaysCare.title', isKhmer ? 'ការថែទាំថ្ងៃនេះ' : "Today's Care")}
                         </h2>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Complete your daily tasks
+                          {t('carePlanPage.overview.todaysCare.subtitle', isKhmer ? 'បំពេញកិច្ចការប្រចាំថ្ងៃរបស់អ្នក' : 'Complete your daily tasks')}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                        {completedTasksCount} of {todayTasks.length} completed
+                        {t(
+                          'carePlanPage.overview.todaysCare.completedCount',
+                          isKhmer ? 'បានបញ្ចប់ {{done}} ក្នុងចំណោម {{total}}' : '{{done}} of {{total}} completed',
+                          { done: completedTasksCount, total: todayTasks.length }
+                        )}
                       </span>
                       <div className="h-2 w-16 sm:w-20 rounded-full bg-slate-100 overflow-hidden dark:bg-slate-800">
                         <div
@@ -465,57 +557,63 @@ export function CarePlanPage() {
 
                   {/* Tasks List */}
                   <div className="mt-3.5 space-y-2.5">
-                    {todayTasks.map((task) => (
-                      <div
-                        key={task.id}
-                        onClick={() => toggleTask(task.id)}
-                        className="group flex cursor-pointer items-center justify-between rounded-xl border border-slate-100/90 bg-white p-2.5 transition hover:border-slate-200 hover:bg-slate-50/70 dark:border-slate-800/80 dark:bg-slate-900 dark:hover:bg-slate-800/40"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {task.completed ? (
-                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-2xs">
-                              <Check className="h-3 w-3 stroke-[3]" />
-                            </span>
-                          ) : task.status === 'Next' ? (
-                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-primary-500 bg-transparent" />
-                          ) : (
-                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-slate-300 bg-transparent dark:border-slate-600" />
-                          )}
+                    {todayTasks.map((task) => {
+                      const tData = TASK_TRANSLATIONS[task.id]
+                      const taskTitle = isKhmer ? (tData?.titleKm || task.title) : (tData?.titleEn || task.title)
+                      const taskSubtitle = isKhmer ? (tData?.subKm || task.subtitle) : (tData?.subEn || task.subtitle)
 
-                          <div className="min-w-0">
-                            <h3
-                              className={cn(
-                                'text-sm font-semibold leading-tight text-slate-900 transition-colors dark:text-slate-100',
-                                task.completed && 'text-slate-700 line-through dark:text-slate-400'
-                              )}
-                            >
-                              {task.title}
-                            </h3>
-                            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-                              {task.subtitle}
-                            </p>
+                      return (
+                        <div
+                          key={task.id}
+                          onClick={() => toggleTask(task.id)}
+                          className="group flex cursor-pointer items-center justify-between rounded-xl border border-slate-100/90 bg-white p-2.5 transition hover:border-slate-200 hover:bg-slate-50/70 dark:border-slate-800/80 dark:bg-slate-900 dark:hover:bg-slate-800/40"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {task.completed ? (
+                              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-2xs">
+                                <Check className="h-3 w-3 stroke-[3]" />
+                              </span>
+                            ) : task.status === 'Next' ? (
+                              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-primary-500 bg-transparent" />
+                            ) : (
+                              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-slate-300 bg-transparent dark:border-slate-600" />
+                            )}
+
+                            <div className="min-w-0">
+                              <h3
+                                className={cn(
+                                  'text-sm font-semibold leading-tight text-slate-900 transition-colors dark:text-slate-100',
+                                  task.completed && 'text-slate-700 line-through dark:text-slate-400'
+                                )}
+                              >
+                                {taskTitle}
+                              </h3>
+                              <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                                {taskSubtitle}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Status Badge */}
+                          <div className="shrink-0 ml-2">
+                            {task.completed ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/40">
+                                ✓ {t('carePlanPage.overview.todaysCare.completed', isKhmer ? 'បានបញ្ចប់' : 'Completed')}
+                              </span>
+                            ) : task.status === 'Next' ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-semibold text-primary-700 border border-primary-200/60 dark:bg-primary-950/60 dark:text-primary-300 dark:border-primary-800/40">
+                                <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
+                                {t('carePlanPage.overview.todaysCare.next', isKhmer ? 'បន្ទាប់' : 'Next')}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 border border-slate-200/60 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
+                                {t('carePlanPage.overview.todaysCare.later', isKhmer ? 'ពេលក្រោយ' : 'Later')}
+                              </span>
+                            )}
                           </div>
                         </div>
-
-                        {/* Status Badge */}
-                        <div className="shrink-0 ml-2">
-                          {task.completed ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/40">
-                              ✓ Completed
-                            </span>
-                          ) : task.status === 'Next' ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-semibold text-primary-700 border border-primary-200/60 dark:bg-primary-950/60 dark:text-primary-300 dark:border-primary-800/40">
-                              <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
-                              Next
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 border border-slate-200/60 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
-                              Later
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               </div>
@@ -529,12 +627,12 @@ export function CarePlanPage() {
                         <Droplets className="h-4.5 w-4.5" />
                       </div>
                       <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                        Current Glucose
+                        {t('carePlanPage.overview.currentGlucose.title', isKhmer ? 'ជាតិស្ករបច្ចុប្បន្ន' : 'Current Glucose')}
                       </h2>
                     </div>
 
                     <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300">
-                      Trend: Stable
+                      {t('carePlanPage.overview.currentGlucose.trendStable', isKhmer ? 'និន្នាការ: មានលំនឹង' : 'Trend: Stable')}
                     </span>
                   </div>
 
@@ -543,29 +641,37 @@ export function CarePlanPage() {
                     <div>
                       <div className="flex items-baseline gap-1">
                         <span className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-                          {currentGlucose}
+                          {currentGlucose !== null ? currentGlucose : '--'}
                         </span>
-                        <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
-                          mg/dL
-                        </span>
+                        {currentGlucose !== null && (
+                          <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+                            mg/dL
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-slate-400 dark:text-slate-500">
-                        Fasting glucose
+                        {t('carePlanPage.overview.currentGlucose.fastingLabel', isKhmer ? 'ជាតិស្ករពេលព្រឹក' : 'Fasting glucose')}
                       </p>
                     </div>
 
                     <div className="text-right">
-                      {isGlucoseElevated ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-600 border border-rose-200/60 dark:bg-rose-950/60 dark:text-rose-300">
-                          ↑ Above target
-                        </span>
+                      {currentGlucose !== null ? (
+                        isGlucoseElevated ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-600 border border-rose-200/60 dark:bg-rose-950/60 dark:text-rose-300">
+                            {t('carePlanPage.overview.currentGlucose.aboveTarget', isKhmer ? '↑ លើសគោលដៅ' : '↑ Above target')}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300">
+                            {t('carePlanPage.overview.currentGlucose.targetZone', isKhmer ? '✓ ក្នុងគោលដៅ' : '✓ Target zone')}
+                          </span>
+                        )
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300">
-                          ✓ Target zone
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 border border-slate-200/60 dark:bg-slate-800 dark:text-slate-400">
+                          {t('carePlanPage.overview.currentGlucose.pendingTest', isKhmer ? 'រង់ចាំតេស្ត' : 'Pending test')}
                         </span>
                       )}
                       <p className="mt-1 text-[11px] font-medium text-slate-400 dark:text-slate-500">
-                        Target: 80 - 130 mg/dL
+                        {t('carePlanPage.overview.currentGlucose.targetRange', isKhmer ? 'គោលដៅ: 80 - 130 mg/dL' : 'Target: 80 - 130 mg/dL')}
                       </p>
                     </div>
                   </div>
@@ -582,7 +688,7 @@ export function CarePlanPage() {
               </div>
             </div>
 
-            {/* Row 2: Next Medication + Next Appointment (2 columns) */}
+            {/* Row 2: Next Medication + Nutrition & Meal Guide (2 columns) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Card 3: Next Medication */}
               <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all dark:border-slate-800 dark:bg-slate-900">
@@ -593,24 +699,24 @@ export function CarePlanPage() {
                         <Pill className="h-4.5 w-4.5" />
                       </div>
                       <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                        Next Medication
+                        {t('carePlanPage.overview.nextMedication.title', isKhmer ? 'ថ្នាំបន្ទាប់' : 'Next Medication')}
                       </h2>
                     </div>
 
                     <span className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-700 border border-sky-200/60 dark:bg-sky-950/60 dark:text-sky-300">
-                      Scheduled
+                      {t('carePlanPage.overview.nextMedication.scheduled', isKhmer ? 'បានកំណត់ពេល' : 'Scheduled')}
                     </span>
                   </div>
 
                   <div className="mt-4">
                     <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                      Metformin 500 mg
+                      {t('carePlanPage.overview.nextMedication.name', isKhmer ? 'មេតហ្វ័រមីន 500 mg' : 'Metformin 500 mg')}
                     </h3>
                     <p className="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                      Today · 7:00 PM
+                      {t('carePlanPage.overview.nextMedication.time', isKhmer ? 'ថ្ងៃនេះ · ៧:០០ យប់' : 'Today · 7:00 PM')}
                     </p>
                     <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-                      Take with dinner
+                      {t('carePlanPage.overview.nextMedication.instruction', isKhmer ? 'ពិសារជាមួយអាហារពេលល្ងាច' : 'Take with dinner')}
                     </p>
                   </div>
                 </div>
@@ -620,60 +726,65 @@ export function CarePlanPage() {
                   onClick={() => setActiveTab('Medications')}
                   className="group mt-5 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-semibold text-primary-600 transition hover:text-primary-700 dark:border-slate-800 dark:text-primary-400"
                 >
-                  <span>View all medications</span>
+                  <span>{t('carePlanPage.overview.nextMedication.viewAll', isKhmer ? 'មើលថ្នាំទាំងអស់' : 'View all medications')}</span>
                   <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
                 </button>
               </div>
 
-              {/* Card 4: Next Appointment */}
+              {/* Card 4: Nutrition & Meal Guide (Replaces Next Appointment) */}
               <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all dark:border-slate-800 dark:bg-slate-900">
                 <div>
                   <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
                     <div className="flex items-center gap-2.5">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-primary-600 dark:bg-blue-950/60 dark:text-primary-400">
-                        <Calendar className="h-4.5 w-4.5" />
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                        <Apple className="h-4.5 w-4.5" />
                       </div>
                       <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                        Next Appointment
+                        {t('carePlanPage.overview.nutritionGuide.title', isKhmer ? 'អាហារូបត្ថម្ភ និងរបបអាហារ' : 'Nutrition & Meal Guide')}
                       </h2>
                     </div>
 
-                    <span className="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-700 border border-sky-200/60 dark:bg-sky-950/60 dark:text-sky-300">
-                      Scheduled
+                    <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300">
+                      {t('carePlanPage.overview.nutritionGuide.badge', isKhmer ? 'ជាតិស្ករទាប' : 'Low Glycemic')}
                     </span>
                   </div>
 
-                  <div className="mt-4 flex items-start gap-3.5">
-                    {/* Date Badge Box */}
-                    <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50/80 px-2.5 py-1.5 text-center min-w-[50px] shrink-0 dark:border-slate-700 dark:bg-slate-800">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                        NOV
-                      </span>
-                      <span className="text-lg font-black text-slate-900 dark:text-white leading-tight mt-0.5">
-                        02
-                      </span>
+                  <div className="mt-3.5 space-y-2.5">
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        {t('carePlanPage.overview.nutritionGuide.methodTitle', isKhmer ? 'វិធីសាស្ត្រចានសុខភាព (Plate Method)' : 'Healthy Plate Method')}
+                      </h3>
+                      <div className="mt-2 grid grid-cols-3 gap-1.5 text-center">
+                        <div className="rounded-lg bg-emerald-50/80 p-1.5 border border-emerald-200/50 dark:bg-emerald-950/40 dark:border-emerald-900/40">
+                          <span className="block text-[11px] font-bold text-emerald-800 dark:text-emerald-200">
+                            {t('carePlanPage.overview.nutritionGuide.vegPlate', isKhmer ? '៥០% បន្លែគ្មានម្សៅ' : '50% Non-starchy veg')}
+                          </span>
+                        </div>
+                        <div className="rounded-lg bg-amber-50/80 p-1.5 border border-amber-200/50 dark:bg-amber-950/40 dark:border-amber-900/40">
+                          <span className="block text-[11px] font-bold text-amber-800 dark:text-amber-200">
+                            {t('carePlanPage.overview.nutritionGuide.proteinPlate', isKhmer ? '២៥% ប្រូតេអ៊ីនស្អាត' : '25% Lean protein')}
+                          </span>
+                        </div>
+                        <div className="rounded-lg bg-sky-50/80 p-1.5 border border-sky-200/50 dark:bg-sky-950/40 dark:border-sky-900/40">
+                          <span className="block text-[11px] font-bold text-sky-800 dark:text-sky-200">
+                            {t('carePlanPage.overview.nutritionGuide.grainPlate', isKhmer ? '២៥% គ្រាប់ធញ្ញជាតិ' : '25% Whole grains')}
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                        Endocrinologist Follow-up
-                      </h3>
-                      <p className="mt-0.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                        Dr. Lina
-                      </p>
-                      <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-                        Clinic Wing B · Room 204
-                      </p>
-                    </div>
+                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed pt-0.5">
+                      {t('carePlanPage.overview.nutritionGuide.targetNutrients', isKhmer ? 'កាបូអ៊ីដ្រាត: ៤៥–៦០g / ពេល · ជាតិសរសៃ ≥ ២៨g / ថ្ងៃ' : 'Carbs: 45–60g / meal · Fiber: ≥ 28g daily')}
+                    </p>
                   </div>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab('Appointments')}
-                  className="group mt-5 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-semibold text-primary-600 transition hover:text-primary-700 dark:border-slate-800 dark:text-primary-400"
+                  onClick={() => setActiveTab('Treatment Plan')}
+                  className="group mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-semibold text-primary-600 transition hover:text-primary-700 dark:border-slate-800 dark:text-primary-400"
                 >
-                  <span>View all appointments</span>
+                  <span>{t('carePlanPage.overview.nutritionGuide.viewPlan', isKhmer ? 'មើលផែនការអាហារូបត្ថម្ភលម្អិត' : 'View nutrition plan')}</span>
                   <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
                 </button>
               </div>
@@ -687,10 +798,10 @@ export function CarePlanPage() {
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-sm font-bold text-rose-900 dark:text-rose-100">
-                    Needs attention
+                    {t('carePlanPage.overview.needsAttention.title', isKhmer ? 'ត្រូវការការយកចិត្តទុកដាក់' : 'Needs attention')}
                   </h3>
                   <p className="mt-0.5 text-xs text-rose-800/90 leading-relaxed dark:text-rose-200/90">
-                    Your latest fasting glucose result is above your recommended target. Follow your current treatment plan and contact your care team if symptoms worsen.
+                    {t('carePlanPage.overview.needsAttention.description', isKhmer ? 'កម្រិតជាតិស្ករពេលព្រឹកចុងក្រោយរបស់អ្នកខ្ពស់ជាងគោលដៅដែលបានណែនាំ។ សូមបន្តអនុវត្តតាមផែនការព្យាបាល និងទាក់ទងក្រុមថែទាំរបស់អ្នកប្រសិនបើរោគសញ្ញាកាន់តែធ្ងន់ធ្ងរ។' : 'Your latest fasting glucose result is above your recommended target. Follow your current treatment plan and contact your care team if symptoms worsen.')}
                   </p>
                 </div>
               </div>
@@ -700,7 +811,7 @@ export function CarePlanPage() {
                 onClick={scrollToSafetySection}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-rose-200/90 bg-white px-3.5 py-2 text-xs font-semibold text-rose-700 shadow-2xs transition hover:bg-rose-50 active:scale-[0.98] whitespace-nowrap dark:border-rose-800/70 dark:bg-rose-950 dark:text-rose-300 dark:hover:bg-rose-900/60"
               >
-                <span>View warning signs</span>
+                <span>{t('carePlanPage.overview.needsAttention.warningSigns', isKhmer ? 'មើលសញ្ញាប្រុងប្រយ័ត្ន' : 'View warning signs')}</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -714,11 +825,15 @@ export function CarePlanPage() {
                   </div>
                   <div>
                     <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                      Doctor Review
+                      {t('carePlanPage.overview.doctorReview.title', isKhmer ? 'ការពិនិត្យពីវេជ្ជបណ្ឌិត' : 'Doctor Review')}
                     </h2>
                     {reviewerName && (
                       <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Reviewed by {reviewerName}
+                        {t(
+                          'carePlanPage.overview.doctorReview.reviewedBy',
+                          isKhmer ? 'ពិនិត្យដោយ {{doctor}}' : 'Reviewed by {{doctor}}',
+                          { doctor: reviewerName }
+                        )}
                       </p>
                     )}
                   </div>
@@ -727,12 +842,12 @@ export function CarePlanPage() {
                 {latestResult?.review_note ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/70 dark:bg-emerald-950/60 dark:text-emerald-300">
                     <CheckCircle2 className="h-3 w-3" />
-                    <span>Verified Review</span>
+                    <span>{t('carePlanPage.overview.doctorReview.verified', isKhmer ? 'ការពិនិត្យផ្លូវការ' : 'Verified Review')}</span>
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 border border-amber-200/70 dark:bg-amber-950/60 dark:text-amber-300">
                     <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                    <span>Awaiting review</span>
+                    <span>{t('carePlanPage.overview.doctorReview.awaiting', isKhmer ? 'រង់ចាំការពិនិត្យ' : 'Awaiting review')}</span>
                   </span>
                 )}
               </div>
@@ -745,7 +860,7 @@ export function CarePlanPage() {
                       <p className="font-serif italic">&ldquo;{latestResult.review_note}&rdquo;</p>
                       {latestResult.reviewed_at && (
                         <p className="mt-1 text-right text-[10px] font-sans text-slate-400">
-                          {new Date(latestResult.reviewed_at).toLocaleDateString()}
+                          {new Date(latestResult.reviewed_at).toLocaleDateString(isKhmer ? 'km-KH' : 'en-US')}
                         </p>
                       )}
                     </div>
@@ -753,14 +868,14 @@ export function CarePlanPage() {
                 </div>
               ) : (
                 <p className="mt-2.5 text-xs text-slate-500 leading-relaxed dark:text-slate-400">
-                  Your doctor hasn't reviewed this care plan yet. You'll see their notes here once the review is complete.
+                  {t('carePlanPage.overview.doctorReview.empty', isKhmer ? 'វេជ្ជបណ្ឌិតរបស់អ្នកមិនទាន់បានពិនិត្យផែនការថែទាំនេះនៅឡើយទេ។ អ្នកនឹងឃើញកំណត់ចំណាំរបស់ពួកគេនៅទីនេះនៅពេលការពិនិត្យរួចរាល់។' : "Your doctor hasn't reviewed this care plan yet. You'll see their notes here once the review is complete.")}
                 </p>
               )}
             </section>
           </div>
 
           {/* ================================================================ */}
-          {/* Right Column (4 cols): Quick Actions, Upcoming Appt, Progress, Seek Care */}
+          {/* Right Column (4 cols): Quick Actions, Lifestyle, Progress, Safety */}
           {/* ================================================================ */}
           <div className="lg:col-span-4 space-y-6 min-w-0">
             {/* Card 1: Quick Actions */}
@@ -770,7 +885,7 @@ export function CarePlanPage() {
                   <Zap className="h-4 w-4" />
                 </div>
                 <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Quick Actions
+                  {t('carePlanPage.overview.quickActions.title', isKhmer ? 'សកម្មភាពរហ័ស' : 'Quick Actions')}
                 </h2>
               </div>
 
@@ -785,10 +900,10 @@ export function CarePlanPage() {
                     </div>
                     <div className="min-w-0">
                       <h3 className="text-xs font-bold text-slate-900 truncate dark:text-slate-100">
-                        View Full Report
+                        {t('carePlanPage.overview.quickActions.fullReport', isKhmer ? 'មើលរបាយការណ៍ពេញលេញ' : 'View Full Report')}
                       </h3>
                       <p className="text-[11px] text-slate-500 truncate dark:text-slate-400">
-                        See complete details
+                        {t('carePlanPage.overview.quickActions.fullReportSub', isKhmer ? 'មើលព័ត៌មានលម្អិតទាំងអស់' : 'See complete details')}
                       </p>
                     </div>
                   </div>
@@ -806,10 +921,10 @@ export function CarePlanPage() {
                     </div>
                     <div className="min-w-0">
                       <h3 className="text-xs font-bold text-slate-900 truncate dark:text-slate-100">
-                        Ask a Question
+                        {t('carePlanPage.overview.quickActions.askQuestion', isKhmer ? 'សួរសំណួរ' : 'Ask a Question')}
                       </h3>
                       <p className="text-[11px] text-slate-500 truncate dark:text-slate-400">
-                        Get help from your care team
+                        {t('carePlanPage.overview.quickActions.askQuestionSub', isKhmer ? 'ទទួលជំនួយពីក្រុមថែទាំរបស់អ្នក' : 'Get help from your care team')}
                       </p>
                     </div>
                   </div>
@@ -827,10 +942,10 @@ export function CarePlanPage() {
                     </div>
                     <div className="min-w-0">
                       <h3 className="text-xs font-bold text-slate-900 truncate dark:text-slate-100">
-                        View Treatment Plan
+                        {t('carePlanPage.overview.quickActions.treatmentPlan', isKhmer ? 'មើលផែនការព្យាបាល' : 'View Treatment Plan')}
                       </h3>
                       <p className="text-[11px] text-slate-500 truncate dark:text-slate-400">
-                        Goals, nutrition, activity & more
+                        {t('carePlanPage.overview.quickActions.treatmentPlanSub', isKhmer ? 'គោលដៅ អាហារូបត្ថម្ភ សកម្មភាព និងច្រើនទៀត' : 'Goals, nutrition, activity & more')}
                       </p>
                     </div>
                   </div>
@@ -839,56 +954,93 @@ export function CarePlanPage() {
               </div>
             </div>
 
-            {/* Card 2: Upcoming Appointment */}
+            {/* Card 2: Lifestyle & Activity Target (Replaces Upcoming Appointment) */}
             <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all dark:border-slate-800 dark:bg-slate-900">
               <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3.5 dark:border-slate-800">
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-primary-600 dark:bg-blue-950/60 dark:text-primary-400">
-                    <Calendar className="h-4 w-4" />
+                    <HeartPulse className="h-4 w-4" />
                   </div>
                   <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                    Upcoming Appointment
+                    {t('carePlanPage.overview.lifestyleTarget.title', isKhmer ? 'របៀបរស់នៅ និងទម្លាប់សុខភាព' : 'Lifestyle & Activity Target')}
                   </h2>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('Appointments')}
-                  className="text-xs font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-1 dark:text-primary-400"
-                >
-                  <span>View all</span>
-                  <ArrowRight className="h-3 w-3" />
-                </button>
+                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-primary-700 border border-blue-200/60 dark:bg-blue-950/50 dark:text-primary-300">
+                  {t('carePlanPage.overview.lifestyleTarget.badge', isKhmer ? 'គោលដៅប្រចាំថ្ងៃ' : 'Daily Goals')}
+                </span>
               </div>
 
-              <div className="mt-3.5 flex items-start gap-3.5">
-                {/* Date Badge Box */}
-                <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50/80 px-2.5 py-1.5 text-center min-w-[50px] shrink-0 dark:border-slate-700 dark:bg-slate-800">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    NOV
-                  </span>
-                  <span className="text-lg font-black text-slate-900 dark:text-white leading-tight mt-0.5">
-                    02
-                  </span>
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <h3 className="text-xs font-bold text-slate-900 truncate dark:text-slate-100">
-                      Endocrinologist Follow-up
-                    </h3>
-                    <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/50 dark:text-emerald-300">
-                      Scheduled
-                    </span>
+              <div className="mt-3.5 space-y-3">
+                {/* 1. Walk / Aerobic */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 mt-0.5 dark:bg-emerald-950/50 dark:text-emerald-400">
+                      <Footprints className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-xs font-bold text-slate-900 truncate dark:text-slate-100">
+                        {t('carePlanPage.overview.lifestyleTarget.activityTitle', isKhmer ? 'ដើរលឿន ៣០ នាទី' : '30-Min Brisk Walk')}
+                      </h3>
+                      <p className="text-[11px] text-slate-400 truncate dark:text-slate-500">
+                        {t('carePlanPage.overview.lifestyleTarget.activitySubtitle', isKhmer ? 'សកម្មភាពកម្រិតមធ្យម ៥ ថ្ងៃ/សប្តាហ៍' : 'Moderate aerobic activity · 5 days/wk')}
+                      </p>
+                    </div>
                   </div>
-                  <p className="mt-0.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                    Dr. Lina
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
-                    Clinic Wing B · Room 204
-                  </p>
+                  <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/50 dark:text-emerald-300">
+                    {t('carePlanPage.overview.lifestyleTarget.activityStatus', isKhmer ? 'បាន ៤/៥ ថ្ងៃ' : '4/5 days')}
+                  </span>
+                </div>
+
+                {/* 2. Hydration */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600 mt-0.5 dark:bg-sky-950/50 dark:text-sky-400">
+                      <Droplets className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-xs font-bold text-slate-900 truncate dark:text-slate-100">
+                        {t('carePlanPage.overview.lifestyleTarget.hydrationTitle', isKhmer ? 'ផឹកទឹកស្អាត ២.០ លីត្រ' : '2.0L Hydration')}
+                      </h3>
+                      <p className="text-[11px] text-slate-400 truncate dark:text-slate-500">
+                        {t('carePlanPage.overview.lifestyleTarget.hydrationSubtitle', isKhmer ? 'កាត់បន្ថយភេសជ្ជៈផ្អែម និងតែមានស្ករ' : 'Zero sugary drinks · Boosts metabolism')}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700 border border-sky-200/50 dark:bg-sky-950/50 dark:text-sky-300">
+                    {t('carePlanPage.overview.lifestyleTarget.hydrationStatus', isKhmer ? '១.៦ / ២.០L' : '1.6 / 2.0L')}
+                  </span>
+                </div>
+
+                {/* 3. Sleep */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 mt-0.5 dark:bg-indigo-950/50 dark:text-indigo-400">
+                      <Moon className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-xs font-bold text-slate-900 truncate dark:text-slate-100">
+                        {t('carePlanPage.overview.lifestyleTarget.sleepTitle', isKhmer ? 'គេងលក់ស្រួល ៧–៨ ម៉ោង' : '7–8 Hours Sleep')}
+                      </h3>
+                      <p className="text-[11px] text-slate-400 truncate dark:text-slate-500">
+                        {t('carePlanPage.overview.lifestyleTarget.sleepSubtitle', isKhmer ? 'ជួយកាត់បន្ថយអរម៉ូនស្ត្រេស និងជាតិស្ករ' : 'Regulates cortisol & insulin sensitivity')}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 border border-indigo-200/50 dark:bg-indigo-950/50 dark:text-indigo-300">
+                    {t('carePlanPage.overview.lifestyleTarget.sleepStatus', isKhmer ? 'ល្អប្រសើរ' : 'Optimal')}
+                  </span>
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('Treatment Plan')}
+                className="group mt-4 flex w-full items-center justify-between border-t border-slate-100 pt-3 text-xs font-semibold text-primary-600 transition hover:text-primary-700 dark:border-slate-800 dark:text-primary-400"
+              >
+                <span>{t('carePlanPage.overview.lifestyleTarget.viewGuide', isKhmer ? 'ស្វែងយល់បន្ថែមអំពីការថែទាំ' : 'Explore lifestyle guide')}</span>
+                <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+              </button>
             </div>
 
             {/* Card 3: Your Progress */}
@@ -898,7 +1050,7 @@ export function CarePlanPage() {
                   <BarChart2 className="h-4 w-4" />
                 </div>
                 <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Your Progress
+                  {t('carePlanPage.overview.yourProgress.title', isKhmer ? 'វឌ្ឍនភាពរបស់អ្នក' : 'Your Progress')}
                 </h2>
               </div>
 
@@ -907,23 +1059,29 @@ export function CarePlanPage() {
                   <div className="flex items-center gap-2.5">
                     <Droplets className="h-4 w-4 text-sky-500" />
                     <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      Blood Glucose
+                      {t('carePlanPage.overview.yourProgress.glucose', isKhmer ? 'កម្រិតជាតិស្ករ' : 'Blood Glucose')}
                     </span>
                   </div>
-                  <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-600 border border-rose-200/60 dark:bg-rose-950/50 dark:text-rose-300">
-                    Above target
-                  </span>
+                  {isGlucoseElevated ? (
+                    <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-600 border border-rose-200/60 dark:bg-rose-950/50 dark:text-rose-300">
+                      {t('carePlanPage.overview.yourProgress.aboveTarget', isKhmer ? 'លើសគោលដៅ' : 'Above target')}
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/50 dark:text-emerald-300">
+                      {t('carePlanPage.overview.yourProgress.onTrack', isKhmer ? 'ក្នុងគោលដៅ' : 'Target zone')}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5">
                     <Pill className="h-4 w-4 text-amber-500" />
                     <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      Medications
+                      {t('carePlanPage.overview.yourProgress.medications', isKhmer ? 'ការទទួលទានថ្នាំ' : 'Medications')}
                     </span>
                   </div>
                   <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/50 dark:text-emerald-300">
-                    On track
+                    {t('carePlanPage.overview.yourProgress.onTrack', isKhmer ? 'តាមផែនការ' : 'On track')}
                   </span>
                 </div>
 
@@ -931,11 +1089,11 @@ export function CarePlanPage() {
                   <div className="flex items-center gap-2.5">
                     <Activity className="h-4 w-4 text-emerald-500" />
                     <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      Activity
+                      {t('carePlanPage.overview.yourProgress.activity', isKhmer ? 'សកម្មភាពរាងកាយ' : 'Activity')}
                     </span>
                   </div>
                   <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/50 dark:text-emerald-300">
-                    On track
+                    {t('carePlanPage.overview.yourProgress.onTrack', isKhmer ? 'តាមផែនការ' : 'On track')}
                   </span>
                 </div>
 
@@ -943,11 +1101,11 @@ export function CarePlanPage() {
                   <div className="flex items-center gap-2.5">
                     <Apple className="h-4 w-4 text-emerald-500" />
                     <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      Nutrition
+                      {t('carePlanPage.overview.yourProgress.nutrition', isKhmer ? 'អាហារូបត្ថម្ភ' : 'Nutrition')}
                     </span>
                   </div>
                   <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/50 dark:text-emerald-300">
-                    On track
+                    {t('carePlanPage.overview.yourProgress.onTrack', isKhmer ? 'តាមផែនការ' : 'On track')}
                   </span>
                 </div>
               </div>
@@ -972,7 +1130,7 @@ export function CarePlanPage() {
                     <AlertTriangle className="h-4 w-4" />
                   </span>
                   <h3 className="text-sm font-bold text-rose-900 dark:text-rose-200">
-                    Seek care urgently if
+                    {t('carePlanPage.overview.safety.title', isKhmer ? 'សូមស្វែងរកការថែទាំបន្ទាន់ ប្រសិនបើ' : 'Seek care urgently if')}
                   </h3>
                 </div>
                 <ChevronDown
@@ -985,12 +1143,20 @@ export function CarePlanPage() {
 
               {isSafetyExpanded && (
                 <ul className="mt-3.5 space-y-2.5">
-                  {[
-                    'You develop confusion, drowsiness or fainting',
-                    'You have rapid breathing with fruity-smelling breath',
-                    'Vomiting or diarrhea stops you keeping fluids down',
-                    'A wound is red, swollen, or not healing',
-                  ].map((item, idx) => (
+                  {(isKhmer
+                    ? [
+                        'អ្នកមានអាការៈច្របូកច្របល់ ងងុយដេកខ្លាំង ឬសន្លប់',
+                        'ដង្ហើមញាប់ និងមានក្លិនស្ករជូរចេញពីមាត់ (Ketoacidosis)',
+                        'ក្អួត ឬរាគខ្លាំងមិនអាចទទួលទានទឹកបាន',
+                        'មានស្នាមរបួសក្រហម ហើម ឬមិនជាសះស្បើយ',
+                      ]
+                    : [
+                        'You develop confusion, drowsiness or fainting',
+                        'You have rapid breathing with fruity-smelling breath',
+                        'Vomiting or diarrhea stops you keeping fluids down',
+                        'A wound is red, swollen, or not healing',
+                      ]
+                  ).map((item, idx) => (
                     <li key={idx} className="flex items-start gap-2.5">
                       <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500 dark:text-rose-400" />
                       <span className="text-xs leading-relaxed text-rose-900/90 dark:text-rose-200/90">
@@ -1016,15 +1182,6 @@ export function CarePlanPage() {
             onRegenerate={handleRegenerateCarePlan}
             regenerating={regenerating}
           />
-
-          <TreatmentPlanDetailView
-            plan={patientPlan}
-            onBack={() => setActiveTab('Overview')}
-            isDoctor={false}
-            t={t}
-          />
-
-          {latestResult && <CarePlanPrevention latestResult={latestResult} t={t} />}
         </div>
       )}
 

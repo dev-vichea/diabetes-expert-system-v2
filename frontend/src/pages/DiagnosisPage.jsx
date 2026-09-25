@@ -688,42 +688,6 @@ export function DiagnosisPage() {
     setForm(p => ({ ...p, extra_lab_name: '', extra_lab_value: '' })); setError('')
   }
 
-  function loadDemo(type) {
-    const f = { ...DEFAULT_FORM, patient_id: form.patient_id }
-    const q = { ...DEFAULT_QCM }
-    if (type === 't2dm') {
-      f.age = '55'; q.age_group = '46_60';
-      f.bmi = '31.5'; q.bmi_group = 'obese';
-      f.fasting_glucose = '165'; q.fasting_group = 'diabetes';
-      f.hba1c = '8.2'; q.hba1c_group = 'diabetes';
-      f.frequent_urination = true; f.excessive_thirst = true; f.fatigue = true;
-      f.obesity = true; f.family_history = true; f.sedentary_lifestyle = true;
-    } else if (type === 'dka') {
-      f.age = '24'; q.age_group = '18_30';
-      f.bmi = '21.0'; q.bmi_group = 'normal';
-      f.fasting_glucose = '380'; q.fasting_group = 'critical';
-      f.hba1c = '11.5'; q.hba1c_group = 'critical';
-      f.excessive_thirst = true; f.weight_loss = true; f.fatigue = true;
-      f.vomiting = true; f.abdominal_pain = true; f.dizziness = true; f.crisis = true;
-    }
-    f.sex = 'male'; f.has_labs = 'yes'; f.no_labs_available = false
-    setForm(f); setQcm(q); setExtraLabs([]); setStep(1); setMaxReached(1); setResult(null)
-    if (!needsPatient) setSubjectMode('self')
-    const demoDoneNodes = [
-      'age', 'sex', 'ethnicity', 'body',
-      'symptom_thirst', 'thirst_probe', 'symptom_urination', 'nocturia_probe',
-      'symptom_hunger', 'symptom_weight_loss', 'symptom_fatigue', 'fatigue_probe',
-      'symptoms_secondary', 'symptom_onset', 'hypo_gate', 'emergency_gate',
-      'family_history', 'blood_pressure', 'lipid_profile',
-      'lifestyle_activity', 'lifestyle_diet', 'lifestyle_sleep', 'lifestyle_habits',
-      'has_labs', 'labs',
-    ]
-    setInterviewDone(!needsPatient
-      ? ['subject', ...demoDoneNodes]
-      : ['patient', ...demoDoneNodes])
-    setInterviewSkipped([]); setCursorOverride(null); setInterviewTrail([])
-  }
-
   function startNew(opts = {}) {
     /* Restart always lands back on question 1 ("Who is this assessment for?")
        — the previously selected patient is NOT kept, so a doctor can pick a
@@ -1423,13 +1387,6 @@ export function DiagnosisPage() {
                     </span>
                   )}
 
-                  {import.meta.env.DEV ? (
-                    <div className={cn("hidden lg:flex items-center gap-1 mr-1", isColoredInterview ? "opacity-70 hover:opacity-100" : "opacity-80 hover:opacity-100")}>
-                      <button type="button" onClick={() => loadDemo('t2dm')} className={cn("rounded px-2 py-0.5 text-[11px] font-medium transition-colors", isColoredInterview ? "text-white/80 hover:bg-white/20" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800")}>T2D demo</button>
-                      <button type="button" onClick={() => loadDemo('dka')} className={cn("rounded px-2 py-0.5 text-[11px] font-medium transition-colors", isColoredInterview ? "text-red-200 hover:bg-red-500/20" : "text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40")}>DKA demo</button>
-                    </div>
-                  ) : null}
-
                   {!isDraftPristine ? (
                     <button
                       type="button"
@@ -1632,12 +1589,7 @@ export function DiagnosisPage() {
                                         <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                                         {t('assessment.review.highRiskAlert', 'Elevated Risk (≥ 5 points)')}
                                       </span>
-                                    ) : (
-                                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 px-3 py-1 text-xs font-semibold">
-                                        <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                                        {t('assessment.review.lowRiskAlert', 'Low / Normal Risk (< 5 points)')}
-                                      </span>
-                                    )}
+                                    ) : null}
                                   </td>
                                   <td className="py-4 px-6 sm:px-8 text-right sm:text-center text-[#1b365d] dark:text-blue-400 text-lg font-black">
                                     {reviewCalculations.totalAdaScore}
@@ -1779,12 +1731,7 @@ export function DiagnosisPage() {
                                     <AlertTriangle className="h-4 w-4" />
                                     {t('assessment.review.highRiskAlert', 'Elevated Risk (≥ 5 points)')}
                                   </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 font-semibold">
-                                    <CheckCircle2 className="h-4 w-4" />
-                                    {t('assessment.review.lowRiskAlert', 'Low / Normal Risk (< 5 points)')}
-                                  </span>
-                                )}
+                                ) : null}
                               </td>
                               <td className="py-4 px-6 text-right sm:text-center text-[#1b365d] dark:text-blue-300 text-base sm:text-lg font-black">
                                 {reviewCalculations.totalAdaScore}

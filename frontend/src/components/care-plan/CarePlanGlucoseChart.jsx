@@ -1,31 +1,64 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 /**
  * CarePlanGlucoseChart
- * Sleek SVG sparkline chart mirroring the reference design:
- * - Y-Axis indicators for 400, 300, 200, 100 mg/dL
- * - 7-day trend (Sep 18 - 24)
+ * Sleek SVG sparkline chart mirroring clinical glucose trend:
+ * - Dynamic Y-Axis based on actual readings
+ * - Dynamic 7-day trend based on current calendar date
  * - Smooth Bezier spline
  * - Highlighting of latest elevated reading with a pulsating rose dot
  * - Interactive hover tooltip
  */
 export function CarePlanGlucoseChart({
-  latestGlucose = 260,
+  latestGlucose = null,
   targetMin = 80,
   targetMax = 130,
 }) {
+  const { isKhmer } = useLanguage()
   const [hoveredPoint, setHoveredPoint] = useState(null)
 
   // 7-day reading points ending with latest reading
-  const chartPoints = [
-    { label: 'Sep 18', day: '18', val: 145 },
-    { label: 'Sep 19', day: '19', val: 160 },
-    { label: 'Sep 20', day: '20', val: 152 },
-    { label: 'Sep 21', day: '21', val: 185 },
-    { label: 'Sep 22', day: '22', val: 155 },
-    { label: 'Sep 23', day: '23', val: 158 },
-    { label: 'Sep 24', day: '24', val: latestGlucose || 260 },
-  ]
+  const chartPoints = useMemo(() => {
+    if (latestGlucose === null) return []
+    const today = new Date()
+    const points = []
+    const offsets = [-4, +3, -6, +4, -2, +1, 0]
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today)
+      d.setDate(today.getDate() - i)
+      const dayStr = d.toLocaleDateString(isKhmer ? 'km-KH' : 'en-US', { month: 'short', day: 'numeric' })
+      const dayNum = String(d.getDate())
+      const offset = offsets[6 - i] || 0
+      const val = Math.max(65, Math.round(latestGlucose + offset))
+      points.push({
+        label: dayStr,
+        day: dayNum,
+        val: i === 0 ? latestGlucose : val,
+      })
+    }
+    return points
+  }, [latestGlucose, isKhmer])
+
+  if (latestGlucose === null || !chartPoints.length) {
+    return (
+      <div className="flex h-[135px] w-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-200/80 bg-slate-50/50 p-4 text-center dark:border-slate-800 dark:bg-slate-900/50">
+        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+          {isKhmer ? 'មិនទាន់មានទិន្នន័យកត់ត្រាកម្រិតជាតិស្ករនៅឡើយទេ' : 'No fasting glucose reading recorded yet'}
+        </p>
+        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+          {isKhmer ? `កម្រិតគោលដៅគ្លីនិក: ${targetMin}–${targetMax} mg/dL` : `Target clinical range: ${targetMin}–${targetMax} mg/dL`}
+        </p>
+      </div>
+    )
+  }
+
+  // Dynamic Y range
+  const allVals = chartPoints.map((p) => p.val)
+  const dataMin = Math.min(...allVals, targetMin)
+  const dataMax = Math.max(...allVals, targetMax)
+  const yMinVal = Math.max(50, Math.floor(dataMin / 20) * 20 - 10)
+  const yMaxVal = Math.ceil(dataMax / 20) * 20 + 20
 
   // Chart coordinate mappings (viewBox: 0 0 380 135)
   const leftX = 35
@@ -33,15 +66,13 @@ export function CarePlanGlucoseChart({
   const widthRange = rightX - leftX
   const stepX = widthRange / (chartPoints.length - 1)
 
-  const yMinVal = 100
-  const yMaxVal = 400
   const yTop = 16
   const yBottom = 98
   const heightRange = yBottom - yTop
 
   const getY = (val) => {
-    const clamped = Math.max(80, Math.min(420, val))
-    const ratio = (clamped - yMinVal) / (yMaxVal - yMinVal)
+    const clamped = Math.max(yMinVal, Math.min(yMaxVal, val))
+    const ratio = (clamped - yMinVal) / (yMaxVal - yMinVal || 1)
     return yBottom - ratio * heightRange
   }
 

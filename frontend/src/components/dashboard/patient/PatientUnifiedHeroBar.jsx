@@ -50,12 +50,16 @@ export function PatientUnifiedHeroBar({ user, latestResult }) {
     ? (tExact ? tExact(latestResult.diagnosis) : latestResult.diagnosis)
     : t('patientDashboard.hero.noDiagnosisYet', 'No diagnosis result yet')
 
+  const a1cText = hba1c !== null ? `${hba1c}%` : ''
   const plainExplanation = latestResult
     ? isUrgent
       ? isHighA1c
         ? t(
             'patientDashboard.situation.highA1cDesc',
-            'Your recent HbA1c is 10.5%, above the 5.7% target. Staying consistent with daily habits and your doctor will help guide your levels lower.'
+            a1cText
+              ? `Your recent HbA1c is ${a1cText}, above the 5.7% target. Staying consistent with daily habits and your doctor will help guide your levels lower.`
+              : 'Your recent HbA1c is elevated above the 5.7% target. Staying consistent with daily habits and your doctor will help guide your levels lower.',
+            { hba1c: a1cText || 'elevated' }
           )
         : t(
             'patientDashboard.situation.urgentDesc',
@@ -220,11 +224,17 @@ export function PatientUnifiedHeroBar({ user, latestResult }) {
             <div className="mt-5 space-y-3 rounded-2xl border border-slate-100 bg-[#fafafc] p-4 dark:border-slate-800 dark:bg-slate-800/40">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-200 text-sm font-bold text-primary-800">
-                  DL
+                  {latestResult?.reviewed_by_name ? latestResult.reviewed_by_name.slice(0, 2).toUpperCase() : 'DC'}
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">Dr. Lina</p>
-                  <p className="text-xs text-slate-500">Lead Endocrinologist &amp; Diabetes Specialist</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    {latestResult?.reviewed_by_name
+                      ? (latestResult.reviewed_by_name.startsWith('Dr.') ? latestResult.reviewed_by_name : `Dr. ${latestResult.reviewed_by_name}`)
+                      : 'Diabetes Clinical Care Team'}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {latestResult?.reviewed_by_name ? 'Attending Physician' : 'Endocrinology & Care Support'}
+                  </p>
                 </div>
               </div>
               <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">

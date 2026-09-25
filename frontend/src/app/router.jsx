@@ -181,7 +181,7 @@ function AuthenticatedRoutes() {
         <Route
           path="/care-plan"
           element={
-            <RoleGuard user={user} permissions={['care_plan.view_own']}>
+            <RoleGuard user={user} notRoles={['admin']} permissions={['care_plan.view_own']}>
               <CarePlanPage />
             </RoleGuard>
           }

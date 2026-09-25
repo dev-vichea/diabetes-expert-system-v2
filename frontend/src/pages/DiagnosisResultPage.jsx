@@ -71,53 +71,119 @@ import { notify } from '@/lib/toast'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { userHasStaffRole } from '@/lib/nav-config'
+import { cn } from '@/lib/utils'
 
-function DonutGauge({ percent = 0, size = 112, strokeWidth = 10, color = '#df2742', isKhmer = false }) {
+const RISK_SCALE_BARS = [
+  { num: 1, sub: 'Low', height: 32, group: 1 },
+  { num: 2, sub: 'Mid', height: 38, group: 1 },
+  { num: 3, sub: 'High', height: 44, group: 1 },
+  { num: 4, sub: 'Low', height: 50, group: 2 },
+  { num: 5, sub: 'Mid', height: 56, group: 2 },
+  { num: 6, sub: 'High', height: 62, group: 2 },
+  { num: 7, sub: 'Low', height: 68, group: 3 },
+  { num: 8, sub: 'Mid', height: 74, group: 3 },
+  { num: 9, sub: 'High', height: 82, group: 3 },
+]
+
+function getRiskBarStyles(group, isActive, isCurrent) {
+  if (!isActive) {
+    return {
+      bg: 'bg-slate-100 dark:bg-slate-800/80',
+      text: 'text-slate-400 dark:text-slate-500',
+      sub: 'text-slate-400/80 dark:text-slate-600',
+    }
+  }
+
+  // Group 1: Green (Emerald)
+  if (group === 1) {
+    return {
+      bg: 'bg-emerald-500 dark:bg-emerald-500',
+      text: 'text-white',
+      sub: 'text-emerald-100',
+    }
+  }
+
+  // Group 2: Amber / Orange
+  if (group === 2) {
+    return {
+      bg: 'bg-amber-500 dark:bg-amber-500',
+      text: 'text-white',
+      sub: 'text-amber-100',
+    }
+  }
+
+  // Group 3: Rose / Red
+  return {
+    bg: 'bg-rose-500 dark:bg-rose-500',
+    text: 'text-white',
+    sub: 'text-rose-100',
+  }
+}
+
+function RiskProgressionBars({ percent = 0, isKhmer = false, t }) {
   const safePercent = Math.min(100, Math.max(0, Number(percent) || 0))
-  const radius = (size - strokeWidth) / 2
-  const circumference = 2 * Math.PI * radius
-  const strokeDashoffset = circumference - (safePercent / 100) * circumference
+  // Map 0-100% to 1-9 level scale
+  const currentLevel = Math.max(1, Math.min(9, Math.round((safePercent / 100) * 8) + 1))
+  const activeGroup = currentLevel <= 3 ? 1 : currentLevel <= 6 ? 2 : 3
 
   return (
-    <div className="relative flex flex-col items-center justify-center shrink-0">
-      <div className="relative flex items-center justify-center">
-        <svg width={size} height={size} className="transform -rotate-90">
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke="currentColor"
-            strokeWidth={strokeWidth}
-            className="text-slate-100 dark:text-slate-800"
-            fill="transparent"
-          />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke={color}
-            strokeWidth={strokeWidth}
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            className="transition-all duration-1000 ease-out"
-            fill="transparent"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-            {safePercent}%
-          </span>
-        </div>
-      </div>
-      <div className="mt-2 text-center">
-        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+    <div className="flex flex-col w-full sm:w-[280px] md:w-[320px] select-none">
+      {/* Header: Evidence Agreement & Score (no 'certainty' text, no outer bg) */}
+      <div className="flex items-baseline justify-between gap-3 w-full pb-1.5">
+        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
           {isKhmer ? 'ភាពស៊ីសង្វាក់ភស្តុតាង' : 'Evidence agreement'}
         </p>
-        <p className="text-[11px] text-slate-400 dark:text-slate-500">
-          {isKhmer ? '(មិនមែនជាការធ្វើរោគវិនិច្ឆ័យ)' : '(not a diagnosis)'}
-        </p>
+        <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          {safePercent}%
+        </span>
       </div>
+
+      {/* 9 Stepped Progression Bars for Risk - Larger size */}
+      <div className="flex items-end gap-1.5 w-full justify-between pt-1 pb-1">
+        {RISK_SCALE_BARS.map((bar) => {
+          const isActive = bar.num <= currentLevel
+          const isCurrent = bar.num === currentLevel
+          const styles = getRiskBarStyles(bar.group, isActive, isCurrent)
+
+          return (
+            <div
+              key={bar.num}
+              style={{ height: `${bar.height}px` }}
+              className={cn(
+                'group/bar relative flex flex-1 flex-col items-center justify-between rounded-t-md px-0.5 py-1.5 transition-all duration-200',
+                styles.bg,
+                isCurrent && 'ring-2 ring-slate-900/60 ring-offset-1 ring-offset-white dark:ring-white dark:ring-offset-slate-900 shadow-sm scale-105 z-10'
+              )}
+              title={`Level ${bar.num} (${bar.sub}) · ${isActive ? 'Active' : 'Threshold'}`}
+            >
+              <span className={cn('text-[10px] font-black leading-none', styles.text)}>
+                {bar.num}
+              </span>
+              <span className={cn('text-[7px] font-bold leading-none tracking-tighter uppercase', styles.sub)}>
+                {bar.sub}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Tier range sublabels below the 9 bars */}
+      <div className="flex items-center justify-between w-full px-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 pt-1.5">
+        <span className={cn(activeGroup === 1 ? 'text-emerald-600 dark:text-emerald-400 font-black' : '')}>
+          {isKhmer ? '១-៣ ទាប' : '1–3 Low'}
+        </span>
+        <span className={cn(activeGroup === 2 ? 'text-amber-600 dark:text-amber-400 font-black' : '')}>
+          {isKhmer ? '៤-៦ មធ្យម' : '4–6 Mid'}
+        </span>
+        <span className={cn(activeGroup === 3 ? 'text-rose-600 dark:text-rose-400 font-black' : '')}>
+          {isKhmer ? '៧-៩ ខ្ពស់' : '7–9 High'}
+        </span>
+      </div>
+
+      {/* Medical disclaimer note */}
+      <p className="mt-2 text-center text-[11px] text-slate-400 dark:text-slate-500">
+        {isKhmer ? '(មិនមែនជាការធ្វើរោគវិនិច្ឆ័យ)' : '(not a diagnosis)'}
+      </p>
     </div>
   )
 }
@@ -679,6 +745,32 @@ export function DiagnosisResultPage() {
   const [remoteReasoning, setRemoteReasoning] = useState(null)
   const targetResultId = diagnosisResultId || activeResult?.id || activeResult?.diagnosis_result_id || null
 
+  const [hasOpenedCarePlan, setHasOpenedCarePlan] = useState(() => {
+    if (!targetResultId) return false
+    try {
+      return window.localStorage.getItem(`care_plan_generated_${targetResultId}`) === 'true'
+    } catch {
+      return false
+    }
+  })
+
+  useEffect(() => {
+    if (!targetResultId) return
+    try {
+      const generated = window.localStorage.getItem(`care_plan_generated_${targetResultId}`) === 'true'
+      setHasOpenedCarePlan(generated)
+    } catch {}
+  }, [targetResultId])
+
+  const handleCarePlanNavigation = () => {
+    if (targetResultId) {
+      try {
+        window.localStorage.setItem(`care_plan_generated_${targetResultId}`, 'true')
+      } catch {}
+      setHasOpenedCarePlan(true)
+    }
+  }
+
   useEffect(() => {
     if (activeResult?.reasoning_report) {
       setRemoteReasoning(activeResult.reasoning_report)
@@ -1110,7 +1202,7 @@ export function DiagnosisResultPage() {
     if (fastingValue != null) count += 1
     if (matchedSymptoms.length > 0) count += 1
     if (matchedRiskFactors.length > 0) count += 1
-    return Math.max(count, 3)
+    return count
   })()
 
   const TABS = [
@@ -1145,43 +1237,7 @@ export function DiagnosisResultPage() {
   ]
 
   const sidebarNextSteps = (() => {
-    if (recommendations && recommendations.length >= 3) {
-      return recommendations.slice(0, 3).map((rec, idx) => {
-        const isUrgent = rec.urgency === 'urgent' || rec.urgency === 'emergency'
-        const isImportant = rec.urgency === 'high' || idx === 1
-        const tag = isUrgent
-          ? (isKhmer ? 'បន្ទាន់' : 'URGENT')
-          : isImportant
-          ? (isKhmer ? 'សំខាន់' : 'IMPORTANT')
-          : (isKhmer ? 'តាមដាន' : 'FOLLOW-UP')
-        const tagColor = isUrgent
-          ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400'
-          : isImportant
-          ? 'bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400'
-          : 'bg-blue-100 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400'
-        const numBg = isUrgent
-          ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-300'
-          : isImportant
-          ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-300'
-          : 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300'
-
-        const rawText = bilingualField(rec.text, rec.text_km)
-        const parts = rawText.split(/[.—:]/)
-        const title = parts[0]?.trim() || rawText
-        const desc = parts.slice(1).join('.').trim() || (isKhmer ? 'អនុវត្តតាមការណែនាំពីគ្រូពេទ្យ' : 'Follow professional medical instructions.')
-
-        return {
-          id: idx + 1,
-          title: tExact(title),
-          desc: tExact(desc),
-          tag,
-          tagColor,
-          numBg,
-        }
-      })
-    }
-
-    return [
+    const defaultSteps = [
       {
         id: 1,
         title: isKhmer ? 'ជួបពិគ្រោះជាមួយគ្រូពេទ្យជាបន្ទាន់' : 'Seek prompt medical review',
@@ -1207,6 +1263,67 @@ export function DiagnosisResultPage() {
         numBg: 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300',
       },
     ]
+
+    if (recommendations && recommendations.length > 0) {
+      const mapped = recommendations.slice(0, 3).map((rec, idx) => {
+        const urgency = String(rec?.urgency || '').toLowerCase()
+        const isUrgent = urgency === 'urgent' || urgency === 'emergency'
+        const isImportant = urgency === 'high' || idx === 1
+        const tag = isUrgent
+          ? (isKhmer ? 'បន្ទាន់' : 'URGENT')
+          : isImportant
+          ? (isKhmer ? 'សំខាន់' : 'IMPORTANT')
+          : (isKhmer ? 'តាមដាន' : 'FOLLOW-UP')
+        const tagColor = isUrgent
+          ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400'
+          : isImportant
+          ? 'bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400'
+          : 'bg-blue-100 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400'
+        const numBg = isUrgent
+          ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-300'
+          : isImportant
+          ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-300'
+          : 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300'
+
+        let rawText = ''
+        if (typeof rec === 'string') {
+          rawText = rec
+        } else if (rec && typeof rec === 'object') {
+          if (isKhmer && rec.text_km) {
+            rawText = rec.text_km
+          } else if (rec.text) {
+            rawText = rec.text
+          } else {
+            rawText = rec.title || rec.action || rec.recommendation || ''
+          }
+        }
+        rawText = String(rawText || '').trim()
+
+        const parts = rawText ? rawText.split(/[.—:៖\n]/).map((s) => s.trim()).filter(Boolean) : []
+        const title = parts[0] || rawText || (isKhmer ? 'ការណែនាំពីគ្រូពេទ្យ' : 'Medical Recommendation')
+        const desc = parts.slice(1).join('. ').trim() || (isKhmer ? 'អនុវត្តតាមការណែនាំពីគ្រូពេទ្យ' : 'Follow professional medical instructions.')
+
+        return {
+          id: idx + 1,
+          title: tExact ? tExact(title) : title,
+          desc: tExact ? tExact(desc) : desc,
+          tag,
+          tagColor,
+          numBg,
+        }
+      })
+
+      if (mapped.length < 3) {
+        const remaining = defaultSteps.slice(mapped.length).map((step, i) => ({
+          ...step,
+          id: mapped.length + i + 1,
+        }))
+        return [...mapped, ...remaining]
+      }
+      return mapped
+    }
+
+    return defaultSteps
   })()
 
   const handleSubmitToCareTeam = async () => {
@@ -1351,14 +1468,20 @@ export function DiagnosisResultPage() {
           </div>
 
           <div className="flex items-center gap-2.5">
-            {/* Open Care Plan Button (Filled Blue) */}
+            {/* Open / Generate Care Plan Button (Filled Blue) */}
             {canViewOwnCarePlan && (
               <Link
                 to="/care-plan"
+                state={{ result: activeResult || result, fromAssessmentId: targetResultId }}
+                onClick={handleCarePlanNavigation}
                 className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-blue-700 transition"
               >
-                <HeartPulse className="h-4 w-4" />
-                <span>{t('diagnosisResult.openCarePlan', 'Open Care Plan')}</span>
+                {hasOpenedCarePlan ? <HeartPulse className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+                <span>
+                  {hasOpenedCarePlan
+                    ? (isKhmer ? 'បើកផែនការថែទាំ' : t('diagnosisResult.openCarePlan', 'Open Care Plan'))
+                    : (isKhmer ? 'បង្កើតផែនការថែទាំ' : t('diagnosisResult.generateCarePlan', 'Generate Care Plan'))}
+                </span>
               </Link>
             )}
 
@@ -1469,19 +1592,19 @@ export function DiagnosisResultPage() {
           <div className="lg:col-span-8 space-y-6">
             {/* 1. PRIMARY HERO CARD */}
             <div className="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-7 shadow-xs dark:border-slate-800/80 dark:bg-slate-900/90 relative overflow-hidden">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              {/* Droplet Illustration as Stylized Background Watermark */}
+              <div className="pointer-events-none absolute -top-4 -left-4 sm:top-0 sm:left-0 h-28 w-28 sm:h-32 sm:w-32 opacity-10 dark:opacity-15 text-rose-500 select-none rotate-12 transition-transform duration-500">
+                <DropletIllustration className="h-full w-full drop-shadow-xs" />
+              </div>
+              {/* Ambient soft glow behind background icon */}
+              <div className="pointer-events-none absolute -left-6 -top-6 h-36 w-36 rounded-full bg-rose-500/8 blur-2xl dark:bg-rose-500/10" />
+
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                 {/* Left Content */}
                 <div className="flex-1 space-y-3.5">
-                  <div className="flex items-center gap-3">
-                    {/* Stylized Droplet Illustration with plus */}
-                    <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-50 to-pink-100/70 shadow-2xs dark:from-rose-950/40 dark:to-pink-900/20 border border-rose-100 dark:border-rose-900/30">
-                      <DropletIllustration className="h-8 w-8 drop-shadow-xs" />
-                      <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-xs border-2 border-white dark:border-slate-900">
-                        +
-                      </span>
-                    </div>
-                    {/* Priority Badge */}
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${heroPriorityTag.badgeClass}`}>
+                  {/* Priority Badge */}
+                  <div className="flex items-center gap-2.5">
+                    <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-2xs ${heroPriorityTag.badgeClass}`}>
                       <AlertCircle className="h-3.5 w-3.5" />
                       <span>{heroPriorityTag.label}</span>
                     </span>
@@ -1496,18 +1619,24 @@ export function DiagnosisResultPage() {
                     </p>
                   </div>
 
-                  {/* 3 Mini Stat Pills */}
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
-                      <Award className="h-3.5 w-3.5 text-indigo-500" />
+                  {/* 3 Mini Stat Pills with Icon Backdrops */}
+                  <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                    <div className="inline-flex items-center gap-2.5 rounded-2xl border border-slate-100 bg-slate-50/80 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100/80 text-indigo-600 dark:bg-indigo-950/70 dark:text-indigo-400">
+                        <Award className="h-3.5 w-3.5" />
+                      </div>
                       <span>{keyIndicatorCount} {isKhmer ? 'សូចនាករសំខាន់ៗ' : 'Key indicators'}</span>
                     </div>
-                    <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
-                      <ShieldCheck className="h-3.5 w-3.5 text-blue-500" />
-                      <span>{matchedSymptoms.length || 6} {isKhmer ? 'រោគសញ្ញាត្រូវគ្នា' : 'Symptoms matched'}</span>
+                    <div className="inline-flex items-center gap-2.5 rounded-2xl border border-slate-100 bg-slate-50/80 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100/80 text-blue-600 dark:bg-blue-950/70 dark:text-blue-400">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                      </div>
+                      <span>{matchedSymptoms.length} {isKhmer ? 'រោគសញ្ញាត្រូវគ្នា' : 'Symptoms matched'}</span>
                     </div>
-                    <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
-                      <FlaskConical className="h-3.5 w-3.5 text-emerald-500" />
+                    <div className="inline-flex items-center gap-2.5 rounded-2xl border border-slate-100 bg-slate-50/80 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200 shadow-2xs">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100/80 text-emerald-600 dark:bg-emerald-950/70 dark:text-emerald-400">
+                        <FlaskConical className="h-3.5 w-3.5" />
+                      </div>
                       <span>{abnormalCount} {isKhmer ? 'លទ្ធផលមិនប្រក្រតី' : 'Abnormal results'}</span>
                     </div>
                   </div>
@@ -1527,22 +1656,26 @@ export function DiagnosisResultPage() {
                     </button>
                     <Link
                       to="/care-plan"
+                      state={{ result: activeResult || result, fromAssessmentId: targetResultId }}
+                      onClick={handleCarePlanNavigation}
                       className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-5 py-2.5 text-xs sm:text-sm font-semibold text-blue-600 shadow-2xs hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-blue-400 dark:hover:bg-slate-700 transition"
                     >
-                      <Calendar className="h-3.5 w-3.5 text-blue-500" />
-                      <span>{isKhmer ? 'បង្កើតផែនការថែទាំ' : 'Create care plan'}</span>
+                      {hasOpenedCarePlan ? <HeartPulse className="h-3.5 w-3.5 text-blue-500" /> : <Sparkles className="h-3.5 w-3.5 text-blue-500" />}
+                      <span>
+                        {hasOpenedCarePlan
+                          ? (isKhmer ? 'បើកផែនការថែទាំ' : 'Open Care Plan')
+                          : (isKhmer ? 'បង្កើតផែនការថែទាំ' : 'Generate care plan')}
+                      </span>
                     </Link>
                   </div>
                 </div>
 
-                {/* Right Donut Gauge */}
+                {/* Right: Stepped Progression Risk Scale with Evidence Agreement */}
                 <div className="shrink-0 flex items-center justify-center pt-2 md:pt-0">
-                  <DonutGauge
-                    percent={certaintyPercent || 98}
-                    size={128}
-                    strokeWidth={12}
-                    color={donutColor}
+                  <RiskProgressionBars
+                    percent={certaintyPercent || 0}
                     isKhmer={isKhmer}
+                    t={t}
                   />
                 </div>
               </div>
@@ -1620,11 +1753,23 @@ export function DiagnosisResultPage() {
                     </div>
                     <div className="flex items-baseline justify-between">
                       <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                        {hba1cValue != null ? `${Number(hba1cValue).toFixed(1)}%` : '10.5%'}
+                        {hba1cValue != null ? `${Number(hba1cValue).toFixed(1)}%` : '--'}
                       </span>
-                      <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900">
-                        {hba1cStatus.label || (isKhmer ? 'ខ្ពស់' : 'High')}
-                      </span>
+                      {hba1cValue != null ? (
+                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold border ${
+                          hba1cStatusRaw.tone === 'danger'
+                            ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 border-rose-200/60 dark:border-rose-900'
+                            : hba1cStatusRaw.tone === 'warning'
+                            ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400 border-amber-200/60 dark:border-amber-900'
+                            : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-900'
+                        }`}>
+                          {hba1cStatus.label}
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                          {isKhmer ? 'មិនមានទិន្នន័យ' : 'Not Recorded'}
+                        </span>
+                      )}
                     </div>
                     <div className="relative h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 flex">
                       <div className="h-full w-1/3 bg-[#28be68]" />
@@ -1652,13 +1797,27 @@ export function DiagnosisResultPage() {
                     <div className="flex items-baseline justify-between">
                       <div className="flex items-baseline gap-1">
                         <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                          {fastingValue != null ? Math.round(Number(fastingValue)) : 260}
+                          {fastingValue != null ? Math.round(Number(fastingValue)) : '--'}
                         </span>
-                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">mg/dL</span>
+                        {fastingValue != null ? (
+                          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">mg/dL</span>
+                        ) : null}
                       </div>
-                      <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900">
-                        {fastingStatus.label || (isKhmer ? 'ខ្ពស់' : 'High')}
-                      </span>
+                      {fastingValue != null ? (
+                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold border ${
+                          fastingStatusRaw.tone === 'danger'
+                            ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 border-rose-200/60 dark:border-rose-900'
+                            : fastingStatusRaw.tone === 'warning'
+                            ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400 border-amber-200/60 dark:border-amber-900'
+                            : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-900'
+                        }`}>
+                          {fastingStatus.label}
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                          {isKhmer ? 'មិនមានទិន្នន័យ' : 'Not Recorded'}
+                        </span>
+                      )}
                     </div>
                     <div className="relative h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 flex">
                       <div className="h-full w-1/3 bg-[#28be68]" />
@@ -1684,16 +1843,16 @@ export function DiagnosisResultPage() {
                     </div>
                     <div className="flex items-baseline justify-between">
                       <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                        {matchedSymptoms.length || 6} / 8
+                        {matchedSymptoms.length} / 8
                       </span>
                       <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-900">
-                        {matchedSymptoms.length >= 4 ? (isKhmer ? 'ចម្បង' : 'Significant') : (isKhmer ? 'មធ្យម' : 'Moderate')}
+                        {matchedSymptoms.length >= 4 ? (isKhmer ? 'ចម្បង' : 'Significant') : matchedSymptoms.length > 0 ? (isKhmer ? 'មធ្យម' : 'Moderate') : (isKhmer ? 'គ្មាន' : 'None')}
                       </span>
                     </div>
                     {/* 8-dot indicator row */}
                     <div className="flex items-center gap-2 py-1">
                       {Array.from({ length: 8 }).map((_, idx) => {
-                        const isFilled = idx < (matchedSymptoms.length || 6)
+                        const isFilled = idx < matchedSymptoms.length
                         return (
                           <span
                             key={idx}
@@ -1772,11 +1931,13 @@ export function DiagnosisResultPage() {
                       </button>
 
                       {/* Gemini-Generated Vector Illustration of Glucometer */}
-                      <div className="relative flex items-center justify-center -mr-2 -mb-2">
+                      <div className="relative flex items-center justify-center -mr-1 -mb-1">
+                        {/* Soft ambient blob behind illustration matching mockup */}
+                        <div className="pointer-events-none absolute -bottom-1 -right-1 h-20 w-20 rounded-full bg-blue-100/60 blur-lg dark:bg-blue-900/25" />
                         <img
                           src="/images/glucometer-illustration.jpg"
                           alt="Glucometer graphic"
-                          className="h-20 w-20 sm:h-24 sm:w-24 object-contain mix-blend-multiply dark:mix-blend-screen rounded-xl select-none pointer-events-none transition-transform duration-300 hover:scale-105"
+                          className="relative z-10 h-20 w-20 sm:h-22 sm:w-22 object-contain mix-blend-multiply dark:mix-blend-screen rounded-xl select-none pointer-events-none transition-transform duration-300 hover:scale-105"
                           loading="lazy"
                         />
                       </div>
@@ -1809,7 +1970,9 @@ export function DiagnosisResultPage() {
 
                       {/* Clinical Report with Magnifying Glass Illustration */}
                       <div className="relative flex items-center justify-center -mr-1 -mb-1">
-                        <ClinicalReportIllustration className="h-18 w-18 sm:h-20 sm:w-20 transition-transform duration-300 hover:scale-105" />
+                        {/* Soft ambient blob behind illustration matching mockup */}
+                        <div className="pointer-events-none absolute -bottom-1 -right-1 h-20 w-20 rounded-full bg-indigo-100/60 blur-lg dark:bg-indigo-900/25" />
+                        <ClinicalReportIllustration className="relative z-10 h-16 w-16 sm:h-18 sm:w-18 transition-transform duration-300 hover:scale-105" />
                       </div>
                     </div>
                   </div>
@@ -2336,21 +2499,27 @@ export function DiagnosisResultPage() {
               </div>
 
               <div className="space-y-1">
-                {/* Action 1: Open Care Plan */}
+                {/* Action 1: Open / Generate Care Plan */}
                 <Link
                   to="/care-plan"
+                  state={{ result: activeResult || result, fromAssessmentId: targetResultId }}
+                  onClick={handleCarePlanNavigation}
                   className="group flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
-                      <HeartPulse className="h-4 w-4" />
+                      {hasOpenedCarePlan ? <HeartPulse className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
                     </div>
                     <div>
                       <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
-                        {isKhmer ? 'បើកផែនការថែទាំ' : 'Open Care Plan'}
+                        {hasOpenedCarePlan
+                          ? (isKhmer ? 'បើកផែនការថែទាំ' : 'Open Care Plan')
+                          : (isKhmer ? 'បង្កើតផែនការថែទាំ' : 'Generate Care Plan')}
                       </p>
                       <p className="text-[11px] text-slate-400">
-                        {isKhmer ? 'បង្កើត ឬពិនិត្យផែនការព្យាបាល' : 'Create or view treatment plan'}
+                        {hasOpenedCarePlan
+                          ? (isKhmer ? 'ពិនិត្យមើលផែនការព្យាបាលផ្ទាល់ខ្លួន' : 'View personalized treatment plan')
+                          : (isKhmer ? 'បង្កើតផែនការព្យាបាលផ្ទាល់ខ្លួន' : 'Generate personalized treatment plan')}
                       </p>
                     </div>
                   </div>
@@ -2581,10 +2750,16 @@ export function DiagnosisResultPage() {
             {canViewOwnCarePlan && (
               <Link
                 to="/care-plan"
+                state={{ result: activeResult || result, fromAssessmentId: targetResultId }}
+                onClick={handleCarePlanNavigation}
                 className="btn-secondary gap-2 bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 border-0 text-xs sm:text-sm h-9 px-3.5 rounded-xl inline-flex items-center"
               >
-                <HeartPulse className="h-4 w-4 text-primary-600 dark:text-primary-400" />
-                <span>{t('diagnosisResult.openCarePlan', 'Open Care Plan')}</span>
+                {hasOpenedCarePlan ? <HeartPulse className="h-4 w-4 text-primary-600 dark:text-primary-400" /> : <Sparkles className="h-4 w-4 text-primary-600 dark:text-primary-400" />}
+                <span>
+                  {hasOpenedCarePlan
+                    ? (isKhmer ? 'បើកផែនការថែទាំ' : t('diagnosisResult.openCarePlan', 'Open Care Plan'))
+                    : (isKhmer ? 'បង្កើតផែនការថែទាំ' : t('diagnosisResult.generateCarePlan', 'Generate Care Plan'))}
+                </span>
               </Link>
             )}
             <button
